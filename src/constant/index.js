@@ -1,0 +1,5 @@
+export const TOKEN_NAME = "auth_key"
+export const USER_DETAILS = "userdetails"
+export const CART_ITEM = "cartitem"
+export const PLACE_ORDER_VALIDATION ="place-order-validation"
+// export const USER_AUTH = "auth_key"

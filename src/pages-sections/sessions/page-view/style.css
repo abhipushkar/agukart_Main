@@ -1,0 +1,40 @@
+.phone-input-container {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.phone-input-container label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #4B566B;
+}
+
+.phone-input {
+  width: 100%;
+  padding: 6px 0 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  color: #333;
+}
+
+.phone-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.1rem rgba(0,123,255,.25);
+}
+.phone-input input.form-control {
+  border: none;
+}
+
+.error-text {
+  color: #f44336;
+  font-size: 12px;
+  margin-top: 4px;
+}
+  .phone-input input.PhoneInputInput {
+    outline: none;
+    border: none;
+}
