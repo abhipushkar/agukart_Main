@@ -1,9 +1,9 @@
-name: Deploy to DigitalOcean
+name: Deploy Next.js to DigitalOcean
 
 on:
   push:
     branches:
-      - production
+      - main  # Changed from production to main
 
 jobs:
   deploy:
@@ -11,44 +11,41 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@v0.7.0
         with:
-          ssh-private-key: ${{ secrets.DEPLOY_CODE }}
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Add GitHub to known_hosts (ensure SSH connection to GitHub)
+      - name: Add known hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-      - name: Add DigitalOcean server to known_hosts
-        run: |
-          mkdir -p ~/.ssh
           ssh-keyscan 165.22.9.131 >> ~/.ssh/known_hosts
 
-      - name: Determine the branch to deploy
-        id: deploy_branch
-        run: |
-          echo "Deploying to branch: $GITHUB_REF"
-          if [[ "$GITHUB_REF" == "refs/heads/staging" ]]; then
-            echo "BRANCH=staging" >> $GITHUB_ENV
-            echo "DEPLOY_PATH=/mnt/volume_fra1_02/project.imgglobal.in/ecommercereact/website" >> $GITHUB_ENV
-          elif [[ "$GITHUB_REF" == "refs/heads/production" ]]; then
-            echo "BRANCH=production" >> $GITHUB_ENV
-            echo "DEPLOY_PATH=/var/www/html/website" >> $GITHUB_ENV
-          fi
-
-      - name: Pull latest code on DigitalOcean server and Install dependencies
+      - name: Deploy Next.js Application
         run: |
           ssh root@165.22.9.131 "
-            # Ensure that NVM is sourced for the current shell
-            node -v && 
-            npm -v &&
-            cd ${{ env.DEPLOY_PATH }} && 
-            git pull origin ${{ env.BRANCH }} &&
+            # Navigate to your Next.js project directory
+            cd /var/www/html/mainui &&
+          
+            # Ensure git safety and pull latest code
+            git config --global --add safe.directory /var/www/html/mainui &&
+            git fetch origin &&
+            git reset --hard HEAD &&
+            git checkout main &&
+            git pull origin main &&
+          
+            # Install dependencies and build
             npm install --legacy-peer-deps &&
             npm run build &&
+          
+            # Restart PM2 process
             pm2 restart ecommerceweb
           "
+
+      - name: Verify deployment
+        run: |
+          echo "✅ Next.js deployment completed successfully!"
+          echo "🔗 Application should be available at: https://yourdomain.com/"
