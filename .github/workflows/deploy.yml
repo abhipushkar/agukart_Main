@@ -1,51 +1,44 @@
-name: Deploy Next.js to DigitalOcean
-
+name: Deploy Main UI to DigitalOcean
+ 
 on:
   push:
     branches:
-      - main  # Changed from production to main
-
+      - main
+ 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+ 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+ 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
-
+ 
       - name: Add known hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-keyscan 165.22.9.131 >> ~/.ssh/known_hosts
-
-      - name: Deploy Next.js Application
+ 
+      - name: Deploy Next.js App
         run: |
           ssh root@165.22.9.131 "
-            # Navigate to your Next.js project directory
-            cd /var/www/html/mainui &&
-          
-            # Ensure git safety and pull latest code
             git config --global --add safe.directory /var/www/html/mainui &&
+            cd /var/www/html/mainui &&
             git fetch origin &&
             git reset --hard HEAD &&
             git checkout main &&
             git pull origin main &&
-          
-            # Install dependencies and build
             npm install --legacy-peer-deps &&
             npm run build &&
-          
-            # Restart PM2 process
-            pm2 restart ecommerceweb
+            pm2 restart mainui || pm2 start npm --name mainui -- start
           "
-
+ 
       - name: Verify deployment
         run: |
-          echo "✅ Next.js deployment completed successfully!"
-          echo "🔗 Application should be available at: https://yourdomain.com/"
+          echo "✅ Main UI deployed successfully!"
+          echo "🔗 Application should be available at: https://agukart.com"
