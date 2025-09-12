@@ -38,7 +38,7 @@ import ShopSmall from "../ShopSmall/ShopSmall";
 import Section22 from "../section-22";
 import Section23 from "../section-23";
 import Section24 from "../section-24";
-import { getAPI,getAPIAuth, postAPI } from "utils/__api__/ApiServies";
+import { getAPI, getAPIAuth, postAPI } from "utils/__api__/ApiServies";
 import useAuth from "hooks/useAuth";
 import React from "react";
 import dynamic from "next/dynamic";
@@ -55,7 +55,7 @@ export default function MarketOnePageView() {
   const [recentlyViewd, setRecentlyViewed] = useState([]);
   const [becauseViewed, setBecauseViewed] = useState([]);
   const [dealData, setDealsData] = useState({});
-  const { token,setToken } = useAuth();
+  const { token, setToken } = useAuth();
   const { setUserCredentials } = useMyProvider();
   // console.log("isFixed", isFixed);
   const toggleIsFixed = useCallback((fixed) => setIsFixed(fixed), []);
@@ -119,7 +119,7 @@ export default function MarketOnePageView() {
       console.log(error);
     }
   };
-  
+
 
   useEffect(() => {
     getDiscountsProducts();
@@ -133,10 +133,10 @@ export default function MarketOnePageView() {
     }
   }, [token]);
 
-  const verifyToken = async(token)=>{
+  const verifyToken = async (token) => {
     try {
       const res = await getAPIAuth("user/verify-token", token);
-      if(res.data.success){
+      if (res.data.success) {
         setToken(token);
         setUserCredentials(res?.data?.user);
         addToast("User Login Sucessfully!", {
@@ -144,7 +144,7 @@ export default function MarketOnePageView() {
           autoDismiss: true,
         });
         router.push("/");
-      }else{
+      } else {
         addToast("User Login Failed!", {
           appearance: "error",
           autoDismiss: true,
@@ -158,9 +158,9 @@ export default function MarketOnePageView() {
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
     if (token) {
-      setTimeout(()=>{
+      setTimeout(() => {
         verifyToken(token);
-      },2000);
+      }, 2000);
     }
   }, []);
 
@@ -177,7 +177,7 @@ export default function MarketOnePageView() {
       <Section1 />
 
       {/* SPECIAL MOMENT SECTION */}
-      <ShopSmall/>
+      <ShopSmall />
 
       {/* POPULAR GIFTS */}
       <Section24 />
@@ -203,7 +203,7 @@ export default function MarketOnePageView() {
       )} */}
 
       {/* HOME ARRIVALS */}
-      <Section17/>
+      <Section17 />
 
       {/* FEATURED BRANDS */}
       <Section18 />
@@ -221,7 +221,7 @@ export default function MarketOnePageView() {
       {/* PROMO BANNERS */}
       <Section8 />
       {/* BEST SELLERS KITCHEN */}
-      <Section21/>
+      <Section21 />
 
       {/* FLASH DEALS SECTION */}
       {/* <Section2 /> */}
@@ -259,7 +259,7 @@ export default function MarketOnePageView() {
       <Section20 />
 
       {/* WHAT IS ETSY */}
-      <Section22 description = {dealData?.description || ""}/>
+      <Section22 description={dealData?.description || ""} />
 
       {/* NEWS LATTER */}
       <Section23 />

@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
 import Box from "@mui/material/Box";
 import {
-  Card,
-  Typography,
-  Button,
-  AccordionSummary,
-  AccordionDetails,
+    Card,
+    Typography,
+    Button,
+    AccordionSummary,
+    AccordionDetails, CircularProgress,
 } from "@mui/material";
 import Link from "next/link";
 import NextLink from "next/link";
@@ -78,12 +78,15 @@ const SingleVendorCart = ({ wallet, cart, defaultAddress, voucherDetails }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const { addToast } = useToasts();
+  const [addingNote, setAddingNote] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
   const handleSaveNote = async () => {
+      try {
+      setAddingNote(true);
     console.log({ vendorNote });
     if (!token) {
       return router.push("/login");
@@ -96,7 +99,6 @@ const SingleVendorCart = ({ wallet, cart, defaultAddress, voucherDetails }) => {
       }
     );
     const productids = cart?.products?.map((item) => item?.product_id);
-    try {
       const payload = {
         cart_id: cart?.products?.[0]?.cart_id,
         vendor_id: cart?.vendor_id,
@@ -123,6 +125,8 @@ const SingleVendorCart = ({ wallet, cart, defaultAddress, voucherDetails }) => {
           autoDismiss: true,
         }
       );
+    } finally {
+        setAddingNote(false);
     }
   };
   const handleApply = async () => {
@@ -465,8 +469,9 @@ const SingleVendorCart = ({ wallet, cart, defaultAddress, voucherDetails }) => {
                                   borderRadius: "30px",
                                 }}
                                 onClick={handleApply}
+                                disabled={loading}
                               >
-                                Apply
+                                  {loading ? <CircularProgress size={15} /> : "Apply"}
                               </Button>
                             )}
                           </Box>
@@ -580,11 +585,12 @@ const SingleVendorCart = ({ wallet, cart, defaultAddress, voucherDetails }) => {
                                 background: "none",
                                 border: "none",
                                 borderRadius: "30px",
-                              
+
                               }}
                               onClick={handleSaveNote}
+                              disabled={addingNote}
                             >
-                              Save
+                                {addingNote ? <CircularProgress size={15} /> : "Save"}
                             </Button>
                           </Box>
                         </AccordionDetails>
