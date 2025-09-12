@@ -61,6 +61,9 @@ import SingleVendorCart from "./SingleVendorCart";
 import {useCurrency} from "contexts/CurrencyContext";
 import {set} from "lodash";
 import AddressChangePopup from "./AddressChangePopup";
+import {useLocation} from "../../../contexts/location_context";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import {CountryModal} from "./country_modal";
 
 const Mycart = () => {
     const {currency} = useCurrency();
@@ -84,6 +87,8 @@ const Mycart = () => {
     const [formValues, setFormValues] = useState({
         voucher_code: "",
     });
+    const [countryModalOpen, setCountryModalOpen] = useState(false);
+    const { location, setLocation, countries, isLoading, isLoadingCountries } = useLocation();
     const [voucherDetails, setVoucherDetails] = useState({discount: 0, voucherCode: ""});
     const [errors, setErrors] = useState({voucher_code: ""});
     const router = useRouter();
@@ -94,6 +99,13 @@ const Mycart = () => {
         const {name, value} = e.target;
         setFormValues((prev) => ({...prev, [name]: value}));
         setErrors((prv) => ({...prv, [name]: ""}));
+    };
+
+    const handleCountrySelect = (country) => {
+        setLocation({
+            countryName: country.name,
+            countryCode: country.sortname || ""
+        });
     };
 
     useEffect(() => {
@@ -253,12 +265,12 @@ const Mycart = () => {
         }
     }, [defaultAddress, token]);
 
-    const handleAddressChnage = () => {
-        if (!token) {
-            return router.push("/login");
-        }
-        setModalOpen(true);
-    }
+    // const handleAddressChnage = () => {
+    //     if (!token) {
+    //         return router.push("/login");
+    //     }
+    //     setModalOpen(true);
+    // }
 
     const handleApply = async () => {
         if (!token) {
@@ -549,51 +561,51 @@ const Mycart = () => {
                                                         </TableCell>
                                                     </TableRow>
                                                 }
-                                                <TableRow>
-                                                    <TableCell colSpan={2}>
-                                                        {token && defaultAddress?._id && (
-                                                            <Box sx={{
-                                                                mb: 3,
-                                                                p: 2,
-                                                                width: "100%",
-                                                                border: "1px solid #e0e0e0",
-                                                                borderRadius: 1
-                                                            }}>
-                                                                <Typography variant="subtitle1" fontWeight={600}
-                                                                            gutterBottom>
-                                                                    Delivery Address
-                                                                </Typography>
-                                                                <Box sx={{
-                                                                    p: 1.5,
-                                                                    backgroundColor: "#f9f9f9",
-                                                                    borderRadius: 1
-                                                                }}>
-                                                                    <Typography fontWeight={600}>
-                                                                        {defaultAddress?.first_name} {defaultAddress?.last_name}
-                                                                    </Typography>
-                                                                    <Typography variant="body2" color="text.secondary">
-                                                                        {defaultAddress?.address_line1}
-                                                                        {defaultAddress?.address_line2 && `, ${defaultAddress?.address_line2}`}
-                                                                    </Typography>
-                                                                    <Typography variant="body2" color="text.secondary">
-                                                                        {defaultAddress?.city}, {defaultAddress?.state}, {defaultAddress?.country} - {defaultAddress?.pincode}
-                                                                    </Typography>
-                                                                    <Typography variant="body2" color="text.secondary">
-                                                                        Phone: {defaultAddress?.mobile}
-                                                                    </Typography>
-                                                                </Box>
-                                                                <Button
-                                                                    variant="text"
-                                                                    size="small"
-                                                                    onClick={handleAddressChnage}
-                                                                    sx={{mt: 1, color: "primary.main", fontWeight: 600}}
-                                                                >
-                                                                    Change Address
-                                                                </Button>
-                                                            </Box>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
+                                                {/*<TableRow>*/}
+                                                {/*    <TableCell colSpan={2}>*/}
+                                                {/*        {token && defaultAddress?._id && (*/}
+                                                {/*            <Box sx={{*/}
+                                                {/*                mb: 3,*/}
+                                                {/*                p: 2,*/}
+                                                {/*                width: "100%",*/}
+                                                {/*                border: "1px solid #e0e0e0",*/}
+                                                {/*                borderRadius: 1*/}
+                                                {/*            }}>*/}
+                                                {/*                <Typography variant="subtitle1" fontWeight={600}*/}
+                                                {/*                            gutterBottom>*/}
+                                                {/*                    Delivery Address*/}
+                                                {/*                </Typography>*/}
+                                                {/*                <Box sx={{*/}
+                                                {/*                    p: 1.5,*/}
+                                                {/*                    backgroundColor: "#f9f9f9",*/}
+                                                {/*                    borderRadius: 1*/}
+                                                {/*                }}>*/}
+                                                {/*                    <Typography fontWeight={600}>*/}
+                                                {/*                        {defaultAddress?.first_name} {defaultAddress?.last_name}*/}
+                                                {/*                    </Typography>*/}
+                                                {/*                    <Typography variant="body2" color="text.secondary">*/}
+                                                {/*                        {defaultAddress?.address_line1}*/}
+                                                {/*                        {defaultAddress?.address_line2 && `, ${defaultAddress?.address_line2}`}*/}
+                                                {/*                    </Typography>*/}
+                                                {/*                    <Typography variant="body2" color="text.secondary">*/}
+                                                {/*                        {defaultAddress?.city}, {defaultAddress?.state}, {defaultAddress?.country} - {defaultAddress?.pincode}*/}
+                                                {/*                    </Typography>*/}
+                                                {/*                    <Typography variant="body2" color="text.secondary">*/}
+                                                {/*                        Phone: {defaultAddress?.mobile}*/}
+                                                {/*                    </Typography>*/}
+                                                {/*                </Box>*/}
+                                                {/*                <Button*/}
+                                                {/*                    variant="text"*/}
+                                                {/*                    size="small"*/}
+                                                {/*                    onClick={handleAddressChnage}*/}
+                                                {/*                    sx={{mt: 1, color: "primary.main", fontWeight: 600}}*/}
+                                                {/*                >*/}
+                                                {/*                    Change Address*/}
+                                                {/*                </Button>*/}
+                                                {/*            </Box>*/}
+                                                {/*        )}*/}
+                                                {/*    </TableCell>*/}
+                                                {/*</TableRow>*/}
 
                                                 <TableRow>
                                                     <TableCell colSpan={2}>
@@ -628,7 +640,7 @@ const Mycart = () => {
                                                                 name="voucher_code"
                                                                 onChange={handleChange}
                                                                 error={Boolean(errors.voucher_code)}
-                                                                // disabled={voucherDetails?.voucherCode !== 0}
+                                                                disabled={voucherDetails?.voucherCode !== ""}
                                                             />
                                                             <Button
                                                                 endIcon={applyinCoupon ?
@@ -702,16 +714,22 @@ const Mycart = () => {
                                                         colSpan={2}
                                                         sx={{padding: "0 16px 6px 16px"}}
                                                     >
-                                                        <Typography
-                                                            fontSize={14}
-                                                            color={"gray"}
-                                                            component="div"
-                                                            sx={{cursor: "pointer"}}
-                                                            onClick={handleAddressChnage}
-                                                        >
-                                                            {/* (To India) */}
-                                                            (Change Delivery Address)
-                                                        </Typography>
+                                                            <Box onClick={() => setCountryModalOpen(true)} sx={{ display: "flex", alignItems: "center", gap: 0.5, cursor: "pointer" }}>
+                                                                <LocationOnIcon sx={{ fontSize: 16, color: "gray" }} />
+                                                                <Typography
+                                                                    fontSize={14}
+                                                                    color={"gray"}
+                                                                    fontStyle={"italic"}
+                                                                    component="div"
+                                                                    style={{
+                                                                        textDecoration: "underline",
+                                                                        textUnderlineOffset: 2
+                                                                    }}
+                                                                >
+                                                                    Deliver to {location.countryName}
+                                                                </Typography>
+                                                            </Box>
+
                                                     </TableCell>
                                                 </TableRow>
                                                 {
@@ -860,6 +878,13 @@ const Mycart = () => {
                     setDefaultAddress={setDefaultAddress} // This should trigger the useEffect above
                 />
             )}
+            <CountryModal
+                open={countryModalOpen}
+                onClose={() => setCountryModalOpen(false)}
+                countries={countries}
+                currentCountry={location.countryName}
+                onCountrySelect={handleCountrySelect}
+            />
         </>
     );
 }
@@ -933,6 +958,7 @@ const CartShimmerLoader = () => {
                     </Grid>
                 </Grid>
             </Container>
+
         </Container>
     );
 };
