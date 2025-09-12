@@ -67,7 +67,7 @@ const DeliveryAndReturnPolicy = ({shippingTemplate, exchangePolicy}) => {
             setExistingShipping(existsShipping);
         } else {
             setError("This item cannot be shipped to your selected delivery location. Please choose a different delivery location");
-            addToast(error, {
+            addToast("This item cannot be shipped to your selected delivery location. Please choose a different delivery location", {
                 appearance: "error",
                 autoDismiss: true,
             });
@@ -281,7 +281,6 @@ const DeliveryAndReturnPolicy = ({shippingTemplate, exchangePolicy}) => {
                                         ))
                                     )}
                                 </Select>
-                                <Typography color={"red"}>{error}</Typography>
                             </FormControl>
 
                             <Button disabled={error !== ""} variant="contained" fullWidth onClick={handleSave}>
@@ -289,6 +288,7 @@ const DeliveryAndReturnPolicy = ({shippingTemplate, exchangePolicy}) => {
                             </Button>
                         </Box>
                     )}
+                    <Typography color={"red"}>{error}</Typography>
                 </Box>
                 <List>
                     <ListItem>
