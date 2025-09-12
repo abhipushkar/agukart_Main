@@ -21,6 +21,7 @@ import Topbar from "components/topbar/top-bar";
 import { HeaderWrapper, StyledContainer } from "./styles";
 import Typography from '@mui/material/Typography';
 import useMyProvider from "hooks/useMyProvider";
+import LocationSelector from "./components/location_selector";
 // ==============================================================
 
 // ==============================================================
@@ -42,6 +43,7 @@ export default function Header({ isFixed, className, midSlot }) {
         {isFixed ? <CategoriesMenu /> : null}
       </FlexBox>
       {midSlot}
+        <LocationSelector />
       {
         usercredentials?.designation_id != "4" &&  <Typography component="div"> <Link href="/affiliate-register" style={{fontWeight:'600',color:'rgba(0, 0, 0, 0.54)'}}>Affiliate registration</Link></Typography>
       }

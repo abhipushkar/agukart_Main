@@ -240,6 +240,29 @@ export default function AddressChangePopup({ open, onClose,getAddressData,allAdd
     return currentPage - 1;
   }
 
+// Update the address selection handler
+    const handleAddressSelect = (address) => {
+        setDefaultAddress(address);
+        setShowAddressList(false);
+
+        // Close the modal and pass the selected address back to parent
+        if (onClose) {
+            onClose();
+        }
+
+        // Note: The cart refresh should be handled in the parent component (Mycart.jsx)
+        // when the modal closes and defaultAddress changes
+    };
+
+// Update the modal close handler to reset the internal states
+    const handleCloseModal = () => {
+        setShowAddressForm(false);
+        setShowAddressList(false);
+        if (onClose) {
+            onClose();
+        }
+    };
+
   return (
     <>
       <Box>
@@ -372,7 +395,13 @@ export default function AddressChangePopup({ open, onClose,getAddressData,allAdd
                   >
                     <ArrowBackIosNewIcon
                       sx={{ fontSize: 20, mr: 1, cursor: "pointer" }}
-                      onClick={() => setShowAddressList(false)}
+                      onClick={() => {
+                          if (showAddressForm) {
+                              setShowAddressForm(false);
+                          } else if (showAddressList) {
+                              setShowAddressList(false);
+                          }
+                      }}
                     />
                     <Box
                       sx={{
@@ -390,6 +419,7 @@ export default function AddressChangePopup({ open, onClose,getAddressData,allAdd
                     <Paper
                       key={address._id}
                       elevation={address.default == "1" ? 4 : 1}
+                      onClickCapture={() => handleAddressSelect(address)}
                       sx={{
                         borderRadius: 2,
                         p: 3,

@@ -1,14 +1,16 @@
 import MarketOnePageView from "pages-sections/market-1/page-view";
 export const metadata = {
-  title: "Market 1 - Agukart Next.js E-commerce Template",
-  description: `Agukart is a React Next.js E-commerce template. Build SEO friendly Online store, delivery app and Multi vendor store`,
+  title: "Agukart",
+  description: `Agukart is a Online store, delivery app and Multi vendor store platform`,
   authors: [
     {
-      name: "UI-LIB",
-      url: "https://ui-lib.com",
+      name: "Agukart",
+      url: "https://agukart.com",
     },
   ],
-  keywords: ["e-commerce", "e-commerce template", "next.js", "react"],
+  creator: "Agukart",
+  publisher: "Agukart",
+  keywords: ["agukart", "jewellery", "ecommerce", "cheap jewellery", "online store"],
 };
 export default async function MarketOne() {
   return <MarketOnePageView />;

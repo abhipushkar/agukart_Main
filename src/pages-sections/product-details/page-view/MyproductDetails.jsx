@@ -2992,10 +2992,10 @@ const MyproductDetails = ({ slug }) => {
                       scrollButtons="auto"
                       aria-label="scrollable auto tabs example"
                     >
-                      <Tab label="Description" value="1" />
-                      <Tab label="Product specification & details" value="2" />
-                      <Tab label="reviews" value="3" />
-                      <Tab label="Shipping and return policies" value="4" />
+                      <Tab id={"description"} label="Description" value="1" />
+                      <Tab id={"specifications"} label="Product specification & details" value="2" />
+                      <Tab id={"reviews"} label="reviews" value="3" />
+                      <Tab id={"shipping_and_return"} label="Shipping and return policies" value="4" />
                       {myproduct?.tabs?.map((item, index) => (
                         <Tab key={index} label={item.title} value={index + 5} />
                       ))}
