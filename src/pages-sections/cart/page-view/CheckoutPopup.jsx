@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Button,
-  Modal,
-  Typography,
-  Divider,
-  IconButton,
-  Dialog,
-  TextField,
-  Autocomplete,
-  FormControlLabel,
-  Checkbox,
-  Grid,
-  Avatar,
-  Paper,
-  Chip,
-  CircularProgress,
-  FormLabel,
-  RadioGroup,
-  Radio,
+    Box,
+    Button,
+    Modal,
+    Typography,
+    Divider,
+    IconButton,
+    Dialog,
+    TextField,
+    Autocomplete,
+    FormControlLabel,
+    Checkbox,
+    Grid,
+    Avatar,
+    Paper,
+    Chip,
+    CircularProgress,
+    FormLabel,
+    RadioGroup,
+    Radio, AccordionSummary, AccordionDetails,
 } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -46,8 +46,11 @@ import useCart from "hooks/useCart";
 import { useRouter } from "next/navigation";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import Checkout from "./Checkout";
+import NextLink from "next/link";
+import Product from "./Product";
+import Accordion from "@mui/material/Accordion";
 
-export default function CheckoutPopup({ open, onClose, vendor_id }) {
+export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }) {
   const router = useRouter();
   const { getCartDetails, getCartItems,state } = useCart();
   const {currency} = useCurrency();
@@ -76,8 +79,24 @@ export default function CheckoutPopup({ open, onClose, vendor_id }) {
   console.log({ vendorCartDetails });
   const [loading,setLoading] = useState(false);
   const [paymentType,setPaymentType] = useState("1");
+    const [formValues, setFormValues] = useState({
+        coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
+    });
+    const [error, setError] = useState("");
+    const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponStatus, setCouponStatus] = useState(cart?.coupon_status || false);
+    const [couponDiscount, setCouponDiscount] = useState(cart?.discountAmount || 0);
+    const handleCouponChange = (e) => {
+        const { name, value } = e.target;
+        setFormValues((prev) => ({ ...prev, [name]: value }));
+    };
 
-  const initialOptions = {
+    const handleAccordionToggle = () => {
+        setIsOpen((prev) => !prev);
+    };
+
+    const initialOptions = {
     "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
     currency: "USD",
     intent: "capture",
@@ -114,25 +133,30 @@ export default function CheckoutPopup({ open, onClose, vendor_id }) {
     }
   };
 
-  const getVendorCartDetails = async () => {
-    try {
-      const res = await getAPIAuth(
-        `user/getVendorCartDetails/${vendor_id}?address_id=${defaultAddress?._id || ""}`,
-        token
-      );
-      if (res.data.status) {
-        setVendorCartDetails(res?.data?.data);
-      }else{
-        setVendorCartDetails(res?.data?.data);
-        addToast(res?.data?.message, {
-          appearance: "error",
-          autoDismiss: true,
-        })
-      }
-    } catch (error) {
-      console.log("errro", error);
+    const getVendorCartDetails = async (discountAmount = 0) => {
+        try {
+            const res = await getAPIAuth(
+                `user/getVendorCartDetails/${vendor_id}?address_id=${defaultAddress?._id || ""}&discount=${discountAmount}`,
+                token
+            );
+            if (res.data.status) {
+                setVendorCartDetails(res?.data?.data);
+            } else {
+                setVendorCartDetails(res?.data?.data);
+                addToast(res?.data?.message, {
+                    appearance: "error",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            console.log("error", error);
+        }
+    };
+
+    function capitalizeFirstLetter(string) {
+        if (!string) return "";
+        return string.charAt(0).toUpperCase() + string.slice(1);
     }
-  };
 
   useEffect(()=>{
     const data = localStorage.getItem("voucherDetails");
@@ -154,13 +178,16 @@ export default function CheckoutPopup({ open, onClose, vendor_id }) {
     getCountryData();
   }, []);
 
-  useEffect(()=>{
-    if (token) {
-      getVendorCartDetails();
-    }
-  },[defaultAddress])
+    useEffect(() => {
+        if (token) {
+            const fetchData = async () => {
+                await getVendorCartDetails();
+            };
+            fetchData();
+        }
+    }, [defaultAddress, token]);
 
-  const getStateData = async () => {
+    const getStateData = async () => {
     try {
       const param = {
         country_id: `${countryvalue}`,
@@ -243,7 +270,81 @@ export default function CheckoutPopup({ open, onClose, vendor_id }) {
       phoneNumber: number,
     };
   };
-  const handleSubmit = async (values, resetForm) => {
+
+    const handleApplyCoupon = async () => {
+        if (!token) {
+            return router.push("/login");
+        }
+        try {
+            const payload = {
+                coupon_code: formValues?.coupon_code,
+                vendor_id: cart?.vendor_id,
+            };
+            setCouponLoading(true);
+            const res = await postAPIAuth("user/check-coupon-for-product", payload);
+            if (res.status === 200) {
+                setCouponLoading(false);
+                // Update coupon status and discount
+                setCouponStatus(true);
+                setCouponDiscount(res.data.couponAmount || res.data.discountAmount || 0);
+
+                // Refresh cart details after applying coupon with discount amount
+                const discountAmount = res.data.couponAmount || res.data.discountAmount || 0;
+                await getVendorCartDetails(discountAmount);
+                setError("");
+                addToast(res?.data?.message, {
+                    appearance: "success",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            setCouponLoading(false);
+            setCouponStatus(false);
+            addToast(error?.response?.data.message || error, {
+                appearance: "error",
+                autoDismiss: true,
+            });
+            setError(error?.response?.data.message);
+        }
+    };
+
+// Update handleRemoveCoupon
+    const handleRemoveCoupon = async () => {
+        try {
+            const payload = {
+                coupon_code: formValues?.coupon_code,
+                vendor_id: cart?.vendor_id,
+            };
+            setCouponLoading(true);
+            const res = await postAPIAuth("user/remove-coupon-for-product", payload);
+            if (res.status === 200) {
+                setCouponLoading(false);
+                // Update coupon status and discount
+                setCouponStatus(false);
+                setCouponDiscount(0);
+                setError(""); // Clear any previous errors
+
+                // Refresh cart details after removing coupon (discount = 0)
+                await getVendorCartDetails(0);
+                setFormValues({ coupon_code: "" });
+                setIsOpen(false); // Close the accordion
+                addToast(res?.data?.message, {
+                    appearance: "success",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            setCouponLoading(false);
+            setCouponStatus(false); // Ensure status is false on error
+            setCouponDiscount(0); // Ensure discount is reset on error
+            addToast(error?.response?.data.message || error, {
+                appearance: "error",
+                autoDismiss: true,
+            });
+        }
+    };
+
+    const handleSubmit = async (values, resetForm) => {
     const { countryCode, phoneNumber } = splitCountryCode(values?.phone);
     try {
       setButtonDisable(true);
@@ -491,6 +592,79 @@ export default function CheckoutPopup({ open, onClose, vendor_id }) {
                     </Box>
                   )}
 
+                    <Typography
+                        component="div"
+                        display={{lg: "flex", md: "flex", xs: "block"}}
+                        justifyContent={"space-between"}
+                        alignItems={"center"}
+                    >
+                        <Typography
+                            component="div"
+                            display="flex"
+                            alignItems="center"
+                            onClick={() => {
+                                const slug = cart?.slug;
+                                const url = `/store/${slug}`;
+                                if (slug) {
+                                    window.open(url, "_blank");
+                                } else {
+                                    console.error("Vendor slug is not available");
+                                }
+                            }}
+                            sx={{
+                                cursor: "pointer",
+                            }}
+                        >
+                            <img
+                                src={cart?.shop_icon}
+                                alt=""
+                                style={{
+                                    height: "32px",
+                                    width: "32px",
+                                    objectFit: "cover",
+                                    borderRadius: "5px",
+                                    border: "3px solid #000",
+                                }}
+                            />
+                            <Typography
+                                component="div"
+                                fontSize={17}
+                                fontWeight={700}
+                                pl={1}
+                                sx={{
+                                    "&:hover": {
+                                        textDecoration: "underline",
+                                    },
+                                }}
+                            >
+                                {capitalizeFirstLetter(cart?.shop_name)}
+                            </Typography>
+                        </Typography>
+                        <Typography
+                            component="div"
+                            color={"#656464"}
+                            fontWeight={600}
+                            sx={{
+                                "&:hover": {
+                                    textDecoration: "underline !important",
+                                },
+                                fontSize: {
+                                    lg: "16px",
+                                    md: "16px",
+                                    xs: "12px",
+                                },
+                            }}
+                        >
+                            <Link component={NextLink} href="/">
+                                Contact shop
+                            </Link>
+                        </Typography>
+                    </Typography>
+                    {cart?.products?.map((product, index) => (
+                        <Product showButtons={false} key={index} cart={cart} product={product} wallet={wallet} defaultAddress={defaultAddress}
+                                 voucherDetails={voucherDetails}/>
+                    ))}
+
                   {/* Payment Section */}
                   <Box mb={3}>
                     <Typography variant="subtitle1" fontWeight={600}>
@@ -514,10 +688,237 @@ export default function CheckoutPopup({ open, onClose, vendor_id }) {
 
                   <Divider sx={{ my: 2 }} />
 
+                    <Accordion
+                        expanded={isOpen}
+                        sx={{
+                            boxShadow: "none",
+                            borderTop: "none",
+                            padding: "0px !important",
+                            margin: "0px !important",
+                            minHeight: "auto !important",
+                            width: "75% !important",
+                            "&:before": {
+                                display: "none",
+                            },
+                            "&.MuiAccordion-root": {
+                                margin: "0 !important",
+                                padding: "0 !important",
+                            }
+                        }}
+                    >
+                        <AccordionSummary
+                            aria-controls="panel1-content"
+                            id="panel1-header"
+                            onClick={handleAccordionToggle}
+                            sx={{
+                                minHeight: "28px !important",
+                                padding: "0px !important",
+                                margin: "0px !important",
+                                "& .MuiAccordionSummary-content": {
+                                    margin: "0px !important",
+                                    padding: "0px !important",
+                                },
+                                "&.MuiAccordionSummary-root": {
+                                    minHeight: "28px !important",
+                                    padding: "0 !important",
+                                    margin: "0 !important",
+                                }
+                            }}
+                        >
+                            <Button
+                                sx={{
+                                    background: "transparent !important",
+                                    color: "#000 !important",
+                                    fontSize: "12px !important",
+                                    borderRadius: "16px !important",
+                                    padding: "2px 8px !important",
+                                    minWidth: "auto !important",
+                                    margin: "0 !important",
+                                    minHeight: "24px !important",
+                                    lineHeight: "1.2 !important",
+                                    "&.MuiButton-root": {
+                                        padding: "2px 8px !important",
+                                        margin: "0 !important",
+                                        minHeight: "24px !important",
+                                    }
+                                }}
+                            >
+                                <Typography
+                                    component="span"
+                                    mr={0.5}
+                                    sx={{
+                                        background: "#43639f",
+                                        borderRadius: "50%",
+                                        height: "16px !important",
+                                        width: "16px !important",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        fontSize: "10px !important",
+                                        margin: "0 !important",
+                                        padding: "0 !important",
+                                    }}
+                                >
+                                    <svg
+                                        stroke="#fff"
+                                        fill="#fff"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        height="10px"
+                                        width="10px"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                        focusable="false"
+                                    >
+                                        <path
+                                            d="M11,22a1,1,0,0,1-.707-0.293l-8-8a1,1,0,0,1,0-1.414l10-10A1,1,0,0,1,13,2h8a1,1,0,0,1,1,1v8a1,1,0,0,1-.293.707l-10,10A1,1,0,0,1,11,22ZM4.414,13L11,19.586l9-9V4H13.414Z"></path>
+                                        <circle cx="16" cy="8" r="2"></circle>
+                                    </svg>
+                                </Typography>
+                                Apply Store Coupon Code
+                            </Button>
+                        </AccordionSummary>
+                        <AccordionDetails
+                            sx={{
+                                padding: "4px 0px !important",
+                                margin: "0px !important",
+                                "&.MuiAccordionDetails-root": {
+                                    padding: "4px 0px !important",
+                                    margin: "0px !important",
+                                }
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    height: "32px",
+                                    padding: "0px 8px !important",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    background: "#fff",
+                                    boxShadow: "0 0 1px #000",
+                                    borderRadius: "16px",
+                                    gap: "8px",
+                                    margin: "0 !important",
+                                }}
+                            >
+                                <TextField
+                                    required
+                                    id="outlined-required"
+                                    placeholder="Enter code"
+                                    sx={{
+                                        flex: 1,
+                                        ".MuiOutlinedInput-notchedOutline": {
+                                            border: "none",
+                                        },
+                                        ".MuiInputBase-root": {
+                                            height: "28px !important",
+                                            fontSize: "13px !important",
+                                            padding: "0 !important",
+                                            margin: "0 !important",
+                                        },
+                                        ".MuiInputBase-input": {
+                                            padding: "4px 8px !important",
+                                            margin: "0 !important",
+                                        },
+                                        "&.MuiTextField-root": {
+                                            margin: "0 !important",
+                                            padding: "0 !important",
+                                        }
+                                    }}
+                                    disabled={couponStatus}
+                                    value={formValues?.coupon_code}
+                                    name="coupon_code"
+                                    onChange={handleCouponChange}
+                                />
+                                {couponStatus ? (
+                                    <Button
+                                        sx={{
+                                            padding: "2px 8px !important",
+                                            background: "none !important",
+                                            border: "none !important",
+                                            borderRadius: "12px !important",
+                                            fontSize: "11px !important",
+                                            minWidth: "auto !important",
+                                            whiteSpace: "nowrap !important",
+                                            minHeight: "24px !important",
+                                            margin: "0 !important",
+                                            "&.MuiButton-root": {
+                                                padding: "2px 8px !important",
+                                                margin: "0 !important",
+                                                minHeight: "24px !important",
+                                            }
+                                        }}
+                                        onClick={handleRemoveCoupon}
+                                        disabled={couponLoading}
+                                    >
+                                        {couponLoading ? <CircularProgress size={10} /> : "Remove"}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        sx={{
+                                            padding: "2px 8px !important",
+                                            background: "none !important",
+                                            border: "none !important",
+                                            borderRadius: "12px !important",
+                                            fontSize: "11px !important",
+                                            minWidth: "auto !important",
+                                            whiteSpace: "nowrap !important",
+                                            minHeight: "24px !important",
+                                            margin: "0 !important",
+                                            "&.MuiButton-root": {
+                                                padding: "2px 8px !important",
+                                                margin: "0 !important",
+                                                minHeight: "24px !important",
+                                            }
+                                        }}
+                                        onClick={handleApplyCoupon}
+                                        disabled={couponLoading}
+                                    >
+                                        {couponLoading ? <CircularProgress size={10} /> : "Apply"}
+                                    </Button>
+                                )}
+                            </Box>
+                        </AccordionDetails>
+                        <Typography
+                            pl={1}
+                            sx={{
+                                fontSize: "12px !important",
+                                margin: "2px 0 !important",
+                                padding: "0 !important",
+                                "&.MuiTypography-root": {
+                                    margin: "2px 0 !important",
+                                    padding: "0 !important",
+                                }
+                            }}
+                        >
+                            {couponStatus && (
+                                <Typography component="div" sx={{ margin: "0 !important", padding: "0 !important" }}>
+                                    <Typography color={"green"} sx={{ fontSize: "12px !important", margin: "0 !important", padding: "0 !important" }}>
+                                        {currency?.symbol}{" "}
+                                        {(
+                                            currency?.rate *
+                                            couponDiscount
+                                        ).toFixed(2)}{" "}
+                                        Coupon Applied Successfully
+                                    </Typography>
+                                </Typography>
+                            )}
+                            {error && (
+                                <Typography
+                                    color={"red"}
+                                    sx={{ fontSize: "12px !important", margin: "0 !important", padding: "0 !important" }}
+                                    component="div"
+                                >
+                                    {error}
+                                </Typography>
+                            )}
+                        </Typography>
+                    </Accordion>
+
                   {/* Order Summary */}
                   {Object.values(vendorCartDetails || {}).length > 0 && (
                     <>
-                      <Box mb={3}>
+                      <Box my={3}>
                         <Typography>Item(s) total: {currency?.symbol}{currency?.rate * vendorCartDetails?.subTotal}</Typography>
                         <Typography>Shop Discount: - {currency?.symbol}{currency?.rate * vendorCartDetails?.couponDiscount}</Typography>
                         <Typography>Wallet : - {currency?.symbol}{currency?.rate * vendorCartDetails?.walletAmount}</Typography>

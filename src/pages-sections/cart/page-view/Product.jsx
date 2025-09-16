@@ -21,7 +21,7 @@ import { set, update } from 'lodash';
 import { calculatePriceAfterDiscount } from 'utils/calculatePriceAfterDiscount';
 import { useToasts } from 'react-toast-notifications';
 
-const Product = ({ cart, product, wallet, defaultAddress, voucherDetails }) => {
+const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons=true }) => {
     console.log({ product }, "ERyhert4yhert")
     const { addToast } = useToasts();
     const router = useRouter();
@@ -660,7 +660,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails }) => {
                                         </Typography>
                                     )
                                 }
-                                <Typography component="div" mt={2}>
+                                {showButtons && <Typography component="div" mt={2}>
                                     <Button
                                         onClick={addToWishlistHandler}
                                         variant="contained"
@@ -686,7 +686,8 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails }) => {
                                     >
                                         Remove
                                     </Button>
-                                </Typography>
+
+                                </Typography>}
                             </Typography>
 
                             <Typography
