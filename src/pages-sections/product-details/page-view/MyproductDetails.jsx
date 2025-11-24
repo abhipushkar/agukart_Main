@@ -1156,7 +1156,7 @@ const MyproductDetails = ({ slug }) => {
       const variant_attributes = myproduct?.variant_attribute_id;
       const updatedVariantAttributes = variant_attributes?.map((variant) => {
         const variantCombinations = mergedCombinations.filter((combination) =>
-          combination.combIds.includes(variant._id)
+          combination.combIds?.includes(variant._id)
         );
         const prices = variantCombinations
           .filter((combination) => combination.price != "")
