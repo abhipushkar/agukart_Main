@@ -87,8 +87,8 @@ export default function ReportItem({ product_id }) {
         product_id: product_id,
       };
 
-      const res = await postAPIAuth("user/create-report", payload,token);
-      console.log({res})
+      const res = await postAPIAuth("user/create-report", payload, token);
+      console.log({ res })
       if (res?.data?.success) {
         console.log("dfgedgd")
         addToast("Reported Successfully", {
@@ -113,7 +113,7 @@ export default function ReportItem({ product_id }) {
           The first thing you should do is contact the seller directly.
         </Typography>
         <Typography variant="body2" sx={{ mt: 1 }}>
-          If you’ve already done that, your item hasn’t arrived, or it’s not as
+          If you've already done that, your item hasn't arrived, or it's not as
           described, you can report that to Agukart by opening a case.
         </Typography>
         <Typography
@@ -139,7 +139,7 @@ export default function ReportItem({ product_id }) {
       <>
         <Typography variant="body2" sx={{ mt: 2 }}>
           If someone is using your intellectual property without permission, you
-          can report it through Agukart’s intellectual property policy.
+          can report it through Agukart's intellectual property policy.
         </Typography>
         <Typography
           variant="body2"
@@ -162,7 +162,7 @@ export default function ReportItem({ product_id }) {
     policy: (
       <>
         <Typography variant="body2" sx={{ mt: 2 }}>
-          If this listing violates Agukart’s policies, you can report it for
+          If this listing violates Agukart's policies, you can report it for
           further review.
         </Typography>
         <FormControl component="fieldset" sx={{ mt: 2 }}>
@@ -227,8 +227,8 @@ export default function ReportItem({ product_id }) {
       </>
     ),
   };
-  const handleOpen = ()=>{
-    if(!token){
+  const handleOpen = () => {
+    if (!token) {
       return router.push("/login")
     }
     setOpen(true)
@@ -245,9 +245,11 @@ export default function ReportItem({ product_id }) {
           marginBottom: "12px",
           color: "#000",
           border: "none",
+          fontSize: "14px",
+          fontWeight: "500",
         }}
       >
-        Report with this item
+        Report this item
       </Button>
       <Dialog
         open={open}
@@ -257,7 +259,7 @@ export default function ReportItem({ product_id }) {
         {!policyMoreDetailsToggle ? (
           <>
             <DialogTitle>
-              What’s wrong with this listing?
+              What's wrong with this listing?
               <IconButton
                 aria-label="close"
                 onClick={() => setOpen(false)}
@@ -277,13 +279,13 @@ export default function ReportItem({ product_id }) {
               >
                 <MenuItem value="">Choose a reason...</MenuItem>
                 <MenuItem value="order">
-                  There’s a problem with my order
+                  There's a problem with my order
                 </MenuItem>
                 <MenuItem value="ip">
                   It uses my intellectual property without permission
                 </MenuItem>
                 <MenuItem value="policy">
-                  I don’t think it meets Agukart’s policies
+                  I don't think it meets Agukart's policies
                 </MenuItem>
               </Select>
               {reason && additionalInfo[reason]}

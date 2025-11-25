@@ -1,0 +1,124 @@
+import { useState, useEffect } from 'react';
+
+export const useProductCustomization = (product) => {
+    const [selectedDropdowns, setSelectedDropdowns] = useState({});
+    const [customizationText, setCustomizationText] = useState({});
+    const [validationErrors, setValidationErrors] = useState({});
+    const [customizeDropdownPrice, setCustomizeDropdownPrice] = useState(0);
+    const [customizeTextPrice, setCustomizeTextPrice] = useState(0);
+
+    const handleDropdownChange = (label, { value, price }) => {
+        setSelectedDropdowns(prev => {
+            if (price == "") {
+                const updatedDropdowns = { ...prev };
+                delete updatedDropdowns[label];
+                return updatedDropdowns;
+            }
+            return {
+                ...prev,
+                [label]: { value, price },
+            };
+        });
+        setValidationErrors(prv => ({ ...prv, [label]: "" }));
+    };
+
+    const handleTextChange = (label, price, min, max, value) => {
+        if (value.length > max) {
+            setValidationErrors(prev => ({
+                ...prev,
+                [label]: `Input should be between ${min} and ${max} characters.`,
+            }));
+            return;
+        }
+
+        setCustomizationText(prev => {
+            if (value == "") {
+                const updatedTextArray = { ...prev };
+                delete updatedTextArray[label];
+                return updatedTextArray;
+            }
+            return {
+                ...prev,
+                [label]: { value, price, min, max },
+            };
+        });
+        setValidationErrors(prev => ({ ...prev, [label]: "" }));
+    };
+
+    const validateCustomization = () => {
+        const errors = {};
+        let isValid = true;
+
+        product?.customizationData?.customizations?.forEach((customization) => {
+            if (!customization.optionList) {
+                if (
+                    customization.isCompulsory &&
+                    !customizationText[customization.label]?.value
+                ) {
+                    isValid = false;
+                    errors[customization.label] =
+                        `Please enter a value for "${customization.label}".`;
+                }
+            } else {
+                if (
+                    customization.isCompulsory &&
+                    !selectedDropdowns[customization.label]?.value
+                ) {
+                    isValid = false;
+                    errors[customization.label] = "Please select an option";
+                }
+            }
+        });
+
+        setValidationErrors(errors);
+        return isValid;
+    };
+
+    const checkInputMinValue = () => {
+        let isValid = false;
+        Object.entries(customizationText || {}).forEach(([label, { value, min, max }]) => {
+            if (value.length < min) {
+                setValidationErrors(prev => ({
+                    ...prev,
+                    [label]: `Input should be between ${min} and ${max} characters.`,
+                }));
+                isValid = true;
+            }
+        });
+        return isValid;
+    };
+
+    // Calculate dropdown prices
+    useEffect(() => {
+        const customizeDropdownPrices = Object.values(selectedDropdowns).reduce((acc, item) => {
+            return acc + +item.price;
+        }, 0);
+        setCustomizeDropdownPrice(customizeDropdownPrices);
+    }, [selectedDropdowns]);
+
+    // Calculate text prices
+    useEffect(() => {
+        const customizeTextPrice = Object.values(customizationText).reduce(
+            (acc, item) => {
+                if (item.value.length >= item.min && item.value.length <= item.max) {
+                    return acc + +item.price;
+                }
+                return acc;
+            },
+            0
+        );
+        setCustomizeTextPrice(customizeTextPrice);
+    }, [customizationText]);
+
+    return {
+        selectedDropdowns,
+        customizationText,
+        validationErrors,
+        customizeDropdownPrice,
+        customizeTextPrice,
+        handleDropdownChange,
+        handleTextChange,
+        validateCustomization,
+        checkInputMinValue
+    };
+};
