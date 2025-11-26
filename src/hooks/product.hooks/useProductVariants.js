@@ -107,6 +107,22 @@ export const useProductVariants = (product) => {
         setSelectedVariants(prev => {
             const newSelected = { ...prev };
 
+            // Check if this is a parent variant selection
+            const normalizedVariants = normalizeVariantData();
+            const selectedVariant = normalizedVariants.find(v => v.id === variantId);
+
+            if (selectedVariant?.type === 'parent') {
+                // When selecting a parent variant, clear all internal variants
+                const internalVariantIds = normalizedVariants
+                    .filter(v => v.type === 'internal')
+                    .map(v => v.id);
+
+                // Remove all internal variants from selection
+                internalVariantIds.forEach(internalId => {
+                    delete newSelected[internalId];
+                });
+            }
+
             if (value === "") {
                 delete newSelected[variantId];
             } else {
@@ -117,7 +133,7 @@ export const useProductVariants = (product) => {
             return newSelected;
         });
         setErrors(prev => ({ ...prev, [variantId]: "" }));
-    }, []);
+    }, [normalizeVariantData]);
 
     // Validate variant selections
     const validateVariants = useCallback(() => {

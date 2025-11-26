@@ -304,7 +304,7 @@ const ProductTabs = ({ product }) => {
     };
 
     return (
-        <Box py={2} sx={{ padding: "0px 0" }}>
+        <Box py={2} sx={{ padding: "0 0", m: "auto", maxWidth: "1550px" }}>
             <Grid container spacing={4}>
                 <Grid item lg={12} xs={12}>
                     <TabContext value={value}>
