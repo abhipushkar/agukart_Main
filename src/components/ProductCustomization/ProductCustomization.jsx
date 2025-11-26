@@ -1,0 +1,209 @@
+import React, { useState } from 'react';
+import {
+    Box,
+    Button,
+    TextField,
+    FormControl,
+    Select,
+    MenuItem,
+    Grid,
+    Typography
+} from '@mui/material';
+import { ExpandMore } from '@mui/icons-material';
+
+const ProductCustomization = ({
+    customizationData,
+    selectedDropdowns,
+    customizationText,
+    onDropdownChange,
+    onTextChange,
+    validationErrors,
+    currency
+}) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    if (!customizationData) return null;
+
+    return (
+        <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ fontSize: "18px", fontWeight: "600", color: "gray", mb: 2 }}>
+                {customizationData?.label}
+            </Typography>
+
+            <Button
+                variant="contained"
+                sx={{
+                    background: "#f6bc3b",
+                    fontSize: "17px",
+                    borderRadius: "25px",
+                    mb: 2
+                }}
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                Customize <ExpandMore fontSize="inherit" />
+            </Button>
+
+            {isExpanded && (
+                <Box sx={{ mt: 2 }}>
+                    {customizationData?.customizations?.map((customization, index) => (
+                        <CustomizationField
+                            key={index}
+                            customization={customization}
+                            selectedValue={selectedDropdowns[customization.label]}
+                            textValue={customizationText[customization.label]}
+                            onDropdownChange={onDropdownChange}
+                            onTextChange={onTextChange}
+                            validationError={validationErrors[customization.label]}
+                            currency={currency}
+                        />
+                    ))}
+                </Box>
+            )}
+        </Box>
+    );
+};
+
+const CustomizationField = ({
+    customization,
+    selectedValue,
+    textValue,
+    onDropdownChange,
+    onTextChange,
+    validationError,
+    currency
+}) => {
+    if (customization.optionList) {
+        return (
+            <DropdownCustomization
+                customization={customization}
+                selectedValue={selectedValue}
+                onChange={onDropdownChange}
+                validationError={validationError}
+                currency={currency}
+            />
+        );
+    } else {
+        return (
+            <TextCustomization
+                customization={customization}
+                textValue={textValue}
+                onChange={onTextChange}
+                validationError={validationError}
+                currency={currency}
+            />
+        );
+    }
+};
+
+const DropdownCustomization = ({ customization, selectedValue, onChange, validationError, currency }) => (
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                {customization.label}
+                {customization.isCompulsory ? (
+                    <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>*</span>
+                ) : " (Optional)"}
+            </Typography>
+            {customization.instructions && (
+                <Typography variant="body2" sx={{ color: 'gray', mb: 1 }}>
+                    [{customization.instructions}]
+                </Typography>
+            )}
+        </Grid>
+
+        <Grid item xs={12}>
+            <FormControl fullWidth>
+                <Select
+                    value={selectedValue?.value || ""}
+                    displayEmpty
+                    onChange={(e) => {
+                        const selectedOption = customization.optionList.find(
+                            option => option.priceDifference === e.target.value
+                        );
+                        onChange(customization.label, {
+                            value: selectedOption?.optionName,
+                            price: e.target.value,
+                        });
+                    }}
+                    renderValue={(selected) => selected || "Select an option"}
+                    sx={{
+                        border: "none",
+                        background: "#fff",
+                        height: "40px",
+                        boxShadow: "0 0 3px #000",
+                    }}
+                >
+                    <MenuItem value="">Select an option</MenuItem>
+                    {customization.optionList.map((option, index) => (
+                        <MenuItem key={index} value={option.priceDifference}>
+                            {option.optionName}
+                            {option.priceDifference && option.priceDifference !== 0 && (
+                                ` (+ ${currency?.symbol}${(option.priceDifference * currency?.rate).toFixed(2)})`
+                            )}
+                        </MenuItem>
+                    ))}
+                </Select>
+                {validationError && (
+                    <Typography color="error" sx={{ mt: 1, fontSize: '14px' }}>
+                        {validationError}
+                    </Typography>
+                )}
+            </FormControl>
+        </Grid>
+    </Grid>
+);
+
+const TextCustomization = ({ customization, textValue, onChange, validationError, currency }) => (
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={9}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                {customization.label}
+                {customization.isCompulsory ? (
+                    <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>*</span>
+                ) : " (Optional)"}
+            </Typography>
+            {customization.instructions && (
+                <Typography variant="body2" sx={{ color: 'gray' }}>
+                    [{customization.instructions}]
+                </Typography>
+            )}
+        </Grid>
+
+        <Grid item xs={3}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', textAlign: 'right' }}>
+                + {currency?.symbol}{(customization.price * currency?.rate).toFixed(2)}
+            </Typography>
+        </Grid>
+
+        <Grid item xs={12}>
+            <TextField
+                fullWidth
+                value={textValue?.value || ""}
+                onChange={(e) => onChange(
+                    customization.label,
+                    +customization.price,
+                    +customization.min,
+                    +customization.max,
+                    e.target.value
+                )}
+                placeholder={customization.placeholder}
+                variant="outlined"
+                InputProps={{
+                    sx: { height: "40px" },
+                }}
+                sx={{
+                    background: "#fff",
+                    boxShadow: "0 0 3px #000",
+                    ".MuiOutlinedInput-notchedOutline": { border: "none" },
+                }}
+            />
+            {validationError && (
+                <Typography color="error" sx={{ mt: 1, fontSize: '14px' }}>
+                    {validationError}
+                </Typography>
+            )}
+        </Grid>
+    </Grid>
+);
+
+export default ProductCustomization;
