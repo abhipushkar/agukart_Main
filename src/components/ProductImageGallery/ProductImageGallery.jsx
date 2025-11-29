@@ -29,7 +29,8 @@ const ProductImageGallery = ({
     onWishlistToggle,
     onShareClick,
     isInWishlist,
-    userDesignation
+    userDesignation,
+    hoveredImage // New prop for hover functionality
 }) => {
     const sliderRef = useRef(null);
     const [isOpen, setIsOpen] = React.useState(false);
@@ -37,6 +38,14 @@ const ProductImageGallery = ({
     const isVideo = (mediaItem) => {
         if (!mediaItem) return false;
         return mediaItem.includes(".mp4") || mediaItem.includes(".webm");
+    };
+
+    // Get the current display image - either hovered image or selected image
+    const getCurrentDisplayImage = () => {
+        if (hoveredImage) {
+            return hoveredImage;
+        }
+        return media[selectedImage] ? `${product?.image_url}${media[selectedImage]}` : null;
     };
 
     const settings = {
@@ -93,6 +102,8 @@ const ProductImageGallery = ({
             }))
             : []),
     ];
+
+    const currentDisplayImage = getCurrentDisplayImage();
 
     return (
         <Grid container spacing={2} m={0} width={"100%"} sx={{ position: "sticky", top: 0, marginBottom: { xs: "10px" } }}>
@@ -168,10 +179,10 @@ const ProductImageGallery = ({
 
             <Grid item lg={11} md={10} xs={12} sx={{ textAlign: "center", margin: "0", paddingLeft: "0 !important", height: { xs: "auto", md: "559px" } }}>
                 <Box sx={{ position: "relative", height: "100%" }}>
-                    {isVideo(media[selectedImage]) ? (
+                    {currentDisplayImage && isVideo(currentDisplayImage) ? (
                         <VideoShow
                             onClick={() => setIsOpen(true)}
-                            src={`${product?.video_url}${media[selectedImage]}`}
+                            src={currentDisplayImage}
                             loop
                             muted
                             autoPlay
@@ -187,11 +198,11 @@ const ProductImageGallery = ({
                                 position: "relative",
                             }}
                         />
-                    ) : (
+                    ) : currentDisplayImage ? (
                         <img
                             alt="Product main image"
                             onClick={() => setIsOpen(true)}
-                            src={`${product?.image_url}${media[selectedImage]}`}
+                            src={currentDisplayImage}
                             style={{
                                 width: "100%",
                                 objectFit: "contain",
@@ -203,6 +214,42 @@ const ProductImageGallery = ({
                                 position: "relative",
                             }}
                         />
+                    ) : (
+                        <Box
+                            sx={{
+                                width: "100%",
+                                height: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "#f5f5f5",
+                                borderRadius: "6px",
+                            }}
+                        >
+                            <Typography color="textSecondary">
+                                No image available
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {/* Show hover indicator when hovered image is displayed */}
+                    {hoveredImage && (
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: "8px",
+                                left: "8px",
+                                background: "rgba(0, 113, 133, 0.9)",
+                                color: "white",
+                                padding: "4px 8px",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                                zIndex: 10,
+                            }}
+                        >
+                            Preview
+                        </Box>
                     )}
 
                     {/* Product Badge */}

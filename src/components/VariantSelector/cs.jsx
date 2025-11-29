@@ -14,13 +14,9 @@ const VariantSelector = ({
     variant,
     selectedValue,
     onChange,
-    onHover,
-    onHoverOut,
     error,
     currency,
-    filterVariantAttributes = [],
-    isAttributeCombinationSoldOut,
-    selectedVariants
+    filterVariantAttributes = []
 }) => {
     const renderAttributePrice = (attribute) => {
         if (variant.type === 'internal') return null;
@@ -49,14 +45,6 @@ const VariantSelector = ({
 
     const isAttributeDisabled = (attribute) => {
         if (variant.type === 'internal') return false;
-
-        // Check if this specific attribute combination is sold out
-        if (isAttributeCombinationSoldOut && selectedVariants) {
-            const isSoldOut = isAttributeCombinationSoldOut(attribute.id, selectedVariants);
-            if (isSoldOut) {
-                return true;
-            }
-        }
 
         const variantAttr = filterVariantAttributes.find(attr =>
             attr._id === attribute.id || attr.attribute_value === attribute.value
@@ -94,24 +82,13 @@ const VariantSelector = ({
                     {variant.attributes.map((attr) => {
                         const isSelected = selectedValue === attr.id;
                         const isDisabled = isAttributeDisabled(attr);
-                        const previewImage = getPreviewImage(attr);
+                        // const previewImage = getPreviewImage(attr);
                         const priceText = renderAttributePrice(attr);
 
                         return (
                             <Grid item key={attr.id}>
                                 <Tooltip
-                                    title={isDisabled ? "Sold Out" : (previewImage ? (
-                                        <img
-                                            src={previewImage}
-                                            alt={attr.value}
-                                            style={{
-                                                width: '200px',
-                                                height: '200px',
-                                                objectFit: 'contain',
-                                                borderRadius: '4px'
-                                            }}
-                                        />
-                                    ) : attr.value)}
+                                    title={attr.value}
                                     placement="top"
                                     arrow
                                 >
@@ -122,8 +99,6 @@ const VariantSelector = ({
                                                 onChange(variant.id, attr.id);
                                             }
                                         }}
-                                        onMouseEnter={() => !isDisabled && onHover && onHover(attr.id)}
-                                        onMouseLeave={() => !isDisabled && onHoverOut && onHoverOut()}
                                         disabled={isDisabled}
                                         sx={{
                                             width: '69px',
@@ -131,9 +106,9 @@ const VariantSelector = ({
                                             minWidth: '69px',
                                             minHeight: '69px',
                                             padding: 0,
-                                            border: isDisabled ? '1px solid #ccc' : '1px solid #D23F57',
+                                            border: '1px solid #D23F57',
                                             borderRadius: '8px',
-                                            backgroundColor: isDisabled ? '#f5f5f5' : '#ffffff',
+                                            backgroundColor: isDisabled ? '#f0f0f0' : '#ffffff',
                                             position: 'relative',
                                             overflow: 'hidden',
                                             display: 'flex',
@@ -146,11 +121,8 @@ const VariantSelector = ({
                                                 boxShadow: '0 0 0 3px rgba(0, 113, 133, 0.1)'
                                             },
                                             '&:disabled': {
-                                                opacity: 0.4,
-                                                cursor: 'not-allowed',
-                                                '& img': {
-                                                    filter: 'grayscale(100%)'
-                                                }
+                                                opacity: 0.5,
+                                                cursor: 'not-allowed'
                                             }
                                         }}
                                     >
@@ -173,8 +145,8 @@ const VariantSelector = ({
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    backgroundColor: isDisabled ? '#f0f0f0' : '#f8f9fa',
-                                                    color: isDisabled ? '#999' : '#6c757d',
+                                                    backgroundColor: '#f8f9fa',
+                                                    color: '#6c757d',
                                                     fontSize: '12px',
                                                     fontWeight: isSelected ? 600 : 400,
                                                     textAlign: 'center',
@@ -183,38 +155,6 @@ const VariantSelector = ({
                                                 }}
                                             >
                                                 {attr.value}
-                                            </Box>
-                                        )}
-                                        {/* Sold Out Overlay */}
-                                        {isDisabled && (
-                                            <Box
-                                                sx={{
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
-                                                    right: 0,
-                                                    bottom: 0,
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    borderRadius: '6px'
-                                                }}
-                                            >
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        color: '#d32f2f',
-                                                        fontWeight: 'bold',
-                                                        fontSize: '10px',
-                                                        textAlign: 'center',
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                        padding: '2px 4px',
-                                                        borderRadius: '3px'
-                                                    }}
-                                                >
-                                                    Sold Out
-                                                </Typography>
                                             </Box>
                                         )}
                                     </Button>
@@ -227,7 +167,6 @@ const VariantSelector = ({
                                         sx={{
                                             fontSize: '12px',
                                             fontWeight: isSelected ? 600 : 400,
-                                            color: isDisabled ? '#999' : 'inherit',
                                             lineHeight: 1.2
                                         }}
                                     >
@@ -243,6 +182,18 @@ const VariantSelector = ({
                                             }}
                                         >
                                             {priceText}
+                                        </Typography>
+                                    )}
+                                    {isDisabled && (
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                fontSize: '10px',
+                                                color: '#d32f2f',
+                                                lineHeight: 1.2
+                                            }}
+                                        >
+                                            Sold Out
                                         </Typography>
                                     )}
                                 </Box>
@@ -293,33 +244,15 @@ const VariantSelector = ({
                     >
                         <MenuItem value="">Select an option</MenuItem>
                         {variant.attributes.map((attr) => {
-                            const isDisabled = isAttributeDisabled(attr);
                             const previewImage = getPreviewImage(attr);
 
                             return (
                                 <MenuItem
                                     key={attr.id}
                                     value={attr.id}
-                                    disabled={isDisabled}
-                                    sx={{
-                                        opacity: isDisabled ? 0.5 : 1,
-                                        backgroundColor: isDisabled ? '#f5f5f5' : 'inherit',
-                                        '&.Mui-disabled': {
-                                            opacity: 0.5
-                                        }
-                                    }}
                                 >
-                                    <Tooltip
-                                        title={isDisabled ? "Sold Out" : (previewImage ? <img src={previewImage} alt={attr.value} width={100} height={100} /> : attr.value)}
-                                        placement='left-start'
-                                    >
-                                        <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            width: '100%',
-                                            opacity: isDisabled ? 0.6 : 1
-                                        }}>
+                                    <Tooltip title={previewImage ? <img src={previewImage} alt={attr.value} width={100} height={100} /> : attr.value} placement='left-start'>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 {attr.thumbnail && (
                                                     <img
@@ -330,31 +263,12 @@ const VariantSelector = ({
                                                             height: '24px',
                                                             marginRight: '8px',
                                                             borderRadius: '3px',
-                                                            objectFit: 'cover',
-                                                            filter: isDisabled ? 'grayscale(100%)' : 'none'
+                                                            objectFit: 'cover'
                                                         }}
                                                     />
                                                 )}
-                                                <span style={{
-                                                    color: isDisabled ? '#999' : 'inherit',
-                                                    textDecoration: isDisabled ? 'line-through' : 'none'
-                                                }}>
-                                                    {attr.value}
-                                                </span>
+                                                {attr.value}
                                             </div>
-                                            {isDisabled && (
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        color: '#d32f2f',
-                                                        fontWeight: 'bold',
-                                                        fontSize: '10px',
-                                                        marginLeft: '8px'
-                                                    }}
-                                                >
-                                                    Sold Out
-                                                </Typography>
-                                            )}
                                         </div>
                                     </Tooltip>
                                 </MenuItem>

@@ -86,6 +86,11 @@ const MyproductDetails = ({ slug }) => {
     handleVariantChange,
     validateVariants,
     normalizeVariantData,
+    hoveredVariantImage,
+    handleVariantHover,
+    handleVariantHoverOut,
+    isAttributeCombinationSoldOut,
+    // variantAttributes,
   } = useProductVariants(myproduct);
 
   const {
@@ -149,18 +154,44 @@ const MyproductDetails = ({ slug }) => {
 
   const handleParentProductVariants = (productData) => {
     const product_id = productData?._id;
-    const filterCombination = productData?.combinationData?.find(
+    const filterCombination = productData?.parentCombinationData?.find(
       (obj) => obj.sku_product_id === product_id
     );
 
     if (filterCombination) {
       filterCombination.combination_id.split(",").forEach((ids) => {
-        const variants = productData.parent_id.variant_attribute_id.filter(
-          (variant) => ids === variant._id
-        );
-        variants.forEach((lastVar) => {
-          handleVariantChange(lastVar.variant, lastVar._id);
-        });
+        // Try to find variant attribute in the new structure first
+        let variantAttr = null;
+
+        // Check new structure (product_variants)
+        if (productData.parent_id.product_variants) {
+          for (const variant of productData.parent_id.product_variants) {
+            const attr = variant.variant_attributes.find(attr => attr._id === ids);
+            if (attr) {
+              variantAttr = {
+                ...attr,
+                variant: variant.variant_name // Use variant_name as identifier
+              };
+              break;
+            }
+          }
+        }
+
+        // Fallback to old structure
+        if (!variantAttr && productData.parent_id.variant_attribute_id) {
+          variantAttr = productData.parent_id.variant_attribute_id.find(
+            (variant) => ids === variant._id
+          );
+        }
+
+        if (variantAttr) {
+          // For new structure, use variant_name as identifier
+          // For old structure, use variant ID as identifier
+          const variantIdentifier = productData.parent_id.product_variants ?
+            variantAttr.variant : variantAttr.variant;
+
+          handleVariantChange(variantIdentifier, variantAttr._id);
+        }
       });
     }
   };
@@ -615,12 +646,24 @@ const MyproductDetails = ({ slug }) => {
         key={variant.id}
         variant={variant}
         selectedValue={selectedVariants[variant.id]}
+        selectedVariants={selectedVariants}
         onChange={handleVariantChange}
+        onHover={handleVariantHover}
+        onHoverOut={handleVariantHoverOut}
         error={errors[variant.id]}
         currency={currency}
         filterVariantAttributes={filterVariantAttributes}
+        isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
       />
     ));
+  };
+
+  const getCurrentDisplayImage = () => {
+    if (hoveredVariantImage) {
+      return hoveredVariantImage;
+    }
+    // Return the normal selected image from media array
+    return media[selectedImage] ? `${myproduct?.image_url}${media[selectedImage]}` : null;
   };
 
   const renderProductInfo = () => (
@@ -784,6 +827,7 @@ const MyproductDetails = ({ slug }) => {
                 onShareClick={() => setOpenModal(true)}
                 isInWishlist={toggleWishlist}
                 userDesignation={usercredentials?.designation_id}
+                hoveredImage={hoveredVariantImage}
               />
 
               {/* ReportItem positioned at the bottom of the gallery */}
