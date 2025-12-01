@@ -12,7 +12,6 @@ import {
     Paper,
     Typography,
     Rating,
-    Container
 } from '@mui/material';
 import { TabContext, TabList, TabPanel, } from "@mui/lab";
 import { Check as CheckIcon, Star as StarIcon } from '@mui/icons-material';
@@ -20,150 +19,286 @@ import moment from 'moment';
 import HtmlRenderer from 'components/HtmlRender/HtmlRenderer';
 import DeliveryAndReturnPolicy from '../DeliveryAndReturnPolicy/DeliveryAndReturnPolicy';
 
-// Move these components outside the main component and export them
-const ProductSpecifications = ({ product }) => (
-    <Grid container spacing={4}>
-        <Grid item lg={6} md={6} xs={12}>
-            <TableContainer sx={{ boxShadow: "none" }} component={Paper}>
-                <Table
-                    size="small"
-                    aria-label="a dense table"
+// Helper function to format dynamic field values
+const formatDynamicFieldValue = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return '-';
+    }
+
+    if (Array.isArray(value)) {
+        return value.join(', ');
+    }
+
+    if (typeof value === 'boolean') {
+        return value ? 'Yes' : 'No';
+    }
+
+    return value.toString();
+};
+
+// Helper function to format field labels (extract the last part after dot)
+const formatFieldLabel = (key) => {
+    const parts = key.split('.');
+    const lastPart = parts[parts.length - 1];
+
+    // Format the last part (the actual property name)
+    return lastPart
+        .replace(/_/g, ' ')
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .replace(/\bis\b/i, 'Is')
+        .replace(/\bmm\b/i, 'MM')
+        .trim();
+};
+
+// Helper function to extract the base name for grouping (everything before the last dot)
+const getBaseName = (key) => {
+    const parts = key.split('.');
+    if (parts.length <= 1) return key;
+
+    const baseParts = parts.slice(0, -1);
+    return baseParts.join('.');
+};
+
+// Helper function to format the base name for display
+const formatBaseName = (baseName) => {
+    return baseName
+        .split('.')
+        .map(part =>
+            part
+                .replace(/_/g, ' ')
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase())
+                .replace(/\bis\b/i, 'Is')
+                .replace(/\bmm\b/i, 'MM')
+                .trim()
+        )
+        .join(' - ');
+};
+
+// Group fields by their base name
+const groupFieldsByBaseName = (fieldsArray) => {
+    const grouped = {};
+
+    fieldsArray.forEach(([key, value]) => {
+        const baseName = getBaseName(key);
+
+        if (!grouped[baseName]) {
+            grouped[baseName] = [];
+        }
+
+        grouped[baseName].push({ key, value });
+    });
+
+    return grouped;
+};
+
+// Flatten grouped fields for two-column layout
+const prepareFieldRows = (groupedFields) => {
+    const rows = [];
+    const fieldEntries = Object.entries(groupedFields);
+
+    // Sort to ensure consistent ordering
+    fieldEntries.sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+
+    fieldEntries.forEach(([baseName, fields]) => {
+        if (fields.length === 1) {
+            // Single field, not grouped
+            const { key, value } = fields[0];
+            rows.push({
+                type: 'single',
+                displayName: formatBaseName(key), // Use full name for single fields
+                fields: [{ label: formatFieldLabel(key), value }]
+            });
+        } else {
+            // Grouped fields
+            rows.push({
+                type: 'group',
+                groupName: formatBaseName(baseName),
+                fields: fields.map(({ key, value }) => ({
+                    label: formatFieldLabel(key),
+                    value
+                }))
+            });
+        }
+    });
+
+    return rows;
+};
+
+// Product Specifications Component with dynamic fields only
+const ProductSpecifications = ({ product }) => {
+    const dynamicFields = product?.dynamicFields || {};
+
+    // Convert dynamicFields object into array of key-value pairs
+    const dynamicFieldsArray = Object.entries(dynamicFields);
+
+    // If no dynamic fields
+    if (dynamicFieldsArray.length === 0) {
+        return (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography>No specifications available for this product.</Typography>
+            </Box>
+        );
+    }
+
+    // Group fields by base name
+    const groupedFields = groupFieldsByBaseName(dynamicFieldsArray);
+
+    // Prepare rows for display
+    const fieldRows = prepareFieldRows(groupedFields);
+
+    // Split rows into two columns
+    const midPoint = Math.ceil(fieldRows.length / 2);
+    const leftColumnRows = fieldRows.slice(0, midPoint);
+    const rightColumnRows = fieldRows.slice(midPoint);
+
+    // Render a single field row
+    const renderSingleField = (row) => (
+        <TableRow key={row.displayName} sx={{ borderBottom: "1px solid" }}>
+            <TableCell sx={{ background: "#e9e9e9", fontWeight: 500 }}>
+                {row.displayName}
+            </TableCell>
+            <TableCell>
+                {formatDynamicFieldValue(row.fields[0].value)}
+            </TableCell>
+        </TableRow>
+    );
+
+    // Render a grouped field row
+    const renderGroupedField = (row) => (
+        <React.Fragment key={row.groupName}>
+            <TableRow sx={{ borderBottom: "1px solid" }}>
+                <TableCell
+                    colSpan={2}
                     sx={{
-                        minWidth: 500,
-                        ".MuiTableCell-root": {
-                            borderBottom: "1px solid #bbbbbb !important",
-                            width: "50%",
-                        },
+                        background: "#f5f5f5",
+                        fontWeight: 600,
+                        borderBottom: "none",
+                        pt: 1,
+                        pb: 0.5
                     }}
                 >
-                    <TableHead>
-                        <TableRow>
-                            <TableCell colSpan={2} sx={{ fontSize: "18px", fontWeight: "bold" }}>
-                                Information
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableRow sx={{ borderBottom: "1px solid" }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Gender</TableCell>
-                            <TableCell>{product?.gender?.map(gender => `${gender}, `)}</TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid" }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Size</TableCell>
-                            <TableCell>{product?.product_size ? product?.product_size : "-"}</TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Size Map</TableCell>
-                            <TableCell>{product?.size_map ? product?.size_map : "-"}</TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Color</TableCell>
-                            <TableCell>{product?.color ? product?.color : "-"}</TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Style Name</TableCell>
-                            <TableCell>{product?.style_name ? product?.style_name : "-"}</TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Launch Date</TableCell>
-                            <TableCell>
-                                {moment(product?.launch_date).format("yyyy-MM-D")}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Release Date</TableCell>
-                            <TableCell>
-                                {moment(product?.release_date).format("yyyy-MM-D")}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Shipping Weight</TableCell>
-                            <TableCell>
-                                {product?.shipping_weight
-                                    ? `${product?.shipping_weight} ${product?.package_weight_unit}`
-                                    : "-"}
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </Grid>
-
-        <Grid item lg={6} md={6} xs={12}>
-            <TableContainer sx={{ boxShadow: "none" }} component={Paper}>
-                <Table
-                    size="small"
-                    aria-label="a dense table"
+                    {row.groupName}
+                </TableCell>
+            </TableRow>
+            {row.fields.map((field, index) => (
+                <TableRow
+                    key={`${row.groupName}-${index}`}
                     sx={{
-                        minWidth: 500,
-                        ".MuiTableCell-root": {
-                            borderBottom: "1px solid #bbbbbb !important",
-                            width: "50%",
-                        },
+                        borderBottom: index === row.fields.length - 1 ? "1px solid" : "1px dashed #ddd"
                     }}
                 >
-                    <TableHead>
-                        <TableRow>
-                            <TableCell colSpan={2} sx={{ fontSize: "18px", fontWeight: "bold" }}>
-                                Information
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Item Display Dimension</TableCell>
-                            <TableCell>
-                                {`
-                  ${product?.display_dimension_height} * ${product?.display_dimension_length} * ${product?.display_dimension_width} ${product?.display_dimension_unit}`}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Package Dimension</TableCell>
-                            <TableCell>
-                                {`
-                  ${product?.package_dimension_height} *
-                  ${product?.package_dimension_length} *
-                  ${product?.package_dimension_width}
-                  ${product?.package_dimension_unit}`}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Package Weight</TableCell>
-                            <TableCell>
-                                {product?.package_weight ? product?.package_weight : "-"}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Unit Count</TableCell>
-                            <TableCell>
-                                {product?.unit_count ? product?.unit_count : "-"}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Unit Count type</TableCell>
-                            <TableCell>
-                                {product?.unit_count_type ? product?.unit_count_type : "-"}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Design</TableCell>
-                            <TableCell>
-                                {product?.design ? product?.design : "-"}
-                            </TableCell>
-                        </TableRow>
-                        <TableRow sx={{ borderBottom: "1px solid " }}>
-                            <TableCell sx={{ background: "#e9e9e9" }}>Material</TableCell>
-                            <TableCell>
-                                {product?.material?.map(mat => `${mat}, `)}
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </Grid>
-    </Grid>
-);
+                    <TableCell
+                        sx={{
+                            background: "#e9e9e9",
+                            fontWeight: 500,
+                            pl: 3,
+                            borderLeft: "3px solid #bbb"
+                        }}
+                    >
+                        {field.label}
+                    </TableCell>
+                    <TableCell>
+                        {formatDynamicFieldValue(field.value)}
+                    </TableCell>
+                </TableRow>
+            ))}
+        </React.Fragment>
+    );
 
+    return (
+        <Grid container spacing={4}>
+            {/* Left Column */}
+            <Grid item lg={6} md={6} xs={12}>
+                <TableContainer sx={{ boxShadow: "none" }} component={Paper}>
+                    <Table
+                        size="small"
+                        aria-label="product specifications"
+                        sx={{
+                            minWidth: 300,
+                            ".MuiTableCell-root": {
+                                borderBottom: "1px solid #bbbbbb !important",
+                                width: "50%",
+                            },
+                        }}
+                    >
+                        <TableHead>
+                            <TableRow>
+                                <TableCell colSpan={2} sx={{ fontSize: "18px", fontWeight: "bold" }}>
+                                    Product Specifications
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {leftColumnRows.map((row) =>
+                                row.type === 'single'
+                                    ? renderSingleField(row)
+                                    : renderGroupedField(row)
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Grid>
+
+            {/* Right Column */}
+            <Grid item lg={6} md={6} xs={12}>
+                <TableContainer sx={{ boxShadow: "none" }} component={Paper}>
+                    <Table
+                        size="small"
+                        aria-label="product specifications"
+                        sx={{
+                            minWidth: 300,
+                            ".MuiTableCell-root": {
+                                borderBottom: "1px solid #bbbbbb !important",
+                                width: "50%",
+                            },
+                        }}
+                    >
+                        <TableHead>
+                            <TableRow>
+                                <TableCell colSpan={2} sx={{ fontSize: "18px", fontWeight: "bold" }}>
+                                    Product Specifications
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {rightColumnRows.map((row) =>
+                                row.type === 'single'
+                                    ? renderSingleField(row)
+                                    : renderGroupedField(row)
+                            )}
+
+                            {/* If right column has no rows, add empty rows for visual balance */}
+                            {rightColumnRows.length === 0 && (
+                                <>
+                                    <TableRow>
+                                        <TableCell sx={{ background: "#e9e9e9", fontWeight: 500 }}>
+                                            &nbsp;
+                                        </TableCell>
+                                        <TableCell>
+                                            &nbsp;
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ background: "#e9e9e9", fontWeight: 500 }}>
+                                            &nbsp;
+                                        </TableCell>
+                                        <TableCell>
+                                            &nbsp;
+                                        </TableCell>
+                                    </TableRow>
+                                </>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Grid>
+        </Grid>
+    );
+};
+
+// Review Item Component
 const ReviewItem = ({ review, productTitle }) => (
     <Box
         pb={2}
@@ -281,6 +416,7 @@ const ReviewItem = ({ review, productTitle }) => (
     </Box>
 );
 
+// Product Reviews Component
 const ProductReviews = ({ reviews, productTitle }) => {
     if (!reviews || reviews.length === 0) {
         return <div>Review not found</div>;
@@ -295,7 +431,7 @@ const ProductReviews = ({ reviews, productTitle }) => {
     );
 };
 
-// Main component
+// Main Product Tabs Component
 const ProductTabs = ({ product }) => {
     const [value, setValue] = React.useState('1');
 
@@ -336,7 +472,10 @@ const ProductTabs = ({ product }) => {
                         </TabPanel>
 
                         <TabPanel value="3">
-                            <ProductReviews reviews={product?.rating || []} productTitle={product?.product_title} />
+                            <ProductReviews
+                                reviews={product?.rating || []}
+                                productTitle={product?.product_title}
+                            />
                         </TabPanel>
 
                         <TabPanel value="4">

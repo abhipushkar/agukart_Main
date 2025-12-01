@@ -10,7 +10,7 @@ export const useProductVariants = (product) => {
     const [soldOutCombinations, setSoldOutCombinations] = useState(new Set());
     const router = useRouter();
 
-    // Normalize all variant data into a consistent structure - MOVED TO TOP
+    // Normalize all variant data into a consistent structure
     const normalizeVariantData = useCallback(() => {
         if (!product) return [];
 
@@ -21,10 +21,19 @@ export const useProductVariants = (product) => {
             // Try new structure first (product_variants)
             if (product.parent_id.product_variants && product.parent_id.product_variants.length > 0) {
                 product.parent_id.product_variants.forEach(variant => {
+                    // Find corresponding variant info from variant_id array for guide data
+                    const variantInfo = product.parent_id.variant_id?.find(
+                        v => v.variant_name === variant.variant_name || v._id === variant.variant_name
+                    );
+
                     allVariants.push({
                         type: 'parent',
-                        id: variant.variant_name, // Using variant_name as identifier
+                        id: variant.variant_name,
                         name: variant.variant_name,
+                        guide_name: variantInfo?.guide_name || '',
+                        guide_file: variantInfo?.guide_file || '',
+                        guide_type: variantInfo?.guide_type || '',
+                        guide_description: variantInfo?.guide_description || '',
                         attributes: variant.variant_attributes?.map(attr => ({
                             id: attr._id,
                             value: attr.attribute,
@@ -42,6 +51,10 @@ export const useProductVariants = (product) => {
                         type: 'parent',
                         id: variant._id,
                         name: variant.variant_name,
+                        guide_name: variant.guide_name || '',
+                        guide_file: variant.guide_file || '',
+                        guide_type: variant.guide_type || '',
+                        guide_description: variant.guide_description || '',
                         attributes: product.parent_id.variant_attribute_id
                             ?.filter(attr => attr.variant === variant._id)
                             ?.map(attr => ({
@@ -59,10 +72,19 @@ export const useProductVariants = (product) => {
         // Handle internal variants - ONLY if product has product_variants
         if (product?.product_variants?.length > 0) {
             product.product_variants.forEach(variant => {
+                // Find corresponding variant info from variant_id array for guide data
+                const variantInfo = product.variant_id?.find(
+                    v => v.variant_name === variant.variant_name || v._id === variant.variant_name
+                );
+
                 allVariants.push({
                     type: 'internal',
                     id: variant.variant_name,
                     name: variant.variant_name,
+                    guide_name: variantInfo?.guide_name || '',
+                    guide_file: variantInfo?.guide_file || '',
+                    guide_type: variantInfo?.guide_type || '',
+                    guide_description: variantInfo?.guide_description || '',
                     attributes: variant.variant_attributes?.map(attr => ({
                         id: attr.attribute,
                         value: attr.attribute,
@@ -74,7 +96,7 @@ export const useProductVariants = (product) => {
             });
         }
 
-        console.log("Normalized Variants:", allVariants);
+        console.log("Normalized Variants with guides:", allVariants);
         return allVariants;
     }, [product]);
 
@@ -85,12 +107,15 @@ export const useProductVariants = (product) => {
         const parentCombinations = [];
 
         product.parentCombinationData.forEach(combo => {
-            if (combo.sku_product_id && combo.combination_id) {
+            // Check for combination_id, sku_product_id can be null for sold-out items
+            if (combo.combination_id) {
+                const combinationIds = combo.combination_id.toString().split(',').filter(id => id.trim() !== '');
+
                 parentCombinations.push({
                     _id: combo._id,
                     sku_product_id: combo.sku_product_id,
                     combination_id: combo.combination_id,
-                    combination_ids: combo.combination_id.split(',').filter(id => id.trim() !== ''),
+                    combination_ids: combinationIds,
                     sku_first_image: combo.sku_first_image || null,
                     sold_out: combo.sold_out || false
                 });
@@ -101,20 +126,38 @@ export const useProductVariants = (product) => {
         return parentCombinations;
     }, [product]);
 
-    // Get sold out combinations
+    // Get sold out combinations - FIXED VERSION
     const getSoldOutCombinations = useCallback(() => {
         const parentCombinations = extractParentCombinations();
         const soldOutSet = new Set();
 
         parentCombinations.forEach(combo => {
-            if (combo.sold_out) {
-                // Store the combination string as key for easy lookup
+            console.log("Checking combination:", {
+                combination_id: combo.combination_id,
+                sold_out: combo.sold_out,
+                type: typeof combo.sold_out,
+                sku_product_id: combo.sku_product_id
+            });
+
+            // Convert sold_out to boolean - handle different formats
+            const isSoldOut = combo.sold_out === true || combo.sold_out === "true" || combo.sold_out === 1;
+
+            if (isSoldOut && combo.combination_ids.length > 0) {
+                console.log("Found sold-out combination:", combo);
+
+                // Add the full combination string
                 const comboString = combo.combination_ids.sort().join(',');
                 soldOutSet.add(comboString);
+
+                // If it's a single attribute combination, also add the individual ID
+                if (combo.combination_ids.length === 1) {
+                    soldOutSet.add(combo.combination_ids[0]);
+                }
             }
         });
 
-        console.log("Sold out combinations:", soldOutSet);
+        console.log("All sold out combinations found:", Array.from(soldOutSet));
+        console.log("Total sold out combinations:", soldOutSet.size);
         return soldOutSet;
     }, [extractParentCombinations]);
 
@@ -176,19 +219,52 @@ export const useProductVariants = (product) => {
         return [];
     }, [product]);
 
-    // Check if a specific attribute combination is sold out
+    // Check if a specific attribute combination is sold out - FIXED VERSION
     const isAttributeCombinationSoldOut = useCallback((attributeId, currentSelections = {}) => {
-        if (!product?.parent_id) return false;
+        if (!product?.parent_id) {
+            console.log("No parent_id, skipping sold-out check");
+            return false;
+        }
+
+        if (soldOutCombinations.size === 0) {
+            console.log("No sold-out combinations in set");
+            return false;
+        }
+
+        console.log("=== SOLDOUT DEBUG ===");
+        console.log("Checking attribute ID:", attributeId);
+        console.log("Type of attributeId:", typeof attributeId);
+        console.log("Current selections:", currentSelections);
+        console.log("Sold-out combinations in set:", Array.from(soldOutCombinations));
+
+        // First, check if this single attribute is sold out by itself
+        const singleAttributeSoldOut = soldOutCombinations.has(attributeId);
+        if (singleAttributeSoldOut) {
+            console.log(`Single attribute ${attributeId} is sold out`);
+            console.log("=== END SOLDOUT DEBUG ===");
+            return true;
+        }
 
         const tempSelections = { ...currentSelections };
         const normalizedVariants = normalizeVariantData();
 
+        console.log("Normalized variants:", normalizedVariants);
+
         // Find which variant this attribute belongs to
         const attributeVariant = normalizedVariants.find(v =>
-            v.attributes.some(attr => attr.id === attributeId)
+            v.attributes.some(attr => {
+                console.log(`Checking attribute: ${attr.id} (type: ${typeof attr.id}) against ${attributeId} (type: ${typeof attributeId})`);
+                return attr.id === attributeId;
+            })
         );
 
-        if (!attributeVariant) return false;
+        if (!attributeVariant) {
+            console.log("No variant found for attribute");
+            console.log("=== END SOLDOUT DEBUG ===");
+            return false;
+        }
+
+        console.log("Found variant:", attributeVariant.id, attributeVariant.name);
 
         // Replace/add the current selection for this variant with the attribute being checked
         tempSelections[attributeVariant.id] = attributeId;
@@ -196,13 +272,24 @@ export const useProductVariants = (product) => {
         // Get all selected attribute IDs
         const selectionIds = Object.values(tempSelections).filter(id => id);
 
-        if (selectionIds.length === 0) return false;
+        console.log("All selected IDs:", selectionIds);
+
+        if (selectionIds.length === 0) {
+            console.log("No selections made yet");
+            console.log("=== END SOLDOUT DEBUG ===");
+            return false;
+        }
 
         // Create sorted string of selected IDs
         const selectionString = selectionIds.sort().join(',');
+        console.log("Checking combination string:", selectionString);
 
         // Check if this combination is in the sold out set
-        return soldOutCombinations.has(selectionString);
+        const isSoldOut = soldOutCombinations.has(selectionString);
+        console.log("Is sold out?", isSoldOut);
+        console.log("=== END SOLDOUT DEBUG ===");
+
+        return isSoldOut;
     }, [product, normalizeVariantData, soldOutCombinations]);
 
     // Get product image for hover based on current selections and hovered attribute
@@ -348,6 +435,7 @@ export const useProductVariants = (product) => {
     // Update sold out combinations when product changes
     useEffect(() => {
         if (product?.parentCombinationData) {
+            console.log("Product parentCombinationData:", product.parentCombinationData);
             const soldOutCombos = getSoldOutCombinations();
             setSoldOutCombinations(soldOutCombos);
         }
@@ -410,7 +498,8 @@ export const useProductVariants = (product) => {
         console.log("Has parent:", !!product?.parent_id);
         console.log("Selected variants:", selectedVariants);
         console.log("Hovered variant image:", hoveredVariantImage);
-        console.log("Sold out combinations:", soldOutCombinations);
+        console.log("Sold out combinations size:", soldOutCombinations.size);
+        console.log("Sold out combinations:", Array.from(soldOutCombinations));
 
         const parentCombinations = extractParentCombinations();
         const internalCombinations = extractInternalCombinations();

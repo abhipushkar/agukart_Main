@@ -641,21 +641,61 @@ const MyproductDetails = ({ slug }) => {
   const renderVariantsSection = () => {
     const normalizedVariants = normalizeVariantData();
 
-    return normalizedVariants.map(variant => (
-      <VariantSelector
-        key={variant.id}
-        variant={variant}
-        selectedValue={selectedVariants[variant.id]}
-        selectedVariants={selectedVariants}
-        onChange={handleVariantChange}
-        onHover={handleVariantHover}
-        onHoverOut={handleVariantHoverOut}
-        error={errors[variant.id]}
-        currency={currency}
-        filterVariantAttributes={filterVariantAttributes}
-        isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
-      />
-    ));
+    return normalizedVariants.map(variant => {
+      // Find guide information for this variant
+      let guideInfo = {};
+
+      // For parent variants
+      if (variant.type === 'parent' && myproduct?.parent_id?.variant_id) {
+        const parentVariantInfo = myproduct.parent_id.variant_id.find(
+          v => v.variant_name === variant.name || v._id === variant.id
+        );
+        if (parentVariantInfo) {
+          guideInfo = {
+            guide_name: parentVariantInfo.guide_name,
+            guide_file: parentVariantInfo.guide_file,
+            guide_type: parentVariantInfo.guide_type,
+            guide_description: parentVariantInfo.guide_description
+          };
+        }
+      }
+      // For internal variants
+      else if (variant.type === 'internal' && myproduct?.variant_id) {
+        const internalVariantInfo = myproduct.variant_id.find(
+          v => v.variant_name === variant.name
+        );
+        if (internalVariantInfo) {
+          guideInfo = {
+            guide_name: internalVariantInfo.guide_name,
+            guide_file: internalVariantInfo.guide_file,
+            guide_type: internalVariantInfo.guide_type,
+            guide_description: internalVariantInfo.guide_description
+          };
+        }
+      }
+
+      // Merge guide info with variant
+      const variantWithGuide = {
+        ...variant,
+        ...guideInfo
+      };
+
+      return (
+        <VariantSelector
+          key={variant.id}
+          variant={variantWithGuide}
+          selectedValue={selectedVariants[variant.id]}
+          selectedVariants={selectedVariants}
+          onChange={handleVariantChange}
+          onHover={handleVariantHover}
+          onHoverOut={handleVariantHoverOut}
+          error={errors[variant.id]}
+          currency={currency}
+          filterVariantAttributes={filterVariantAttributes}
+          isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
+        />
+      );
+    });
   };
 
   const getCurrentDisplayImage = () => {
@@ -771,6 +811,8 @@ const MyproductDetails = ({ slug }) => {
         onMessage={() => setOpenPopup(true)}
         userDesignation={usercredentials?.designation_id}
       />
+
+      <ReportItem product_id={myproduct?._id} />
     </CardContent>
   );
 
@@ -829,18 +871,6 @@ const MyproductDetails = ({ slug }) => {
                 userDesignation={usercredentials?.designation_id}
                 hoveredImage={hoveredVariantImage}
               />
-
-              {/* ReportItem positioned at the bottom of the gallery */}
-              <Box sx={{
-                marginTop: "auto",
-                padding: "10px",
-                display: "flex",
-                justifyContent: "center",
-                borderTop: "1px solid #f0f0f0",
-                backgroundColor: "white"
-              }}>
-                <ReportItem product_id={myproduct?._id} />
-              </Box>
             </Box>
           </Grid>
 
