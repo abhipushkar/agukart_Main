@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 export const useProductVariants = (product) => {
     const [selectedVariants, setSelectedVariants] = useState({});
@@ -8,8 +8,10 @@ export const useProductVariants = (product) => {
     const [errors, setErrors] = useState({});
     const [hoveredVariantImage, setHoveredVariantImage] = useState(null);
     const [soldOutCombinations, setSoldOutCombinations] = useState(new Set());
+    const [internalCombinationsMap, setInternalCombinationsMap] = useState({ combinationsMap: new Map(), attributeCombinations: new Map() });
     const router = useRouter();
 
+    // Normalize all variant data into a consistent structure
     // Normalize all variant data into a consistent structure
     const normalizeVariantData = useCallback(() => {
         if (!product) return [];
@@ -69,34 +71,107 @@ export const useProductVariants = (product) => {
             }
         }
 
-        // Handle internal variants - ONLY if product has product_variants
+        // Handle internal variants - ONLY show variants that are in product_variants
         if (product?.product_variants?.length > 0) {
+            console.log("Product variants to display:", product.product_variants);
+
             product.product_variants.forEach(variant => {
                 // Find corresponding variant info from variant_id array for guide data
                 const variantInfo = product.variant_id?.find(
                     v => v.variant_name === variant.variant_name || v._id === variant.variant_name
                 );
 
-                allVariants.push({
-                    type: 'internal',
-                    id: variant.variant_name,
-                    name: variant.variant_name,
-                    guide_name: variantInfo?.guide_name || '',
-                    guide_file: variantInfo?.guide_file || '',
-                    guide_type: variantInfo?.guide_type || '',
-                    guide_description: variantInfo?.guide_description || '',
-                    attributes: variant.variant_attributes?.map(attr => ({
-                        id: attr.attribute,
-                        value: attr.attribute,
-                        images: attr.main_images || [],
-                        thumbnail: attr.thumbnail || '',
-                        preview_image: attr.preview_image || ''
-                    })) || []
-                });
+                console.log(`Processing variant: ${variant.variant_name}`);
+                console.log("Variant info found:", variantInfo);
+
+                // Get variant attributes ONLY from variant_attribute_id that belong to this variant
+                // First, find the variant by name in variant_id
+                const variantInVariantId = product.variant_id?.find(
+                    v => v.variant_name === variant.variant_name
+                );
+
+                if (!variantInVariantId) {
+                    console.log(`No variant found in variant_id for: ${variant.variant_name}`);
+                    return; // Skip this variant
+                }
+
+                console.log(`Variant ID for ${variant.variant_name}: ${variantInVariantId._id}`);
+
+                // Filter variant_attribute_id to get only attributes for this specific variant
+                const variantAttributes = product.variant_attribute_id?.filter(
+                    attr => attr.variant === variantInVariantId._id
+                ) || [];
+
+                console.log(`Attributes for ${variant.variant_name}:`, variantAttributes);
+
+                // Find attribute data from product_variants structure
+                const variantFromPV = product.product_variants.find(
+                    pv => pv.variant_name === variant.variant_name
+                );
+
+                // Create a map of attributes from product_variants for quick lookup
+                const pvAttributesMap = {};
+                if (variantFromPV?.variant_attributes) {
+                    variantFromPV.variant_attributes.forEach(pvAttr => {
+                        pvAttributesMap[pvAttr.attribute] = {
+                            thumbnail: pvAttr.thumbnail || '',
+                            preview_image: pvAttr.preview_image || '',
+                            edit_preview_image: pvAttr.edit_preview_image || '',
+                            main_images: pvAttr.main_images || []
+                        };
+                    });
+                }
+
+                // Only include attributes that exist in product_variants
+                const filteredAttributes = variantAttributes
+                    .filter(attr => {
+                        // Check if this attribute value exists in product_variants
+                        const existsInPV = variantFromPV?.variant_attributes?.some(
+                            pvAttr => pvAttr.attribute === attr.attribute_value
+                        );
+                        console.log(`Attribute ${attr.attribute_value} exists in product_variants:`, existsInPV);
+                        return existsInPV;
+                    })
+                    .map(attr => {
+                        const pvAttr = pvAttributesMap[attr.attribute_value];
+
+                        return {
+                            id: attr._id,
+                            value: attr.attribute_value,
+                            images: pvAttr?.main_images || [],
+                            thumbnail: pvAttr?.thumbnail || attr.thumbnail || '',
+                            preview_image: pvAttr?.preview_image || attr.preview_image || '',
+                            edit_preview_image: pvAttr?.edit_preview_image || '',
+                            price: null,
+                            quantity: null,
+                            priceRange: null,
+                            quantityRange: null,
+                            isSoldOut: false
+                        };
+                    });
+
+                console.log(`Filtered attributes for ${variant.variant_name}:`, filteredAttributes);
+
+                if (filteredAttributes.length > 0) {
+                    allVariants.push({
+                        type: 'internal',
+                        id: variant.variant_name,
+                        name: variant.variant_name,
+                        guide_name: variantInfo?.guide_name || '',
+                        guide_file: variantInfo?.guide_file || '',
+                        guide_type: variantInfo?.guide_type || '',
+                        guide_description: variantInfo?.guide_description || '',
+                        attributes: filteredAttributes
+                    });
+                } else {
+                    console.log(`No filtered attributes for ${variant.variant_name}, skipping variant`);
+                }
             });
+        } else {
+            console.log("No product_variants found in product");
         }
 
-        console.log("Normalized Variants with guides:", allVariants);
+        console.log("Final normalized variants to display:", allVariants);
         return allVariants;
     }, [product]);
 
@@ -107,7 +182,6 @@ export const useProductVariants = (product) => {
         const parentCombinations = [];
 
         product.parentCombinationData.forEach(combo => {
-            // Check for combination_id, sku_product_id can be null for sold-out items
             if (combo.combination_id) {
                 const combinationIds = combo.combination_id.toString().split(',').filter(id => id.trim() !== '');
 
@@ -126,171 +200,316 @@ export const useProductVariants = (product) => {
         return parentCombinations;
     }, [product]);
 
-    // Get sold out combinations - FIXED VERSION
+    // Get sold out combinations for parent variants
     const getSoldOutCombinations = useCallback(() => {
         const parentCombinations = extractParentCombinations();
         const soldOutSet = new Set();
 
         parentCombinations.forEach(combo => {
-            console.log("Checking combination:", {
-                combination_id: combo.combination_id,
-                sold_out: combo.sold_out,
-                type: typeof combo.sold_out,
-                sku_product_id: combo.sku_product_id
-            });
-
-            // Convert sold_out to boolean - handle different formats
             const isSoldOut = combo.sold_out === true || combo.sold_out === "true" || combo.sold_out === 1;
 
             if (isSoldOut && combo.combination_ids.length > 0) {
-                console.log("Found sold-out combination:", combo);
-
-                // Add the full combination string
                 const comboString = combo.combination_ids.sort().join(',');
                 soldOutSet.add(comboString);
 
-                // If it's a single attribute combination, also add the individual ID
                 if (combo.combination_ids.length === 1) {
                     soldOutSet.add(combo.combination_ids[0]);
                 }
             }
         });
 
-        console.log("All sold out combinations found:", Array.from(soldOutSet));
-        console.log("Total sold out combinations:", soldOutSet.size);
+        console.log("All sold out parent combinations found:", Array.from(soldOutSet));
+        console.log("Total sold out parent combinations:", soldOutSet.size);
         return soldOutSet;
     }, [extractParentCombinations]);
 
+    // Extract and map internal combinations for price/quantity calculations
     const extractInternalCombinations = useCallback(() => {
-        if (!product?.combinationData) return [];
+        if (!product?.combinationData) return { combinationsMap: new Map(), attributeCombinations: new Map() };
 
-        const internalCombinations = [];
+        const combinationsMap = new Map();
+        const attributeCombinations = new Map();
 
-        // Look for combinationData that has combinations array (for internal variants)
-        product.combinationData.forEach(comboGroup => {
+        product.combinationData.forEach((comboGroup) => {
             if (comboGroup.combinations && Array.isArray(comboGroup.combinations)) {
                 comboGroup.combinations.forEach(combo => {
-                    if (combo.combIds && Array.isArray(combo.combIds)) {
-                        internalCombinations.push({
-                            combIds: combo.combIds,
-                            sku_product_id: combo.sku_product_id || product._id,
-                            price: combo.price,
-                            qty: combo.qty,
-                            isVisible: combo.isVisible
+                    const attributeIds = [];
+                    const attributes = [];
+
+                    // Handle value1 and name1
+                    if (combo.value1 && combo.name1) {
+                        const variant = product.variant_id?.find(v => v.variant_name === combo.name1);
+                        if (variant) {
+                            const attribute = product.variant_attribute_id?.find(
+                                attr => attr.variant === variant._id && attr.attribute_value === combo.value1
+                            );
+                            if (attribute) {
+                                attributeIds.push(attribute._id);
+                                attributes.push({
+                                    id: attribute._id,
+                                    variant: combo.name1,
+                                    value: combo.value1
+                                });
+                            }
+                        }
+                    }
+
+                    // Handle value2 and name2 (for 2-attribute combinations)
+                    if (combo.value2 && combo.name2) {
+                        const variant = product.variant_id?.find(v => v.variant_name === combo.name2);
+                        if (variant) {
+                            const attribute = product.variant_attribute_id?.find(
+                                attr => attr.variant === variant._id && attr.attribute_value === combo.value2
+                            );
+                            if (attribute) {
+                                attributeIds.push(attribute._id);
+                                attributes.push({
+                                    id: attribute._id,
+                                    variant: combo.name2,
+                                    value: combo.value2
+                                });
+                            }
+                        }
+                    }
+
+                    if (attributeIds.length > 0) {
+                        const sortedIds = [...attributeIds].sort().join(',');
+
+                        // Store combination data
+                        const price = combo.price && combo.price !== "" ? parseFloat(combo.price) : null;
+                        const qty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
+
+                        combinationsMap.set(sortedIds, {
+                            price: price,
+                            qty: qty,
+                            isVisible: combo.isVisible === "true",
+                            isCheckedPrice: combo.isCheckedPrice === "true",
+                            isCheckedQuantity: combo.isCheckedQuantity === "true",
+                            attributes: attributes
+                        });
+
+                        // Also store for individual attributes to calculate ranges
+                        attributeIds.forEach((attrId, idx) => {
+                            if (!attributeCombinations.has(attrId)) {
+                                attributeCombinations.set(attrId, {
+                                    prices: new Set(),
+                                    quantities: new Set(),
+                                    isVisible: new Set()
+                                });
+                            }
+
+                            const attrData = attributeCombinations.get(attrId);
+                            if (price !== null && !isNaN(price)) {
+                                attrData.prices.add(price);
+                            }
+                            if (qty !== null && !isNaN(qty)) {
+                                attrData.quantities.add(qty);
+                            }
+                            attrData.isVisible.add(combo.isVisible === "true");
                         });
                     }
                 });
             }
         });
 
-        console.log("Internal combinations for pricing:", internalCombinations);
-        return internalCombinations;
-    }, [product]);
-
-    // Get variant attributes from parent product - handles both old and new structure
-    const getParentVariantAttributes = useCallback(() => {
-        if (!product?.parent_id) return [];
-
-        // Try new structure first (product_variants)
-        if (product.parent_id.product_variants && product.parent_id.product_variants.length > 0) {
-            const allAttributes = [];
-            product.parent_id.product_variants.forEach(variant => {
-                if (variant.variant_attributes && Array.isArray(variant.variant_attributes)) {
-                    variant.variant_attributes.forEach(attr => {
-                        allAttributes.push({
-                            _id: attr._id,
-                            variant: variant.variant_name, // Using variant_name as identifier
-                            attribute_value: attr.attribute,
-                            thumbnail: attr.thumbnail || '',
-                            preview_image: attr.preview_image || '',
-                            main_images: []
-                        });
-                    });
-                }
+        // Convert Sets to Arrays for easier processing
+        const processedAttributeCombinations = new Map();
+        attributeCombinations.forEach((data, attrId) => {
+            processedAttributeCombinations.set(attrId, {
+                prices: Array.from(data.prices),
+                quantities: Array.from(data.quantities),
+                isVisible: Array.from(data.isVisible)
             });
-            return allAttributes;
-        }
+        });
 
-        // Fallback to old structure (variant_attribute_id)
-        if (product.parent_id.variant_attribute_id && Array.isArray(product.parent_id.variant_attribute_id)) {
-            return product.parent_id.variant_attribute_id;
-        }
+        console.log("Internal combinations map:", combinationsMap);
+        console.log("Attribute combinations data:", processedAttributeCombinations);
 
-        return [];
+        return {
+            combinationsMap,
+            attributeCombinations: processedAttributeCombinations
+        };
     }, [product]);
 
-    // Check if a specific attribute combination is sold out - FIXED VERSION
+    // Get price and quantity ranges for an attribute
+    const getAttributeRanges = useCallback((attributeId) => {
+        if (!internalCombinationsMap.attributeCombinations) return null;
+
+        const attrData = internalCombinationsMap.attributeCombinations.get(attributeId);
+        if (!attrData) return null;
+
+        const priceRange = attrData.prices.length > 0 ? {
+            min: Math.min(...attrData.prices),
+            max: Math.max(...attrData.prices)
+        } : null;
+
+        const quantityRange = attrData.quantities.length > 0 ? {
+            min: Math.min(...attrData.quantities),
+            max: Math.max(...attrData.quantities)
+        } : null;
+
+        return { priceRange, quantityRange };
+    }, [internalCombinationsMap]);
+
+    // Check if a specific attribute combination is sold out or has 0 quantity
     const isAttributeCombinationSoldOut = useCallback((attributeId, currentSelections = {}) => {
-        if (!product?.parent_id) {
-            console.log("No parent_id, skipping sold-out check");
+        // For parent variants
+        if (product?.parent_id) {
+            if (soldOutCombinations.size === 0) return false;
+
+            if (soldOutCombinations.has(attributeId)) {
+                return true;
+            }
+
+            const tempSelections = { ...currentSelections };
+            const normalizedVariants = normalizeVariantData();
+            const attributeVariant = normalizedVariants.find(v =>
+                v.attributes.some(attr => attr.id === attributeId)
+            );
+
+            if (!attributeVariant) return false;
+
+            tempSelections[attributeVariant.id] = attributeId;
+            const selectionIds = Object.values(tempSelections).filter(id => id);
+
+            if (selectionIds.length === 0) return false;
+
+            const selectionString = selectionIds.sort().join(',');
+            return soldOutCombinations.has(selectionString);
+        }
+
+        // For internal variants
+        if (product?.isCombination) {
+            const { combinationsMap } = internalCombinationsMap;
+
+            const tempSelections = { ...currentSelections };
+            const normalizedVariants = normalizeVariantData();
+            const attributeVariant = normalizedVariants.find(v =>
+                v.attributes.some(attr => attr.id === attributeId)
+            );
+
+            if (!attributeVariant) return false;
+
+            tempSelections[attributeVariant.id] = attributeId;
+            const selectionIds = Object.values(tempSelections).filter(id => id);
+
+            if (selectionIds.length === 0) {
+                // Check single attribute quantity
+                const attrData = internalCombinationsMap.attributeCombinations?.get(attributeId);
+                if (attrData && attrData.quantities.length > 0) {
+                    const allZero = attrData.quantities.every(qty => qty === 0);
+                    return allZero;
+                }
+                return false;
+            }
+
+            // Check combination quantity
+            const selectionString = selectionIds.sort().join(',');
+            const comboData = combinationsMap?.get(selectionString);
+            if (comboData) {
+                return comboData.qty === 0 || comboData.qty === null;
+            }
+
             return false;
         }
 
-        if (soldOutCombinations.size === 0) {
-            console.log("No sold-out combinations in set");
-            return false;
-        }
+        return false;
+    }, [product, soldOutCombinations, normalizeVariantData, internalCombinationsMap]);
 
-        console.log("=== SOLDOUT DEBUG ===");
-        console.log("Checking attribute ID:", attributeId);
-        console.log("Type of attributeId:", typeof attributeId);
-        console.log("Current selections:", currentSelections);
-        console.log("Sold-out combinations in set:", Array.from(soldOutCombinations));
+    // Get price for an attribute or combination
+    const getAttributePrice = useCallback((attributeId, currentSelections = {}) => {
+        if (!product?.isCombination) return null;
 
-        // First, check if this single attribute is sold out by itself
-        const singleAttributeSoldOut = soldOutCombinations.has(attributeId);
-        if (singleAttributeSoldOut) {
-            console.log(`Single attribute ${attributeId} is sold out`);
-            console.log("=== END SOLDOUT DEBUG ===");
-            return true;
-        }
+        const { combinationsMap } = internalCombinationsMap;
 
         const tempSelections = { ...currentSelections };
         const normalizedVariants = normalizeVariantData();
-
-        console.log("Normalized variants:", normalizedVariants);
-
-        // Find which variant this attribute belongs to
         const attributeVariant = normalizedVariants.find(v =>
-            v.attributes.some(attr => {
-                console.log(`Checking attribute: ${attr.id} (type: ${typeof attr.id}) against ${attributeId} (type: ${typeof attributeId})`);
-                return attr.id === attributeId;
-            })
+            v.attributes.some(attr => attr.id === attributeId)
         );
 
-        if (!attributeVariant) {
-            console.log("No variant found for attribute");
-            console.log("=== END SOLDOUT DEBUG ===");
-            return false;
-        }
+        if (!attributeVariant) return null;
 
-        console.log("Found variant:", attributeVariant.id, attributeVariant.name);
-
-        // Replace/add the current selection for this variant with the attribute being checked
         tempSelections[attributeVariant.id] = attributeId;
-
-        // Get all selected attribute IDs
         const selectionIds = Object.values(tempSelections).filter(id => id);
 
-        console.log("All selected IDs:", selectionIds);
-
         if (selectionIds.length === 0) {
-            console.log("No selections made yet");
-            console.log("=== END SOLDOUT DEBUG ===");
-            return false;
+            // Return price range for single attribute
+            const ranges = getAttributeRanges(attributeId);
+            return ranges?.priceRange ? {
+                type: 'range',
+                min: ranges.priceRange.min,
+                max: ranges.priceRange.max
+            } : null;
         }
 
-        // Create sorted string of selected IDs
+        // Check combination price
         const selectionString = selectionIds.sort().join(',');
-        console.log("Checking combination string:", selectionString);
+        const comboData = combinationsMap?.get(selectionString);
 
-        // Check if this combination is in the sold out set
-        const isSoldOut = soldOutCombinations.has(selectionString);
-        console.log("Is sold out?", isSoldOut);
-        console.log("=== END SOLDOUT DEBUG ===");
+        if (comboData && comboData.price !== null) {
+            return {
+                type: 'fixed',
+                value: comboData.price
+            };
+        }
 
-        return isSoldOut;
-    }, [product, normalizeVariantData, soldOutCombinations]);
+        // If no combination price found, return range
+        const ranges = getAttributeRanges(attributeId);
+        return ranges?.priceRange ? {
+            type: 'range',
+            min: ranges.priceRange.min,
+            max: ranges.priceRange.max
+        } : null;
+    }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges]);
+
+    // Get quantity for an attribute or combination
+    const getAttributeQuantity = useCallback((attributeId, currentSelections = {}) => {
+        if (!product?.isCombination) return null;
+
+        const { combinationsMap } = internalCombinationsMap;
+
+        const tempSelections = { ...currentSelections };
+        const normalizedVariants = normalizeVariantData();
+        const attributeVariant = normalizedVariants.find(v =>
+            v.attributes.some(attr => attr.id === attributeId)
+        );
+
+        if (!attributeVariant) return null;
+
+        tempSelections[attributeVariant.id] = attributeId;
+        const selectionIds = Object.values(tempSelections).filter(id => id);
+
+        if (selectionIds.length === 0) {
+            // Return quantity range for single attribute
+            const ranges = getAttributeRanges(attributeId);
+            return ranges?.quantityRange ? {
+                type: 'range',
+                min: ranges.quantityRange.min,
+                max: ranges.quantityRange.max
+            } : null;
+        }
+
+        // Check combination quantity
+        const selectionString = selectionIds.sort().join(',');
+        const comboData = combinationsMap?.get(selectionString);
+
+        if (comboData && comboData.qty !== null) {
+            return {
+                type: 'fixed',
+                value: comboData.qty
+            };
+        }
+
+        // If no combination quantity found, return range
+        const ranges = getAttributeRanges(attributeId);
+        return ranges?.quantityRange ? {
+            type: 'range',
+            min: ranges.quantityRange.min,
+            max: ranges.quantityRange.max
+        } : null;
+    }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges]);
+
 
     // Get product image for hover based on current selections and hovered attribute
     const getHoverProductImage = useCallback((hoveredAttributeId) => {
@@ -299,7 +518,6 @@ export const useProductVariants = (product) => {
         const parentCombinations = extractParentCombinations();
         const currentSelections = { ...selectedVariants };
 
-        // Find which variant type we're hovering over
         const normalizedVariants = normalizeVariantData();
         const hoveredVariant = normalizedVariants.find(v =>
             v.attributes.some(attr => attr.id === hoveredAttributeId)
@@ -307,19 +525,15 @@ export const useProductVariants = (product) => {
 
         if (!hoveredVariant) return null;
 
-        // Replace the current selection for the hovered variant with the hovered attribute
         const tempSelections = { ...currentSelections };
         tempSelections[hoveredVariant.id] = hoveredAttributeId;
 
-        // Get all selected attribute IDs
         const selectionIds = Object.values(tempSelections).filter(id => id);
 
         if (selectionIds.length === 0) return null;
 
-        // Create sorted string of selected IDs
         const selectionString = selectionIds.sort().join(',');
 
-        // Find matching parent combination
         const targetCombination = parentCombinations.find((combo) => {
             const comboString = combo.combination_ids.sort().join(',');
             return comboString === selectionString;
@@ -346,7 +560,6 @@ export const useProductVariants = (product) => {
         setSelectedVariants(prev => {
             const newSelected = { ...prev };
 
-            // Check if this is a parent variant selection
             const normalizedVariants = normalizeVariantData();
             const selectedVariant = normalizedVariants.find(v => v.id === variantId);
 
@@ -356,7 +569,6 @@ export const useProductVariants = (product) => {
                     .filter(v => v.type === 'internal')
                     .map(v => v.id);
 
-                // Remove all internal variants from selection
                 internalVariantIds.forEach(internalId => {
                     delete newSelected[internalId];
                 });
@@ -392,13 +604,98 @@ export const useProductVariants = (product) => {
         return Object.keys(errors).length === 0;
     }, [selectedVariants, normalizeVariantData]);
 
+    // Initialize internal combinations when product loads
+    useEffect(() => {
+        if (product?.isCombination && product?.combinationData) {
+            const internalCombos = extractInternalCombinations();
+            setInternalCombinationsMap(internalCombos);
+        }
+    }, [product, extractInternalCombinations]);
+
+    // Update variant attributes with price/quantity data
+    useEffect(() => {
+        if (product?.isCombination) {
+            const normalizedVariants = normalizeVariantData();
+            const updatedVariants = normalizedVariants.map(variant => {
+                if (variant.type === 'internal') {
+                    const updatedAttributes = variant.attributes.map(attr => {
+                        const ranges = getAttributeRanges(attr.id);
+                        const priceData = getAttributePrice(attr.id, selectedVariants);
+                        const quantityData = getAttributeQuantity(attr.id, selectedVariants);
+                        const isSoldOut = isAttributeCombinationSoldOut(attr.id, selectedVariants);
+
+                        return {
+                            ...attr,
+                            priceRange: ranges?.priceRange || null,
+                            quantityRange: ranges?.quantityRange || null,
+                            price: priceData?.type === 'fixed' ? priceData.value : null,
+                            quantity: quantityData?.type === 'fixed' ? quantityData.value : null,
+                            isSoldOut
+                        };
+                    });
+
+                    return { ...variant, attributes: updatedAttributes };
+                }
+                return variant;
+            });
+
+            const updatedVariantAttributes = updatedVariants.flatMap(variant =>
+                variant.attributes.map(attr => ({
+                    _id: attr.id,
+                    variant: variant.name,
+                    attribute_value: attr.value,
+                    thumbnail: attr.thumbnail,
+                    preview_image: attr.preview_image,
+                    edit_preview_image: attr.edit_preview_image,
+                    price: attr.price,
+                    quantity: attr.quantity,
+                    priceRange: attr.priceRange,
+                    quantityRange: attr.quantityRange,
+                    isSoldOut: attr.isSoldOut
+                }))
+            );
+
+            setFilterVariantAttributes(updatedVariantAttributes);
+            setVariantAttributes(updatedVariantAttributes);
+        }
+    }, [product, selectedVariants, normalizeVariantData, getAttributeRanges, getAttributePrice, getAttributeQuantity, isAttributeCombinationSoldOut]);
+
+    // Get parent variant attributes
+    const getParentVariantAttributes = useCallback(() => {
+        if (!product?.parent_id) return [];
+
+        if (product.parent_id.product_variants && product.parent_id.product_variants.length > 0) {
+            const allAttributes = [];
+            product.parent_id.product_variants.forEach(variant => {
+                if (variant.variant_attributes && Array.isArray(variant.variant_attributes)) {
+                    variant.variant_attributes.forEach(attr => {
+                        allAttributes.push({
+                            _id: attr._id,
+                            variant: variant.variant_name,
+                            attribute_value: attr.attribute,
+                            thumbnail: attr.thumbnail || '',
+                            preview_image: attr.preview_image || '',
+                            main_images: []
+                        });
+                    });
+                }
+            });
+            return allAttributes;
+        }
+
+        if (product.parent_id.variant_attribute_id && Array.isArray(product.parent_id.variant_attribute_id)) {
+            return product.parent_id.variant_attribute_id;
+        }
+
+        return [];
+    }, [product]);
+
     // Initialize parent variants when product loads
     useEffect(() => {
         if (product?.parent_id) {
             const product_id = product?._id;
             const parentCombinations = extractParentCombinations();
 
-            // Find the combination for current product
             const currentCombination = parentCombinations.find(
                 combo => combo.sku_product_id === product_id
             );
@@ -413,29 +710,24 @@ export const useProductVariants = (product) => {
                     );
 
                     if (variantAttr) {
-                        // For new structure, use variant_name as identifier
-                        // For old structure, use variant ID as identifier
                         const variantIdentifier = product.parent_id.product_variants ?
                             variantAttr.variant : variantAttr.variant;
 
                         initialSelections[variantIdentifier] = variantAttr._id;
-                        console.log(`Setting parent variant ${variantIdentifier} -> ${variantAttr._id}`);
                     }
                 });
 
                 console.log("Initializing parent variants:", initialSelections);
                 setSelectedVariants(initialSelections);
-            } else {
-                console.log("No parent combination found for current product:", product_id);
-                console.log("Available parent combinations:", parentCombinations);
             }
         }
     }, [product, extractParentCombinations, getParentVariantAttributes]);
 
+
+
     // Update sold out combinations when product changes
     useEffect(() => {
         if (product?.parentCombinationData) {
-            console.log("Product parentCombinationData:", product.parentCombinationData);
             const soldOutCombos = getSoldOutCombinations();
             setSoldOutCombinations(soldOutCombos);
         }
@@ -448,206 +740,274 @@ export const useProductVariants = (product) => {
         }
     }, [selectedVariants, product]);
 
+    const getCurrentCombinationData = useCallback(() => {
+        console.log("=== DEBUG getCurrentCombinationData ===");
+        console.log("product?.isCombination:", product?.isCombination);
+        console.log("selectedVariants:", selectedVariants);
+
+        if (!product?.isCombination || !selectedVariants || Object.keys(selectedVariants).length === 0) {
+            console.log("No combination data - not a combination product or no selections");
+            return { price: null, quantity: null, priceRange: null, quantityRange: null };
+        }
+
+        // Get variant names and their selected attribute values
+        const variantSelections = {};
+
+        Object.entries(selectedVariants).forEach(([variantName, attrId]) => {
+            const attr = product.variant_attribute_id?.find(a => a._id === attrId);
+            if (attr) {
+                // Find which variant this attribute belongs to
+                const variant = product.variant_id?.find(v => v._id === attr.variant);
+                if (variant) {
+                    const actualVariantName = variant.variant_name;
+                    variantSelections[actualVariantName] = attr.attribute_value;
+                    console.log(`Variant ${actualVariantName}: ${attr.attribute_value} (ID: ${attrId})`);
+                }
+            }
+        });
+
+        console.log("Variant selections:", variantSelections);
+
+        if (Object.keys(variantSelections).length === 0) {
+            console.log("No variant selections found");
+            return { price: null, quantity: null, priceRange: null, quantityRange: null };
+        }
+
+        // Get values from selections
+        const ringSizeValue = variantSelections["Ring Size"];
+        const gemstoneValue = variantSelections["Gemstones"];
+        const metalTypeValue = variantSelections["Metal Type"];
+
+        console.log("Extracted values:", {
+            ringSizeValue,
+            gemstoneValue,
+            metalTypeValue
+        });
+
+        let ringSizeQty = null;
+        let gemstoneMetalPrice = null;
+        let gemstoneMetalQty = null;
+        let foundRingSize = false;
+        let foundGemstoneMetal = false;
+
+        // Search through combinationData
+        product.combinationData?.forEach((comboGroup) => {
+            if (comboGroup.combinations && Array.isArray(comboGroup.combinations)) {
+                comboGroup.combinations.forEach(combo => {
+                    // Check for Ring Size combinations (single value)
+                    if (combo.name1 === "Ring Size" && combo.value1) {
+                        if (combo.value1 === ringSizeValue) {
+                            console.log(`Found Ring Size match: ${combo.value1}, qty: ${combo.qty}`);
+                            ringSizeQty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
+                            foundRingSize = true;
+                        }
+                    }
+
+                    // Check for Gemstones + Metal Type combinations (pair values)
+                    if (combo.name1 === "Gemstones" && combo.name2 === "Metal Type") {
+                        if (combo.value1 === gemstoneValue && combo.value2 === metalTypeValue) {
+                            console.log(`Found Gemstones+Metal match: ${combo.value1}+${combo.value2}, price: ${combo.price}, qty: ${combo.qty}`);
+                            gemstoneMetalPrice = combo.price && combo.price !== "" ? parseFloat(combo.price) : null;
+                            gemstoneMetalQty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
+                            foundGemstoneMetal = true;
+                        }
+                    }
+                });
+            }
+        });
+
+        console.log("Search results:", {
+            foundRingSize,
+            foundGemstoneMetal,
+            ringSizeQty,
+            gemstoneMetalPrice,
+            gemstoneMetalQty
+        });
+
+        // Calculate final quantity (take the minimum of available quantities)
+        let finalQuantity = null;
+        if (ringSizeQty !== null && gemstoneMetalQty !== null) {
+            finalQuantity = Math.min(ringSizeQty, gemstoneMetalQty);
+            console.log(`Final quantity (min of ${ringSizeQty} and ${gemstoneMetalQty}): ${finalQuantity}`);
+        } else if (ringSizeQty !== null) {
+            finalQuantity = ringSizeQty;
+        } else if (gemstoneMetalQty !== null) {
+            finalQuantity = gemstoneMetalQty;
+        }
+
+        // If we found both combinations
+        if (foundRingSize && foundGemstoneMetal) {
+            return {
+                price: gemstoneMetalPrice,
+                quantity: finalQuantity,
+                priceRange: null,
+                quantityRange: null,
+                isVisible: true
+            };
+        }
+
+        // If we only found Gemstones+Metal combination
+        if (foundGemstoneMetal) {
+            return {
+                price: gemstoneMetalPrice,
+                quantity: gemstoneMetalQty,
+                priceRange: null,
+                quantityRange: null,
+                isVisible: true
+            };
+        }
+
+        // If we only found Ring Size
+        if (foundRingSize) {
+            return {
+                price: null,
+                quantity: ringSizeQty,
+                priceRange: null,
+                quantityRange: null,
+                isVisible: true
+            };
+        }
+
+        console.log("No matching combinations found");
+        return { price: null, quantity: null, priceRange: null, quantityRange: null };
+    }, [product, selectedVariants]);
+
+    const currentCombinationData = useMemo(() => {
+        return getCurrentCombinationData();
+    }, [getCurrentCombinationData]);
+
     const handleParentVariantNavigation = useCallback(() => {
         if (!product?.parent_id) return;
 
         const currentSelections = Object.values(selectedVariants);
 
-        // Check if we have valid selections
         if (currentSelections.length === 0 || currentSelections.some(sel => !sel)) {
-            console.log("Invalid selections, skipping navigation");
             return;
         }
 
         const parentCombinations = extractParentCombinations();
 
-        // Create sorted string of selected IDs
         const selectionString = currentSelections.sort().join(',');
-        console.log("Looking for parent combination matching:", selectionString);
 
-        // Find matching parent combination
         const targetCombination = parentCombinations.find((combo) => {
             const comboString = combo.combination_ids.sort().join(',');
             return comboString === selectionString;
         });
 
-        console.log("Target parent combination found:", targetCombination);
-
-        // Only navigate if we found a different product and it's not sold out
         if (targetCombination &&
             targetCombination.sku_product_id &&
             targetCombination.sku_product_id !== product._id &&
             !targetCombination.sold_out) {
 
-            console.log(`NAVIGATING from ${product._id} to ${targetCombination.sku_product_id}`);
-
-            // Use Next.js router for client-side navigation
             router.push(`/products?id=${targetCombination.sku_product_id}`);
-        } else if (!targetCombination) {
-            console.log("No matching parent combination found for selections:", selectionString);
-            console.log("Available parent combinations:", parentCombinations);
-        } else if (targetCombination.sold_out) {
-            console.log("Target combination is sold out, skipping navigation");
         }
     }, [selectedVariants, product, router, extractParentCombinations]);
 
-    // Debug effect to log data
-    useEffect(() => {
-        console.log("=== VARIANT DEBUG ===");
-        console.log("Product ID:", product?._id);
-        console.log("Has parent:", !!product?.parent_id);
-        console.log("Selected variants:", selectedVariants);
-        console.log("Hovered variant image:", hoveredVariantImage);
-        console.log("Sold out combinations size:", soldOutCombinations.size);
-        console.log("Sold out combinations:", Array.from(soldOutCombinations));
+    const calculateAttributeData = useCallback((attributeId, currentSelections = selectedVariants) => {
+        if (!product?.isCombination) return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false };
 
-        const parentCombinations = extractParentCombinations();
-        const internalCombinations = extractInternalCombinations();
+        const { combinationsMap, attributeCombinations } = internalCombinationsMap;
 
-        console.log("Parent combinations:", parentCombinations);
-        console.log("Internal combinations:", internalCombinations);
-        console.log("=====================");
-    }, [product, selectedVariants, hoveredVariantImage, soldOutCombinations, extractParentCombinations, extractInternalCombinations]);
+        // Get all selected attribute IDs including the current attribute
+        const tempSelections = { ...currentSelections };
+        const normalizedVariants = normalizeVariantData();
+        const attributeVariant = normalizedVariants.find(v =>
+            v.attributes.some(attr => attr.id === attributeId)
+        );
 
-    // Your existing combination logic for filtering (using internal combinations)
-    useEffect(() => {
-        if (product?.isCombination) {
-            const internalCombinations = extractInternalCombinations();
-
-            const variant_attributes = product?.variant_attribute_id;
-            const updatedVariantAttributes = variant_attributes?.map((variant) => {
-                const variantCombinations = internalCombinations?.filter((combination) =>
-                    combination.combIds?.includes(variant._id)
-                );
-                const prices = variantCombinations
-                    ?.filter((combination) => combination.price != "")
-                    ?.map((combination) => combination.price) || [];
-                const quantities = variantCombinations
-                    ?.filter((combination) => combination.qty != "")
-                    ?.map((combination) => +combination.qty) || [];
-                const isVisible = variantCombinations?.map(
-                    (combination) => combination.isVisible
-                ) || [];
-
-                const minPrice = prices.length ? Math.min(...prices) : 0;
-                const maxPrice = prices.length ? Math.max(...prices) : 0;
-                const minQuantity = quantities.length ? Math.min(...quantities) : null;
-                const maxQuantity = quantities.length ? Math.max(...quantities) : null;
-                const visibleArray = isVisible.length ? isVisible : [];
-
-                return {
-                    ...variant,
-                    minPrice,
-                    maxPrice,
-                    minQuantity,
-                    maxQuantity,
-                    isCheckedQuantity: variantCombinations?.[0]?.isCheckedQuantity,
-                    isCheckedPrice: variantCombinations?.[0]?.isCheckedPrice,
-                    visibleArray,
-                };
-            });
-
-            setVariantAttributes(updatedVariantAttributes || []);
-            setFilterVariantAttributes(updatedVariantAttributes || []);
+        if (!attributeVariant) {
+            return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false };
         }
-    }, [product, extractInternalCombinations]);
 
-    // Filter variant attributes based on selections (using internal combinations)
-    useEffect(() => {
-        if (product?.isCombination) {
-            const internalCombinations = extractInternalCombinations();
+        // Add or update this attribute in selections
+        tempSelections[attributeVariant.id] = attributeId;
 
-            let updatedVariantAttributes = variantAttributes.map((variant) => {
-                const selectedVariantAttributesIds = Object.values(selectedVariants);
-                const selectedVariantCombination = internalCombinations?.filter(
-                    (combination) =>
-                        [selectedVariantAttributesIds[0]].every((selectedId) =>
-                            combination.combIds?.includes(selectedId)
-                        ) && combination.combIds?.includes(variant._id)
-                );
+        const selectedAttributeIds = Object.values(tempSelections).filter(id => id);
+        const sortedIds = [...selectedAttributeIds].sort().join(',');
 
-                const prices = selectedVariantCombination
-                    ?.filter((combination) => combination.price != "")
-                    ?.map((combination) => combination.price) || [];
-                const quantities = selectedVariantCombination
-                    ?.filter((combination) => combination.qty != "")
-                    ?.map((combination) => +combination.qty) || [];
-                const isVisible = selectedVariantCombination?.map(
-                    (combination) => combination.isVisible
-                ) || [];
+        // Check for exact combination match
+        const exactCombo = combinationsMap.get(sortedIds);
+        if (exactCombo) {
+            return {
+                price: exactCombo.price,
+                quantity: exactCombo.qty,
+                priceRange: null,
+                quantityRange: null,
+                isSoldOut: exactCombo.qty === 0
+            };
+        }
 
-                const minPrice = prices.length ? Math.min(...prices) : variant.minPrice;
-                const maxPrice = prices.length ? Math.max(...prices) : variant.maxPrice;
-                const minQuantity = quantities.length
-                    ? Math.min(...quantities)
-                    : variant.minQuantity;
-                const maxQuantity = quantities.length
-                    ? Math.max(...quantities)
-                    : variant.maxQuantity;
-                const visibleArray = isVisible.length
-                    ? isVisible
-                    : variant.visibleArray;
+        // If no exact match, calculate ranges from all combinations that include this attribute
+        const relevantCombinations = [];
 
-                return {
-                    ...variant,
-                    minPrice,
-                    maxPrice,
-                    minQuantity,
-                    maxQuantity,
-                    visibleArray,
-                };
-            });
+        combinationsMap.forEach((comboData, comboKey) => {
+            const comboIds = comboKey.split(',').filter(id => id);
 
-            if (Object.values(selectedVariants).length > 1) {
-                updatedVariantAttributes = updatedVariantAttributes.map((variant) => {
-                    const selectedVariantAttributesIds = Object.values(selectedVariants);
-                    const selectedVariantCombination = internalCombinations?.filter(
-                        (combination) =>
-                            [selectedVariantAttributesIds[1]].every((selectedId) =>
-                                combination.combIds?.includes(selectedId)
-                            ) && combination.combIds?.includes(variant._id)
-                    );
+            // Check if this combination includes all currently selected attributes
+            const includesAllSelected = selectedAttributeIds.every(id => comboIds.includes(id));
 
-                    const prices = selectedVariantCombination
-                        ?.filter((combination) => combination.price != "")
-                        ?.map((combination) => combination.price) || [];
-                    const quantities = selectedVariantCombination
-                        ?.filter((combination) => combination.qty != "")
-                        ?.map((combination) => +combination.qty) || [];
-                    const isVisible = selectedVariantCombination?.map(
-                        (combination) => combination.isVisible
-                    ) || [];
-
-                    const minPrice = prices.length
-                        ? Math.min(...prices)
-                        : variant.minPrice;
-                    const maxPrice = prices.length
-                        ? Math.max(...prices)
-                        : variant.maxPrice;
-                    const minQuantity = quantities.length
-                        ? Math.min(...quantities)
-                        : variant.minQuantity;
-                    const maxQuantity = quantities.length
-                        ? Math.max(...quantities)
-                        : variant.maxQuantity;
-                    const visibleArray = isVisible.length
-                        ? isVisible
-                        : variant.visibleArray;
-
-                    return {
-                        ...variant,
-                        minPrice,
-                        maxPrice,
-                        minQuantity,
-                        maxQuantity,
-                        visibleArray,
-                    };
-                });
+            if (includesAllSelected && comboIds.includes(attributeId)) {
+                relevantCombinations.push(comboData);
             }
+        });
 
-            setFilterVariantAttributes(updatedVariantAttributes);
+        if (relevantCombinations.length > 0) {
+            const prices = relevantCombinations
+                .filter(combo => combo.price !== null)
+                .map(combo => combo.price);
+
+            const quantities = relevantCombinations
+                .filter(combo => combo.qty !== null)
+                .map(combo => combo.qty);
+
+            const priceRange = prices.length > 0 ? {
+                min: Math.min(...prices),
+                max: Math.max(...prices)
+            } : null;
+
+            const quantityRange = quantities.length > 0 ? {
+                min: Math.min(...quantities),
+                max: Math.max(...quantities)
+            } : null;
+
+            // Check if all quantities are 0 (sold out)
+            const isSoldOut = quantities.length > 0 && quantities.every(qty => qty === 0);
+
+            return {
+                price: null,
+                quantity: null,
+                priceRange,
+                quantityRange,
+                isSoldOut
+            };
         }
-    }, [selectedVariants, product, variantAttributes, extractInternalCombinations]);
+
+        // Fallback to attribute-level data
+        const attrData = attributeCombinations.get(attributeId);
+        if (attrData) {
+            const priceRange = attrData.prices.length > 0 ? {
+                min: Math.min(...attrData.prices),
+                max: Math.max(...attrData.prices)
+            } : null;
+
+            const quantityRange = attrData.quantities.length > 0 ? {
+                min: Math.min(...attrData.quantities),
+                max: Math.max(...attrData.quantities)
+            } : null;
+
+            const isSoldOut = attrData.quantities.length > 0 && attrData.quantities.every(qty => qty === 0);
+
+            return {
+                price: null,
+                quantity: null,
+                priceRange,
+                quantityRange,
+                isSoldOut
+            };
+        }
+
+        return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false };
+    }, [product, selectedVariants, internalCombinationsMap, normalizeVariantData]);
 
     return {
         selectedVariants,
@@ -656,10 +1016,16 @@ export const useProductVariants = (product) => {
         errors,
         hoveredVariantImage,
         soldOutCombinations,
+        internalCombinationsMap,
+        currentCombinationData,
+        calculateAttributeData,
         handleVariantChange,
         handleVariantHover,
         handleVariantHoverOut,
         isAttributeCombinationSoldOut,
+        getAttributePrice,
+        getAttributeQuantity,
+        getAttributeRanges,
         validateVariants,
         normalizeVariantData
     };

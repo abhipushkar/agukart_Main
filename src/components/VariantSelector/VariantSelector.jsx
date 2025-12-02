@@ -30,12 +30,13 @@ const VariantSelector = ({
     currency,
     filterVariantAttributes = [],
     isAttributeCombinationSoldOut,
-    selectedVariants
+    selectedVariants,
+    calculateAttributeData
 }) => {
     const [guideOpen, setGuideOpen] = useState(false);
     const [currentGuide, setCurrentGuide] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(8); // 2 rows × 4 columns
+    const [itemsPerPage, setItemsPerPage] = useState(8);
     const gridContainerRef = useRef(null);
 
     // Check if variant has guide information
@@ -49,42 +50,120 @@ const VariantSelector = ({
     const endIndex = Math.min(startIndex + itemsPerPage, variant.attributes.length);
     const currentPageItems = variant.attributes.slice(startIndex, endIndex);
 
-    // Calculate items per row (for 2-row layout)
+    // Calculate items per row
     const itemsPerRow = Math.ceil(itemsPerPage / 2);
 
     const renderAttributePrice = (attribute) => {
-        if (variant.type === 'internal') return null;
+        if (variant.type === 'parent') {
+            const variantAttr = filterVariantAttributes.find(attr =>
+                attr._id === attribute.id || attr.attribute_value === attribute.value
+            );
 
-        const variantAttr = filterVariantAttributes.find(attr =>
-            attr._id === attribute.id || attr.attribute_value === attribute.value
-        );
+            if (!variantAttr) return null;
 
-        if (!variantAttr) return null;
+            const { minPrice, maxPrice, minQuantity, maxQuantity, isCheckedQuantity } = variantAttr;
 
-        const { minPrice, maxPrice, minQuantity, maxQuantity, isCheckedQuantity } = variantAttr;
-
-        if (minQuantity === 0 && maxQuantity === 0 && isCheckedQuantity) {
-            return " [Sold Out]";
-        }
-
-        if (minPrice !== 0) {
-            if (minPrice === maxPrice) {
-                return ` (${currency?.symbol}${(minPrice * currency?.rate).toFixed(2)})`;
+            if (minQuantity === 0 && maxQuantity === 0 && isCheckedQuantity) {
+                return " [Sold Out]";
             }
-            return ` (${currency?.symbol}${(minPrice * currency?.rate).toFixed(2)} - ${currency?.symbol}${(maxPrice * currency?.rate).toFixed(2)})`;
+
+            if (minPrice !== 0) {
+                if (minPrice === maxPrice) {
+                    return ` (${currency?.symbol}${(minPrice * currency?.rate).toFixed(2)})`;
+                }
+                return ` (${currency?.symbol}${(minPrice * currency?.rate).toFixed(2)} - ${currency?.symbol}${(maxPrice * currency?.rate).toFixed(2)})`;
+            }
+
+            return null;
+        } else if (variant.type === 'internal') {
+            // Use calculateAttributeData if available
+            let attributeData = {};
+
+            if (calculateAttributeData && selectedVariants) {
+                attributeData = calculateAttributeData(attribute.id, selectedVariants);
+            } else {
+                // Fallback to filterVariantAttributes
+                const variantAttr = filterVariantAttributes.find(attr =>
+                    attr._id === attribute.id || attr.attribute_value === attribute.value
+                );
+
+                if (variantAttr) {
+                    attributeData = {
+                        price: variantAttr.price,
+                        quantity: variantAttr.quantity,
+                        priceRange: variantAttr.priceRange,
+                        quantityRange: variantAttr.quantityRange,
+                        isSoldOut: variantAttr.isSoldOut
+                    };
+                }
+            }
+
+            const { price, priceRange, quantity, quantityRange, isSoldOut } = attributeData;
+
+            // Check if sold out
+            if (isSoldOut || (quantity !== null && quantity === 0)) {
+                return " [Sold Out]";
+            }
+
+            // Show price info
+            let priceText = '';
+
+            if (price !== null && price !== undefined) {
+                priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
+            } else if (priceRange) {
+                priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(priceRange.max * currency?.rate).toFixed(2)})`;
+            }
+
+            // Add quantity info if available
+            let quantityText = '';
+            if (quantity !== null && quantity !== undefined) {
+                quantityText = ` [${quantity} in stock]`;
+            } else if (quantityRange) {
+                quantityText = ` [${quantityRange.min}-${quantityRange.max} in stock]`;
+            }
+
+            return priceText + quantityText;
         }
 
         return null;
     };
 
     const isAttributeDisabled = (attribute) => {
-        if (variant.type === 'internal') return false;
+        if (variant.type === 'internal') {
+            let attributeData = {};
 
-        // Check if this specific attribute combination is sold out
+            if (calculateAttributeData && selectedVariants) {
+                attributeData = calculateAttributeData(attribute.id, selectedVariants);
+            } else {
+                const variantAttr = filterVariantAttributes.find(attr =>
+                    attr._id === attribute.id || attr.attribute_value === attribute.value
+                );
+
+                if (variantAttr) {
+                    attributeData = {
+                        isSoldOut: variantAttr.isSoldOut,
+                        quantity: variantAttr.quantity
+                    };
+                }
+            }
+
+            if (attributeData.isSoldOut) {
+                return true;
+            }
+
+            if (attributeData.quantity === 0) {
+                return true;
+            }
+
+            if (isAttributeCombinationSoldOut && selectedVariants) {
+                return isAttributeCombinationSoldOut(attribute.id, selectedVariants);
+            }
+
+            return false;
+        }
+
         if (isAttributeCombinationSoldOut && selectedVariants) {
             const isSoldOut = isAttributeCombinationSoldOut(attribute.id, selectedVariants);
-            console.log("Sold Out ", isSoldOut);
-
             if (isSoldOut) {
                 return true;
             }
@@ -99,9 +178,7 @@ const VariantSelector = ({
             variantAttr?.isCheckedQuantity;
     };
 
-    // Get the preview image for tooltip - priority: edit_preview_image > preview_image
     const getPreviewImage = (attribute) => {
-        // For parent variants
         if (variant.type === 'parent') {
             const variantAttr = filterVariantAttributes.find(attr =>
                 attr._id === attribute.id || attr.attribute_value === attribute.value
@@ -109,11 +186,9 @@ const VariantSelector = ({
             return variantAttr?.preview_image || '';
         }
 
-        // For internal variants
         return attribute.edit_preview_image || attribute.preview_image || '';
     };
 
-    // Handle guide button click
     const handleGuideClick = () => {
         setCurrentGuide({
             name: variant.guide_name,
@@ -124,7 +199,6 @@ const VariantSelector = ({
         setGuideOpen(true);
     };
 
-    // Render guide modal
     const renderGuideModal = () => (
         <Dialog
             open={guideOpen}
@@ -222,7 +296,6 @@ const VariantSelector = ({
         </Dialog>
     );
 
-    // Handle page change
     const handlePageChange = (direction) => {
         if (direction === 'prev' && currentPage > 0) {
             setCurrentPage(currentPage - 1);
@@ -231,11 +304,9 @@ const VariantSelector = ({
         }
     };
 
-    // Group items into rows for 2-row layout
     const row1Items = currentPageItems.slice(0, itemsPerRow);
     const row2Items = currentPageItems.slice(itemsPerRow);
 
-    // Render Amazon-style grid for parent variants with 2-row pagination
     const renderParentVariantGrid = () => {
         return (
             <Box sx={{ mb: 3 }}>
@@ -269,9 +340,7 @@ const VariantSelector = ({
                     )}
                 </Box>
 
-                {/* 2-Row Grid Container */}
                 <Box sx={{ mb: 1 }}>
-                    {/* First Row */}
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'flex-start',
@@ -294,7 +363,6 @@ const VariantSelector = ({
                         ))}
                     </Box>
 
-                    {/* Second Row */}
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'flex-start',
@@ -317,7 +385,6 @@ const VariantSelector = ({
                     </Box>
                 </Box>
 
-                {/* Pagination Controls */}
                 {totalPages > 1 && (
                     <Box sx={{
                         display: 'flex',
@@ -386,7 +453,6 @@ const VariantSelector = ({
         );
     };
 
-    // Render dropdown for internal variants (keep existing behavior)
     const renderInternalVariantDropdown = () => {
         return (
             <Grid item xs={12} sx={{ mb: 2 }}>
@@ -446,6 +512,46 @@ const VariantSelector = ({
                         {variant.attributes.map((attr) => {
                             const isDisabled = isAttributeDisabled(attr);
                             const previewImage = getPreviewImage(attr);
+                            const priceText = renderAttributePrice(attr);
+
+                            // Get attribute data for tooltip
+                            let attributeData = {};
+                            let tooltipContent = attr.value;
+
+                            if (calculateAttributeData && selectedVariants) {
+                                attributeData = calculateAttributeData(attr.id, selectedVariants);
+                            } else {
+                                const variantAttr = filterVariantAttributes.find(fAttr =>
+                                    fAttr._id === attr.id || fAttr.attribute_value === attr.value
+                                );
+
+                                if (variantAttr) {
+                                    attributeData = {
+                                        price: variantAttr.price,
+                                        priceRange: variantAttr.priceRange,
+                                        quantity: variantAttr.quantity,
+                                        quantityRange: variantAttr.quantityRange,
+                                        isSoldOut: variantAttr.isSoldOut
+                                    };
+                                }
+                            }
+
+                            // Build tooltip content
+                            if (attributeData.price !== null) {
+                                tooltipContent += `\nPrice: ${currency?.symbol}${(attributeData.price * currency?.rate).toFixed(2)}`;
+                            } else if (attributeData.priceRange) {
+                                tooltipContent += `\nPrice Range: ${currency?.symbol}${(attributeData.priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(attributeData.priceRange.max * currency?.rate).toFixed(2)}`;
+                            }
+
+                            if (attributeData.quantity !== null) {
+                                tooltipContent += `\nQuantity: ${attributeData.quantity}`;
+                            } else if (attributeData.quantityRange) {
+                                tooltipContent += `\nQuantity Range: ${attributeData.quantityRange.min}-${attributeData.quantityRange.max}`;
+                            }
+
+                            if (isDisabled) {
+                                tooltipContent += '\n(Sold Out)';
+                            }
 
                             return (
                                 <MenuItem
@@ -461,8 +567,28 @@ const VariantSelector = ({
                                     }}
                                 >
                                     <Tooltip
-                                        title={isDisabled ? "Sold Out" : (previewImage ? <img src={previewImage} alt={attr.value} width={100} height={100} /> : attr.value)}
+                                        title={
+                                            <Box sx={{ p: 1 }}>
+                                                {previewImage ? (
+                                                    <img
+                                                        src={previewImage}
+                                                        alt={attr.value}
+                                                        style={{
+                                                            width: 100,
+                                                            height: 100,
+                                                            objectFit: 'cover',
+                                                            marginBottom: 8,
+                                                            borderRadius: 4
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
+                                                    {tooltipContent}
+                                                </Typography>
+                                            </Box>
+                                        }
                                         placement='left-start'
+                                        arrow
                                     >
                                         <div style={{
                                             display: 'flex',
@@ -471,7 +597,7 @@ const VariantSelector = ({
                                             width: '100%',
                                             opacity: isDisabled ? 0.6 : 1
                                         }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
                                                 {attr.thumbnail && (
                                                     <img
                                                         src={attr.thumbnail}
@@ -486,12 +612,28 @@ const VariantSelector = ({
                                                         }}
                                                     />
                                                 )}
-                                                <span style={{
-                                                    color: isDisabled ? '#999' : 'inherit',
-                                                    textDecoration: isDisabled ? 'line-through' : 'none'
-                                                }}>
-                                                    {attr.value}
-                                                </span>
+                                                <div style={{ flex: 1 }}>
+                                                    <span style={{
+                                                        color: isDisabled ? '#999' : 'inherit',
+                                                        textDecoration: isDisabled ? 'line-through' : 'none',
+                                                        display: 'block'
+                                                    }}>
+                                                        {attr.value}
+                                                    </span>
+                                                    {priceText && (
+                                                        <Typography
+                                                            variant="caption"
+                                                            sx={{
+                                                                color: isDisabled ? '#d32f2f' : '#666',
+                                                                fontSize: '11px',
+                                                                display: 'block',
+                                                                mt: 0.5
+                                                            }}
+                                                        >
+                                                            {priceText}
+                                                        </Typography>
+                                                    )}
+                                                </div>
                                             </div>
                                             {isDisabled && (
                                                 <Typography
@@ -500,7 +642,8 @@ const VariantSelector = ({
                                                         color: '#d32f2f',
                                                         fontWeight: 'bold',
                                                         fontSize: '10px',
-                                                        marginLeft: '8px'
+                                                        marginLeft: '8px',
+                                                        flexShrink: 0
                                                     }}
                                                 >
                                                     Sold Out
@@ -509,17 +652,22 @@ const VariantSelector = ({
                                         </div>
                                     </Tooltip>
                                 </MenuItem>
-                            )
+                            );
                         })}
                     </Select>
                 </FormControl>
+
+                {error && (
+                    <Typography color="error" sx={{ mt: 1, fontSize: '14px' }}>
+                        {error}
+                    </Typography>
+                )}
 
                 {renderGuideModal()}
             </Grid>
         );
     };
 
-    // Render based on variant type
     if (variant.type === 'parent') {
         return renderParentVariantGrid();
     } else {
@@ -527,7 +675,6 @@ const VariantSelector = ({
     }
 };
 
-// Separate component for variant button to reduce duplication
 const VariantButton = ({
     attr,
     isSelected,
@@ -621,7 +768,6 @@ const VariantButton = ({
                             {attr.value}
                         </Box>
                     )}
-                    {/* Sold Out Overlay */}
                     {isDisabled && (
                         <Box
                             sx={{
@@ -657,7 +803,6 @@ const VariantButton = ({
                 </Button>
             </Tooltip>
 
-            {/* Attribute name and price below the image */}
             <Box sx={{ textAlign: 'center', mt: 0.5 }}>
                 <Typography
                     variant="body2"

@@ -19,7 +19,6 @@ import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import { getTimeLeftText } from "components/getTimeLeftText/getTimeLeftText";
 
 const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
-  console.log({ product, imageBaseUrl, videoBaseUrl }, "frghrhrhrthrthrth")
   const videoRef = useRef(null);
   const { currency } = useCurrency();
   const [promotion, setPromotion] = useState({});
@@ -66,7 +65,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
         setWishlistIdArr(data);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -88,7 +87,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
         getWishList();
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -157,8 +156,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
     }
   }, [product]);
 
-  const VIEW_W = 224; 
-  const VIEW_H = 224; 
+  const VIEW_W = 224;
+  const VIEW_H = 224;
   const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
   const clampPan = ({ scale = 1, x = 0, y = 0 }) => {
     const maxX = ((VIEW_W * scale) - VIEW_W) / 2;

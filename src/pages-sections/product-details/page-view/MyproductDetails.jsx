@@ -90,6 +90,8 @@ const MyproductDetails = ({ slug }) => {
     handleVariantHover,
     handleVariantHoverOut,
     isAttributeCombinationSoldOut,
+    currentCombinationData,
+    calculateAttributeData,
     // variantAttributes,
   } = useProductVariants(myproduct);
 
@@ -143,6 +145,20 @@ const MyproductDetails = ({ slug }) => {
         // Handle initial variant selections for parent products
         if (res?.data?.data?.parent_id !== null) {
           handleParentProductVariants(res.data.data);
+          // In fetchProductHandler, after setting the product
+          console.log("Product price fields:", {
+            sale_price: res.data.data.sale_price,
+            price: res.data.data.price,
+            regular_price: res.data.data.regular_price,
+            product_price: res.data.data.product_price,
+            original_price: res.data.data.original_price,
+            discounted_price: res.data.data.discounted_price
+          });
+
+          // Also check if price is in the main data object
+          console.log("All price-related keys:", Object.keys(res.data.data).filter(key =>
+            key.toLowerCase().includes('price')
+          ));
         }
       }
     } catch (error) {
@@ -151,6 +167,22 @@ const MyproductDetails = ({ slug }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (myproduct?.isCombination && currentCombinationData) {
+      if (currentCombinationData.quantity !== null) {
+        setStock(currentCombinationData.quantity);
+      } else if (currentCombinationData.quantityRange) {
+        // Use the maximum available quantity from range
+        setStock(currentCombinationData.quantityRange.max);
+      } else {
+        // Fallback to product quantity
+        setStock(myproduct?.qty || 0);
+      }
+    } else {
+      setStock(myproduct?.qty || 0);
+    }
+  }, [myproduct, currentCombinationData]);
 
   const handleParentProductVariants = (productData) => {
     const product_id = productData?._id;
@@ -270,28 +302,70 @@ const MyproductDetails = ({ slug }) => {
     bestPromotion,
     customizeDropdownPrice,
     customizeTextPrice,
+    currentCombinationData,
   ]);
 
   const calculateCombinationPrice = useCallback(() => {
-    // Your existing combination price calculation logic
-    const getCombinations = (arr) => {
-      let combinations = arr.map((item) => [item]);
-      if (arr.length > 1) {
-        for (let i = 0; i < arr.length; i++) {
-          for (let j = i + 1; j < arr.length; j++) {
-            combinations.push([arr[i], arr[j]]);
-          }
-        }
+    console.log("=== DEBUG calculateCombinationPrice ===");
+    console.log("selectedVariants:", selectedVariants);
+    console.log("currentCombinationData:", currentCombinationData);
+
+    // Check if we have any price at all from combinations
+    let combinationPrice = null;
+
+    if (currentCombinationData) {
+      console.log("currentCombinationData.price:", currentCombinationData.price);
+      console.log("currentCombinationData.priceRange:", currentCombinationData.priceRange);
+
+      // Check for fixed price first
+      if (currentCombinationData.price !== null) {
+        combinationPrice = currentCombinationData.price;
+        console.log("Using fixed price from combination:", combinationPrice);
       }
-      return combinations;
-    };
+      // Then check for price range (use min price)
+      else if (currentCombinationData.priceRange) {
+        combinationPrice = currentCombinationData.priceRange.min;
+        console.log("Using min price from range:", combinationPrice);
+      }
+    }
 
-    const mergedCombinations = myproduct?.combinationData
-      ?.map((item) => item.combinations)
-      .flat();
+    // Get base price from product - we should have this from the API
+    const basePrice = myproduct?.sale_price || myproduct?.price || myproduct?.regular_price || 0;
+    console.log("Base price from product:", basePrice);
 
-    // ... rest of your combination price logic
-  }, [myproduct, selectedVariants, quantity, bestPromotion, customizeDropdownPrice, customizeTextPrice]);
+    // Use combination price if available, otherwise use base price
+    const effectivePrice = combinationPrice !== null ? combinationPrice : basePrice;
+    console.log("Effective price to use:", effectivePrice);
+
+    // Add customization prices
+    let finalPrice = effectivePrice + customizeDropdownPrice + customizeTextPrice;
+    console.log("Final price with customizations:", finalPrice);
+
+    // Apply promotion if applicable
+    if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion.qty <= quantity) {
+      const discountedPrice = calculatePriceAfterDiscount(
+        bestPromotion?.offer_type,
+        +bestPromotion?.discount_amount,
+        finalPrice
+      );
+      console.log("Applying promotion, discounted price:", discountedPrice);
+      setPrice(discountedPrice);
+      setOriginalPrice(finalPrice);
+    } else {
+      setPrice(finalPrice);
+      setOriginalPrice(finalPrice);
+    }
+
+    console.log("=== END DEBUG ===");
+  }, [
+    myproduct,
+    selectedVariants,
+    currentCombinationData,
+    quantity,
+    bestPromotion,
+    customizeDropdownPrice,
+    customizeTextPrice,
+  ]);
 
   const calculateSimpleProductPrice = useCallback(() => {
     const finalPrice = myproduct?.sale_price + customizeDropdownPrice + customizeTextPrice;
@@ -642,10 +716,8 @@ const MyproductDetails = ({ slug }) => {
     const normalizedVariants = normalizeVariantData();
 
     return normalizedVariants.map(variant => {
-      // Find guide information for this variant
       let guideInfo = {};
 
-      // For parent variants
       if (variant.type === 'parent' && myproduct?.parent_id?.variant_id) {
         const parentVariantInfo = myproduct.parent_id.variant_id.find(
           v => v.variant_name === variant.name || v._id === variant.id
@@ -658,9 +730,7 @@ const MyproductDetails = ({ slug }) => {
             guide_description: parentVariantInfo.guide_description
           };
         }
-      }
-      // For internal variants
-      else if (variant.type === 'internal' && myproduct?.variant_id) {
+      } else if (variant.type === 'internal' && myproduct?.variant_id) {
         const internalVariantInfo = myproduct.variant_id.find(
           v => v.variant_name === variant.name
         );
@@ -674,7 +744,6 @@ const MyproductDetails = ({ slug }) => {
         }
       }
 
-      // Merge guide info with variant
       const variantWithGuide = {
         ...variant,
         ...guideInfo
@@ -693,6 +762,7 @@ const MyproductDetails = ({ slug }) => {
           currency={currency}
           filterVariantAttributes={filterVariantAttributes}
           isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
+          calculateAttributeData={calculateAttributeData} // Pass this
         />
       );
     });
