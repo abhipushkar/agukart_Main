@@ -65,6 +65,7 @@ const MyproductDetails = ({ slug }) => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [media, setMedia] = useState([]);
+  const [variantMedia, setVariantMedia] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState(0);
   const [originalPrice, setOriginalPrice] = useState(0);
@@ -92,7 +93,7 @@ const MyproductDetails = ({ slug }) => {
     isAttributeCombinationSoldOut,
     currentCombinationData,
     calculateAttributeData,
-    // variantAttributes,
+    selectedVariantImages,
   } = useProductVariants(myproduct);
 
   const {
@@ -125,40 +126,49 @@ const MyproductDetails = ({ slug }) => {
     try {
       setLoading(true);
       const res = await getAPIAuth(`get-productById?productId=${id}`);
-
+  
       if (res.status === 200) {
         const productData = {
           image_url: res.data.image_url,
           video_url: res.data.video_url,
           ...res.data.data,
         };
-
+  
         setProduct(productData);
         setPrice(+res.data.data.sale_price);
         setStock(+res.data.data.qty);
         setOriginalPrice(+res.data.data.sale_price);
-
-        // Set media
-        const productMedia = [...res.data.data.image, ...res.data.data.videos];
+  
+        // Build proper media array with type information
+        const productMedia = [];
+        
+        // Add images with proper structure
+        if (res.data.data.image && Array.isArray(res.data.data.image)) {
+          res.data.data.image.forEach((img) => {
+            productMedia.push({
+              type: 'image',
+              url: img,
+              isVideo: false
+            });
+          });
+        }
+        
+        // Add videos with proper structure
+        if (res.data.data.videos && Array.isArray(res.data.data.videos)) {
+          res.data.data.videos.forEach((video) => {
+            productMedia.push({
+              type: 'video',
+              url: video,
+              isVideo: true
+            });
+          });
+        }
+        
         setMedia(productMedia);
-
+  
         // Handle initial variant selections for parent products
         if (res?.data?.data?.parent_id !== null) {
           handleParentProductVariants(res.data.data);
-          // In fetchProductHandler, after setting the product
-          console.log("Product price fields:", {
-            sale_price: res.data.data.sale_price,
-            price: res.data.data.price,
-            regular_price: res.data.data.regular_price,
-            product_price: res.data.data.product_price,
-            original_price: res.data.data.original_price,
-            discounted_price: res.data.data.discounted_price
-          });
-
-          // Also check if price is in the main data object
-          console.log("All price-related keys:", Object.keys(res.data.data).filter(key =>
-            key.toLowerCase().includes('price')
-          ));
         }
       }
     } catch (error) {
@@ -768,13 +778,96 @@ const MyproductDetails = ({ slug }) => {
     });
   };
 
-  const getCurrentDisplayImage = () => {
-    if (hoveredVariantImage) {
-      return hoveredVariantImage;
+  const getCombinedMedia = useCallback(() => {
+    const combined = [];
+  
+    // Add variant images first (prioritized)
+    if (selectedVariantImages && selectedVariantImages.length > 0) {
+      selectedVariantImages.forEach((variantImg, index) => {
+        combined.push({
+          type: 'variant',
+          id: `variant-${variantImg.variantName}-${variantImg.attributeId}-${index}`,
+          url: variantImg.imageUrl,
+          variantName: variantImg.variantName,
+          attributeValue: variantImg.attributeValue,
+          attributeId: variantImg.attributeId,
+          isVariantImage: true,
+          index: index,
+          displayText: `${variantImg.variantName}: ${variantImg.attributeValue}`
+        });
+      });
     }
-    // Return the normal selected image from media array
-    return media[selectedImage] ? `${myproduct?.image_url}${media[selectedImage]}` : null;
-  };
+  
+    // Add product images and videos
+    if (media && media.length > 0) {
+      media.forEach((mediaItem, index) => {
+        // FIX: Check if mediaItem is an object with type property
+        if (mediaItem.type === 'video') {
+          // For videos, create proper video object structure
+          combined.push({
+            type: 'video',
+            id: `product-video-${index}`,
+            url: `${myproduct?.video_url}${mediaItem.url}`,
+            // For thumbnail, try to create one from video URL
+            thumbnail: myproduct?.video_url 
+              ? `${myproduct.video_url}${mediaItem.url.replace(/\.[^/.]+$/, "")}.jpg`
+              : undefined,
+            isVariantImage: false,
+            index: selectedVariantImages.length + index,
+            originalData: mediaItem // Keep original data for reference
+          });
+        } else if (mediaItem.type === 'image') {
+          // For images
+          combined.push({
+            type: 'image',
+            id: `product-image-${index}`,
+            url: `${myproduct?.image_url}${mediaItem.url}`,
+            isVariantImage: false,
+            index: selectedVariantImages.length + index,
+            originalData: mediaItem
+          });
+        } else {
+          // Fallback: handle old structure where mediaItem might be a string
+          const mediaUrl = typeof mediaItem === 'string' ? mediaItem : mediaItem.url;
+          const isVideoMedia = mediaUrl?.includes(".mp4") || mediaUrl?.includes(".webm");
+          
+          if (isVideoMedia) {
+            combined.push({
+              type: 'video',
+              id: `product-video-${index}`,
+              url: `${myproduct?.video_url}${mediaUrl}`,
+              thumbnail: myproduct?.video_url 
+                ? `${myproduct.video_url}${mediaUrl.replace(/\.[^/.]+$/, "")}.jpg`
+                : undefined,
+              isVariantImage: false,
+              index: selectedVariantImages.length + index
+            });
+          } else {
+            combined.push({
+              type: 'image',
+              id: `product-image-${index}`,
+              url: `${myproduct?.image_url}${mediaUrl}`,
+              isVariantImage: false,
+              index: selectedVariantImages.length + index
+            });
+          }
+        }
+      });
+    }
+  
+    console.log("Combined media array:", combined);
+    return combined;
+  }, [selectedVariantImages, media, myproduct]);
+
+  useEffect(() => {
+    const combinedMedia = getCombinedMedia();
+
+    // If selectedImage is beyond the combined media length, adjust it
+    if (selectedImage >= combinedMedia.length) {
+      setSelectedImage(Math.max(0, combinedMedia.length - 1));
+    }
+  }, [selectedVariantImages, media]);
+
 
   const renderProductInfo = () => (
     <CardContent>
@@ -932,7 +1025,7 @@ const MyproductDetails = ({ slug }) => {
             }}>
               <ProductImageGallery
                 product={myproduct}
-                media={media}
+                media={getCombinedMedia()}
                 selectedImage={selectedImage}
                 onImageSelect={setSelectedImage}
                 onWishlistToggle={handleWishlistToggle}
@@ -940,6 +1033,7 @@ const MyproductDetails = ({ slug }) => {
                 isInWishlist={toggleWishlist}
                 userDesignation={usercredentials?.designation_id}
                 hoveredImage={hoveredVariantImage}
+                selectedVariantImages={selectedVariantImages}
               />
             </Box>
           </Grid>

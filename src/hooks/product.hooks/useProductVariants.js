@@ -9,6 +9,7 @@ export const useProductVariants = (product) => {
     const [hoveredVariantImage, setHoveredVariantImage] = useState(null);
     const [soldOutCombinations, setSoldOutCombinations] = useState(new Set());
     const [internalCombinationsMap, setInternalCombinationsMap] = useState({ combinationsMap: new Map(), attributeCombinations: new Map() });
+    const [selectedVariantImages, setSelectedVariantImages] = useState([]);
     const router = useRouter();
 
     // Normalize all variant data into a consistent structure
@@ -416,6 +417,108 @@ export const useProductVariants = (product) => {
         return false;
     }, [product, soldOutCombinations, normalizeVariantData, internalCombinationsMap]);
 
+
+    const getSelectedVariantMainImages = useCallback((currentSelections = selectedVariants) => {
+        if (!product?.product_variants) return [];
+
+        const variantImages = [];
+        const variantImageMap = new Map(); // Track which variant each image belongs to
+
+        // Loop through each selected variant in order of selection (maintain selection order)
+        Object.entries(currentSelections).forEach(([variantName, attributeId]) => {
+            // Find the variant in product_variants
+            const variant = product.product_variants.find(
+                pv => pv.variant_name === variantName
+            );
+
+            if (variant?.variant_attributes) {
+                // Find the selected attribute in variant_attributes
+                const selectedAttribute = variant.variant_attributes.find(attr => {
+                    // Try to find by attribute value
+                    const attrInVariantAttr = product.variant_attribute_id?.find(
+                        va => va._id === attributeId
+                    );
+                    if (attrInVariantAttr) {
+                        return attr.attribute === attrInVariantAttr.attribute_value;
+                    }
+                    return false;
+                });
+
+                // If attribute has main_images, add them
+                if (selectedAttribute?.main_images?.length > 0) {
+                    // Remove any existing images from this variant first (replacement logic)
+                    variantImages.forEach((img, index) => {
+                        if (img.variantName === variantName) {
+                            variantImages.splice(index, 1);
+                        }
+                    });
+
+                    // Add new images for this variant
+                    selectedAttribute.main_images.forEach((img, imgIndex) => {
+                        if (img && typeof img === 'string' && img.trim() !== '') {
+                            variantImages.push({
+                                variantName,
+                                attributeId,
+                                attributeValue: selectedAttribute.attribute,
+                                imageUrl: img,
+                                type: 'variant',
+                                variantType: variantName, // e.g., "Gemstones", "Metal Type"
+                                isVariantImage: true,
+                                priority: Object.keys(currentSelections).indexOf(variantName), // Order priority
+                                imageIndex: imgIndex
+                            });
+                        }
+                    });
+                }
+            }
+        });
+
+        // Sort by priority (most recently selected first)
+        variantImages.sort((a, b) => a.priority - b.priority);
+
+        console.log("Selected variant images (sorted by priority):", variantImages);
+        return variantImages;
+    }, [product, selectedVariants]);
+
+    // Update selected variant images when selections change
+    useEffect(() => {
+        if (product?.product_variants) {
+            const newVariantImages = getSelectedVariantMainImages();
+            setSelectedVariantImages(newVariantImages);
+        }
+    }, [product, selectedVariants, getSelectedVariantMainImages]);
+
+    const cleanupVariantImages = useCallback((previousSelections, newSelections) => {
+        // Find which variants were removed or changed
+        const removedVariants = [];
+        const changedVariants = [];
+
+        // Check for removed variants
+        Object.keys(previousSelections).forEach(variantName => {
+            if (!newSelections[variantName]) {
+                removedVariants.push(variantName);
+            }
+        });
+
+        // Check for changed variants
+        Object.keys(newSelections).forEach(variantName => {
+            if (previousSelections[variantName] &&
+                previousSelections[variantName] !== newSelections[variantName]) {
+                changedVariants.push(variantName);
+            }
+        });
+
+        console.log("Variant changes detected:", {
+            removed: removedVariants,
+            changed: changedVariants,
+            previous: previousSelections,
+            new: newSelections
+        });
+
+        // The getSelectedVariantMainImages function will handle the removal
+        // based on the new selections
+    }, []);
+
     // Get price for an attribute or combination
     const getAttributePrice = useCallback((attributeId, currentSelections = {}) => {
         if (!product?.isCombination) return null;
@@ -557,6 +660,8 @@ export const useProductVariants = (product) => {
 
     // Handle variant selection
     const handleVariantChange = useCallback((variantId, value) => {
+        const previousSelections = { ...selectedVariants };
+
         setSelectedVariants(prev => {
             const newSelected = { ...prev };
 
@@ -564,7 +669,6 @@ export const useProductVariants = (product) => {
             const selectedVariant = normalizedVariants.find(v => v.id === variantId);
 
             if (selectedVariant?.type === 'parent') {
-                // When selecting a parent variant, clear all internal variants
                 const internalVariantIds = normalizedVariants
                     .filter(v => v.type === 'internal')
                     .map(v => v.id);
@@ -583,8 +687,18 @@ export const useProductVariants = (product) => {
             console.log("Selected Variants Updated:", newSelected);
             return newSelected;
         });
+
+        // Clean up variant images if needed
+        const newSelections = { ...selectedVariants };
+        if (value === "") {
+            delete newSelections[variantId];
+        } else {
+            newSelections[variantId] = value;
+        }
+
+        cleanupVariantImages(previousSelections, newSelections);
         setErrors(prev => ({ ...prev, [variantId]: "" }));
-    }, [normalizeVariantData]);
+    }, [normalizeVariantData, selectedVariants, cleanupVariantImages]);
 
     // Validate variant selections
     const validateVariants = useCallback(() => {
@@ -1018,6 +1132,7 @@ export const useProductVariants = (product) => {
         soldOutCombinations,
         internalCombinationsMap,
         currentCombinationData,
+        selectedVariantImages,
         calculateAttributeData,
         handleVariantChange,
         handleVariantHover,
