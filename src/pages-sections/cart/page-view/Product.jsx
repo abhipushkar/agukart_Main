@@ -37,9 +37,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const [price, setPrice] = useState(0);
     const [originalPrice, setOriginalPrice] = useState(0);
 
-    product.combinationData.forEach((item) => {
-        const variants = item.variant_name.split("and");
-        variants.forEach((variant) => combinationVariant.add(variant.trim()));
+    product.combinationData?.forEach(e => {
+        const variantName = e?.variant_name || "";
+        variantName.split("and").forEach(part => {
+            if (part.trim()) combinationVariant.add(part.trim());
+        });
     });
     const uniqueCombinationVariant = Array.from(combinationVariant);
 
