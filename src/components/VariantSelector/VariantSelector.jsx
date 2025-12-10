@@ -36,7 +36,7 @@ const VariantSelector = ({
     const [guideOpen, setGuideOpen] = useState(false);
     const [currentGuide, setCurrentGuide] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(8);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const gridContainerRef = useRef(null);
 
     // Check if variant has guide information
@@ -818,7 +818,7 @@ const VariantButton = ({
                 >
                     {attr.thumbnail ? attr.value : null}
                 </Typography>
-                {priceText && (
+                {(priceText || priceText !== NaN) && (
                     <Typography
                         variant="caption"
                         sx={{

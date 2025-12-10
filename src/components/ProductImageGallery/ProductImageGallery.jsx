@@ -404,7 +404,7 @@ const ProductImageGallery = ({
                         <Box sx={{
                             width: "100%",
                             maxWidth: "100%",
-                            height: "auto",
+                            height: "559px",
                             aspectRatio: "1/1",
                             position: "relative",
                             display: "flex",

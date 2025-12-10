@@ -74,16 +74,12 @@ export const useProductVariants = (product) => {
 
         // Handle internal variants - ONLY show variants that are in product_variants
         if (product?.product_variants?.length > 0) {
-            console.log("Product variants to display:", product.product_variants);
 
             product.product_variants.forEach(variant => {
                 // Find corresponding variant info from variant_id array for guide data
                 const variantInfo = product.variant_id?.find(
                     v => v.variant_name === variant.variant_name || v._id === variant.variant_name
                 );
-
-                console.log(`Processing variant: ${variant.variant_name}`);
-                console.log("Variant info found:", variantInfo);
 
                 // Get variant attributes ONLY from variant_attribute_id that belong to this variant
                 // First, find the variant by name in variant_id
@@ -92,18 +88,13 @@ export const useProductVariants = (product) => {
                 );
 
                 if (!variantInVariantId) {
-                    console.log(`No variant found in variant_id for: ${variant.variant_name}`);
                     return; // Skip this variant
                 }
-
-                console.log(`Variant ID for ${variant.variant_name}: ${variantInVariantId._id}`);
 
                 // Filter variant_attribute_id to get only attributes for this specific variant
                 const variantAttributes = product.variant_attribute_id?.filter(
                     attr => attr.variant === variantInVariantId._id
                 ) || [];
-
-                console.log(`Attributes for ${variant.variant_name}:`, variantAttributes);
 
                 // Find attribute data from product_variants structure
                 const variantFromPV = product.product_variants.find(
@@ -130,7 +121,6 @@ export const useProductVariants = (product) => {
                         const existsInPV = variantFromPV?.variant_attributes?.some(
                             pvAttr => pvAttr.attribute === attr.attribute_value
                         );
-                        console.log(`Attribute ${attr.attribute_value} exists in product_variants:`, existsInPV);
                         return existsInPV;
                     })
                     .map(attr => {
@@ -151,8 +141,6 @@ export const useProductVariants = (product) => {
                         };
                     });
 
-                console.log(`Filtered attributes for ${variant.variant_name}:`, filteredAttributes);
-
                 if (filteredAttributes.length > 0) {
                     allVariants.push({
                         type: 'internal',
@@ -165,14 +153,12 @@ export const useProductVariants = (product) => {
                         attributes: filteredAttributes
                     });
                 } else {
-                    console.log(`No filtered attributes for ${variant.variant_name}, skipping variant`);
+                    console.error(`No filtered attributes for ${variant.variant_name}, skipping variant`);
                 }
             });
         } else {
-            console.log("No product_variants found in product");
+            console.error("No product_variants found in product");
         }
-
-        console.log("Final normalized variants to display:", allVariants);
         return allVariants;
     }, [product]);
 
@@ -197,7 +183,6 @@ export const useProductVariants = (product) => {
             }
         });
 
-        console.log("Parent combinations for navigation:", parentCombinations);
         return parentCombinations;
     }, [product]);
 
@@ -219,8 +204,6 @@ export const useProductVariants = (product) => {
             }
         });
 
-        console.log("All sold out parent combinations found:", Array.from(soldOutSet));
-        console.log("Total sold out parent combinations:", soldOutSet.size);
         return soldOutSet;
     }, [extractParentCombinations]);
 
@@ -322,9 +305,6 @@ export const useProductVariants = (product) => {
                 isVisible: Array.from(data.isVisible)
             });
         });
-
-        console.log("Internal combinations map:", combinationsMap);
-        console.log("Attribute combinations data:", processedAttributeCombinations);
 
         return {
             combinationsMap,
@@ -475,8 +455,6 @@ export const useProductVariants = (product) => {
 
         // Sort by priority (most recently selected first)
         variantImages.sort((a, b) => a.priority - b.priority);
-
-        console.log("Selected variant images (sorted by priority):", variantImages);
         return variantImages;
     }, [product, selectedVariants]);
 
@@ -506,13 +484,6 @@ export const useProductVariants = (product) => {
                 previousSelections[variantName] !== newSelections[variantName]) {
                 changedVariants.push(variantName);
             }
-        });
-
-        console.log("Variant changes detected:", {
-            removed: removedVariants,
-            changed: changedVariants,
-            previous: previousSelections,
-            new: newSelections
         });
 
         // The getSelectedVariantMainImages function will handle the removal
@@ -684,7 +655,6 @@ export const useProductVariants = (product) => {
                 newSelected[variantId] = value;
             }
 
-            console.log("Selected Variants Updated:", newSelected);
             return newSelected;
         });
 
@@ -831,7 +801,6 @@ export const useProductVariants = (product) => {
                     }
                 });
 
-                console.log("Initializing parent variants:", initialSelections);
                 setSelectedVariants(initialSelections);
             }
         }
@@ -855,12 +824,8 @@ export const useProductVariants = (product) => {
     }, [selectedVariants, product]);
 
     const getCurrentCombinationData = useCallback(() => {
-        console.log("=== DEBUG getCurrentCombinationData ===");
-        console.log("product?.isCombination:", product?.isCombination);
-        console.log("selectedVariants:", selectedVariants);
 
         if (!product?.isCombination || !selectedVariants || Object.keys(selectedVariants).length === 0) {
-            console.log("No combination data - not a combination product or no selections");
             return { price: null, quantity: null, priceRange: null, quantityRange: null };
         }
 
@@ -875,15 +840,11 @@ export const useProductVariants = (product) => {
                 if (variant) {
                     const actualVariantName = variant.variant_name;
                     variantSelections[actualVariantName] = attr.attribute_value;
-                    console.log(`Variant ${actualVariantName}: ${attr.attribute_value} (ID: ${attrId})`);
                 }
             }
         });
 
-        console.log("Variant selections:", variantSelections);
-
         if (Object.keys(variantSelections).length === 0) {
-            console.log("No variant selections found");
             return { price: null, quantity: null, priceRange: null, quantityRange: null };
         }
 
@@ -891,12 +852,6 @@ export const useProductVariants = (product) => {
         const ringSizeValue = variantSelections["Ring Size"];
         const gemstoneValue = variantSelections["Gemstones"];
         const metalTypeValue = variantSelections["Metal Type"];
-
-        console.log("Extracted values:", {
-            ringSizeValue,
-            gemstoneValue,
-            metalTypeValue
-        });
 
         let ringSizeQty = null;
         let gemstoneMetalPrice = null;
@@ -911,7 +866,6 @@ export const useProductVariants = (product) => {
                     // Check for Ring Size combinations (single value)
                     if (combo.name1 === "Ring Size" && combo.value1) {
                         if (combo.value1 === ringSizeValue) {
-                            console.log(`Found Ring Size match: ${combo.value1}, qty: ${combo.qty}`);
                             ringSizeQty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
                             foundRingSize = true;
                         }
@@ -920,7 +874,6 @@ export const useProductVariants = (product) => {
                     // Check for Gemstones + Metal Type combinations (pair values)
                     if (combo.name1 === "Gemstones" && combo.name2 === "Metal Type") {
                         if (combo.value1 === gemstoneValue && combo.value2 === metalTypeValue) {
-                            console.log(`Found Gemstones+Metal match: ${combo.value1}+${combo.value2}, price: ${combo.price}, qty: ${combo.qty}`);
                             gemstoneMetalPrice = combo.price && combo.price !== "" ? parseFloat(combo.price) : null;
                             gemstoneMetalQty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
                             foundGemstoneMetal = true;
@@ -930,19 +883,10 @@ export const useProductVariants = (product) => {
             }
         });
 
-        console.log("Search results:", {
-            foundRingSize,
-            foundGemstoneMetal,
-            ringSizeQty,
-            gemstoneMetalPrice,
-            gemstoneMetalQty
-        });
-
         // Calculate final quantity (take the minimum of available quantities)
         let finalQuantity = null;
         if (ringSizeQty !== null && gemstoneMetalQty !== null) {
             finalQuantity = Math.min(ringSizeQty, gemstoneMetalQty);
-            console.log(`Final quantity (min of ${ringSizeQty} and ${gemstoneMetalQty}): ${finalQuantity}`);
         } else if (ringSizeQty !== null) {
             finalQuantity = ringSizeQty;
         } else if (gemstoneMetalQty !== null) {
@@ -981,8 +925,6 @@ export const useProductVariants = (product) => {
                 isVisible: true
             };
         }
-
-        console.log("No matching combinations found");
         return { price: null, quantity: null, priceRange: null, quantityRange: null };
     }, [product, selectedVariants]);
 

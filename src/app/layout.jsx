@@ -44,8 +44,6 @@ import {LocationProvider} from "../contexts/location_context";
 export default function RootLayout({children}) {
     const [isFixed, setIsFixed] = useState(false);
     const toggleIsFixed = useCallback((fixed) => setIsFixed(fixed), []);
-    // const { token, setToken } = useAuth()
-    // console.log({ pageProps })
 
     return (
         <html lang="en" suppressHydrationWarning>

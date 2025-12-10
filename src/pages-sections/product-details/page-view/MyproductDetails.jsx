@@ -316,40 +316,31 @@ const MyproductDetails = ({ slug }) => {
   ]);
 
   const calculateCombinationPrice = useCallback(() => {
-    console.log("=== DEBUG calculateCombinationPrice ===");
-    console.log("selectedVariants:", selectedVariants);
-    console.log("currentCombinationData:", currentCombinationData);
-
-    // Check if we have any price at all from combinations
+       // Check if we have any price at all from combinations
     let combinationPrice = null;
 
     if (currentCombinationData) {
-      console.log("currentCombinationData.price:", currentCombinationData.price);
-      console.log("currentCombinationData.priceRange:", currentCombinationData.priceRange);
-
       // Check for fixed price first
       if (currentCombinationData.price !== null) {
         combinationPrice = currentCombinationData.price;
-        console.log("Using fixed price from combination:", combinationPrice);
+       
       }
       // Then check for price range (use min price)
       else if (currentCombinationData.priceRange) {
         combinationPrice = currentCombinationData.priceRange.min;
-        console.log("Using min price from range:", combinationPrice);
+       
       }
     }
 
     // Get base price from product - we should have this from the API
     const basePrice = myproduct?.sale_price || myproduct?.price || myproduct?.regular_price || 0;
-    console.log("Base price from product:", basePrice);
+  
 
     // Use combination price if available, otherwise use base price
     const effectivePrice = combinationPrice !== null ? combinationPrice : basePrice;
-    console.log("Effective price to use:", effectivePrice);
 
     // Add customization prices
     let finalPrice = effectivePrice + customizeDropdownPrice + customizeTextPrice;
-    console.log("Final price with customizations:", finalPrice);
 
     // Apply promotion if applicable
     if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion.qty <= quantity) {
@@ -358,15 +349,12 @@ const MyproductDetails = ({ slug }) => {
         +bestPromotion?.discount_amount,
         finalPrice
       );
-      console.log("Applying promotion, discounted price:", discountedPrice);
       setPrice(discountedPrice);
       setOriginalPrice(finalPrice);
     } else {
       setPrice(finalPrice);
       setOriginalPrice(finalPrice);
     }
-
-    console.log("=== END DEBUG ===");
   }, [
     myproduct,
     selectedVariants,
@@ -450,6 +438,9 @@ const MyproductDetails = ({ slug }) => {
       finalPromotion = bestAmountPromotion;
     }
 
+    console.log("PROMOTION ", finalPromotion, nextPromotion);
+    
+
     setBestPromotion(finalPromotion);
     setNextPromotion(nextPromotion);
   }, [myproduct, quantity, originalPrice]);
@@ -507,7 +498,38 @@ const MyproductDetails = ({ slug }) => {
       data.push(selectedDropdowns);
       data.push(customizationText);
     }
-
+  
+    // Create variants array for internal variants
+    const variantArray = [];
+    
+    if (myproduct?.isCombination && myproduct?.product_variants) {
+      Object.entries(selectedVariants).forEach(([variantName, attributeId]) => {
+        // Check if this variant is internal
+        const isInternalVariant = myproduct.product_variants.some(
+          pv => pv.variant_name === variantName
+        );
+        
+        if (isInternalVariant) {
+          const attribute = myproduct?.variant_attribute_id?.find(
+            attr => attr._id === attributeId
+          );
+          
+          if (attribute) {
+            const variant = myproduct?.variant_id?.find(
+              v => v._id === attribute.variant
+            );
+            
+            if (variant) {
+              variantArray.push({
+                variantName: variant.variant_name,
+                attributeName: attribute.attribute_value
+              });
+            }
+          }
+        }
+      });
+    }
+  
     const payload = {
       vendor_id: myproduct?.vendor_id?._id,
       vendor_name: myproduct?.vendor_id?.name,
@@ -531,17 +553,18 @@ const MyproductDetails = ({ slug }) => {
           variantData: myproduct?.isCombination ? getVariantData() : [],
           variantAttributeData: myproduct?.isCombination ? getVariantAttributeData() : [],
           variant_attribute_id: Object.values(selectedVariants),
+          variants: variantArray,  // Add internal variants array
           customize: myproduct?.customize,
           customizationData: data,
         },
       ],
     };
-
+  
     dispatch({
       type: "CHANGE_CART_AMOUNT",
       payload: payload,
     });
-
+  
     addToast("Product Added To Cart", {
       appearance: "success",
       autoDismiss: true,
@@ -557,35 +580,96 @@ const MyproductDetails = ({ slug }) => {
         price: price,
         original_price: originalPrice,
         isCombination: myproduct?.isCombination,
-        variant_id: [],
-        variant_attribute_id: [],
+        variant_id: [],  // For parent variants (if any)
+        variant_attribute_id: [],  // For parent variants (if any)
+        variants: [],  // NEW: For internal variants from product_variants
         customize: myproduct?.customize,
         customizationData: [],
       };
-
-      if (myproduct?.isCombination) {
-        const keysArray = Object.keys(selectedVariants);
-        const valuesArray = Object.values(selectedVariants);
-        payload.variant_id = keysArray;
-        payload.variant_attribute_id = valuesArray;
+  
+      // Check if we have any parent variants selected
+      if (myproduct?.parent_id && Object.keys(selectedVariants).length > 0) {
+        // Extract parent variant selections
+        const parentVariantSelections = [];
+        
+        // For parent variants, we need to check which ones are parent vs internal
+        // Based on your data structure, parent variants come from parent_id.variant_id
+        const normalizedVariants = normalizeVariantData();
+        
+        Object.entries(selectedVariants).forEach(([variantIdentifier, attributeId]) => {
+          // Check if this variant is a parent variant
+          const variant = normalizedVariants.find(v => v.id === variantIdentifier);
+          
+          if (variant?.type === 'parent') {
+            // For parent variants, we need to track them differently
+            // Find the actual variant from parent_id.variant_id
+            const parentVariant = myproduct?.parent_id?.variant_id?.find(
+              v => v.variant_name === variantIdentifier || v._id === variantIdentifier
+            );
+            
+            if (parentVariant) {
+              // For parent variants, we keep the IDs
+              payload.variant_id.push(variantIdentifier);
+              payload.variant_attribute_id.push(attributeId);
+            }
+          }
+        });
       }
-
+  
+      // Handle internal variants (from product_variants)
+      if (myproduct?.isCombination && myproduct?.product_variants) {
+        const internalVariants = [];
+        
+        Object.entries(selectedVariants).forEach(([variantName, attributeId]) => {
+          // Check if this variant is an internal variant (exists in product_variants)
+          const isInternalVariant = myproduct.product_variants.some(
+            pv => pv.variant_name === variantName
+          );
+          
+          if (isInternalVariant) {
+            // Find the attribute details from variant_attribute_id
+            const attribute = myproduct?.variant_attribute_id?.find(
+              attr => attr._id === attributeId
+            );
+            
+            if (attribute) {
+              // Find the variant to get the variant_name (not the _id)
+              const variant = myproduct?.variant_id?.find(
+                v => v._id === attribute.variant
+              );
+              
+              if (variant) {
+                internalVariants.push({
+                  variantName: variant.variant_name,
+                  attributeName: attribute.attribute_value
+                });
+              }
+            }
+          }
+        });
+        
+        payload.variants = internalVariants;
+      }
+  
+      // Handle customizations
       if (myproduct?.customize === "Yes") {
         let data = [];
         data.push(selectedDropdowns);
         data.push(customizationText);
         payload.customizationData = data;
       }
-
+  
+      // Add affiliate and shipping info
       if (affiliate_code) {
         payload.affiliate_id = affiliate_code;
       }
-
-      if (Object.keys(myproduct?.shipping_templates || {})) {
+  
+      if (Object.keys(myproduct?.shipping_templates || {}).length > 0) {
         payload.shippingName = "standardShipping";
         payload.shipping_id = myproduct?.shipping_templates?._id;
       }
-
+  
+      // API call
       const res = await postAPIAuth("user/add-to-cart", payload);
       if (res.status === 200) {
         const cartRes = await getAPIAuth("user/cart-list");
