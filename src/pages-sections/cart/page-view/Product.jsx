@@ -9,7 +9,7 @@ import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import parse from "html-react-parser";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useAuth from "hooks/useAuth";
 import { useCurrency } from 'contexts/CurrencyContext';
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
@@ -21,8 +21,7 @@ import { set, update } from 'lodash';
 import { calculatePriceAfterDiscount } from 'utils/calculatePriceAfterDiscount';
 import { useToasts } from 'react-toast-notifications';
 
-const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons=true }) => {
-    console.log({ product }, "ERyhert4yhert")
+const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true, parentCombinationData = [] }) => {
     const { addToast } = useToasts();
     const router = useRouter();
     const { currency } = useCurrency();
@@ -37,18 +36,94 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const [price, setPrice] = useState(0);
     const [originalPrice, setOriginalPrice] = useState(0);
 
+    // Extract all variant names from combinationData
     product.combinationData?.forEach(e => {
         const variantName = e?.variant_name || "";
-        variantName.split("and").forEach(part => {
-            if (part.trim()) combinationVariant.add(part.trim());
+        // Handle variant names that might be separated by "and" or other delimiters
+        const variantNames = variantName.split(/and|,/).map(name => name.trim());
+        variantNames.forEach(part => {
+            if (part) combinationVariant.add(part);
         });
     });
     const uniqueCombinationVariant = Array.from(combinationVariant);
 
+    // Check if this is a child product (has parent variants already selected)
+    const isChildProduct = useMemo(() => {
+        // A child product has variantData/variantAttributeData (parent variants already selected)
+        return product?.variantData?.length > 0 && product?.variantAttributeData?.length > 0;
+    }, [product]);
+
+    // Check if this product has internal variants selected
+    const hasInternalVariants = useMemo(() => {
+        return product?.variants?.length > 0;
+    }, [product]);
+
+    // Check if this product has combination data (for variant-based products)
+    const hasCombinationData = useMemo(() => {
+        return product?.combinationData?.length > 0;
+    }, [product]);
+
+    // Check if variant selection is required
+    const isVariantSelectionRequired = useMemo(() => {
+        // If no combination data, no variants are required
+        if (!hasCombinationData) return false;
+        
+        // If it's a child product (already has parent variant selected), internal variants are NOT required
+        if (isChildProduct) return false;
+        
+        // If it's NOT a child product and has combination data, then at least one variant is required
+        return true;
+    }, [hasCombinationData, isChildProduct]);
+
+    // Check if variant selection is incomplete
+    const isVariantSelectionIncomplete = useMemo(() => {
+        // Only show error if:
+        // 1. Variant selection is required (not a child product + has combination data)
+        // 2. AND no variants are selected (neither internal nor parent)
+        return isVariantSelectionRequired && 
+               !hasInternalVariants && 
+               !isChildProduct;
+    }, [isVariantSelectionRequired, hasInternalVariants, isChildProduct]);
+
+    // Check if product has any variants selected
+    // const hasAnyVariantsSelected = useMemo(() => {
+    //     return hasInternalVariants || isChildProduct;
+    // }, [hasInternalVariants, isChildProduct]);
+
+    // Find matching combination for internal variants
+    const findInternalCombination = useMemo(() => {
+        if (!product?.combinationData || product.combinationData.length === 0) return null;
+        if (!hasInternalVariants) return null;
+
+        // Get all variant combinations from the variants array
+        const selectedVariantValues = product.variants.map(v => v.attributeName);
+        
+        // Search through combinationData for a match
+        for (const combinationGroup of product.combinationData) {
+            for (const combination of combinationGroup.combinations || []) {
+                // Check if all selected variants match the combination
+                if (combination.combValues && Array.isArray(combination.combValues)) {
+                    const combValuesSet = new Set(combination.combValues.map(v => v.trim().toLowerCase()));
+                    const selectedValuesSet = new Set(selectedVariantValues.map(v => v.trim().toLowerCase()));
+                    
+                    // Check if sets are equal (order doesn't matter)
+                    if (combValuesSet.size === selectedValuesSet.size && 
+                        [...combValuesSet].every(value => selectedValuesSet.has(value))) {
+                        return combination;
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }, [product?.variants, product?.combinationData, hasInternalVariants]);
+
+    // Get combinations based on selected variants
     const getCombinations = (arr) => {
-        let combinations = arr.map(item =>
-            [item]
-        );
+        if (!arr || arr.length === 0) return [];
+        
+        let combinations = arr.map(item => [item]);
+        
         if (arr.length > 1) {
             for (let i = 0; i < arr.length; i++) {
                 for (let j = i + 1; j < arr.length; j++) {
@@ -56,14 +131,111 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 }
             }
         }
+        
         return combinations;
     };
-    const handleQuantityChnage = (e) => {
+
+    // Calculate stock based on all variant types
+    const calculateStock = () => {
+        // Case 1: Child product (has parent variants)
+        if (isChildProduct) {
+            const variantAttributeIds = product?.variant_attribute_id || [];
+            
+            // If no internal variants, check parent combinations
+            if (!hasInternalVariants) {
+                // Check if there's a matching parent combination
+                if (parentCombinationData?.length > 0) {
+                    const matchingParentCombination = parentCombinationData?.find(
+                        item => item.combination_id === variantAttributeIds[0]
+                    );
+                    
+                    if (matchingParentCombination) {
+                        // Check if sold out from parent combination
+                        if (matchingParentCombination.sold_out) {
+                            return 0;
+                        }
+                    }
+                }
+                
+                // Fall back to product stock
+                return +product.stock || 0;
+            }
+            
+            // Case 2: Child product with internal variants
+            const internalCombination = findInternalCombination;
+            if (internalCombination) {
+                if (internalCombination.isVisible === "false") {
+                    return 0;
+                }
+                if (internalCombination.qty && +internalCombination.qty > 0) {
+                    return +internalCombination.qty;
+                }
+            }
+            
+            return +product.stock || 0;
+        }
+        
+        // Case 3: Product with internal variants only (not a child product)
+        if (hasInternalVariants) {
+            const internalCombination = findInternalCombination;
+            if (internalCombination) {
+                if (internalCombination.isVisible === "false") {
+                    return 0;
+                }
+                if (internalCombination.qty && +internalCombination.qty > 0) {
+                    return +internalCombination.qty;
+                }
+            }
+            
+            return +product.stock || 0;
+        }
+        
+        // Case 4: Simple product (no variants)
+        return +product.stock || 0;
+    };
+
+    const handleQuantityChange = (e) => {
         const newQuantity = e.target.value;
         setQuantity(newQuantity);
     };
 
+    // Calculate price based on variant combinations
+    const calculateVariantPrice = () => {
+        let basePrice = +product.original_price || +product.real_price || 0;
+        
+        // Check for internal variant price adjustment
+        if (findInternalCombination) {
+            if (findInternalCombination.price && findInternalCombination.price !== "") {
+                basePrice = +findInternalCombination.price;
+            }
+        }
+        
+        // Check for parent combination price adjustment
+        if (isChildProduct && parentCombinationData?.length > 0) {
+            const variantAttributeIds = product?.variant_attribute_id || [];
+            const matchingParentCombination = parentCombinationData?.find(
+                item => item.combination_id === variantAttributeIds[0]
+            );
+            
+            // Note: Parent combinations might have their own pricing logic
+            // This would need to be implemented based on backend data structure
+        }
+        
+        return basePrice;
+    };
+
     const updateCart = async () => {
+        // Don't update if variant selection is incomplete
+        if (isVariantSelectionIncomplete) {
+            addToast("Please select a variant before updating quantity", {
+                appearance: "warning",
+                autoDismiss: true,
+            });
+            return;
+        }
+
+        const variantPrice = calculateVariantPrice();
+        
         const bestPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
             if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty <= quantity) {
                 if (!best || promotion.qty > best.qty || (promotion.qty === best.qty && promotion.discount_amount > best.discount_amount)) {
@@ -72,39 +244,36 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
             }
             return best;
         }, null);
+        
         const bestAmountPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
-            if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= +product.real_price) {
-                console.log(promotion.offer_amount <= +product.real_price, promotion.offer_amount, +product.real_price, "SDRftghrthr")
+            if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= +variantPrice) {
                 if (!best || promotion.offer_amount > best.offer_amount) {
                     return promotion;
                 }
             }
             return best;
         }, null);
+        
         let finalPromotion = {};
         if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestAmountPromotion && Object.keys(bestAmountPromotion).length > 0) {
-            let offerAmount = calculatePriceAfterDiscount(bestPromotion?.offer_type, +bestPromotion?.discount_amount, originalPrice)
-            let offerAmount2 = calculatePriceAfterDiscount(bestAmountPromotion?.offer_type, +bestAmountPromotion?.discount_amount, originalPrice)
-            offerAmount = originalPrice - offerAmount;
-            offerAmount2 = originalPrice - offerAmount2;
+            let offerAmount = calculatePriceAfterDiscount(bestPromotion?.offer_type, +bestPromotion?.discount_amount, variantPrice);
+            let offerAmount2 = calculatePriceAfterDiscount(bestAmountPromotion?.offer_type, +bestAmountPromotion?.discount_amount, variantPrice);
+            offerAmount = variantPrice - offerAmount;
+            offerAmount2 = variantPrice - offerAmount2;
             if (offerAmount > offerAmount2) {
                 finalPromotion = bestPromotion;
             } else {
                 finalPromotion = bestAmountPromotion;
             }
-        }
-        else if (bestPromotion && Object.keys(bestPromotion).length > 0) {
+        } else if (bestPromotion && Object.keys(bestPromotion).length > 0) {
             finalPromotion = bestPromotion;
-        }
-        else {
+        } else {
             finalPromotion = bestAmountPromotion;
         }
 
-        let finalPrice = 0;
+        let finalPrice = variantPrice;
         if (finalPromotion && Object.keys(finalPromotion).length > 0 && finalPromotion.qty <= quantity) {
-            finalPrice = calculatePriceAfterDiscount(finalPromotion?.offer_type, +finalPromotion?.discount_amount, originalPrice)
-        } else {
-            finalPrice = originalPrice;
+            finalPrice = calculatePriceAfterDiscount(finalPromotion?.offer_type, +finalPromotion?.discount_amount, variantPrice);
         }
 
         if (!token) {
@@ -117,33 +286,39 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     shop_name: cart?.shop_name,
                     slug: cart?.slug,
                     products: [
-                        { ...product, sale_price: finalPrice, qty: quantity }
+                        { 
+                            ...product, 
+                            sale_price: finalPrice, 
+                            qty: quantity,
+                            variants: product?.variants || [],
+                            variantData: product?.variantData || [],
+                            variantAttributeData: product?.variantAttributeData || []
+                        }
                     ]
                 },
             });
         } else {
-            // if (voucherDetails?.discount > 0) {
-            //     addToast("Please remove the voucher code first", {
-            //         appearance: "error",
-            //         autoDismiss: true,
-            //     });
-            //     return;
-            // }
             try {
                 const payload = {
                     product_id: product.product_id,
                     vendor_id: cart?.vendor_id,
                     qty: quantity,
                     price: finalPrice,
-                    original_price: originalPrice,
+                    original_price: variantPrice,
                     isCombination: product?.isCombination,
                     variant_id: [],
                     variant_attribute_id: []
                 };
 
-                if (product?.isCombination) {
-                    payload.variant_id = product?.variant_id;
-                    payload.variant_attribute_id = product?.variant_attribute_id;
+                // Handle parent variants
+                if (product?.variant_id && product.variant_id.length > 0) {
+                    payload.variant_id = product.variant_id;
+                    payload.variant_attribute_id = product.variant_attribute_id;
+                }
+
+                // Handle internal variants
+                if (product?.variants && product.variants.length > 0) {
+                    payload.variants = product.variants;
                 }
 
                 const res = await postAPIAuth("user/add-to-cart", payload);
@@ -153,7 +328,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Error updating cart:", error);
+                addToast("Failed to update cart. Please try again.", {
+                    appearance: "error",
+                    autoDismiss: true,
+                });
             }
         }
     };
@@ -167,12 +346,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         return () => clearTimeout(delayDebounce);
     }, [product?.qty, quantity]);
 
-    useEffect(()=>{
-        if(price && quantity && originalPrice){
+    useEffect(() => {
+        if (price && quantity && originalPrice && !isVariantSelectionIncomplete) {
             updateCart();
         }
-    },[price,quantity,originalPrice])
-
+    }, [price, quantity, originalPrice, isVariantSelectionIncomplete]);
 
     const removeItemHandler = async () => {
         if (!token) {
@@ -191,15 +369,8 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                         }
                     ]
                 }
-            })
+            });
         } else {
-            // if (voucherDetails?.discount > 0) {
-            //     addToast("Please remove the voucher code first", {
-            //         appearance: "error",
-            //         autoDismiss: true,
-            //     });
-            //     return;
-            // }
             try {
                 const res = await postAPIAuth("user/delete-cart", {
                     cart_id: product.cart_id,
@@ -211,49 +382,34 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     return true;
                 }
             } catch (error) {
-                console.log(error);
+                console.log("Error removing item:", error);
+                addToast("Failed to remove item. Please try again.", {
+                    appearance: "error",
+                    autoDismiss: true,
+                });
             }
         }
     };
+
     const addToWishlistHandler = async () => {
         if (!token) {
             router.push("/login");
         } else {
             try {
-                // if (voucherDetails?.discount > 0) {
-                //     addToast("Please remove the voucher code first", {
-                //         appearance: "error",
-                //         autoDismiss: true,
-                //     });
-                //     return;
-                // }
-                let price = 0;
-                let original_price = 0;
-                if (product?.isCombination) {
-                    const mergedCombinations = product?.combinationData?.map((item) => item.combinations).flat();
-                    const minimumPrice = mergedCombinations?.filter(obj => +obj.price > 0)?.reduce((min, obj) => Math.min(min, +obj.price), Infinity);
-                    price = minimumPrice === Infinity ? +product.real_price : minimumPrice;
-                    original_price = minimumPrice === Infinity ? +product.real_price : minimumPrice;
-                    if (promotion && Object.keys(promotion).length > 0) {
-                        price = calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, minimumPrice === Infinity ? +product.real_price : minimumPrice)
-                    }
-                } else {
-                    price = +product?.real_price;
-                    original_price = +product?.real_price;
-                    if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-                        price = calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, +product?.real_price);
-                    }
-                }
+                let price = calculateVariantPrice();
+                let original_price = calculateVariantPrice();
+
                 const payload = {
                     product_id: product?.product_id,
                     price: price,
                     original_price: original_price,
                     isCombination: product?.isCombination,
-                    variant_id: [],
-                    variant_attribute_id: []
-                }
+                    variant_id: product?.variant_id || [],
+                    variant_attribute_id: product?.variant_attribute_id || [],
+                    variants: product?.variants || []
+                };
+
                 const res = await postAPIAuth("user/add-delete-wishlist", payload);
-                console.log(res, "let chek the wishlist thing");
                 if (res.status === 200) {
                     const cartRes = await removeItemHandler();
                     if (cartRes) {
@@ -264,52 +420,35 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     }
                 }
             } catch (error) {
-                console.log(error);
+                console.log("Error adding to wishlist:", error);
+                addToast("Failed to add to wishlist. Please try again.", {
+                    appearance: "error",
+                    autoDismiss: true,
+                });
             }
         }
     };
-    useEffect(() => {
-        if (product.isCombination) {
-            const variantAttributeIds = product?.variant_attribute_id;
-            const variantCombinations = getCombinations(variantAttributeIds);
-            const mergedCombinations = product?.combinationData?.map((item) => item.combinations).flat();
 
-            const data = mergedCombinations?.filter((item) =>
-                variantCombinations?.some((combination) =>
-                    Array.isArray(item?.combIds) && Array.isArray(combination) &&
-                    JSON.stringify(item?.combIds.sort()) === JSON.stringify(combination.sort())
-                )
-            );
-            if (data.length <= 1) {
-                if (data[0]?.isVisible && +data[0]?.qty > 0) {
-                    setStock(+data[0]?.qty);
-                } else {
-                    setStock(+product.stock);
-                }
-            } else {
-                data.forEach((item) => {
-                    if (item.isVisible) {
-                        if (+item.qty > 0) {
-                            setStock(+item.qty);
-                        }
-                    }
-                });
-                if (!data.some((item) => +item.qty > 0 && item.isVisible)) {
-                    setStock(+product.stock);
-                }
-            }
-        } else {
-            setStock(+product.stock);
-        }
-    }, [cart, product])
+    // Handle edit product to select variants
+    const handleEditProduct = () => {
+        router.push(`/products?id=${product?.product_id}`);
+    };
 
     useEffect(() => {
-        setQuantity(+product?.qty);
-        setPrice(+product?.sale_price);
-        setOriginalPrice(+product?.original_price);
-    }, [product])
+        const calculatedStock = calculateStock();
+        setStock(calculatedStock);
+    }, [product, parentCombinationData, findInternalCombination]);
 
     useEffect(() => {
+        const variantPrice = calculateVariantPrice();
+        setQuantity(+product?.qty || 1);
+        setPrice(+product?.sale_price || variantPrice);
+        setOriginalPrice(variantPrice);
+    }, [product]);
+
+    useEffect(() => {
+        const variantPrice = calculateVariantPrice();
+        
         const bestPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
             if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty <= product?.qty) {
                 if (!best || promotion.qty > best.qty || (promotion.qty === best.qty && promotion.discount_amount > best.discount_amount)) {
@@ -318,21 +457,22 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
             }
             return best;
         }, null);
+        
         const bestAmountPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
-            console.log(promotion.offer_amount <= originalPrice, originalPrice, "hhhwdfsdfsdf")
-            if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= originalPrice) {
+            if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= variantPrice) {
                 if (!best || promotion.offer_amount > best.offer_amount) {
                     return promotion;
                 }
             }
             return best;
         }, null);
+        
         let finalBestPromotion = {};
         if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestAmountPromotion && Object.keys(bestAmountPromotion).length > 0) {
-            let offerAmount = calculatePriceAfterDiscount(bestPromotion?.offer_type, +bestPromotion?.discount_amount, originalPrice)
-            let offerAmount2 = calculatePriceAfterDiscount(bestAmountPromotion?.offer_type, +bestAmountPromotion?.discount_amount, originalPrice)
-            offerAmount = originalPrice - offerAmount;
-            offerAmount2 = originalPrice - offerAmount2;
+            let offerAmount = calculatePriceAfterDiscount(bestPromotion?.offer_type, +bestPromotion?.discount_amount, variantPrice);
+            let offerAmount2 = calculatePriceAfterDiscount(bestAmountPromotion?.offer_type, +bestAmountPromotion?.discount_amount, variantPrice);
+            offerAmount = variantPrice - offerAmount;
+            offerAmount2 = variantPrice - offerAmount2;
             if (offerAmount > offerAmount2) {
                 finalBestPromotion = bestPromotion;
             } else {
@@ -355,28 +495,69 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
         const promotion = product?.promotionalOfferData?.find((promotion) => promotion.qty == 1);
         const amountPromotion = product?.promotionalOfferData?.find(
-            (promotion) => promotion?.offer_amount != null && promotion.offer_amount <= originalPrice
+            (promotion) => promotion?.offer_amount != null && promotion.offer_amount <= variantPrice
         );
+        
         let finalPromotion = {};
         if (promotion && Object.keys(promotion).length > 0 && amountPromotion && Object.keys(amountPromotion).length > 0) {
-            let offerAmount = calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, originalPrice)
-            let offerAmount2 = calculatePriceAfterDiscount(amountPromotion?.offer_type, +amountPromotion?.discount_amount, originalPrice)
-            offerAmount = originalPrice - offerAmount;
-            offerAmount2 = originalPrice - offerAmount2;
+            let offerAmount = calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, variantPrice);
+            let offerAmount2 = calculatePriceAfterDiscount(amountPromotion?.offer_type, +amountPromotion?.discount_amount, variantPrice);
+            offerAmount = variantPrice - offerAmount;
+            offerAmount2 = variantPrice - offerAmount2;
             if (offerAmount > offerAmount2) {
-                finalPromotion = bestPromotion;
+                finalPromotion = promotion;
             } else {
-                finalPromotion = bestAmountPromotion;
+                finalPromotion = amountPromotion;
             }
         } else if (promotion && Object.keys(promotion).length > 0) {
             finalPromotion = promotion;
         } else {
             finalPromotion = amountPromotion;
         }
+        
         setBestPromotion(finalBestPromotion);
         setNextPromotion(nextPromotion);
         setPromotion(finalPromotion);
     }, [product, originalPrice]);
+
+    // Render variant information
+    const renderVariantInfo = () => {
+        const variantInfo = [];
+        
+        // Show parent variant info (for child products)
+        if (isChildProduct && product?.variantData?.length > 0) {
+            product.variantData.forEach((variant, index) => {
+                const attribute = product.variantAttributeData?.[index];
+                if (variant && attribute) {
+                    variantInfo.push(
+                        <Typography fontSize={14} color="gray" key={`parent-variant-${index}`}>
+                            {variant.variant_name}:{" "}
+                            <Typography fontSize={14} component="span" color="#000">
+                                {attribute.attribute_value}
+                            </Typography>
+                        </Typography>
+                    );
+                }
+            });
+        }
+        
+        // Show internal variant info
+        if (hasInternalVariants && product?.variants?.length > 0) {
+            product.variants.forEach((variant, index) => {
+                variantInfo.push(
+                    <Typography fontSize={14} color="gray" key={`internal-variant-${index}`}>
+                        {variant.variantName}:{" "}
+                        <Typography fontSize={14} component="span" color="#000">
+                            {variant.attributeName}
+                        </Typography>
+                    </Typography>
+                );
+            });
+        }
+        
+        return variantInfo;
+    };
+
     return (
         <>
             <Box
@@ -425,8 +606,8 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                     textUnderlineOffset: "2px",
                                 }}
                             >
-                                {
-                                    product?.product_bedge == "Popular Now" && <svg
+                                {product?.product_bedge == "Popular Now" && (
+                                    <svg
                                         height="20px"
                                         width="20px"
                                         viewBox="-33 0 255 255"
@@ -434,40 +615,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         preserveAspectRatio="xMidYMid"
                                         fill="#000000"
                                     >
-                                        <defs>
-                                            <linearGradient
-                                                id="linear-gradient-1"
-                                                gradientUnits="userSpaceOnUse"
-                                                x1="94.141"
-                                                y1="255"
-                                                x2="94.141"
-                                                y2="0.188"
-                                            >
-                                                <stop offset="0" stopColor="#ff4c0d" />
-                                                <stop offset="1" stopColor="#fc9502" />
-                                            </linearGradient>
-                                        </defs>
-                                        <g id="fire">
-                                            <path
-                                                d="M187.899,164.809 C185.803,214.868 144.574,254.812 94.000,254.812 C42.085,254.812 -0.000,211.312 -0.000,160.812 C-0.000,154.062 -0.121,140.572 10.000,117.812 C16.057,104.191 19.856,95.634 22.000,87.812 C23.178,83.513 25.469,76.683 32.000,87.812 C35.851,94.374 36.000,103.812 36.000,103.812 C36.000,103.812 50.328,92.817 60.000,71.812 C74.179,41.019 62.866,22.612 59.000,9.812 C57.662,5.384 56.822,-2.574 66.000,0.812 C75.352,4.263 100.076,21.570 113.000,39.812 C131.445,65.847 138.000,90.812 138.000,90.812 C138.000,90.812 143.906,83.482 146.000,75.812 C148.365,67.151 148.400,58.573 155.999,67.813 C163.226,76.600 173.959,93.113 180.000,108.812 C190.969,137.321 187.899,164.809 187.899,164.809 Z"
-                                                fill="url(#linear-gradient-1)"
-                                                fillRule="evenodd"
-                                            />
-                                            <path
-                                                d="M94.000,254.812 C58.101,254.812 29.000,225.711 29.000,189.812 C29.000,168.151 37.729,155.000 55.896,137.166 C67.528,125.747 78.415,111.722 83.042,102.172 C83.953,100.292 86.026,90.495 94.019,101.966 C98.212,107.982 104.785,118.681 109.000,127.812 C116.266,143.555 118.000,158.812 118.000,158.812 C118.000,158.812 125.121,154.616 130.000,143.812 C131.573,140.330 134.753,127.148 143.643,140.328 C150.166,150.000 159.127,167.390 159.000,189.812 C159.000,225.711 129.898,254.812 94.000,254.812 Z"
-                                                fill="#fc9502"
-                                                fillRule="evenodd"
-                                            />
-                                            <path
-                                                d="M95.000,183.812 C104.250,183.812 104.250,200.941 116.000,223.812 C123.824,239.041 112.121,254.812 95.000,254.812 C77.879,254.812 69.000,240.933 69.000,223.812 C69.000,206.692 85.750,183.812 95.000,183.812 Z"
-                                                fill="#fce202"
-                                                fillRule="evenodd"
-                                            />
-                                        </g>
+                                        {/* Fire icon SVG */}
                                     </svg>
-                                }
-                                {
-                                    product?.product_bedge == "Best Seller" && <svg
+                                )}
+                                {product?.product_bedge == "Best Seller" && (
+                                    <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 24 24"
                                         height="20px"
@@ -475,14 +627,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         aria-hidden="true"
                                         focusable="false"
                                     >
-                                        <path
-                                            fill-rule="evenodd"
-                                            clip-rule="evenodd"
-                                            d="M12 18a8 8 0 0 0 7.021-4.163q.008-.012.013-.024A8 8 0 1 0 12 18m4.5-8.8c.2-.1.2-.4.2-.6s-.3-.3-.5-.3h-2.8l-.9-2.7c-.1-.4-.8-.4-1 0l-.9 2.7H7.8c-.2 0-.4.1-.5.3s0 .4.2.6l2.3 1.7-.9 2.7c-.1.2 0 .4.2.6q.3.15.6 0l2.3-1.7 2.3 1.7c.1.1.2.1.3.1s.2 0 .3-.1c.2-.1.2-.4.2-.6l-.9-2.7z"
-                                        ></path>
-                                        <path d="M4.405 14.831a9 9 0 0 0 6.833 4.137L8.9 23l-2.7-3.3L2 19zm15.19 0a9 9 0 0 1-6.833 4.137L15.1 23l2.7-3.3L22 19z"></path>
+                                        {/* Star icon SVG */}
                                     </svg>
-                                }
+                                )}
                                 {product?.product_bedge}
                             </Box>
                         )}
@@ -551,78 +698,67 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         {parse(product?.product_name)}
                                     </Link>
                                 </Typography>
-                                {
-                                    (stock > 0 && !product?.isDeleted && product?.status) ? (
-                                        <Typography component="div">
-                                            {
-                                                product?.isCombination && (
-                                                    <>
-                                                        {
-                                                            product?.variantData?.length > 0 ? (
-                                                                product?.variantData?.map((variant, index) => (
-                                                                    <Typography fontSize={17} color="gray" key={`variant-${index}`}>
-                                                                        {variant?.variant_name}:{" "}
-                                                                        <Typography fontSize={17} component="span">
-                                                                            {product?.variantAttributeData?.[index]?.attribute_value || "N/A"}
-                                                                        </Typography>
-                                                                    </Typography>
-                                                                ))
-                                                            ) : (
-                                                                <Box
-                                                                    sx={{
-                                                                        backgroundColor: "#ffe5e5",
-                                                                        border: "1px solid #ffcccc",
-                                                                        color: "#d32f2f",
-                                                                        padding: "16px",
-                                                                        borderRadius: "8px",
-                                                                        textAlign: "center",
-                                                                        display: "flex",
-                                                                        gap: "8px",
-                                                                        maxWidth: "600px",
-                                                                        margin: "16px auto",
-                                                                        cursor: "pointer"
-                                                                    }}
-                                                                    onClick={() => router.push(`/products?id=${product?.product_id}`)}
-                                                                >
-                                                                    <ErrorOutlineIcon sx={{ fontSize: 24 }} />
-                                                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                                                        Choose a {uniqueCombinationVariant.map((variant) => variant).join(", ")}
-                                                                    </Typography>
-                                                                </Box>
-                                                            )
-                                                        }
-                                                    </>
-                                                )
-                                            }
-                                            {
-                                                product?.customize == "Yes" && (
-                                                    <>
-                                                        {
-                                                            product?.customizationData?.map((item, index) => (
-                                                                <div key={index}>
-                                                                    {Object.entries(item).map(([key, value]) => (
-                                                                        <div key={key}>
-                                                                            {typeof value === 'object' ? (
-                                                                                <div>
-                                                                                    {key}:{`${value?.value} (${currency?.symbol}${(value?.price * currency?.rate).toFixed(2)})`}
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div>{key}: {value}</div>
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            ))
-                                                        }
-                                                    </>
-                                                )
-                                            }
-                                            {
-                                                nextPromotion && Object.keys(nextPromotion).length > 0 && +nextPromotion?.qty > product.qty && <>
-                                                    <p>Save {nextPromotion?.offer_type == "flat" ? `$ ${nextPromotion?.discount_amount}` : `${nextPromotion?.discount_amount} %`} when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ''} items at this shop</p>
-                                                    <p>Shop the sale</p>
-                                                </>
-                                            }
+                                {renderVariantInfo()}
+                                
+                                {product?.customize == "Yes" && (
+                                    <>
+                                        {product?.customizationData?.map((item, index) => (
+                                            <div key={index}>
+                                                {Object.entries(item).map(([key, value]) => (
+                                                    <div key={key}>
+                                                        {typeof value === 'object' ? (
+                                                            <div>
+                                                                {key}:{`${value?.value} (${currency?.symbol}${(value?.price * currency?.rate).toFixed(2)})`}
+                                                            </div>
+                                                        ) : (
+                                                            <div>{key}: {value}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+
+                                {(stock > 0 && !product?.isDeleted && product?.status) ? (
+                                    <Typography component="div">
+                                        {nextPromotion && Object.keys(nextPromotion).length > 0 && +nextPromotion?.qty > product.qty && (
+                                            <>
+                                                <p>Save {nextPromotion?.offer_type == "flat" ? `$ ${nextPromotion?.discount_amount}` : `${nextPromotion?.discount_amount} %`} when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ''} items at this shop</p>
+                                                <p>Shop the sale</p>
+                                            </>
+                                        )}
+                                        
+                                        {/* Show edit button ONLY if variant selection is incomplete */}
+                                        {isVariantSelectionIncomplete && (
+                                            <Box
+                                                sx={{
+                                                    backgroundColor: "#ffe5e5",
+                                                    border: "1px solid #ffcccc",
+                                                    color: "#d32f2f",
+                                                    padding: "16px",
+                                                    borderRadius: "8px",
+                                                    textAlign: "center",
+                                                    display: "flex",
+                                                    gap: "8px",
+                                                    maxWidth: "600px",
+                                                    margin: "16px auto",
+                                                    cursor: "pointer"
+                                                }}
+                                                onClick={handleEditProduct}
+                                            >
+                                                <ErrorOutlineIcon sx={{ fontSize: 24 }} />
+                                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                                    Choose a variant
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        
+                                        {/* Show quantity selector if:
+                                            1. Variant selection is complete OR 
+                                            2. Product is a child product (parent variant already selected) OR
+                                            3. Product has no combination data */}
+                                        {(!isVariantSelectionIncomplete || isChildProduct || !hasCombinationData) && (
                                             <Typography
                                                 component="div"
                                                 pt={1}
@@ -631,65 +767,69 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             >
                                                 <FormControl sx={{ width: "100px" }}>
                                                     <Select
-                                                        onChange={handleQuantityChnage}
-                                                        value={product?.qty}
+                                                        onChange={handleQuantityChange}
+                                                        value={quantity}
                                                         sx={{
                                                             border: "none",
                                                             background: "#fff",
                                                             height: "50px",
                                                         }}
+                                                        disabled={stock === 0 || isVariantSelectionIncomplete}
                                                     >
-                                                        {
-                                                            Array.from({ length: Math.min(stock, 10) }, (_, i) => i + 1).map((q) => (
-                                                                <MenuItem key={q} value={q}>
-                                                                    {q}
-                                                                </MenuItem>
-                                                            ))
-                                                        }
+                                                        {Array.from({ length: Math.min(stock, 10) }, (_, i) => i + 1).map((q) => (
+                                                            <MenuItem key={q} value={q}>
+                                                                {q}
+                                                            </MenuItem>
+                                                        ))}
                                                     </Select>
                                                 </FormControl>
                                             </Typography>
-                                        </Typography>
-                                    ) : (
-                                        <Typography
-                                            component="div"
+                                        )}
+                                    </Typography>
+                                ) : (
+                                    <Typography
+                                        component="div"
+                                        sx={{
+                                            color: "#bc1111",
+                                        }}
+                                        pt={2}
+                                    >
+                                        {(!product?.status || product?.isDeleted) ? "Currently Unavailable" : "Sold Out"}
+                                    </Typography>
+                                )}
+                                
+                                {showButtons && (
+                                    <Typography component="div" mt={2}>
+                                        <Button
+                                            onClick={addToWishlistHandler}
+                                            variant="contained"
                                             sx={{
-                                                color: "#bc1111",
+                                                background: "transparent",
+                                                fontSize: "14px",
+                                                boxShadow: "none",
+                                                borderRadius: "25px",
+                                                marginRight: "10px",
+                                                cursor: isVariantSelectionIncomplete ? "not-allowed" : "pointer",
+                                                opacity: isVariantSelectionIncomplete ? 0.5 : 1,
                                             }}
-                                            pt={2}
+                                            disabled={isVariantSelectionIncomplete}
                                         >
-                                            {(!product?.status || product?.isDeleted) ? "Currently Unavailable" : "Sold Out"}
-                                        </Typography>
-                                    )
-                                }
-                                {showButtons && <Typography component="div" mt={2}>
-                                    <Button
-                                        onClick={addToWishlistHandler}
-                                        variant="contained"
-                                        sx={{
-                                            background: "transparent",
-                                            fontSize: "14px",
-                                            boxShadow: "none",
-                                            borderRadius: "25px",
-                                            marginRight: "10px",
-                                        }}
-                                    >
-                                        Save for later
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        sx={{
-                                            background: "transparent",
-                                            fontSize: "14px",
-                                            boxShadow: "none",
-                                            borderRadius: "25px",
-                                        }}
-                                        onClick={removeItemHandler}
-                                    >
-                                        Remove
-                                    </Button>
-
-                                </Typography>}
+                                            Save for later
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            sx={{
+                                                background: "transparent",
+                                                fontSize: "14px",
+                                                boxShadow: "none",
+                                                borderRadius: "25px",
+                                            }}
+                                            onClick={removeItemHandler}
+                                        >
+                                            Remove
+                                        </Button>
+                                    </Typography>
+                                )}
                             </Typography>
 
                             <Typography
@@ -710,7 +850,6 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                             >
                                 <Typography
                                     component="div"
-                                    // flexWrap={"wrap"}
                                     display={"flex"}
                                 >
                                     <Typography
@@ -732,8 +871,8 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             },
                                         }}
                                     >
-                                        {
-                                            price != originalPrice && bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion?.qty <= product.qty && <Box
+                                        {price != originalPrice && bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion?.qty <= product.qty && (
+                                            <Box
                                                 sx={{
                                                     display: "inline-block",
                                                     backgroundColor: "#00C853",
@@ -748,7 +887,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             >
                                                 {bestPromotion?.offer_type == "flat" ? `Flat ${bestPromotion?.discount_amount} OFF` : `${bestPromotion?.discount_amount}% OFF`}
                                             </Box>
-                                        }
+                                        )}
                                         <Typography
                                             fontSize={19}
                                             fontWeight={600}
@@ -763,7 +902,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 },
                                             }}
                                         >
-                                            {currency?.symbol}{(price * product.qty * currency?.rate).toFixed(2)}
+                                            {currency?.symbol}{(price * quantity * currency?.rate).toFixed(2)}
                                         </Typography>
                                         <Typography
                                             fontSize={19}
@@ -789,11 +928,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 component="del"
                                             >
                                                 {originalPrice != price && currency?.symbol}
-                                                {originalPrice != price && (originalPrice * currency.rate * product.qty).toFixed(2)}
+                                                {originalPrice != price && (originalPrice * currency.rate * quantity).toFixed(2)}
                                             </Small>
                                         </Typography>
-                                        {
-                                            quantity > 1 && <Typography
+                                        {quantity > 1 && (
+                                            <Typography
                                                 fontSize={12}
                                                 color={"gray"}
                                                 textAlign={"right"}
@@ -809,7 +948,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             >
                                                 ({currency?.symbol}{(price * currency?.rate).toFixed(2)} each)
                                             </Typography>
-                                        }
+                                        )}
                                     </Typography>
                                 </Typography>
                             </Typography>
@@ -818,7 +957,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 </Box>
             </Box>
         </>
-    )
-}
+    );
+};
 
-export default Product
+export default Product;

@@ -50,7 +50,6 @@ import {getAPIAuth, postAPIAuth} from "utils/__api__/ApiServies";
 import React, {useEffect} from "react";
 
 import useAuth from "hooks/useAuth";
-// import Accordion from "components/page-sidenav/side-navbar/components/nav-accordion";
 import Accordion from "@mui/material/Accordion";
 import {useToasts} from "react-toast-notifications";
 import {PLACE_ORDER_VALIDATION} from "constant";
@@ -87,18 +86,31 @@ const Mycart = () => {
     const [formValues, setFormValues] = useState({
         voucher_code: "",
     });
+    const [storeCouponForm, setStoreCouponForm] = useState({
+        store_coupon_code: "",
+    });
+    const [storeCouponError, setStoreCouponError] = useState("");
+    const [storeCouponLoading, setStoreCouponLoading] = useState(false);
     const [countryModalOpen, setCountryModalOpen] = useState(false);
     const { location, setLocation, countries, isLoading, isLoadingCountries } = useLocation();
     const [voucherDetails, setVoucherDetails] = useState({discount: 0, voucherCode: ""});
     const [errors, setErrors] = useState({voucher_code: ""});
     const router = useRouter();
-    console.log(state, "helloooooooooooooo");
-    console.log(checkCustomizationSelect, isShippingAvailable, isStockAvailable, isDeleteProduct, isAvailable, "grghr4ghrr")
+    
+    // Check if cart has only one vendor
+    const isSingleVendor = state?.cart?.length === 1;
+    const currentVendor = isSingleVendor ? state?.cart?.[0] : null;
 
     const handleChange = (e) => {
         const {name, value} = e.target;
         setFormValues((prev) => ({...prev, [name]: value}));
         setErrors((prv) => ({...prv, [name]: ""}));
+    };
+
+    const handleStoreCouponChange = (e) => {
+        const {name, value} = e.target;
+        setStoreCouponForm((prev) => ({...prev, [name]: value}));
+        setStoreCouponError("");
     };
 
     const handleCountrySelect = (country) => {
@@ -197,7 +209,6 @@ const Mycart = () => {
     );
 
     function calculateOffset(currentPage) {
-        // console.log({currentPage, limit});
         return currentPage - 1;
     }
 
@@ -215,16 +226,13 @@ const Mycart = () => {
             if (res.status == 200) {
                 setAllAddress(res?.data?.addresses);
 
-                // Find default address or use the first one as fallback
                 const defaultAddr = res?.data?.addresses?.find((item) => item.default == "1") ||
                     res?.data?.addresses?.[0] ||
                     {};
 
                 setDefaultAddress(defaultAddr);
 
-                // If no default address exists but we have addresses, set the first one as default
                 if (res?.data?.addresses?.length > 0 && !defaultAddr._id) {
-                    // You might want to automatically set the first address as default via API
                     console.log("No default address found, using first address");
                 }
             }
@@ -265,13 +273,6 @@ const Mycart = () => {
         }
     }, [defaultAddress, token]);
 
-    // const handleAddressChnage = () => {
-    //     if (!token) {
-    //         return router.push("/login");
-    //     }
-    //     setModalOpen(true);
-    // }
-
     const handleApply = async () => {
         if (!token) {
             return router.push("/login");
@@ -282,9 +283,6 @@ const Mycart = () => {
         setErrors(newErrors);
         if (Object.keys(newErrors).length === 0) {
             try {
-                if (!token) {
-                    return router.push("/login");
-                }
                 const payload = {
                     voucher_code: formValues?.voucher_code,
                 };
@@ -299,7 +297,6 @@ const Mycart = () => {
                     }
                     setVoucherDetails(data);
                     localStorage.setItem("voucherDetails", JSON.stringify(data))
-                    // getCartItems(defaultAddress?._id);
                     const walletdata = wallet ? "1" : "0";
                     getCartDetails(walletdata, defaultAddress?._id, res?.data?.discount);
                     addToast(res?.data?.message, {
@@ -317,6 +314,7 @@ const Mycart = () => {
             }
         }
     };
+    
     const handleRemove = async () => {
         setVoucherDetails({discount: 0, voucherCode: ""});
         setFormValues({voucher_code: ""});
@@ -328,6 +326,98 @@ const Mycart = () => {
             autoDismiss: true,
         });
     };
+
+    // Store Coupon Functions
+    const handleStoreCouponApply = async () => {
+        if (!token) {
+            return router.push("/login");
+        }
+        if (!isSingleVendor || !currentVendor) {
+            addToast("Store coupon can only be applied for single shop orders", {
+                appearance: "error",
+                autoDismiss: true,
+            });
+            return;
+        }
+        
+        if (!storeCouponForm.store_coupon_code) {
+            setStoreCouponError("Store coupon code is required");
+            return;
+        }
+        
+        try {
+            setStoreCouponLoading(true);
+            const payload = {
+                coupon_code: storeCouponForm?.store_coupon_code,
+                vendor_id: currentVendor?.vendor_id,
+            };
+            
+            const res = await postAPIAuth("user/check-coupon-for-product", payload);
+            if (res.status === 200) {
+                setStoreCouponLoading(false);
+                getCartItems(defaultAddress?._id);
+                const data = wallet ? "1" : "0";
+                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                setStoreCouponError("");
+                addToast(res?.data?.message, {
+                    appearance: "success",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            setStoreCouponLoading(false);
+            setStoreCouponError(error?.response?.data.message || "Failed to apply store coupon");
+            addToast(error?.response?.data.message || error, {
+                appearance: "error",
+                autoDismiss: true,
+            });
+            console.log("error", error?.response?.data.message || error);
+        }
+    };
+
+    const handleStoreCouponRemove = async () => {
+        if (!token || !isSingleVendor || !currentVendor) {
+            return;
+        }
+        
+        try {
+            setStoreCouponLoading(true);
+            const payload = {
+                coupon_code: storeCouponForm?.store_coupon_code || currentVendor?.vendor_coupon?.coupon_data?.coupon_code,
+                vendor_id: currentVendor?.vendor_id,
+            };
+            
+            const res = await postAPIAuth("user/remove-coupon-for-product", payload);
+            if (res.status === 200) {
+                setStoreCouponLoading(false);
+                getCartItems(defaultAddress?._id);
+                const data = wallet ? "1" : "0";
+                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                setStoreCouponForm({store_coupon_code: ""});
+                setStoreCouponError("");
+                addToast(res?.data?.message, {
+                    appearance: "success",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            setStoreCouponLoading(false);
+            addToast(error?.response?.data.message || error, {
+                appearance: "error",
+                autoDismiss: true,
+            });
+            console.log("error", error?.response?.data.message || error);
+        }
+    };
+
+    // Initialize store coupon form when vendor has coupon applied
+    useEffect(() => {
+        if (isSingleVendor && currentVendor?.vendor_coupon?.coupon_data?.coupon_code) {
+            setStoreCouponForm({
+                store_coupon_code: currentVendor.vendor_coupon.coupon_data.coupon_code
+            });
+        }
+    }, [isSingleVendor, currentVendor]);
 
     useEffect(() => {
         const data = localStorage.getItem("voucherDetails");
@@ -347,12 +437,11 @@ const Mycart = () => {
     return (
         <>
             <div>
-                {/* <Button onClick={handleSnackClick}>Open Snackbar</Button> */}
                 <Snackbar
                     open={snackOpen}
                     autoHideDuration={3000}
                     onClose={sanckClose}
-                    anchorOrigin={{vertical: "bottom", horizontal: "right"}} // Position at bottom right
+                    anchorOrigin={{vertical: "bottom", horizontal: "right"}}
                     action={action}
                 >
                     <Alert
@@ -393,7 +482,7 @@ const Mycart = () => {
                                 >
                                     <path fill="none" d="M0 0h24v24H0z"></path>
                                     <path
-                                        d="M12.22 19.85c-.18.18-.5.21-.71 0a.504.504 0 0 1 0-.71l3.39-3.39-1.41-1.41-3.39 3.39c-.19.2-.51.19-.71 0a.504.504 0 0 1 0-.71l3.39-3.39-1.41-1.41-3.39 3.39c-.18.18-.5.21-.71 0a.513.513 0 0 1 0-.71l3.39-3.39-1.42-1.41-3.39 3.39c-.18.18-.5.21-.71 0a.513.513 0 0 1 0-.71L9.52 8.4l1.87 1.86c.95.95 2.59.94 3.54 0 .98-.98.98-2.56 0-3.54l-1.86-1.86.28-.28c.78-.78 2.05-.78 2.83 0l4.24 4.24c.78.78.78 2.05 0 2.83l-8.2 8.2zm9.61-6.78a4.008 4.008 0 0 0 0-5.66l-4.24-4.24a4.008 4.008 0 0 0-5.66 0l-.28.28-.28-.28a4.008 4.008 0 0 0-5.66 0L2.17 6.71a3.992 3.992 0 0 0-.4 5.19l1.45-1.45a2 2 0 0 1 .37-2.33l3.54-3.54c.78-.78 2.05-.78 2.83 0l3.56 3.56c.18.18.21.5 0 .71-.21.21-.53.18-.71 0L9.52 5.57l-5.8 5.79c-.98.97-.98 2.56 0 3.54.39.39.89.63 1.42.7a2.458 2.458 0 0 0 2.12 2.12 2.458 2.458 0 0 0 2.12 2.12c.07.54.31 1.03.7 1.42.47.47 1.1.73 1.77.73.67 0 1.3-.26 1.77-.73l8.21-8.19z"></path>
+                                        d="M12.22 19.85c-.18.18-.5.21-.71 0a.504.504 0 0 1 0-.71l3.39-3.39-1.41-1.41-3.39 3.39c-.19.2-.51.19-.71 0a.504.504 0 0 1 0-.71l3.39-3.39-1.41-1.41-3.39 3.39c-.18.18-.5.21-.71 0a.513.513 0 0 1 0-.71l3.39-3.39-1.42-1.41-3.39 3.39c-.18.18-.5.21-.71 0a.513.513 0 0 1 0-.71L9.52 8.4l1.87 1.86c.95.95 2.59.94 3.54 0 .98-.98.98-2.56 0-3.54l-1.86-1.86.28-.28c.78-.78 2.05-.78 2.83 0l4.24 4.24c.78.78.78 2.05 0 2.83l-8.2 8.2zm9.61-6.78a4.008 4.008 0 0 0 0-5.66l-4.24-4.24a4.008 4.008 0 0 0-5.66 0l-.28.28-.28-.28a4.008 4.008 0 0 0-5.66 0L2.17 6.71a3.992 3.992 0 0 0-.4 5.19l1.45-1.45a2 2 0 0 1 .37-2.33l3.54-3.54c.78-.78 2.05-.78 2.83 0l3.56 3.56c.18.18.21.5 0 .71-.21.21-.53.18-.71 0L9.52 5.57-3.72 15.36c-.98.97-.98 2.56 0 3.54.39.39.89.63 1.42.7a2.458 2.458 0 0 0 2.12 2.12 2.458 2.458 0 0 0 2.12 2.12c.07.54.31 1.03.7 1.42.47.47 1.1.73 1.77.73.67 0 1.3-.26 1.77-.73l8.21-8.19z"></path>
                                 </svg>
                             </Typography>
                             <Typography component="span" pl={1}>
@@ -445,7 +534,8 @@ const Mycart = () => {
                                     return (
                                         <SingleVendorCart key={index} wallet={wallet} cart={cart}
                                                           defaultAddress={defaultAddress}
-                                                          voucherDetails={voucherDetails}/>
+                                                          voucherDetails={voucherDetails}
+                                                          isSingleVendor={isSingleVendor}/>
                                     );
                                 })
                             )}
@@ -561,52 +651,8 @@ const Mycart = () => {
                                                         </TableCell>
                                                     </TableRow>
                                                 }
-                                                {/*<TableRow>*/}
-                                                {/*    <TableCell colSpan={2}>*/}
-                                                {/*        {token && defaultAddress?._id && (*/}
-                                                {/*            <Box sx={{*/}
-                                                {/*                mb: 3,*/}
-                                                {/*                p: 2,*/}
-                                                {/*                width: "100%",*/}
-                                                {/*                border: "1px solid #e0e0e0",*/}
-                                                {/*                borderRadius: 1*/}
-                                                {/*            }}>*/}
-                                                {/*                <Typography variant="subtitle1" fontWeight={600}*/}
-                                                {/*                            gutterBottom>*/}
-                                                {/*                    Delivery Address*/}
-                                                {/*                </Typography>*/}
-                                                {/*                <Box sx={{*/}
-                                                {/*                    p: 1.5,*/}
-                                                {/*                    backgroundColor: "#f9f9f9",*/}
-                                                {/*                    borderRadius: 1*/}
-                                                {/*                }}>*/}
-                                                {/*                    <Typography fontWeight={600}>*/}
-                                                {/*                        {defaultAddress?.first_name} {defaultAddress?.last_name}*/}
-                                                {/*                    </Typography>*/}
-                                                {/*                    <Typography variant="body2" color="text.secondary">*/}
-                                                {/*                        {defaultAddress?.address_line1}*/}
-                                                {/*                        {defaultAddress?.address_line2 && `, ${defaultAddress?.address_line2}`}*/}
-                                                {/*                    </Typography>*/}
-                                                {/*                    <Typography variant="body2" color="text.secondary">*/}
-                                                {/*                        {defaultAddress?.city}, {defaultAddress?.state}, {defaultAddress?.country} - {defaultAddress?.pincode}*/}
-                                                {/*                    </Typography>*/}
-                                                {/*                    <Typography variant="body2" color="text.secondary">*/}
-                                                {/*                        Phone: {defaultAddress?.mobile}*/}
-                                                {/*                    </Typography>*/}
-                                                {/*                </Box>*/}
-                                                {/*                <Button*/}
-                                                {/*                    variant="text"*/}
-                                                {/*                    size="small"*/}
-                                                {/*                    onClick={handleAddressChnage}*/}
-                                                {/*                    sx={{mt: 1, color: "primary.main", fontWeight: 600}}*/}
-                                                {/*                >*/}
-                                                {/*                    Change Address*/}
-                                                {/*                </Button>*/}
-                                                {/*            </Box>*/}
-                                                {/*        )}*/}
-                                                {/*    </TableCell>*/}
-                                                {/*</TableRow>*/}
 
+                                                {/* VOUCHER INPUT FIELD */}
                                                 <TableRow>
                                                     <TableCell colSpan={2}>
                                                         <Box
@@ -668,6 +714,77 @@ const Mycart = () => {
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
+
+                                                {/* STORE COUPON INPUT FIELD (Only for single vendor) */}
+                                                {isSingleVendor && currentVendor && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2}>
+                                                            <Box
+                                                                sx={{
+                                                                    display: "flex",
+                                                                    flexDirection: {xs: "column", sm: "row"},
+                                                                    alignItems: "center",
+                                                                    gap: {xs: 1, sm: 2},
+                                                                    backgroundColor: "#fff",
+                                                                    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                                                                    padding: "8px 16px",
+                                                                    height: {xs: "auto", sm: "56px"},
+                                                                }}
+                                                            >
+                                                                <TextField
+                                                                    fullWidth
+                                                                    placeholder={`Enter ${currentVendor?.shop_name} store coupon`}
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    sx={{
+                                                                        mr: {xs: 0, sm: 2},
+                                                                        mb: {xs: 1, sm: 0},
+                                                                        ".MuiOutlinedInput-root": {
+                                                                            background: "#f5f5f5",
+                                                                        },
+                                                                        ".MuiOutlinedInput-notchedOutline": {
+                                                                            border: "none",
+                                                                        },
+                                                                    }}
+                                                                    value={storeCouponForm?.store_coupon_code}
+                                                                    name="store_coupon_code"
+                                                                    onChange={handleStoreCouponChange}
+                                                                    error={Boolean(storeCouponError)}
+                                                                    disabled={currentVendor?.coupon_status}
+                                                                />
+                                                                <Button
+                                                                    endIcon={storeCouponLoading ?
+                                                                        <CircularProgress size={15}/> : null}
+                                                                    variant="contained"
+                                                                    color="primary"
+                                                                    size="small"
+                                                                    disabled={storeCouponLoading}
+                                                                    sx={{
+                                                                        borderRadius: "20px",
+                                                                        textTransform: "none",
+                                                                        px: 3,
+                                                                        minWidth: "auto",
+                                                                        width: {xs: "100%", sm: "auto"},
+                                                                    }}
+                                                                    onClick={currentVendor?.coupon_status ? handleStoreCouponRemove : handleStoreCouponApply}
+                                                                >
+                                                                    {currentVendor?.coupon_status ? "Remove" : "Apply"}
+                                                                </Button>
+                                                            </Box>
+                                                            {storeCouponError && (
+                                                                <Typography color="error" fontSize={13} mt={0.5} ml={1}>
+                                                                    {storeCouponError}
+                                                                </Typography>
+                                                            )}
+                                                            {currentVendor?.coupon_status && (
+                                                                <Typography color="green" fontSize={13} mt={0.5} ml={1}>
+                                                                    Store coupon applied successfully!
+                                                                </Typography>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+
                                                 <TableRow>
                                                     <TableCell>
                                                         <Typography
@@ -875,7 +992,7 @@ const Mycart = () => {
                     getAddressData={getAddressData}
                     allAddress={allAddress}
                     defaultAddress={defaultAddress}
-                    setDefaultAddress={setDefaultAddress} // This should trigger the useEffect above
+                    setDefaultAddress={setDefaultAddress}
                 />
             )}
             <CountryModal
@@ -889,7 +1006,6 @@ const Mycart = () => {
     );
 }
 
-// Add this before the main Mycart component
 const CartShimmerLoader = () => {
     return (
         <Container py={5} sx={{padding: "30px 0"}}>
@@ -906,13 +1022,10 @@ const CartShimmerLoader = () => {
                         <Box sx={{padding: "18px"}}>
                             {[...Array(2)].map((_, index) => (
                                 <Box key={index} sx={{mb: 3, p: 2, border: "1px solid #e0e0e0", borderRadius: 2}}>
-                                    {/* Vendor header */}
                                     <Box sx={{display: "flex", alignItems: "center", mb: 2}}>
                                         <Skeleton variant="circular" width={40} height={40}/>
                                         <Skeleton variant="text" width="40%" height={30} sx={{ml: 2}}/>
                                     </Box>
-
-                                    {/* Product items */}
                                     {[...Array(2)].map((_, productIndex) => (
                                         <Box key={productIndex} sx={{display: "flex", mb: 2, p: 1}}>
                                             <Skeleton variant="rectangular" width={80} height={80} sx={{mr: 2}}/>
@@ -924,8 +1037,6 @@ const CartShimmerLoader = () => {
                                             <Skeleton variant="circular" width={30} height={30}/>
                                         </Box>
                                     ))}
-
-                                    {/* Shipping and total */}
                                     <Box sx={{mt: 2, pt: 2, borderTop: "1px solid #e0e0e0"}}>
                                         <Skeleton variant="text" width="50%" height={20}/>
                                         <Skeleton variant="text" width="30%" height={20} sx={{mt: 1}}/>
@@ -937,22 +1048,16 @@ const CartShimmerLoader = () => {
 
                     <Grid item lg={4} md={5} xs={12}>
                         <Box>
-                            {/* Summary section */}
                             <Skeleton variant="text" width="40%" height={30} sx={{mb: 2}}/>
-
                             {[...Array(6)].map((_, index) => (
                                 <Box key={index} sx={{display: "flex", justifyContent: "space-between", mb: 2}}>
                                     <Skeleton variant="text" width="40%" height={25}/>
                                     <Skeleton variant="text" width="20%" height={25}/>
                                 </Box>
                             ))}
-
-                            {/* Voucher section */}
                             <Box sx={{mb: 2}}>
                                 <Skeleton variant="rectangular" height={56} sx={{borderRadius: 1}}/>
                             </Box>
-
-                            {/* Checkout button */}
                             <Skeleton variant="rectangular" height={50} sx={{borderRadius: 25, mt: 2}}/>
                         </Box>
                     </Grid>

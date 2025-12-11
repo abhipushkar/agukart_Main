@@ -7,13 +7,6 @@ import {
   Typography,
   Box,
   Breadcrumbs,
-  FormControl,
-  Select,
-  MenuItem,
-  Button,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from "@mui/material";
 import { ChevronRight as ChevronRightIcon } from "@mui/icons-material";
 import { useRouter, useSearchParams } from "next/navigation";

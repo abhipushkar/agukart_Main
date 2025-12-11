@@ -9,27 +9,23 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import NextLink from "next/link";
-import {H4} from "components/Typography";
-import parse from "html-react-parser";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import Checkbox from "@mui/material/Checkbox";
 import Accordion from "@mui/material/Accordion";
 import {useState} from "react";
 import {useToasts} from "react-toast-notifications";
-import {postAPIAuth, getAPIAuth} from "utils/__api__/ApiServies";
+import {postAPIAuth} from "utils/__api__/ApiServies";
 import useCart from "hooks/useCart";
 import useAuth from "hooks/useAuth";
 import {useRouter} from "next/navigation";
-import {fontSize} from "theme/typography";
 import Product from "./Product";
 import {useCurrency} from "contexts/CurrencyContext";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckoutPopup from "./CheckoutPopup";
 
-const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
+const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingleVendor}) => {
     const router = useRouter();
     const {currency} = useCurrency();
     const [formValues, setFormValues] = useState({
@@ -98,7 +94,6 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
                     autoDismiss: true,
                 }
             );
-            // const productids = cart?.products?.map((item) => item?.product_id);
             const payload = {
                 cart_id: cart?.products?.[0]?.cart_id,
                 product_id: cart?.products?.[0]?.product_id,
@@ -107,8 +102,6 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
             }
             const res = await postAPIAuth("user/save-note", payload);
             if (res.status === 200) {
-                // setIsNoteOpen(false);
-                // setVendorNote("");
                 return addToast(
                     "Add note successfully",
                     {
@@ -130,71 +123,70 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
             setAddingNote(false);
         }
     };
-    // const handleApply = async () => {
-    //     if (!token) {
-    //         return router.push("/login");
-    //     }
-    //     try {
-    //         if (!token) {
-    //             return router.push("/login");
-    //         }
-    //         const payload = {
-    //             coupon_code: formValues?.coupon_code,
-    //             vendor_id: cart?.vendor_id,
-    //         };
-    //         setLoading(true);
-    //         const res = await postAPIAuth("user/check-coupon-for-product", payload);
-    //         if (res.status === 200) {
-    //             setLoading(false);
-    //             getCartItems(defaultAddress?._id);
-    //             const data = wallet ? "1" : "0";
-    //             getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-    //             setError("");
-    //             // addToast(res?.data?.message, {
-    //             //     appearance: "success",
-    //             //     autoDismiss: true,
-    //             // });
-    //         }
-    //     } catch (error) {
-    //         setLoading(false);
-    //         // addToast(error?.response?.data.message || error, {
-    //         //     appearance: "error",
-    //         //     autoDismiss: true,
-    //         // });
-    //         setError(error?.response?.data.message);
-    //         console.log("error", error?.response?.data.message || error);
-    //     }
-    // };
-    //
-    // const handleRemove = async () => {
-    //     try {
-    //         const payload = {
-    //             coupon_code: formValues?.coupon_code,
-    //             vendor_id: cart?.vendor_id,
-    //         };
-    //         setLoading(true);
-    //         const res = await postAPIAuth("user/remove-coupon-for-product", payload);
-    //         if (res.status === 200) {
-    //             setLoading(false);
-    //             getCartItems(defaultAddress?._id);
-    //             const data = wallet ? "1" : "0";
-    //             getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-    //             setFormValues({coupon_code: ""});
-    //             setIsOpen(false);
-    //             // addToast(res?.data?.message, {
-    //             //     appearance: "success",
-    //             //     autoDismiss: true,
-    //             // });
-    //         }
-    //     } catch (error) {
-    //         setLoading(false);
-    //         // addToast(error?.response?.data.message || error, {
-    //         //     appearance: "error",
-    //         //     autoDismiss: true,
-    //         // });
-    //         console.log("error", error?.response?.data.message || error);
-    //     }
-    // };
+    
+    // ENABLE STORE COUPON FUNCTIONALITY FOR SINGLE VENDOR
+    const handleApply = async () => {
+        if (!token) {
+            return router.push("/login");
+        }
+        try {
+            const payload = {
+                coupon_code: formValues?.coupon_code,
+                vendor_id: cart?.vendor_id,
+            };
+            setLoading(true);
+            const res = await postAPIAuth("user/check-coupon-for-product", payload);
+            if (res.status === 200) {
+                setLoading(false);
+                getCartItems(defaultAddress?._id);
+                const data = wallet ? "1" : "0";
+                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                setError("");
+                addToast(res?.data?.message, {
+                    appearance: "success",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            addToast(error?.response?.data.message || error, {
+                appearance: "error",
+                autoDismiss: true,
+            });
+            setError(error?.response?.data.message);
+            console.log("error", error?.response?.data.message || error);
+        }
+    };
+
+    const handleRemove = async () => {
+        try {
+            const payload = {
+                coupon_code: formValues?.coupon_code,
+                vendor_id: cart?.vendor_id,
+            };
+            setLoading(true);
+            const res = await postAPIAuth("user/remove-coupon-for-product", payload);
+            if (res.status === 200) {
+                setLoading(false);
+                getCartItems(defaultAddress?._id);
+                const data = wallet ? "1" : "0";
+                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                setFormValues({coupon_code: ""});
+                setIsOpen(false);
+                addToast(res?.data?.message, {
+                    appearance: "success",
+                    autoDismiss: true,
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            addToast(error?.response?.data.message || error, {
+                appearance: "error",
+                autoDismiss: true,
+            });
+            console.log("error", error?.response?.data.message || error);
+        }
+    };
 
     function capitalizeFirstLetter(string) {
         if (!string) return "";
@@ -370,139 +362,142 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
                                 >
                                     <Typography component="div">
                                         <Typography component="div" pb={2}>
-                                            {/*<Accordion*/}
-                                            {/*    expanded={isOpen}*/}
-                                            {/*    sx={{*/}
-                                            {/*        boxShadow: "none",*/}
-                                            {/*        borderTop: "none",*/}
-                                            {/*    }}*/}
-                                            {/*>*/}
-                                            {/*    <AccordionSummary*/}
-                                            {/*        aria-controls="panel1-content"*/}
-                                            {/*        id="panel1-header"*/}
-                                            {/*        onClick={handleAccordionToggle}*/}
-                                            {/*    >*/}
-                                            {/*        <Button*/}
-                                            {/*            sx={{*/}
-                                            {/*                background: "transparent",*/}
-                                            {/*                color: "#000",*/}
-                                            {/*                padding: "10px 18px",*/}
-                                            {/*                fontSize: "13px",*/}
-                                            {/*                borderRadius: "25px",*/}
-                                            {/*            }}*/}
-                                            {/*        >*/}
-                                            {/*            <Typography*/}
-                                            {/*                component="span"*/}
-                                            {/*                mr={1}*/}
-                                            {/*                sx={{*/}
-                                            {/*                    background: "#43639f",*/}
-                                            {/*                    borderRadius: "50%",*/}
-                                            {/*                    height: "24px",*/}
-                                            {/*                    width: "24px",*/}
-                                            {/*                    display: "flex",*/}
-                                            {/*                    justifyContent: "center",*/}
-                                            {/*                    alignItems: "center",*/}
-                                            {/*                }}*/}
-                                            {/*            >*/}
-                                            {/*                <svg*/}
-                                            {/*                    stroke="#fff"*/}
-                                            {/*                    fill="#fff"*/}
-                                            {/*                    xmlns="http://www.w3.org/2000/svg"*/}
-                                            {/*                    height="14px"*/}
-                                            {/*                    width="14px"*/}
-                                            {/*                    viewBox="0 0 24 24"*/}
-                                            {/*                    aria-hidden="true"*/}
-                                            {/*                    focusable="false"*/}
-                                            {/*                >*/}
-                                            {/*                    <path*/}
-                                            {/*                        d="M11,22a1,1,0,0,1-.707-0.293l-8-8a1,1,0,0,1,0-1.414l10-10A1,1,0,0,1,13,2h8a1,1,0,0,1,1,1v8a1,1,0,0,1-.293.707l-10,10A1,1,0,0,1,11,22ZM4.414,13L11,19.586l9-9V4H13.414Z"></path>*/}
-                                            {/*                    <circle cx="16" cy="8" r="2"></circle>*/}
-                                            {/*                </svg>*/}
-                                            {/*            </Typography>*/}
-                                            {/*            Apply Store Coupon Code*/}
-                                            {/*        </Button>*/}
-                                            {/*    </AccordionSummary>*/}
-                                            {/*    <AccordionDetails>*/}
-                                            {/*        <Box*/}
-                                            {/*            sx={{*/}
-                                            {/*                height: "50px",*/}
-                                            {/*                padding: "12px",*/}
-                                            {/*                display: "flex",*/}
-                                            {/*                alignItems: "center",*/}
-                                            {/*                justifyContent: "space-between",*/}
-                                            {/*                background: "#fff",*/}
-                                            {/*                boxShadow: "0 0 3px #000",*/}
-                                            {/*                borderRadius: "30px",*/}
-                                            {/*            }}*/}
-                                            {/*        >*/}
-                                            {/*            <TextField*/}
-                                            {/*                required*/}
-                                            {/*                id="outlined-required"*/}
-                                            {/*                placeholder="Enter your code"*/}
-                                            {/*                sx={{*/}
-                                            {/*                    ".MuiOutlinedInput-notchedOutline": {*/}
-                                            {/*                        border: "none",*/}
-                                            {/*                    },*/}
-                                            {/*                }}*/}
-                                            {/*                disabled={cart?.coupon_status}*/}
-                                            {/*                value={formValues?.coupon_code}*/}
-                                            {/*                name="coupon_code"*/}
-                                            {/*                onChange={handleChange}*/}
-                                            {/*            />*/}
-                                            {/*            {cart?.coupon_status ? (*/}
-                                            {/*                <Button*/}
-                                            {/*                    sx={{*/}
-                                            {/*                        paddingLeft: "18px",*/}
-                                            {/*                        paddingRight: "18px",*/}
-                                            {/*                        background: "none",*/}
-                                            {/*                        border: "none",*/}
-                                            {/*                        borderRadius: "30px",*/}
-                                            {/*                    }}*/}
-                                            {/*                    onClick={handleRemove}*/}
-                                            {/*                >*/}
-                                            {/*                    Remove*/}
-                                            {/*                </Button>*/}
-                                            {/*            ) : (*/}
-                                            {/*                <Button*/}
-                                            {/*                    sx={{*/}
-                                            {/*                        paddingLeft: "18px",*/}
-                                            {/*                        paddingRight: "18px",*/}
-                                            {/*                        background: "none",*/}
-                                            {/*                        border: "none",*/}
-                                            {/*                        borderRadius: "30px",*/}
-                                            {/*                    }}*/}
-                                            {/*                    onClick={handleApply}*/}
-                                            {/*                    disabled={loading}*/}
-                                            {/*                >*/}
-                                            {/*                    {loading ? <CircularProgress size={15}/> : "Apply"}*/}
-                                            {/*                </Button>*/}
-                                            {/*            )}*/}
-                                            {/*        </Box>*/}
-                                            {/*    </AccordionDetails>*/}
-                                            {/*    <Typography pl={2}>*/}
-                                            {/*        {cart?.coupon_status && (*/}
-                                            {/*            <Typography component="div">*/}
-                                            {/*                <Typography color={"green"} sx={{fontSize: "16px"}}>*/}
-                                            {/*                    {currency?.symbol}{" "}*/}
-                                            {/*                    {(*/}
-                                            {/*                        currency?.rate **/}
-                                            {/*                        cart?.discountAmount*/}
-                                            {/*                    ).toFixed(2)}{" "}*/}
-                                            {/*                    Coupon Applied Successfully*/}
-                                            {/*                </Typography>*/}
-                                            {/*            </Typography>*/}
-                                            {/*        )}*/}
-                                            {/*        {error && (*/}
-                                            {/*            <Typography*/}
-                                            {/*                color={"red"}*/}
-                                            {/*                sx={{fontSize: "16px"}}*/}
-                                            {/*                component="div"*/}
-                                            {/*            >*/}
-                                            {/*                {error}*/}
-                                            {/*            </Typography>*/}
-                                            {/*        )}*/}
-                                            {/*    </Typography>*/}
-                                            {/*</Accordion>*/}
+                                            {/* ENABLE STORE COUPON FOR SINGLE VENDOR */}
+                                            {/* {isSingleVendor && (
+                                                <Accordion
+                                                    expanded={isOpen}
+                                                    sx={{
+                                                        boxShadow: "none",
+                                                        borderTop: "none",
+                                                    }}
+                                                >
+                                                    <AccordionSummary
+                                                        aria-controls="panel1-content"
+                                                        id="panel1-header"
+                                                        onClick={handleAccordionToggle}
+                                                    >
+                                                        <Button
+                                                            sx={{
+                                                                background: "transparent",
+                                                                color: "#000",
+                                                                padding: "10px 18px",
+                                                                fontSize: "13px",
+                                                                borderRadius: "25px",
+                                                            }}
+                                                        >
+                                                            <Typography
+                                                                component="span"
+                                                                mr={1}
+                                                                sx={{
+                                                                    background: "#43639f",
+                                                                    borderRadius: "50%",
+                                                                    height: "24px",
+                                                                    width: "24px",
+                                                                    display: "flex",
+                                                                    justifyContent: "center",
+                                                                    alignItems: "center",
+                                                                }}
+                                                            >
+                                                                <svg
+                                                                    stroke="#fff"
+                                                                    fill="#fff"
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    height="14px"
+                                                                    width="14px"
+                                                                    viewBox="0 0 24 24"
+                                                                    aria-hidden="true"
+                                                                    focusable="false"
+                                                                >
+                                                                    <path
+                                                                        d="M11,22a1,1,0,0,1-.707-0.293l-8-8a1,1,0,0,1,0-1.414l10-10A1,1,0,0,1,13,2h8a1,1,0,0,1,1,1v8a1,1,0,0,1-.293.707l-10,10A1,1,0,0,1,11,22ZM4.414,13L11,19.586l9-9V4H13.414Z"></path>
+                                                                    <circle cx="16" cy="8" r="2"></circle>
+                                                                </svg>
+                                                            </Typography>
+                                                            Apply Store Coupon Code
+                                                        </Button>
+                                                    </AccordionSummary>
+                                                    <AccordionDetails>
+                                                        <Box
+                                                            sx={{
+                                                                height: "50px",
+                                                                padding: "12px",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "space-between",
+                                                                background: "#fff",
+                                                                boxShadow: "0 0 3px #000",
+                                                                borderRadius: "30px",
+                                                            }}
+                                                        >
+                                                            <TextField
+                                                                required
+                                                                id="outlined-required"
+                                                                placeholder="Enter your code"
+                                                                sx={{
+                                                                    ".MuiOutlinedInput-notchedOutline": {
+                                                                        border: "none",
+                                                                    },
+                                                                }}
+                                                                disabled={cart?.coupon_status}
+                                                                value={formValues?.coupon_code}
+                                                                name="coupon_code"
+                                                                onChange={handleChange}
+                                                            />
+                                                            {cart?.coupon_status ? (
+                                                                <Button
+                                                                    sx={{
+                                                                        paddingLeft: "18px",
+                                                                        paddingRight: "18px",
+                                                                        background: "none",
+                                                                        border: "none",
+                                                                        borderRadius: "30px",
+                                                                    }}
+                                                                    onClick={handleRemove}
+                                                                >
+                                                                    Remove
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    sx={{
+                                                                        paddingLeft: "18px",
+                                                                        paddingRight: "18px",
+                                                                        background: "none",
+                                                                        border: "none",
+                                                                        borderRadius: "30px",
+                                                                    }}
+                                                                    onClick={handleApply}
+                                                                    disabled={loading}
+                                                                >
+                                                                    {loading ? <CircularProgress size={15}/> : "Apply"}
+                                                                </Button>
+                                                            )}
+                                                        </Box>
+                                                    </AccordionDetails>
+                                                    <Typography pl={2}>
+                                                        {cart?.coupon_status && (
+                                                            <Typography component="div">
+                                                                <Typography color={"green"} sx={{fontSize: "16px"}}>
+                                                                    {currency?.symbol}{" "}
+                                                                    {(
+                                                                        currency?.rate *
+                                                                        cart?.discountAmount
+                                                                    ).toFixed(2)}{" "}
+                                                                    Coupon Applied Successfully
+                                                                </Typography>
+                                                            </Typography>
+                                                        )}
+                                                        {error && (
+                                                            <Typography
+                                                                color={"red"}
+                                                                sx={{fontSize: "16px"}}
+                                                                component="div"
+                                                            >
+                                                                {error}
+                                                            </Typography>
+                                                        )}
+                                                    </Typography>
+                                                </Accordion>
+                                            )} */}
                                             <Accordion
                                                 expanded={isNoteOpen}
                                                 sx={{
@@ -646,26 +641,26 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
                                                     {deliveryOptions?.map((option) => (
                                                         <MenuItem key={option.value} value={option.value}>
                                                             <Typography fontSize={16}>{option.label}</Typography>
-                                                            {/* <Typography fontSize={12} color={"gray"}>
-                                                  {option.info}
-                                                  </Typography> */}
                                                         </MenuItem>
                                                     ))}
                                                 </Select>
                                             </Box>
-                                            <Button
-                                                variant="outlined"
-                                                sx={{
-                                                    border: "none",
-                                                    color: "#000",
-                                                    fontWeight: "bold",
-                                                    textTransform: "none",
-                                                }}
-                                                endIcon={<ArrowForwardIcon/>}
-                                                onClick={handleVendorCheckout}
-                                            >
-                                                Checkout for this shop only
-                                            </Button>
+                                            {/* SHOW "CHECKOUT FOR THIS SHOP ONLY" ONLY FOR MULTIPLE VENDORS */}
+                                            {!isSingleVendor && (
+                                                <Button
+                                                    variant="outlined"
+                                                    sx={{
+                                                        border: "none",
+                                                        color: "#000",
+                                                        fontWeight: "bold",
+                                                        textTransform: "none",
+                                                    }}
+                                                    endIcon={<ArrowForwardIcon/>}
+                                                    onClick={handleVendorCheckout}
+                                                >
+                                                    Checkout for this shop only
+                                                </Button>
+                                            )}
                                         </Box>
                                     ) : (
                                         <>
