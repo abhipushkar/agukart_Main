@@ -30,7 +30,6 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckoutPopup from "./CheckoutPopup";
 
 const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
-    console.log({cart});
     const router = useRouter();
     const {currency} = useCurrency();
     const [formValues, setFormValues] = useState({
@@ -99,7 +98,7 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails}) => {
                     autoDismiss: true,
                 }
             );
-            const productids = cart?.products?.map((item) => item?.product_id);
+            // const productids = cart?.products?.map((item) => item?.product_id);
             const payload = {
                 cart_id: cart?.products?.[0]?.cart_id,
                 product_id: cart?.products?.[0]?.product_id,

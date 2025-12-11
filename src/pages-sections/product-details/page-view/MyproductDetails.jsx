@@ -609,7 +609,7 @@ const MyproductDetails = ({ slug }) => {
             
             if (parentVariant) {
               // For parent variants, we keep the IDs
-              payload.variant_id.push(variantIdentifier);
+              payload.variant_id.push(parentVariant._id);
               payload.variant_attribute_id.push(attributeId);
             }
           }

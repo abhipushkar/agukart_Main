@@ -74,6 +74,8 @@ export const useProductVariants = (product) => {
 
         // Handle internal variants - ONLY show variants that are in product_variants
         if (product?.product_variants?.length > 0) {
+            console.log("Product Variants ", product.product_variants);
+            
 
             product.product_variants.forEach(variant => {
                 // Find corresponding variant info from variant_id array for guide data
@@ -388,7 +390,7 @@ export const useProductVariants = (product) => {
             const selectionString = selectionIds.sort().join(',');
             const comboData = combinationsMap?.get(selectionString);
             if (comboData) {
-                return comboData.qty === 0 || comboData.qty === null;
+                return comboData.qty == 0;
             }
 
             return false;
