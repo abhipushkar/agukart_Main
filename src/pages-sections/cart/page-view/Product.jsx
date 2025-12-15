@@ -1,11 +1,9 @@
-import React from 'react'
 import Box from "@mui/material/Box";
 import { Typography, Button, Avatar } from '@mui/material';
 import { H4 } from "components/Typography";
 import Link from "next/link";
 import NextLink from "next/link";
 import MenuItem from "@mui/material/MenuItem";
-import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import parse from "html-react-parser";
@@ -17,7 +15,6 @@ import { useRouter } from 'next/navigation';
 import { Small } from "components/Typography";
 import useCart from 'hooks/useCart';
 import { postAPIAuth } from 'utils/__api__/ApiServies';
-import { set, update } from 'lodash';
 import { calculatePriceAfterDiscount } from 'utils/calculatePriceAfterDiscount';
 import { useToasts } from 'react-toast-notifications';
 
@@ -236,44 +233,38 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
         const variantPrice = calculateVariantPrice();
         
-        const bestPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
-            if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty <= quantity) {
-                if (!best || promotion.qty > best.qty || (promotion.qty === best.qty && promotion.discount_amount > best.discount_amount)) {
-                    return promotion;
-                }
-            }
-            return best;
-        }, null);
+        // --- NEW LOGIC: Calculate price based on local quantity and centralized rules ---
+        const couponValues = cart?.vendor_coupon || {}; 
+        const isSynced = couponValues?.isSynced || couponValues?.coupon_data?.isSynced || false;
         
-        const bestAmountPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
-            if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= +variantPrice) {
-                if (!best || promotion.offer_amount > best.offer_amount) {
-                    return promotion;
-                }
-            }
-            return best;
-        }, null);
+        // Calculate total qty for shop-level offers based on LOCAL quantity
+        const otherProductsQty = cart?.products?.reduce((acc, item) => {
+            return item.product_id === product.product_id ? acc : acc + (item?.qty || 0);
+        }, 0) || 0;
+        const newTotalShopQty = otherProductsQty + Number(quantity);
+
+        // Find Best Promotion
+        let bestPromotion = null;
+        const validPromotions = product?.promotionalOfferData?.filter(promo => {
+            if (promo.promotion_type === 'qty_per_product') return promo.qty <= quantity;
+            if (promo.promotion_type === 'amount') return promo.offer_amount <= variantPrice;
+            if (promo.promotion_type === 'qty_total_shop') return promo.qty <= newTotalShopQty;
+            return false;
+        }) || [];
         
-        let finalPromotion = {};
-        if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestAmountPromotion && Object.keys(bestAmountPromotion).length > 0) {
-            let offerAmount = calculatePriceAfterDiscount(bestPromotion?.offer_type, +bestPromotion?.discount_amount, variantPrice);
-            let offerAmount2 = calculatePriceAfterDiscount(bestAmountPromotion?.offer_type, +bestAmountPromotion?.discount_amount, variantPrice);
-            offerAmount = variantPrice - offerAmount;
-            offerAmount2 = variantPrice - offerAmount2;
-            if (offerAmount > offerAmount2) {
-                finalPromotion = bestPromotion;
-            } else {
-                finalPromotion = bestAmountPromotion;
-            }
-        } else if (bestPromotion && Object.keys(bestPromotion).length > 0) {
-            finalPromotion = bestPromotion;
-        } else {
-            finalPromotion = bestAmountPromotion;
+        if (validPromotions.length > 0) {
+                bestPromotion = validPromotions.reduce((prev, current) => {
+                const prevFinalPrice = calculatePriceAfterDiscount(prev.offer_type, prev.discount_amount, variantPrice); 
+                const currentFinalPrice = calculatePriceAfterDiscount(current.offer_type, current.discount_amount, variantPrice);
+                return (variantPrice - currentFinalPrice) > (variantPrice - prevFinalPrice) ? current : prev;
+            });
         }
 
         let finalPrice = variantPrice;
-        if (finalPromotion && Object.keys(finalPromotion).length > 0 && finalPromotion.qty <= quantity) {
-            finalPrice = calculatePriceAfterDiscount(finalPromotion?.offer_type, +finalPromotion?.discount_amount, variantPrice);
+        if (cart?.coupon_status && isSynced) {
+            finalPrice = variantPrice;
+        } else if (bestPromotion) {
+            finalPrice = calculatePriceAfterDiscount(bestPromotion.offer_type, bestPromotion.discount_amount, variantPrice);
         }
 
         if (!token) {
@@ -447,78 +438,19 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     }, [product]);
 
     useEffect(() => {
-        const variantPrice = calculateVariantPrice();
-        
-        const bestPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
-            if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty <= product?.qty) {
-                if (!best || promotion.qty > best.qty || (promotion.qty === best.qty && promotion.discount_amount > best.discount_amount)) {
-                    return promotion;
-                }
-            }
-            return best;
-        }, null);
-        
-        const bestAmountPromotion = product?.promotionalOfferData?.reduce((best, promotion) => {
-            if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= variantPrice) {
-                if (!best || promotion.offer_amount > best.offer_amount) {
-                    return promotion;
-                }
-            }
-            return best;
-        }, null);
-        
-        let finalBestPromotion = {};
-        if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestAmountPromotion && Object.keys(bestAmountPromotion).length > 0) {
-            let offerAmount = calculatePriceAfterDiscount(bestPromotion?.offer_type, +bestPromotion?.discount_amount, variantPrice);
-            let offerAmount2 = calculatePriceAfterDiscount(bestAmountPromotion?.offer_type, +bestAmountPromotion?.discount_amount, variantPrice);
-            offerAmount = variantPrice - offerAmount;
-            offerAmount2 = variantPrice - offerAmount2;
-            if (offerAmount > offerAmount2) {
-                finalBestPromotion = bestPromotion;
-            } else {
-                finalBestPromotion = bestAmountPromotion;
-            }
-        } else if (bestPromotion && Object.keys(bestPromotion).length > 0) {
-            finalBestPromotion = bestPromotion;
-        } else {
-            finalBestPromotion = bestAmountPromotion;
-        }
-
+        // Calculate next promotion hint only
         const nextPromotion = product?.promotionalOfferData?.reduce((next, promotion) => {
-            if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty > product?.qty) {
-                if (!next || promotion.qty < next.qty || (promotion.qty === next.qty && promotion.discount_amount > next.discount_amount)) {
-                    return promotion;
-                }
+            if (promotion.promotion_type === 'qty_per_product' && promotion.qty > product?.qty) {
+                 if (!next || promotion.qty < next.qty) return promotion;
             }
             return next;
         }, null);
 
-        const promotion = product?.promotionalOfferData?.find((promotion) => promotion.qty == 1);
-        const amountPromotion = product?.promotionalOfferData?.find(
-            (promotion) => promotion?.offer_amount != null && promotion.offer_amount <= variantPrice
-        );
-        
-        let finalPromotion = {};
-        if (promotion && Object.keys(promotion).length > 0 && amountPromotion && Object.keys(amountPromotion).length > 0) {
-            let offerAmount = calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, variantPrice);
-            let offerAmount2 = calculatePriceAfterDiscount(amountPromotion?.offer_type, +amountPromotion?.discount_amount, variantPrice);
-            offerAmount = variantPrice - offerAmount;
-            offerAmount2 = variantPrice - offerAmount2;
-            if (offerAmount > offerAmount2) {
-                finalPromotion = promotion;
-            } else {
-                finalPromotion = amountPromotion;
-            }
-        } else if (promotion && Object.keys(promotion).length > 0) {
-            finalPromotion = promotion;
-        } else {
-            finalPromotion = amountPromotion;
-        }
-        
-        setBestPromotion(finalBestPromotion);
         setNextPromotion(nextPromotion);
-        setPromotion(finalPromotion);
-    }, [product, originalPrice]);
+        // We rely on Props (SingleVendorCart -> processedCart) for current applied promotion
+        // setPromotion(product.appliedPromotion); 
+        // setBestPromotion(product.appliedPromotion);
+    }, [product]);
 
     // Render variant information
     const renderVariantInfo = () => {
@@ -871,7 +803,8 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             },
                                         }}
                                     >
-                                        {price != originalPrice && bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion?.qty <= product.qty && (
+                                        {/* Show Applied Promotion Badge */}
+                                        {product?.appliedPromotion && (
                                             <Box
                                                 sx={{
                                                     display: "inline-block",
@@ -879,13 +812,39 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     color: "#fff",
                                                     borderRadius: "4px",
                                                     padding: "4px 8px",
-                                                    fontSize: "14px",
+                                                    fontSize: "12px",
                                                     fontWeight: "bold",
+                                                    marginBottom: "4px",
                                                     display: "flex",
+                                                    flexDirection: "column",
+                                                    width: "fit-content",
+                                                    alignItems: "flex-end"
+                                                }}
+                                            >
+                                                <Typography component="span" fontSize="12px" fontWeight="bold">
+                                                    {(product.appliedPromotion.promotion_type === 'qty_total_shop' || product.appliedPromotion.promotion_type === 'amount') ? 'SHOP OFFER: ' : ''}
+                                                    {product.appliedPromotion.offer_type === "flat" 
+                                                        ? `${currency?.symbol}${product.appliedPromotion.discount_amount} OFF` 
+                                                        : `${product.appliedPromotion.discount_amount}% OFF`}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                        {/* Show Coupon Badge if synced and applied */}
+                                        {cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced) && (
+                                             <Box
+                                                sx={{
+                                                    display: "inline-block",
+                                                    backgroundColor: "#2196f3",
+                                                    color: "#fff",
+                                                    borderRadius: "4px",
+                                                    padding: "4px 8px",
+                                                    fontSize: "12px",
+                                                    fontWeight: "bold",
+                                                    marginBottom: "4px",
                                                     width: "fit-content",
                                                 }}
                                             >
-                                                {bestPromotion?.offer_type == "flat" ? `Flat ${bestPromotion?.discount_amount} OFF` : `${bestPromotion?.discount_amount}% OFF`}
+                                                COUPON APPLIED
                                             </Box>
                                         )}
                                         <Typography
@@ -946,8 +905,29 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     },
                                                 }}
                                             >
-                                                ({currency?.symbol}{(price * currency?.rate).toFixed(2)} each)
+                                        ({currency?.symbol}{(price * currency?.rate).toFixed(2)} each)
                                             </Typography>
+                                        )}
+                                        
+                                        {/* Upsell Message UI */}
+                                        {product?.upsellData && (
+                                            <Box
+                                                sx={{
+                                                    mt: 1,
+                                                    p: "4px 8px",
+                                                    backgroundColor: "#e3f2fd",
+                                                    borderRadius: "4px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "flex-end",
+                                                    width: "fit-content",
+                                                    ml: "auto"
+                                                }}
+                                            >
+                                                <Typography fontSize={11} color="#1565c0" fontWeight={700} textAlign="right" lineHeight={1.2}>
+                                                    {product.upsellData.message}
+                                                </Typography>
+                                            </Box>
                                         )}
                                     </Typography>
                                 </Typography>

@@ -1,4 +1,4 @@
-import React, {useEffect} from "react";
+import React, {useEffect, useMemo} from "react";
 import Box from "@mui/material/Box";
 import {
     Card,
@@ -21,6 +21,7 @@ import Accordion from "@mui/material/Accordion";
 import {useState} from "react";
 import {useToasts} from "react-toast-notifications";
 import {postAPIAuth} from "utils/__api__/ApiServies";
+import {calculatePriceAfterDiscount} from 'utils/calculatePriceAfterDiscount';
 import useCart from "hooks/useCart";
 import useAuth from "hooks/useAuth";
 import {useRouter} from "next/navigation";
@@ -53,6 +54,132 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
     const totalShopProductQty = cart?.products?.reduce((acc, item) => {
         return acc + item?.qty
     }, 0)
+
+    const processedCart = useMemo(() => {
+        if (!cart) return null;
+
+        // Calculate Total Shop Value
+        const totalShopValue = cart?.products?.reduce((acc, item) => {
+             const price = +item.original_price || +item.real_price || 0;
+             return acc + (price * (item?.qty || 0));
+        }, 0);
+
+        const isCouponApplied = cart?.coupon_status;
+        const couponValues = cart?.vendor_coupon || {}; 
+        const isSynced = couponValues?.isSynced || couponValues?.coupon_data?.isSynced || false;
+
+        const processedProducts = cart.products.map(product => {
+            const variantPrice = +product.original_price || +product.real_price || 0;
+            
+            // 1. Find Best Promotion
+            let bestPromotion = null;
+            
+            // Filter valid promotions
+            const validPromotions = product?.promotionalOfferData?.filter(promo => {
+                if (promo.promotion_type === 'qty_per_product') return promo.qty <= product.qty;
+                // CHECK AGAINST TOTAL SHOP VALUE (Cart Level)
+                if (promo.promotion_type === 'amount') return promo.offer_amount <= totalShopValue; 
+                if (promo.promotion_type === 'qty_total_shop') return promo.qty <= totalShopProductQty;
+                return false;
+            }) || [];
+
+            if (validPromotions.length > 0) {
+                 bestPromotion = validPromotions.reduce((prev, current) => {
+                    const prevFinalPrice = calculatePriceAfterDiscount(prev.offer_type, prev.discount_amount, variantPrice); 
+                    const currentFinalPrice = calculatePriceAfterDiscount(current.offer_type, current.discount_amount, variantPrice);
+                    
+                    const prevSavings = variantPrice - prevFinalPrice;
+                    const currentSavings = variantPrice - currentFinalPrice;
+                    
+                    return currentSavings > prevSavings ? current : prev;
+                });
+            }
+
+            // 2. Logic for isSynced
+            let finalPrice = variantPrice;
+            let appliedPromotion = null;
+
+            if (isCouponApplied && isSynced) {
+                // Coupon applied AND Synced -> Remove promotional offers
+                finalPrice = variantPrice; 
+                appliedPromotion = null;
+            } else {
+                // Coupon NOT applied OR (Applied but NOT Synced) -> Apply best promotion
+                if (bestPromotion) {
+                    finalPrice = calculatePriceAfterDiscount(bestPromotion.offer_type, bestPromotion.discount_amount, variantPrice);
+                    appliedPromotion = bestPromotion;
+                }
+            }
+
+
+            // 3. Logic for Upsell (Next Best Offer)
+            let upsellData = null;
+            if (!isCouponApplied || (isCouponApplied && !isSynced)) {
+                const lockedPromotions = product?.promotionalOfferData?.filter(promo => {
+                    let isLocked = false;
+                    if (promo.promotion_type === 'qty_per_product') isLocked = promo.qty > product.qty;
+                    if (promo.promotion_type === 'amount') isLocked = promo.offer_amount > totalShopValue;
+                    if (promo.promotion_type === 'qty_total_shop') isLocked = promo.qty > totalShopProductQty;
+                    return isLocked;
+                }) || [];
+
+                if (lockedPromotions.length > 0) {
+                    const currentSavings = appliedPromotion 
+                        ? (variantPrice - calculatePriceAfterDiscount(appliedPromotion.offer_type, appliedPromotion.discount_amount, variantPrice))
+                        : 0;
+
+                    // Find potentials that offer MORE savings than current
+                    const betterPromotions = lockedPromotions.map(promo => {
+                         const potentialPrice = calculatePriceAfterDiscount(promo.offer_type, promo.discount_amount, variantPrice);
+                         const potentialSavings = variantPrice - potentialPrice;
+                         return { ...promo, potentialSavings };
+                    }).filter(p => p.potentialSavings > currentSavings);
+
+                     // Sort by 'closest to reach' (simplistic heuristic: lowest required qty/amount first)
+                     // or Sort by 'max savings'. Let's pick Nearest Target first to be realistic.
+                     if (betterPromotions.length > 0) {
+                         const nextBest = betterPromotions.sort((a,b) => {
+                             // Normalize distance metric? Hard because units differ (qty vs amount).
+                             // Prioritize Product Qty > Shop Amount > Shop Qty for simplicity/relevance
+                             if (a.promotion_type !== b.promotion_type) return 0; // Keep order
+                             if (a.promotion_type === 'amount') return a.offer_amount - b.offer_amount;
+                             return a.qty - b.qty;
+                         })[0];
+
+                         let message = "";
+                         if (nextBest.promotion_type === 'qty_per_product') {
+                             const diff = nextBest.qty - product.qty;
+                             message = `Add ${diff} more to save ${currency?.symbol}${(nextBest.potentialSavings - currentSavings).toFixed(2)} per item!`;
+                         } else if (nextBest.promotion_type === 'amount') {
+                             const diff = nextBest.offer_amount - totalShopValue;
+                              message = `Add ${currency?.symbol}${diff.toFixed(2)} to cart to save ${currency?.symbol}${(nextBest.potentialSavings - currentSavings).toFixed(2)} per item!`;
+                         } else if (nextBest.promotion_type === 'qty_total_shop') {
+                              const diff = nextBest.qty - totalShopProductQty;
+                              message = `Add ${diff} more items from this shop to save ${currency?.symbol}${(nextBest.potentialSavings - currentSavings).toFixed(2)} per item!`;
+                         }
+                         
+                         upsellData = {
+                             ...nextBest,
+                             message
+                         };
+                     }
+                }
+            }
+
+            return {
+                ...product,
+                calculatedPrice: finalPrice,
+                appliedPromotion: appliedPromotion,
+                upsellData: upsellData
+            };
+        });
+
+        return {
+            ...cart,
+            products: processedProducts,
+            totalShopValue
+        };
+    }, [cart, cart?.coupon_status, cart?.vendor_coupon, totalShopProductQty]);
     const deliveryOptions = cart?.matchedShippingOptions?.map((item) => {
         const minDays = item?.options?.[0]?.minDays || 0;
         const maxDays = item?.options?.[0]?.maxDays || 0;
@@ -369,8 +496,8 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                         </Link>
                     </Typography>
                 </Typography>
-                {cart?.products?.map((product, index) => (
-                    <Product key={index} cart={cart} product={product} wallet={wallet} defaultAddress={defaultAddress}
+                {processedCart?.products?.map((product, index) => (
+                    <Product key={index} cart={processedCart} product={product} wallet={wallet} defaultAddress={defaultAddress}
                              voucherDetails={voucherDetails}/>
                 ))}
                 <Box>
@@ -741,7 +868,7 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
             </Card>
             {isModalOpen && (
                 <CheckoutPopup
-                    cart={cart}
+                    cart={processedCart}
                     wallet={wallet}
                     open={isModalOpen}
                     onClose={() => {

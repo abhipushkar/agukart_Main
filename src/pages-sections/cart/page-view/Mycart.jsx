@@ -380,11 +380,18 @@ const Mycart = () => {
         }
     }, [])
 
+    const [cartLoading, setCartLoading] = useState(true); // Default to loading
+
+    // ... (existing code)
+
     // Initialize cart when component mounts
     useEffect(() => {
         if (token) {
+            setCartLoading(true);
             // No address_id needed for initial cart load
-            getCartItems();
+            getCartItems().finally(() => setTimeout(() => setCartLoading(false), 500)); // Add small delay for smoothness
+        } else {
+             setCartLoading(false);
         }
     }, [token]);
 
@@ -409,6 +416,10 @@ const Mycart = () => {
                 </Snackbar>
             </div>
 
+            {cartLoading ? (
+                <CartShimmerLoader />
+            ) : (
+                <>
             <Container py={5} sx={{padding: "30px 0"}}>
                 <Grid container spacing={4}>
                     <Grid item lg={12} xs={12}>
@@ -804,6 +815,35 @@ const Mycart = () => {
                                         >
                                             Proceed to checkout
                                         </Button>
+                                        
+                                        {/* Disable Reasons */}
+                                        <Box mt={2}>
+                                            {checkCustomizationSelect && (
+                                                <Typography color="error" variant="body2" sx={{ mb: 0.5 }}>
+                                                    • Please complete customization for all items.
+                                                </Typography>
+                                            )}
+                                            {isShippingAvailable && (
+                                                <Typography color="error" variant="body2" sx={{ mb: 0.5 }}>
+                                                    • Shipping is not available for one or more items in your cart.
+                                                </Typography>
+                                            )}
+                                            {isStockAvailable && (
+                                                <Typography color="error" variant="body2" sx={{ mb: 0.5 }}>
+                                                    • Some items are out of stock. Please remove them to proceed.
+                                                </Typography>
+                                            )}
+                                            {isDeleteProduct && (
+                                                <Typography color="error" variant="body2" sx={{ mb: 0.5 }}>
+                                                    • Some items are no longer available (deleted). Please remove them.
+                                                </Typography>
+                                            )}
+                                            {isAvailable && (
+                                                <Typography color="error" variant="body2" sx={{ mb: 0.5 }}>
+                                                    • Some items are currently unavailable/inactive.
+                                                </Typography>
+                                            )}
+                                        </Box>
                                     </Typography>
                                 ) : (
                                     ""
@@ -867,6 +907,8 @@ const Mycart = () => {
                     </Grid>
                 </Grid>
             </Container>
+                </>
+            )}
             <CountryModal
                 open={countryModalOpen}
                 onClose={() => setCountryModalOpen(false)}
