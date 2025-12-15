@@ -6,6 +6,10 @@ import {
     Button,
     AccordionSummary,
     AccordionDetails, CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from "@mui/material";
 import Link from "next/link";
 import NextLink from "next/link";
@@ -24,10 +28,13 @@ import Product from "./Product";
 import {useCurrency} from "contexts/CurrencyContext";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckoutPopup from "./CheckoutPopup";
+import { useLocation } from "../../../contexts/location_context"; // Adjust path as needed
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 
 const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingleVendor}) => {
     const router = useRouter();
     const {currency} = useCurrency();
+    const { location, setLocation, countries } = useLocation(); // Use location context
     const [formValues, setFormValues] = useState({
         coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
     });
@@ -37,6 +44,7 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
     const [vendorNote, setVendorNote] = useState("");
     const [deliveryOption, setDeliveryOption] = useState("standardShipping");
     const [isModalOpen, setModalOpen] = useState(false);
+    const [showCountryModal, setShowCountryModal] = useState(false);
     const formatDate = (date) => {
         const day = date.getDate();
         const month = date.toLocaleString("default", {month: "short"});
@@ -124,7 +132,7 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
         }
     };
     
-    // ENABLE STORE COUPON FUNCTIONALITY FOR SINGLE VENDOR
+    // Enable store coupon functionality for single vendor
     const handleApply = async () => {
         if (!token) {
             return router.push("/login");
@@ -199,7 +207,6 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
         }
     }, [formValues.coupon_code]);
 
-
     const addParentCart = async () => {
         try {
             const shipping = cart?.matchedShippingOptions?.find((item) => item?.shippingType === deliveryOption)
@@ -246,6 +253,43 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
         }
         setModalOpen(true);
     }
+
+    const handleCountryChange = () => {
+        setShowCountryModal(true);
+    }
+
+    // Country Modal Component
+    const CountryModal = ({ open, onClose }) => (
+        <Dialog open={open} onClose={onClose}>
+            <DialogTitle>Select Your Country</DialogTitle>
+            <DialogContent>
+                <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                    {countries?.map((country) => (
+                        <MenuItem
+                            key={country._id}
+                            onClick={() => {
+                                setLocation({
+                                    countryName: country.name,
+                                    countryCode: country.sortname || ""
+                                });
+                                onClose();
+                                // Refresh cart data with new location
+                                const data = wallet ? "1" : "0";
+                                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                            }}
+                            selected={location.countryName === country.name}
+                        >
+                            {country.name}
+                        </MenuItem>
+                    ))}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>Cancel</Button>
+            </DialogActions>
+        </Dialog>
+    );
+
     return (
         <>
             <Card
@@ -363,7 +407,7 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                                     <Typography component="div">
                                         <Typography component="div" pb={2}>
                                             {/* ENABLE STORE COUPON FOR SINGLE VENDOR */}
-                                            {/* {isSingleVendor && (
+                                            {isSingleVendor && (
                                                 <Accordion
                                                     expanded={isOpen}
                                                     sx={{
@@ -497,7 +541,8 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                                                         )}
                                                     </Typography>
                                                 </Accordion>
-                                            )} */}
+                                            )}
+                                            
                                             <Accordion
                                                 expanded={isNoteOpen}
                                                 sx={{
@@ -664,6 +709,25 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                                         </Box>
                                     ) : (
                                         <>
+                                            {/* ADD CHANGE COUNTRY BUTTON ABOVE THE WARNING */}
+                                            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <LocationOnIcon sx={{ fontSize: 16, color: "gray" }} />
+                                                <Typography fontSize={14} color={"gray"}>
+                                                    Deliver to {location.countryName}
+                                                </Typography>
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ 
+                                                        ml: 1,
+                                                        fontSize: '12px',
+                                                        padding: '2px 8px'
+                                                    }}
+                                                    onClick={handleCountryChange}
+                                                >
+                                                    Change
+                                                </Button>
+                                            </Box>
                                             <Typography color="error">
                                                 Oops! We're currently unable to deliver to your location.
                                             </Typography>
@@ -686,6 +750,7 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                     vendor_id={cart?.vendor_id}
                 />
             )}
+            <CountryModal open={showCountryModal} onClose={() => setShowCountryModal(false)} />
         </>
     );
 };

@@ -59,7 +59,6 @@ import useMyProvider from "hooks/useMyProvider";
 import SingleVendorCart from "./SingleVendorCart";
 import {useCurrency} from "contexts/CurrencyContext";
 import {set} from "lodash";
-import AddressChangePopup from "./AddressChangePopup";
 import {useLocation} from "../../../contexts/location_context";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import {CountryModal} from "./country_modal";
@@ -77,11 +76,7 @@ const Mycart = () => {
     const [isStockAvailable, setIsStockAvailable] = useState(false);
     const [isDeleteProduct, setIsDeleteProduct] = useState(false);
     const [isAvailable, setIsAvailable] = useState(false);
-    const [defaultAddress, setDefaultAddress] = useState({});
-    const [allAddress, setAllAddress] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
     const [applyinCoupon, setCouponApplying] = useState(false);
-    const [fetchingAddress, setFetchingAddress] = useState(true);
     const [isModalOpen, setModalOpen] = useState(false);
     const [formValues, setFormValues] = useState({
         voucher_code: "",
@@ -173,15 +168,13 @@ const Mycart = () => {
     const handleWalletChange = async (e) => {
         setWallet(e.target.checked);
         const data = !wallet ? "1" : "0";
-        getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+        // No address_id needed in cart page
+        getCartDetails(data, null, voucherDetails?.discount);
     }
 
     const handleClickconfirmation = () => {
-        if (allAddress.length == 0) {
-            handleAddressChnage();
-        } else {
-            setconfirmation(true);
-        }
+        // No address validation needed in cart page
+        setconfirmation(true);
     };
 
     const handleClose = () => {
@@ -208,58 +201,6 @@ const Mycart = () => {
         </React.Fragment>
     );
 
-    function calculateOffset(currentPage) {
-        return currentPage - 1;
-    }
-
-    const getAddressData = async () => {
-        try {
-            setFetchingAddress(true)
-            const offset = calculateOffset(currentPage);
-            const res = await getAPIAuth(
-                `user/get-address?limit=${5}&offset=${offset}`,
-                token
-            );
-
-            console.log("getAddressData response", res);
-
-            if (res.status == 200) {
-                setAllAddress(res?.data?.addresses);
-
-                const defaultAddr = res?.data?.addresses?.find((item) => item.default == "1") ||
-                    res?.data?.addresses?.[0] ||
-                    {};
-
-                setDefaultAddress(defaultAddr);
-
-                if (res?.data?.addresses?.length > 0 && !defaultAddr._id) {
-                    console.log("No default address found, using first address");
-                }
-            }
-        } catch (error) {
-            console.log("error", error);
-        } finally {
-            setFetchingAddress(false);
-        }
-    };
-
-    useEffect(() => {
-        if (token) {
-            getAddressData();
-        }
-    }, [])
-    useEffect(() => {
-        if (token) {
-            getCartItems(defaultAddress?._id);
-            const data = wallet ? "1" : "0";
-            getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-        }
-    }, [token, defaultAddress]);
-
-    useEffect(() => {
-        localStorage.setItem("wallet", wallet);
-    }, [wallet]);
-
     useEffect(() => {
         if (token) {
             getUserDetail();
@@ -267,11 +208,12 @@ const Mycart = () => {
     }, [])
 
     useEffect(() => {
-        if (token && defaultAddress?._id) {
+        if (token) {
             const walletdata = wallet ? "1" : "0";
-            getCartDetails(walletdata, defaultAddress._id, voucherDetails?.discount);
+            // No address_id needed in cart page
+            getCartDetails(walletdata, null, voucherDetails?.discount);
         }
-    }, [defaultAddress, token]);
+    }, [token, wallet, voucherDetails?.discount]);
 
     const handleApply = async () => {
         if (!token) {
@@ -298,7 +240,8 @@ const Mycart = () => {
                     setVoucherDetails(data);
                     localStorage.setItem("voucherDetails", JSON.stringify(data))
                     const walletdata = wallet ? "1" : "0";
-                    getCartDetails(walletdata, defaultAddress?._id, res?.data?.discount);
+                    // No address_id needed in cart page
+                    getCartDetails(walletdata, null, res?.data?.discount);
                     addToast(res?.data?.message, {
                         appearance: "success",
                         autoDismiss: true,
@@ -320,14 +263,15 @@ const Mycart = () => {
         setFormValues({voucher_code: ""});
         localStorage.removeItem("voucherDetails");
         const walletdata = wallet ? "1" : "0";
-        getCartDetails(walletdata, defaultAddress?._id, 0);
+        // No address_id needed in cart page
+        getCartDetails(walletdata, null, 0);
         addToast("Voucher removed successfully", {
             appearance: "success",
             autoDismiss: true,
         });
     };
 
-    // Store Coupon Functions
+    // Store Coupon Functions - Only for single vendor
     const handleStoreCouponApply = async () => {
         if (!token) {
             return router.push("/login");
@@ -355,9 +299,11 @@ const Mycart = () => {
             const res = await postAPIAuth("user/check-coupon-for-product", payload);
             if (res.status === 200) {
                 setStoreCouponLoading(false);
-                getCartItems(defaultAddress?._id);
+                // No address_id needed for cart items
+                getCartItems();
                 const data = wallet ? "1" : "0";
-                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                // No address_id needed in cart page
+                getCartDetails(data, null, voucherDetails?.discount);
                 setStoreCouponError("");
                 addToast(res?.data?.message, {
                     appearance: "success",
@@ -390,9 +336,11 @@ const Mycart = () => {
             const res = await postAPIAuth("user/remove-coupon-for-product", payload);
             if (res.status === 200) {
                 setStoreCouponLoading(false);
-                getCartItems(defaultAddress?._id);
+                // No address_id needed for cart items
+                getCartItems();
                 const data = wallet ? "1" : "0";
-                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                // No address_id needed in cart page
+                getCartDetails(data, null, voucherDetails?.discount);
                 setStoreCouponForm({store_coupon_code: ""});
                 setStoreCouponError("");
                 addToast(res?.data?.message, {
@@ -432,7 +380,13 @@ const Mycart = () => {
         }
     }, [])
 
-    if (fetchingAddress) return <CartShimmerLoader/>
+    // Initialize cart when component mounts
+    useEffect(() => {
+        if (token) {
+            // No address_id needed for initial cart load
+            getCartItems();
+        }
+    }, [token]);
 
     return (
         <>
@@ -459,7 +413,7 @@ const Mycart = () => {
                 <Grid container spacing={4}>
                     <Grid item lg={12} xs={12}>
                         <Typography component="div" pb={1} fontSize={20} fontWeight={600}>
-                            {state?.cart?.length} items in your cart
+                            {state?.cart?.length || 0} items in your cart
                         </Typography>
                         <Box
                             sx={{
@@ -533,7 +487,7 @@ const Mycart = () => {
                                 state?.cart?.map((cart, index) => {
                                     return (
                                         <SingleVendorCart key={index} wallet={wallet} cart={cart}
-                                                          defaultAddress={defaultAddress}
+                                                          defaultAddress={null} // No address needed in cart page
                                                           voucherDetails={voucherDetails}
                                                           isSingleVendor={isSingleVendor}/>
                                     );
@@ -714,76 +668,6 @@ const Mycart = () => {
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
-
-                                                {/* STORE COUPON INPUT FIELD (Only for single vendor) */}
-                                                {isSingleVendor && currentVendor && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={2}>
-                                                            <Box
-                                                                sx={{
-                                                                    display: "flex",
-                                                                    flexDirection: {xs: "column", sm: "row"},
-                                                                    alignItems: "center",
-                                                                    gap: {xs: 1, sm: 2},
-                                                                    backgroundColor: "#fff",
-                                                                    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                                                                    padding: "8px 16px",
-                                                                    height: {xs: "auto", sm: "56px"},
-                                                                }}
-                                                            >
-                                                                <TextField
-                                                                    fullWidth
-                                                                    placeholder={`Enter ${currentVendor?.shop_name} store coupon`}
-                                                                    variant="outlined"
-                                                                    size="small"
-                                                                    sx={{
-                                                                        mr: {xs: 0, sm: 2},
-                                                                        mb: {xs: 1, sm: 0},
-                                                                        ".MuiOutlinedInput-root": {
-                                                                            background: "#f5f5f5",
-                                                                        },
-                                                                        ".MuiOutlinedInput-notchedOutline": {
-                                                                            border: "none",
-                                                                        },
-                                                                    }}
-                                                                    value={storeCouponForm?.store_coupon_code}
-                                                                    name="store_coupon_code"
-                                                                    onChange={handleStoreCouponChange}
-                                                                    error={Boolean(storeCouponError)}
-                                                                    disabled={currentVendor?.coupon_status}
-                                                                />
-                                                                <Button
-                                                                    endIcon={storeCouponLoading ?
-                                                                        <CircularProgress size={15}/> : null}
-                                                                    variant="contained"
-                                                                    color="primary"
-                                                                    size="small"
-                                                                    disabled={storeCouponLoading}
-                                                                    sx={{
-                                                                        borderRadius: "20px",
-                                                                        textTransform: "none",
-                                                                        px: 3,
-                                                                        minWidth: "auto",
-                                                                        width: {xs: "100%", sm: "auto"},
-                                                                    }}
-                                                                    onClick={currentVendor?.coupon_status ? handleStoreCouponRemove : handleStoreCouponApply}
-                                                                >
-                                                                    {currentVendor?.coupon_status ? "Remove" : "Apply"}
-                                                                </Button>
-                                                            </Box>
-                                                            {storeCouponError && (
-                                                                <Typography color="error" fontSize={13} mt={0.5} ml={1}>
-                                                                    {storeCouponError}
-                                                                </Typography>
-                                                            )}
-                                                            {currentVendor?.coupon_status && (
-                                                                <Typography color="green" fontSize={13} mt={0.5} ml={1}>
-                                                                    Store coupon applied successfully!
-                                                                </Typography>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
 
                                                 <TableRow>
                                                     <TableCell>
@@ -983,18 +867,6 @@ const Mycart = () => {
                     </Grid>
                 </Grid>
             </Container>
-            {isModalOpen && (
-                <AddressChangePopup
-                    open={isModalOpen}
-                    onClose={() => {
-                        setModalOpen(false);
-                    }}
-                    getAddressData={getAddressData}
-                    allAddress={allAddress}
-                    defaultAddress={defaultAddress}
-                    setDefaultAddress={setDefaultAddress}
-                />
-            )}
             <CountryModal
                 open={countryModalOpen}
                 onClose={() => setCountryModalOpen(false)}

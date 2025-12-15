@@ -64,7 +64,6 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   const [getCountry, setGetCountry] = useState([]);
   const { addToast } = useToasts();
 
-
   console.log({ getCountry });
   const [getCities, setGetCities] = useState([]);
   const [statevalue, setStateValue] = useState("");
@@ -79,24 +78,26 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   console.log({ vendorCartDetails });
   const [loading,setLoading] = useState(false);
   const [paymentType,setPaymentType] = useState("1");
-    const [formValues, setFormValues] = useState({
-        coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
-    });
-    const [error, setError] = useState("");
-    const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
-    const [couponLoading, setCouponLoading] = useState(false);
-    const [couponStatus, setCouponStatus] = useState(cart?.coupon_status || false);
-    const [couponDiscount, setCouponDiscount] = useState(cart?.discountAmount || 0);
-    const handleCouponChange = (e) => {
-        const { name, value } = e.target;
-        setFormValues((prev) => ({ ...prev, [name]: value }));
-    };
+  // Add shop coupon state for CheckoutPopup (for multiple vendor checkout)
+  const [formValues, setFormValues] = useState({
+      coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
+  });
+  const [error, setError] = useState("");
+  const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponStatus, setCouponStatus] = useState(cart?.coupon_status || false);
+  const [couponDiscount, setCouponDiscount] = useState(cart?.discountAmount || 0);
 
-    const handleAccordionToggle = () => {
-        setIsOpen((prev) => !prev);
-    };
+  const handleCouponChange = (e) => {
+      const { name, value } = e.target;
+      setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
 
-    const initialOptions = {
+  const handleAccordionToggle = () => {
+      setIsOpen((prev) => !prev);
+  };
+
+  const initialOptions = {
     "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
     currency: "USD",
     intent: "capture",
@@ -169,7 +170,6 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
       setVoucherDetails(updatedVoucherDetails);
     }
   },[]);
-
 
   useEffect(() => {
     if (token) {
@@ -271,6 +271,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
     };
   };
 
+    // Shop coupon functions for CheckoutPopup
     const handleApplyCoupon = async () => {
         if (!token) {
             return router.push("/login");
@@ -308,7 +309,6 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         }
     };
 
-// Update handleRemoveCoupon
     const handleRemoveCoupon = async () => {
         try {
             const payload = {
@@ -424,7 +424,6 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   });
 
   function calculateOffset(currentPage) {
-    // console.log({currentPage, limit});
     return currentPage - 1;
   }
 
@@ -688,6 +687,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
 
                   <Divider sx={{ my: 2 }} />
 
+                    {/* Shop Coupon Section for CheckoutPopup */}
                     <Accordion
                         expanded={isOpen}
                         sx={{
@@ -1313,7 +1313,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                           )}
                         />
 
-                        <Typography sx={{ fontWeight: "700", mt: 2 }}>
+                        <Typography sx={{ fontWeight: "700", mt:2 }}>
                           State*
                         </Typography>
                         <Autocomplete
@@ -1455,7 +1455,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                         </Box>
 
                         <Typography mt={1} sx={{ color: "#000" }}>
-                          By choosing “Save,” you agree to Agukart’s{" "}
+                          By choosing "Save," you agree to Agukart's{" "}
                           <Link
                             href="#"
                             style={{
