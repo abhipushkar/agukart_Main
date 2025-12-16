@@ -847,7 +847,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 COUPON APPLIED
                                             </Box>
                                         )}
-                                        <Typography
+                                        {!(cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced)) && (<Typography
                                             fontSize={19}
                                             fontWeight={600}
                                             textAlign={"right"}
@@ -862,7 +862,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             }}
                                         >
                                             {currency?.symbol}{(price * quantity * currency?.rate).toFixed(2)}
-                                        </Typography>
+                                        </Typography>)}
                                         <Typography
                                             fontSize={19}
                                             fontWeight={600}

@@ -174,10 +174,23 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
             };
         });
 
+        const calculatedShopValue = processedProducts.reduce((acc, item) => {
+             return acc + ((item.calculatedPrice || item.original_price || 0) * (item.qty || 0));
+        }, 0);
+        
+        // Calculate Original Value (before any discounts) for display purposes
+        const originalShopValue = processedProducts.reduce((acc, item) => {
+             return acc + ((item.original_price || 0) * (item.qty || 0));
+        }, 0);
+
+        const promotionDiscount = originalShopValue - calculatedShopValue;
+
         return {
             ...cart,
             products: processedProducts,
-            totalShopValue
+            totalShopValue: calculatedShopValue, // This is based on calculatedPrice (so it's the Net Price before Cart-Coupon)
+            originalShopValue, // New: Gross Price
+            promotionDiscount // New: Shop Offer Amount
         };
     }, [cart, cart?.coupon_status, cart?.vendor_coupon, totalShopProductQty]);
     const deliveryOptions = cart?.matchedShippingOptions?.map((item) => {

@@ -919,13 +919,48 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                   {Object.values(vendorCartDetails || {}).length > 0 && (
                     <>
                       <Box my={3}>
-                        <Typography>Item(s) total: {currency?.symbol}{currency?.rate * vendorCartDetails?.subTotal}</Typography>
-                        <Typography>Shop Discount: - {currency?.symbol}{currency?.rate * vendorCartDetails?.couponDiscount}</Typography>
-                        <Typography>Wallet : - {currency?.symbol}{currency?.rate * vendorCartDetails?.walletAmount}</Typography>
-                        <Typography>Sub Total: {currency?.symbol}{currency?.rate * (vendorCartDetails?.subTotal - vendorCartDetails?.couponDiscount - vendorCartDetails?.walletAmount)}</Typography>
-                        <Typography>Delivery: {currency?.symbol}{currency?.rate * vendorCartDetails?.delivery}</Typography>
+                        {/* Use Frontend Calculated Values for Price Breakdown to support Stacking/Exclusive Logic */}
+                        
+                        {/* 1. Item Total: Should be Original Price (MRP) */}
+                        <Typography>Item(s) total: {currency?.symbol}{((cart?.originalShopValue || vendorCartDetails?.subTotal) * currency?.rate).toFixed(2)}</Typography>
+                        
+                        {/* 2. Shop Discount: Promotional Offers (Frontend Calculated) */}
+                        {/* If isSynced is TRUE (Exclusive), promotionDiscount wil be 0, so this won't show. Correct. */}
+                        {cart?.promotionDiscount > 0 && (
+                            <Typography>Shop Discount: - {currency?.symbol}{((cart.promotionDiscount) * currency?.rate).toFixed(2)}</Typography>
+                        )}
+
+                        {/* 3. Coupon Discount: Vendor Coupon */}
+                        {/* Use cart logic if available, fallback to backend. Note: cart.discountAmount is set by backend response anyway */}
+                        {(cart?.discountAmount > 0 || vendorCartDetails?.couponDiscount > 0) && (
+                            <Typography>Coupon Discount: - {currency?.symbol}{((cart?.discountAmount || vendorCartDetails?.couponDiscount) * currency?.rate).toFixed(2)}</Typography>
+                        )}
+                        
+                        <Typography>Wallet : - {currency?.symbol}{((vendorCartDetails?.walletAmount) * currency?.rate).toFixed(2)}</Typography>
+                        
+                        {/* 4. Sub Total: Net Payable before Delivery */}
+                        <Typography>
+                            Sub Total: {currency?.symbol}
+                            {(
+                                ((cart?.originalShopValue || vendorCartDetails?.subTotal) 
+                                - (cart?.promotionDiscount || 0) 
+                                - (cart?.discountAmount || vendorCartDetails?.couponDiscount || 0) 
+                                - (vendorCartDetails?.walletAmount || 0)) * currency?.rate
+                            ).toFixed(2)}
+                        </Typography>
+
+                        <Typography>Delivery: {currency?.symbol}{((vendorCartDetails?.delivery) * currency?.rate).toFixed(2)}</Typography>
+                        
+                        {/* 5. Grand Total */}
                         <Typography mt={1} fontWeight={600}>
-                          Total : {currency?.symbol}{currency?.rate * vendorCartDetails?.netAmount}
+                          Total : {currency?.symbol}
+                          {(
+                              ((cart?.originalShopValue || vendorCartDetails?.subTotal) 
+                                - (cart?.promotionDiscount || 0) 
+                                - (cart?.discountAmount || vendorCartDetails?.couponDiscount || 0) 
+                                - (vendorCartDetails?.walletAmount || 0)
+                                + (vendorCartDetails?.delivery || 0)) * currency?.rate
+                          ).toFixed(2)}
                         </Typography>
                       </Box>
                        <div>
