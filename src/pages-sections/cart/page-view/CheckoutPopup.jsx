@@ -49,6 +49,7 @@ import Checkout from "./Checkout";
 import NextLink from "next/link";
 import Product from "./Product";
 import Accordion from "@mui/material/Accordion";
+import { useLocation } from "contexts/location_context";
 
 export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }) {
   const router = useRouter();
@@ -87,6 +88,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponStatus, setCouponStatus] = useState(cart?.coupon_status || false);
   const [couponDiscount, setCouponDiscount] = useState(cart?.discountAmount || 0);
+  const {location} = useLocation();
 
   const handleCouponChange = (e) => {
       const { name, value } = e.target;
@@ -454,7 +456,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         localStorage.removeItem("voucherDetails");
         router.push(`/order-confirmation?order-id=${res.data.orderId}`);
         onClose();
-        getCartItems();
+        getCartItems(location.countryName);
         getCartDetails();
       }
     } catch (error) {

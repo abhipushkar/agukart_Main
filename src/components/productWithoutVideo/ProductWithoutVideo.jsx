@@ -102,7 +102,7 @@ const ProductWithoutVideo = ({ product }) => {
             },
           }}
         >
-          <Link key={product._id} href={`/products?id=${product._id}`}>
+          <Link key={product._id} href={`/products/${product._id}`}>
             <Box borderRadius={2} mb={1}>
               <div style={{ maxHeight: "224px", width: "100%", overflow: "hidden" }}>
                 <img

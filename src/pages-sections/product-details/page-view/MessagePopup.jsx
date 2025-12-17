@@ -62,7 +62,7 @@ const MessagePopup = ({
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, index) =>
       urlRegex.test(part) ? (
-        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue",textDecoration: "underline" }}>
+        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
           {part}
         </a>
       ) : (
@@ -125,7 +125,7 @@ const MessagePopup = ({
 
   const sendMessage = async () => {
     let imageUrls = [];
-    let productLink = `${process.env.NEXT_PUBLIC_WEB_URL}/products?id=${productID}`;
+    let productLink = `${process.env.NEXT_PUBLIC_WEB_URL}/products/${productID}`;
     if (input.trim() || files.length > 0) {
       const querySnapshot = await getDocs(collection(db, "chatRooms"));
       const documents = querySnapshot.docs.map((doc) => {
@@ -167,7 +167,7 @@ const MessagePopup = ({
           createdAt: new Date(),
           messageSenderId: senderId,
           isNotification: false,
-          text:input,
+          text: input,
           imageUrls: imageUrls,
           productId: productID,
         };
@@ -202,7 +202,7 @@ const MessagePopup = ({
               isNotification: false,
               imageUrls: imageUrls,
               productId: productID,
-              productLink:productLink,
+              productLink: productLink,
               productData: {
                 productTitle: productTitle,
                 price: originalPrice,
@@ -448,8 +448,8 @@ const MessagePopup = ({
                                 mt: 1, // Spacing between images and text
                               }}
                             >
-                              <Typography 
-                                sx={{ 
+                              <Typography
+                                sx={{
                                   wordWrap: "break-word",
                                   whiteSpace: "pre-line"
                                 }}
@@ -551,10 +551,10 @@ const MessagePopup = ({
                                     fontWeight: "bold",
                                     "&:hover": { background: "black" },
                                   }}
-                                  onClick={()=>{
-                                      const url = `${msg.productLink}`
-                                      window.open(url, "_blank");
-                                    }
+                                  onClick={() => {
+                                    const url = `${msg.productLink}`
+                                    window.open(url, "_blank");
+                                  }
                                   }
                                 >
                                   Buy It Now
@@ -588,8 +588,8 @@ const MessagePopup = ({
                                 display: "flex",
                                 flexDirection: "column",
                                 textAlign: "left",
-                                marginBottom:"53px",
-                                gap:"7px"
+                                marginBottom: "53px",
+                                gap: "7px"
                               }}
                             >
                               <Box
@@ -622,10 +622,10 @@ const MessagePopup = ({
                                     fontWeight: "bold",
                                     "&:hover": { background: "black" },
                                   }}
-                                  onClick={()=>{
-                                      const url = `${msg.shopLink}`
-                                      window.open(url, "_blank");
-                                    }
+                                  onClick={() => {
+                                    const url = `${msg.shopLink}`
+                                    window.open(url, "_blank");
+                                  }
                                   }
                                 >
                                   Visit Now

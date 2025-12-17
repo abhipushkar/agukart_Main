@@ -94,7 +94,7 @@ const breadcrumbs = [
 ];
 
 const SearchOrderDetails = () => {
-  const {currency} = useCurrency();
+  const { currency } = useCurrency();
   const searchParams = useSearchParams();
   const [allOrders, setAllOrders] = useState([]);
   console.log(allOrders, "all orders");
@@ -359,7 +359,7 @@ const SearchOrderDetails = () => {
                           >
                             {" "}
                             <Link
-                              href={`/products?id=${order.saleDetaildata[0].product_id}`}
+                              href={`/products/${order.saleDetaildata[0].product_id}`}
                               style={{
                                 fontWeight: "500",
                                 color: "#0a8369",

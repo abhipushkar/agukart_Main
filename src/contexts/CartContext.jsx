@@ -1,10 +1,11 @@
 "use client";
 
-import {createContext, useEffect, useMemo, useReducer} from "react";
-import {getAPIAuth} from "utils/__api__/ApiServies";
+import { createContext, useEffect, useMemo, useReducer } from "react";
+import { getAPIAuth } from "utils/__api__/ApiServies";
 import useAuth from "hooks/useAuth";
-import {CART_ITEM} from "constant";
-import {useToasts} from "react-toast-notifications";
+import { CART_ITEM } from "constant";
+import { useToasts } from "react-toast-notifications";
+import { useLocation } from "./location_context";
 
 // =================================================================================
 const INITIAL_STATE = {
@@ -29,7 +30,7 @@ const arraysEqual = (a, b) => {
 
     const sortedA = [...a].sort();
     const sortedB = [...b].sort();
-    
+
     for (let i = 0; i < sortedA.length; i++) {
         if (sortedA[i] !== sortedB[i]) return false;
     }
@@ -41,12 +42,12 @@ const variantsEqual = (a, b) => {
     if (!a && !b) return true;
     if (!a || !b) return false;
     if (a.length !== b.length) return false;
-    
+
     const sortedA = [...a].sort((x, y) => x.variantName?.localeCompare(y.variantName));
     const sortedB = [...b].sort((x, y) => x.variantName?.localeCompare(y.variantName));
-    
+
     for (let i = 0; i < sortedA.length; i++) {
-        if (sortedA[i].variantName !== sortedB[i].variantName || 
+        if (sortedA[i].variantName !== sortedB[i].variantName ||
             sortedA[i].attributeName !== sortedB[i].attributeName) {
             return false;
         }
@@ -57,12 +58,12 @@ const variantsEqual = (a, b) => {
 // Helper function to compare variant data/attribute data
 const variantDataEqual = (variantDataA, variantAttributeDataA, variantDataB, variantAttributeDataB) => {
     if (!variantDataA && !variantDataB && !variantAttributeDataA && !variantAttributeDataB) return true;
-    
+
     const variantIdsA = variantDataA?.map(v => v._id) || [];
     const variantIdsB = variantDataB?.map(v => v._id) || [];
     const attributeIdsA = variantAttributeDataA?.map(v => v._id) || [];
     const attributeIdsB = variantAttributeDataB?.map(v => v._id) || [];
-    
+
     return arraysEqual(variantIdsA, variantIdsB) && arraysEqual(attributeIdsA, attributeIdsB);
 };
 
@@ -74,12 +75,12 @@ const reducer = (state, action) => {
         case "SET_ERROR":
             return { ...state, error: action.payload, loading: false };
         case "INIT_CART":
-            return {...state, cart: action.payload, loading: false};
+            return { ...state, cart: action.payload, loading: false };
         case "CHANGE_CART_AMOUNT":
             let cartList = state.cart;
             let cartItem = action.payload;
             const productItem = cartItem?.products[0];
-            
+
             if (!productItem) return state;
 
             // Check if product has combination (variant-based)
@@ -93,7 +94,7 @@ const reducer = (state, action) => {
                                 if (product?.product_id !== productItem?.product_id) {
                                     return true;
                                 }
-                                
+
                                 // For combination products, check all variant types
                                 // Check parent variants (variantData/variantAttributeData)
                                 const parentVariantsMatch = variantDataEqual(
@@ -102,31 +103,31 @@ const reducer = (state, action) => {
                                     productItem.variantData,
                                     productItem.variantAttributeData
                                 );
-                                
+
                                 // Check internal variants (variants array)
                                 const internalVariantsMatch = variantsEqual(product.variants, productItem.variants);
-                                
+
                                 // If both parent and internal variants match, remove this product
                                 return !(parentVariantsMatch && internalVariantsMatch);
                             });
-                            return {...vendor, products: filteredProducts};
+                            return { ...vendor, products: filteredProducts };
                         })
                         .filter((vendor) => vendor?.products?.length > 0);
 
-                    return {...state, cart: updatedCartList};
+                    return { ...state, cart: updatedCartList };
                 }
 
                 // Update existing item or add new one
                 let exist = false;
                 const updatedCartList = cartList?.map((vendor) => {
                     if (vendor.vendor_id !== cartItem.vendor_id) return vendor;
-                    
+
                     const updatedProducts = vendor?.products?.map((product) => {
                         // Check if same product
                         if (product?.product_id !== productItem?.product_id) {
                             return product;
                         }
-                        
+
                         // Check parent variants match
                         const parentVariantsMatch = variantDataEqual(
                             product.variantData,
@@ -134,10 +135,10 @@ const reducer = (state, action) => {
                             productItem.variantData,
                             productItem.variantAttributeData
                         );
-                        
+
                         // Check internal variants match
                         const internalVariantsMatch = variantsEqual(product.variants, productItem.variants);
-                        
+
                         // If both match, update this product
                         if (parentVariantsMatch && internalVariantsMatch) {
                             exist = true;
@@ -154,12 +155,12 @@ const reducer = (state, action) => {
                         return product;
                     });
 
-                    return {...vendor, products: updatedProducts};
+                    return { ...vendor, products: updatedProducts };
                 });
 
                 if (!exist) {
                     const vendorIndex = cartList.findIndex((vendor) => vendor.vendor_id === cartItem.vendor_id);
-                    
+
                     // Prepare the product object with all variant data
                     const newProduct = {
                         ...productItem,
@@ -167,7 +168,7 @@ const reducer = (state, action) => {
                         variantData: productItem.variantData || [],
                         variantAttributeData: productItem.variantAttributeData || []
                     };
-                    
+
                     if (vendorIndex >= 0) {
                         // Add to existing vendor
                         if (!updatedCartList[vendorIndex]?.products) {
@@ -187,8 +188,8 @@ const reducer = (state, action) => {
                     }
                 }
 
-                return {...state, cart: updatedCartList};
-                
+                return { ...state, cart: updatedCartList };
+
             } else {
                 // For non-combination products (simple products)
                 if (productItem?.qty < 1) {
@@ -197,13 +198,13 @@ const reducer = (state, action) => {
                             const filteredProducts = vendor.products.filter(
                                 (product) => product?.product_id !== productItem?.product_id
                             );
-                            return {...vendor, products: filteredProducts};
+                            return { ...vendor, products: filteredProducts };
                         })
                         .filter((vendor) => vendor?.products?.length > 0);
-                    
-                    return {...state, cart: updatedCartList};
+
+                    return { ...state, cart: updatedCartList };
                 }
-                
+
                 let exist = false;
                 const updatedCartList = cartList?.map((vendor) => {
                     const updatedProducts = vendor?.products?.map((product) => {
@@ -218,9 +219,9 @@ const reducer = (state, action) => {
                         return product;
                     });
 
-                    return {...vendor, products: updatedProducts};
+                    return { ...vendor, products: updatedProducts };
                 });
-                
+
                 if (!exist) {
                     const vendorIndex = cartList.findIndex((vendor) => vendor.vendor_id === cartItem.vendor_id);
                     if (vendorIndex >= 0) {
@@ -242,9 +243,9 @@ const reducer = (state, action) => {
                         });
                     }
                 }
-                return {...state, cart: updatedCartList};
+                return { ...state, cart: updatedCartList };
             }
-            
+
         case "CALCULATION":
             return {
                 ...state,
@@ -261,7 +262,7 @@ const reducer = (state, action) => {
                     action?.payload?.delivery -
                     action?.payload?.voucherDiscount,
             };
-            
+
         default: {
             return state;
         }
@@ -270,26 +271,27 @@ const reducer = (state, action) => {
 
 export const CartContext = createContext({});
 
-export default function CartProvider({children}) {
-    const {addToast} = useToasts();
+export default function CartProvider({ children }) {
+    const { addToast } = useToasts();
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-    const {token} = useAuth();
+    const { token } = useAuth();
+    const { location } = useLocation();
 
     const getCartItems = async (address_id) => {
         const cartData = JSON.parse(localStorage.getItem(CART_ITEM));
         if (token && cartData?.length) {
-            const res = await getAPIAuth(`user/cart-list?address_id=${address_id || ""}`, token);
+            const res = await getAPIAuth(`user/cart-list?address_id=${address_id || ""}&country=${location.countryName}`, token);
             if (res.status === 200) {
-                dispatch({type: "INIT_CART", payload: [...res?.data?.result, ...cartData]});
+                dispatch({ type: "INIT_CART", payload: [...res?.data?.result, ...cartData] });
             }
             localStorage.removeItem(CART_ITEM);
             return;
         }
 
         try {
-            const res = await getAPIAuth(`user/cart-list?address_id=${address_id || ""}`, token);
+            const res = await getAPIAuth(`user/cart-list?address_id=${address_id || ""}&country=${location.countryName}`, token);
             if (res.status === 200) {
-                dispatch({type: "INIT_CART", payload: res?.data?.result});
+                dispatch({ type: "INIT_CART", payload: res?.data?.result });
             }
         } catch (error) {
             console.log(error);
@@ -300,7 +302,7 @@ export default function CartProvider({children}) {
         if (token) {
             getCartItems();
         }
-    }, [token]);
+    }, [token, location]);
 
     useEffect(() => {
         if (!token) {
@@ -310,7 +312,7 @@ export default function CartProvider({children}) {
             } else {
                 cart = [];
             }
-            dispatch({type: "INIT_CART", payload: cart});
+            dispatch({ type: "INIT_CART", payload: cart });
         }
     }, []);
 
@@ -319,9 +321,9 @@ export default function CartProvider({children}) {
             const res = await getAPIAuth(`user/getCartDetails?wallet=${wallet}&address_id=${address_id || ""}&voucher_discount=${discount}`, token);
 
             if (res?.data?.status) {
-                dispatch({type: "CALCULATION", payload: res.data.data});
+                dispatch({ type: "CALCULATION", payload: res.data.data });
             } else {
-                dispatch({type: "CALCULATION", payload: res.data.data});
+                dispatch({ type: "CALCULATION", payload: res.data.data });
                 addToast(res?.data?.message, {
                     appearance: "error",
                     autoDismiss: true,
@@ -341,12 +343,12 @@ export default function CartProvider({children}) {
                 }, 0);
                 return vendorTotal + productTotal;
             }, 0);
-            
+
             // Calculate shop discount for guest users
             const shopDiscount = state?.cart?.reduce((vendorTotal, vendor) => {
                 return vendorTotal + (vendor?.discountAmount || 0);
             }, 0);
-            
+
             const payload = {
                 delivery: 0,
                 discount: 0,
@@ -356,7 +358,7 @@ export default function CartProvider({children}) {
                 voucherDiscount: 0,
                 subTotal: totalPrice
             }
-            dispatch({type: "CALCULATION", payload: payload});
+            dispatch({ type: "CALCULATION", payload: payload });
         }
     }, [state.cart]);
 

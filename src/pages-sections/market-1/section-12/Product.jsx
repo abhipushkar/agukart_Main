@@ -11,7 +11,7 @@ import { calculateDiscount } from "lib";
 
 const Product = ({ product }) => {
   const [nextPromotion, setNextPromotion] = useState({});
-  const {currency} = useCurrency();
+  const { currency } = useCurrency();
 
   useEffect(() => {
     if (
@@ -49,7 +49,7 @@ const Product = ({ product }) => {
             },
           }}
         >
-          <Link href={`/products?id=${product._id}`}>
+          <Link href={`/products/${product._id}`}>
             <Box borderRadius={2} mb={1}>
               <LazyImage
                 width={100}

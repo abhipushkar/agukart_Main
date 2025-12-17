@@ -7,7 +7,7 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import StarIcon from "@mui/icons-material/Star";
 import TabPanel from "@mui/lab/TabPanel";
-import {  FlexBox } from "components/flex-box";
+import { FlexBox } from "components/flex-box";
 import Pagination from "@mui/material/Pagination";
 import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
 import FlagIcon from "@mui/icons-material/Flag";
@@ -18,36 +18,36 @@ import { CircularProgress, Rating } from "@mui/material";
 
 
 const SORT_OPTIONS = [
-    {
-      label: "Relevance",
-      value: "relevance",
-    },
-    {
-      label: "Newest",
-      value: "date",
-    },
-    {
-      label: "Price Low to High",
-      value: "asc",
-    },
-    {
-      label: "Price High to Low",
-      value: "desc",
-    },
-  ];
+  {
+    label: "Relevance",
+    value: "relevance",
+  },
+  {
+    label: "Newest",
+    value: "date",
+  },
+  {
+    label: "Price Low to High",
+    value: "asc",
+  },
+  {
+    label: "Price High to Low",
+    value: "desc",
+  },
+];
 
-const ReviewsTab = ({vendor_id}) => {
-  const [loading,setLoading] = useState(false);
+const ReviewsTab = ({ vendor_id }) => {
+  const [loading, setLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
-  const [avgRating,setAvgRating] = useState(0);
-  const [imageBaseUrl,setImageBaseUrl] = useState("");
-  const [productImageBaseUrl,setProductImageBaseUrl] = useState("");
+  const [avgRating, setAvgRating] = useState(0);
+  const [imageBaseUrl, setImageBaseUrl] = useState("");
+  const [productImageBaseUrl, setProductImageBaseUrl] = useState("");
   const [sortBy, setSortBy] = useState("relevance");
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
 
-  const getAllVendorReview = async(page)=>{
-     try {
+  const getAllVendorReview = async (page) => {
+    try {
       setLoading(true);
       const res = await getAPIAuth(`vendor-reviews/${vendor_id}?page=${page}&limit=10`);
       if (res.status === 200) {
@@ -64,11 +64,11 @@ const ReviewsTab = ({vendor_id}) => {
     }
   }
 
-  useEffect(()=>{
-    if(vendor_id){
+  useEffect(() => {
+    if (vendor_id) {
       getAllVendorReview(page);
     }
-  },[vendor_id,page])
+  }, [vendor_id, page])
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -76,57 +76,57 @@ const ReviewsTab = ({vendor_id}) => {
   return (
     <>
       {
-        loading ? 
-        <Box
-            sx={{
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "column",
-                padding: "48px",
-                height: "100vh",
-            }}
-          >
-          <CircularProgress size={20} />
-        </Box>
-        :
-         <Box>
-          <Typography variant="h5" fontWeight={600}>
-            Review
-          </Typography>
+        loading ?
           <Box
-            mt={2}
             sx={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
+              flexDirection: "column",
+              padding: "48px",
+              height: "100vh",
             }}
           >
-            <Typography
-              component="div"
-              sx={{ display: "flex", alignItems: "center" }}
+            <CircularProgress size={20} />
+          </Box>
+          :
+          <Box>
+            <Typography variant="h5" fontWeight={600}>
+              Review
+            </Typography>
+            <Box
+              mt={2}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              <Typography pr={1}>Average item review</Typography>
               <Typography
-                pr={1}
                 component="div"
-                sx={{ paddingTop: "4px" }}
-                display={"flex"}
-                alignItems={"center"}
+                sx={{ display: "flex", alignItems: "center" }}
               >
-                <Rating
+                <Typography pr={1}>Average item review</Typography>
+                <Typography
+                  pr={1}
+                  component="div"
+                  sx={{ paddingTop: "4px" }}
+                  display={"flex"}
+                  alignItems={"center"}
+                >
+                  <Rating
                     precision={0.5}
                     value={Number(avgRating) || 0}
                     size="small"
                     readOnly
                     sx={{
                       fontSize: 13,
-                      color: '#fbc02d' 
+                      color: '#fbc02d'
                     }}
                   />
+                </Typography>
+                <Typography>{reviews?.length}</Typography>
               </Typography>
-              <Typography>{reviews?.length}</Typography>
-            </Typography>
-            {/* <Typography component="div">
+              {/* <Typography component="div">
               <FlexBox
                 alignItems="center"
                 justifyContent="end"
@@ -161,10 +161,10 @@ const ReviewsTab = ({vendor_id}) => {
                 </TextField>
               </FlexBox>
             </Typography> */}
-          </Box>
-          <Box>
-            {
-              reviews?.map((item,i)=>(
+            </Box>
+            <Box>
+              {
+                reviews?.map((item, i) => (
                   <Typography
                     component="div"
                     pb={2}
@@ -180,7 +180,7 @@ const ReviewsTab = ({vendor_id}) => {
                     >
                       <Typography component={"span"} overflow={"hidden"}>
                         <img
-                          src={item?.userdata?.image ? `${imageBaseUrl}${item?.userdata?.image}`:"https://i.etsystatic.com/iusa/6dc243/109604397/iusa_75x75.109604397_a4mk.jpg?version=0"}
+                          src={item?.userdata?.image ? `${imageBaseUrl}${item?.userdata?.image}` : "https://i.etsystatic.com/iusa/6dc243/109604397/iusa_75x75.109604397_a4mk.jpg?version=0"}
                           style={{
                             borderRadius: "50%",
                             width: "25px",
@@ -211,15 +211,15 @@ const ReviewsTab = ({vendor_id}) => {
                     </Typography>
                     <Typography component="div" display={"flex"} alignItems={"center"}>
                       <Rating
-                          precision={0.5}
-                          value={Number(item?.item_rating) || 0}
-                          size="small"
-                          readOnly
-                          sx={{
-                            fontSize: 13,
-                            color: '#fbc02d' 
-                          }}
-                        />
+                        precision={0.5}
+                        value={Number(item?.item_rating) || 0}
+                        size="small"
+                        readOnly
+                        sx={{
+                          fontSize: 13,
+                          color: '#fbc02d'
+                        }}
+                      />
                     </Typography>
                     <Typography sx={{ fontSize: "18px", color: "gray" }}>
                       {item?.additional_comment}
@@ -237,8 +237,8 @@ const ReviewsTab = ({vendor_id}) => {
                         maxWidth: 450,
                         cusor: "pointer",
                       }}
-                      onClick={()=>{
-                        const url = `/products?id=${item?.productdata?._id}`
+                      onClick={() => {
+                        const url = `/products/${item?.productdata?._id}`
                         window.open(url, "_blank");
                       }}
                     >
@@ -247,7 +247,7 @@ const ReviewsTab = ({vendor_id}) => {
                         component="img"
                         src={
                           item?.productdata?.image?.length > 0 ? `${productImageBaseUrl}${item?.productdata?.image?.[0]}` :
-                          "https://i.etsystatic.com/il/5d0e88/5158021585/il_794xN.5158021585_1kc5.jpg"
+                            "https://i.etsystatic.com/il/5d0e88/5158021585/il_794xN.5158021585_1kc5.jpg"
                         }
                         alt="Product Image"
                         sx={{
@@ -366,9 +366,9 @@ const ReviewsTab = ({vendor_id}) => {
                       </Typography>
                     </Box> */}
                   </Typography>
-              ))
-            }
-            {/* <Typography component="div" pt={2} mt={2}>
+                ))
+              }
+              {/* <Typography component="div" pt={2} mt={2}>
               <Typography fontSize={14} display={"flex"}>
                 <Typography component={"span"} overflow={"hidden"}>
                   <img
@@ -439,18 +439,18 @@ const ReviewsTab = ({vendor_id}) => {
                 </Typography>
               </Typography>
             </Typography> */}
+            </Box>
+            {
+              reviews.length > 0 && (
+                <Box mt={4}>
+                  <Pagination count={totalPages}
+                    page={page}
+                    onChange={handlePageChange}
+                    variant="outlined" />
+                </Box>
+              )
+            }
           </Box>
-          {
-            reviews.length > 0 && (
-              <Box mt={4}>
-                <Pagination count={totalPages}
-                  page={page}
-                  onChange={handlePageChange}
-                  variant="outlined"/>
-              </Box>
-            )
-          }
-      </Box>
       }
     </>
   );

@@ -23,7 +23,7 @@ import { useCurrency } from "contexts/CurrencyContext";
 // ==============================================================
 export default function MiniCartItem({ item, data, handleCartAmountChange }) {
   console.log(item, "mmmmmmmmm")
-  const {currency} = useCurrency();
+  const { currency } = useCurrency();
   const { state } = useCart();
   const [stock, setStock] = useState(0);
   const getCombinations = (arr) => {
@@ -56,11 +56,11 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         } else {
           setStock(+item.stock);
         }
-      } else{
+      } else {
         data.forEach((item) => {
           if (item.isVisible) {
             if (+item.qty > 0) {
-              setStock(+item.qty); 
+              setStock(+item.qty);
             }
           }
         });
@@ -142,7 +142,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         </Button>
       </FlexBox>
 
-      <Link href={`/products?id=${item.product_id}`}>
+      <Link href={`/products/${item.product_id}`}>
         <Avatar
           alt={item.product_name}
           src={item.firstImage}
@@ -160,7 +160,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         whiteSpace="nowrap"
         overflow="hidden"
       >
-        <Link href={`/products?id=${item.product_id}`}>
+        <Link href={`/products/${item.product_id}`}>
           <H6 ellipsis className="title">
             {item?.name?.replace(/<[^>]*>/g, "")}
           </H6>

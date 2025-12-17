@@ -6,8 +6,8 @@ import MessagePopup from "./MessagePopup";
 import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
 
-const Product = ({ baseUrl,shopBaseUrl, setReviewId,setVendorId, SetOpenPopup,order,product }) => {
-  console.log({order,product,shopBaseUrl},"DFhrtfyhrthjrthrt");
+const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product }) => {
+  console.log({ order, product, shopBaseUrl }, "DFhrtfyhrthjrthrt");
   const router = useRouter();
   const { addToast } = useToasts();
   const { currency } = useCurrency();
@@ -113,7 +113,7 @@ const Product = ({ baseUrl,shopBaseUrl, setReviewId,setVendorId, SetOpenPopup,or
               <Typography component="div" mt={1}>
                 <Button
                   onClick={() =>
-                    router.push(`/products?id=${product.product_id}`)
+                    router.push(`/products/${product.product_id}`)
                   }
                   variant="contained"
                   sx={{
@@ -248,7 +248,7 @@ const Product = ({ baseUrl,shopBaseUrl, setReviewId,setVendorId, SetOpenPopup,or
         productID={product?.productData?._id}
         productData={product}
         product_image={baseUrl + product?.productData?.image[0]}
-        orderId = {order?.order_id}
+        orderId={order?.order_id}
         handleClosePopup={handleMessageClosePopup}
       />
     </>

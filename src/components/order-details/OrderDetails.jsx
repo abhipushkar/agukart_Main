@@ -92,7 +92,7 @@ const breadcrumbs = [
   </Typography>,
 ];
 const OrderDetails = () => {
-  const {currency} = useCurrency();
+  const { currency } = useCurrency();
   const [baseUrl, setBaseUrl] = useState("");
   const [orderDetail, setOrderDetail] = useState(null);
   console.log(orderDetail, "---------orderDetail");
@@ -321,7 +321,7 @@ const OrderDetails = () => {
                         Item(s) SubTotal:
                       </Typography>
                       <Typography width={"50%"} fontWeight={600}>
-                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a,b)=>{return a + (b?.amount - b?.couponDiscountAmount)},0) * currency?.rate).toFixed(2)}
+                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a, b) => { return a + (b?.amount - b?.couponDiscountAmount) }, 0) * currency?.rate).toFixed(2)}
                       </Typography>
                     </Typography>
                     <Typography
@@ -332,22 +332,22 @@ const OrderDetails = () => {
                         Shipping:
                       </Typography>
                       <Typography width={"50%"} fontWeight={600}>
-                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a,b)=>{return a + b?.shippingAmount},0)* currency?.rate).toFixed(2)}
+                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a, b) => { return a + b?.shippingAmount }, 0) * currency?.rate).toFixed(2)}
                       </Typography>
                     </Typography>
                     {
                       orderDetail?.voucher_dicount > 0 && (
-                          <Typography
-                            component="div"
-                            sx={{ display: "flex", alignItems: "center" }}
-                          >
-                            <Typography width={"50%"} fontWeight={600}>
-                              Voucher Discount:
-                            </Typography>
-                            <Typography width={"50%"} fontWeight={600}>
-                              - {currency?.symbol}{(orderDetail?.voucher_dicount * currency?.rate).toFixed(2)}
-                            </Typography>
+                        <Typography
+                          component="div"
+                          sx={{ display: "flex", alignItems: "center" }}
+                        >
+                          <Typography width={"50%"} fontWeight={600}>
+                            Voucher Discount:
                           </Typography>
+                          <Typography width={"50%"} fontWeight={600}>
+                            - {currency?.symbol}{(orderDetail?.voucher_dicount * currency?.rate).toFixed(2)}
+                          </Typography>
+                        </Typography>
                       )
                     }
                     {/* <Typography
@@ -383,7 +383,7 @@ const OrderDetails = () => {
                         Grand Total:
                       </Typography>
                       <Typography width={"50%"} fontWeight={700}>
-                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a,b)=>{return a + (b?.amount - b?.couponDiscountAmount + b?.shippingAmount)},0) - orderDetail?.voucher_dicount * currency?.rate).toFixed(2)}
+                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a, b) => { return a + (b?.amount - b?.couponDiscountAmount + b?.shippingAmount) }, 0) - orderDetail?.voucher_dicount * currency?.rate).toFixed(2)}
                       </Typography>
                     </Typography>
                   </Typography>
@@ -470,7 +470,7 @@ const OrderDetails = () => {
                         >
                           {" "}
                           <Link
-                            href={`/products?id=${product?.product_id}`}
+                            href={`/products/${product?.product_id}`}
                             style={{
                               fontWeight: "500",
                               color: "#0a8369",

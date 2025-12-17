@@ -366,7 +366,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           </Box>
           <Box>
             <Link
-              href={`/products?id=${product._id}`}
+              href={`/products/${product._id}`}
               style={{ textDecoration: "none" }}
             >
               <H6

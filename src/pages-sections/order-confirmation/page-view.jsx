@@ -137,7 +137,7 @@ export default function OrderConfirmationPageView() {
           sx={{ background: "#e4e4e4", padding: "12px", borderRadius: "8px" }}
         >
           {
-            orderDetail?.map((orderDetail,index)=>(
+            orderDetail?.map((orderDetail, index) => (
               <Wrapper
                 key={index}
                 sx={{
@@ -145,7 +145,7 @@ export default function OrderConfirmationPageView() {
                   maxWidth: "100%",
                   textAlign: "start",
                   padding: "24px",
-                  marginBottom:"5px"
+                  marginBottom: "5px"
                 }}
               >
                 <Box py={2}>
@@ -207,7 +207,7 @@ export default function OrderConfirmationPageView() {
                           />
                         </Typography>
                         <Typography component="div">
-                          <Typography mb={1} fontWeight={600} onClick={() => router.push(`/products?id=${product?.productData?._id}`)}>
+                          <Typography mb={1} fontWeight={600} onClick={() => router.push(`/products/${product?.productData?._id}`)}>
 
                             {product?.productData?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
                           </Typography>

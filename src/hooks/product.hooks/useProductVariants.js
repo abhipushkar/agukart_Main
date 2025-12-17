@@ -13,7 +13,6 @@ export const useProductVariants = (product) => {
     const router = useRouter();
 
     // Normalize all variant data into a consistent structure
-    // Normalize all variant data into a consistent structure
     const normalizeVariantData = useCallback(() => {
         if (!product) return [];
 
@@ -74,9 +73,6 @@ export const useProductVariants = (product) => {
 
         // Handle internal variants - ONLY show variants that are in product_variants
         if (product?.product_variants?.length > 0) {
-            console.log("Product Variants ", product.product_variants);
-            
-
             product.product_variants.forEach(variant => {
                 // Find corresponding variant info from variant_id array for guide data
                 const variantInfo = product.variant_id?.find(
@@ -84,7 +80,6 @@ export const useProductVariants = (product) => {
                 );
 
                 // Get variant attributes ONLY from variant_attribute_id that belong to this variant
-                // First, find the variant by name in variant_id
                 const variantInVariantId = product.variant_id?.find(
                     v => v.variant_name === variant.variant_name
                 );
@@ -271,7 +266,8 @@ export const useProductVariants = (product) => {
                             isVisible: combo.isVisible === "true",
                             isCheckedPrice: combo.isCheckedPrice === "true",
                             isCheckedQuantity: combo.isCheckedQuantity === "true",
-                            attributes: attributes
+                            attributes: attributes,
+                            comboIds: attributeIds // Store for reference
                         });
 
                         // Also store for individual attributes to calculate ranges
@@ -280,7 +276,8 @@ export const useProductVariants = (product) => {
                                 attributeCombinations.set(attrId, {
                                     prices: new Set(),
                                     quantities: new Set(),
-                                    isVisible: new Set()
+                                    isVisible: new Set(),
+                                    isIndependent: false
                                 });
                             }
 
@@ -292,6 +289,11 @@ export const useProductVariants = (product) => {
                                 attrData.quantities.add(qty);
                             }
                             attrData.isVisible.add(combo.isVisible === "true");
+                            
+                            // Check if this attribute appears alone (independent pricing)
+                            if (attributeIds.length === 1) {
+                                attrData.isIndependent = true;
+                            }
                         });
                     }
                 });
@@ -304,7 +306,8 @@ export const useProductVariants = (product) => {
             processedAttributeCombinations.set(attrId, {
                 prices: Array.from(data.prices),
                 quantities: Array.from(data.quantities),
-                isVisible: Array.from(data.isVisible)
+                isVisible: Array.from(data.isVisible),
+                isIndependent: data.isIndependent
             });
         });
 
@@ -331,7 +334,7 @@ export const useProductVariants = (product) => {
             max: Math.max(...attrData.quantities)
         } : null;
 
-        return { priceRange, quantityRange };
+        return { priceRange, quantityRange, isIndependent: attrData.isIndependent };
     }, [internalCombinationsMap]);
 
     // Check if a specific attribute combination is sold out or has 0 quantity
@@ -515,7 +518,8 @@ export const useProductVariants = (product) => {
             return ranges?.priceRange ? {
                 type: 'range',
                 min: ranges.priceRange.min,
-                max: ranges.priceRange.max
+                max: ranges.priceRange.max,
+                isIndependent: ranges.isIndependent
             } : null;
         }
 
@@ -526,7 +530,8 @@ export const useProductVariants = (product) => {
         if (comboData && comboData.price !== null) {
             return {
                 type: 'fixed',
-                value: comboData.price
+                value: comboData.price,
+                isIndependent: selectionIds.length === 1
             };
         }
 
@@ -535,7 +540,8 @@ export const useProductVariants = (product) => {
         return ranges?.priceRange ? {
             type: 'range',
             min: ranges.priceRange.min,
-            max: ranges.priceRange.max
+            max: ranges.priceRange.max,
+            isIndependent: ranges.isIndependent
         } : null;
     }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges]);
 
@@ -716,7 +722,8 @@ export const useProductVariants = (product) => {
                             quantityRange: ranges?.quantityRange || null,
                             price: priceData?.type === 'fixed' ? priceData.value : null,
                             quantity: quantityData?.type === 'fixed' ? quantityData.value : null,
-                            isSoldOut
+                            isSoldOut,
+                            isIndependent: ranges?.isIndependent || false
                         };
                     });
 
@@ -737,7 +744,8 @@ export const useProductVariants = (product) => {
                     quantity: attr.quantity,
                     priceRange: attr.priceRange,
                     quantityRange: attr.quantityRange,
-                    isSoldOut: attr.isSoldOut
+                    isSoldOut: attr.isSoldOut,
+                    isIndependent: attr.isIndependent
                 }))
             );
 
@@ -957,114 +965,191 @@ export const useProductVariants = (product) => {
             targetCombination.sku_product_id !== product._id &&
             !targetCombination.sold_out) {
 
-            router.push(`/products?id=${targetCombination.sku_product_id}`);
+            router.push(`/products/${targetCombination.sku_product_id}`);
         }
     }, [selectedVariants, product, router, extractParentCombinations]);
 
     const calculateAttributeData = useCallback((attributeId, currentSelections = selectedVariants) => {
         if (!product?.isCombination) return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false };
-
+    
         const { combinationsMap, attributeCombinations } = internalCombinationsMap;
-
-        // Get all selected attribute IDs including the current attribute
-        const tempSelections = { ...currentSelections };
         const normalizedVariants = normalizeVariantData();
         const attributeVariant = normalizedVariants.find(v =>
             v.attributes.some(attr => attr.id === attributeId)
         );
-
+    
         if (!attributeVariant) {
             return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false };
         }
-
-        // Add or update this attribute in selections
+    
+        // Check if this attribute has independent pricing
+        const attrData = attributeCombinations.get(attributeId);
+        const isIndependent = attrData?.isIndependent || false;
+    
+        // Get all selected attribute IDs including the current attribute
+        const tempSelections = { ...currentSelections };
         tempSelections[attributeVariant.id] = attributeId;
-
+    
         const selectedAttributeIds = Object.values(tempSelections).filter(id => id);
-        const sortedIds = [...selectedAttributeIds].sort().join(',');
-
-        // Check for exact combination match
-        const exactCombo = combinationsMap.get(sortedIds);
-        if (exactCombo) {
-            return {
-                price: exactCombo.price,
-                quantity: exactCombo.qty,
-                priceRange: null,
-                quantityRange: null,
-                isSoldOut: exactCombo.qty === 0
-            };
+        
+        // 1️⃣ If attribute has independent pricing - ALWAYS show fixed price
+        if (isIndependent) {
+            const independentCombo = Array.from(combinationsMap.entries()).find(([comboKey, comboData]) => {
+                const comboIds = comboKey.split(',').filter(id => id);
+                return comboIds.length === 1 && comboIds[0] === attributeId && comboData.price !== null;
+            });
+    
+            if (independentCombo) {
+                return {
+                    price: independentCombo[1].price,
+                    quantity: independentCombo[1].qty,
+                    priceRange: null,
+                    quantityRange: null,
+                    isSoldOut: independentCombo[1].qty === 0,
+                    isIndependent: true
+                };
+            }
         }
-
-        // If no exact match, calculate ranges from all combinations that include this attribute
-        const relevantCombinations = [];
-
+    
+        // Check if this variant is involved in combined pricing with another variant
+        let isInCombinedPricing = false;
+        let combinedWithVariants = [];
+        
+        // Analyze combinationData to find combined pricing relationships
+        if (product?.combinationData) {
+            product.combinationData.forEach(group => {
+                if (group.combinations) {
+                    group.combinations.forEach(combo => {
+                        if (combo.name1 && combo.name2) {
+                            // This is a combined pricing entry
+                            // Find the attribute IDs for these variant values
+                            const variant1 = product.variant_id?.find(v => v.variant_name === combo.name1);
+                            const variant2 = product.variant_id?.find(v => v.variant_name === combo.name2);
+                            
+                            if (variant1 && variant2) {
+                                const attr1 = product.variant_attribute_id?.find(
+                                    a => a.variant === variant1._id && a.attribute_value === combo.value1
+                                );
+                                const attr2 = product.variant_attribute_id?.find(
+                                    a => a.variant === variant2._id && a.attribute_value === combo.value2
+                                );
+                                
+                                if (attr1 && attr2) {
+                                    if (attr1._id === attributeId) {
+                                        isInCombinedPricing = true;
+                                        combinedWithVariants.push(combo.name2);
+                                    } else if (attr2._id === attributeId) {
+                                        isInCombinedPricing = true;
+                                        combinedWithVariants.push(combo.name1);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    
+        // Check if other combined variant is selected
+        const otherCombinedVariantSelected = combinedWithVariants.some(variantName => {
+            return currentSelections?.[variantName];
+        });
+    
+        // 2️⃣ Combined pricing - another variant NOT selected yet → show price range
+        if (isInCombinedPricing && !otherCombinedVariantSelected) {
+            // Find all combinations that include this attribute
+            const relevantCombinations = [];
+            const prices = new Set();
+            
+            combinationsMap.forEach((comboData, comboKey) => {
+                const comboIds = comboKey.split(',').filter(id => id);
+                if (comboIds.includes(attributeId) && comboData.price !== null) {
+                    relevantCombinations.push(comboData);
+                    prices.add(comboData.price);
+                }
+            });
+    
+            if (prices.size > 0) {
+                const priceArray = Array.from(prices);
+                const priceRange = priceArray.length > 1 ? {
+                    min: Math.min(...priceArray),
+                    max: Math.max(...priceArray)
+                } : priceArray.length === 1 ? {
+                    min: priceArray[0],
+                    max: priceArray[0]
+                } : null;
+    
+                return {
+                    price: null,
+                    quantity: null,
+                    priceRange: priceRange,
+                    quantityRange: null,
+                    isSoldOut: relevantCombinations.every(combo => combo.qty === 0),
+                    isIndependent: false
+                };
+            }
+        }
+    
+        // 3️⃣ Combined pricing - another variant IS selected OR independent pricing → show exact price
+        // Find combinations that match current selections (including this attribute)
+        const matchingCombinations = [];
+        
         combinationsMap.forEach((comboData, comboKey) => {
             const comboIds = comboKey.split(',').filter(id => id);
-
-            // Check if this combination includes all currently selected attributes
-            const includesAllSelected = selectedAttributeIds.every(id => comboIds.includes(id));
-
-            if (includesAllSelected && comboIds.includes(attributeId)) {
-                relevantCombinations.push(comboData);
+            
+            // Check if this combination includes all selected attributes + current attribute
+            const includesAllSelections = Object.entries(tempSelections).every(([variantId, attrId]) => {
+                const variant = normalizedVariants.find(v => v.id === variantId);
+                if (!variant) return false;
+                
+                // Check if this variant's selected attribute is in the combination
+                return comboIds.includes(attrId);
+            });
+            
+            if (includesAllSelections && comboData.price !== null) {
+                matchingCombinations.push(comboData);
             }
         });
-
-        if (relevantCombinations.length > 0) {
-            const prices = relevantCombinations
-                .filter(combo => combo.price !== null)
-                .map(combo => combo.price);
-
-            const quantities = relevantCombinations
-                .filter(combo => combo.qty !== null)
-                .map(combo => combo.qty);
-
-            const priceRange = prices.length > 0 ? {
-                min: Math.min(...prices),
-                max: Math.max(...prices)
-            } : null;
-
-            const quantityRange = quantities.length > 0 ? {
-                min: Math.min(...quantities),
-                max: Math.max(...quantities)
-            } : null;
-
-            // Check if all quantities are 0 (sold out)
-            const isSoldOut = quantities.length > 0 && quantities.every(qty => qty === 0);
-
+    
+        // If we have matching combinations, show exact price
+        if (matchingCombinations.length > 0) {
+            // Take the first matching combination (should be the same price for all)
+            const matchedCombo = matchingCombinations[0];
             return {
-                price: null,
-                quantity: null,
-                priceRange,
-                quantityRange,
-                isSoldOut
+                price: matchedCombo.price,
+                quantity: matchedCombo.qty,
+                priceRange: null,
+                quantityRange: null,
+                isSoldOut: matchedCombo.qty === 0,
+                isIndependent: isIndependent
             };
         }
-
-        // Fallback to attribute-level data
-        const attrData = attributeCombinations.get(attributeId);
+    
+        // 4️⃣ Fallback: Show attribute-level ranges
         if (attrData) {
             const priceRange = attrData.prices.length > 0 ? {
                 min: Math.min(...attrData.prices),
                 max: Math.max(...attrData.prices)
             } : null;
-
+    
             const quantityRange = attrData.quantities.length > 0 ? {
                 min: Math.min(...attrData.quantities),
                 max: Math.max(...attrData.quantities)
             } : null;
-
+    
             const isSoldOut = attrData.quantities.length > 0 && attrData.quantities.every(qty => qty === 0);
-
+    
             return {
                 price: null,
                 quantity: null,
                 priceRange,
                 quantityRange,
-                isSoldOut
+                isSoldOut,
+                isIndependent: isIndependent
             };
         }
-
-        return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false };
+    
+        return { price: null, quantity: null, priceRange: null, quantityRange: null, isSoldOut: false, isIndependent: false };
     }, [product, selectedVariants, internalCombinationsMap, normalizeVariantData]);
 
     return {

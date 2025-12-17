@@ -80,7 +80,7 @@ const Slider = ({ cat }) => {
         <Grid container spacing={2}>
           {products.map((product) => (
             <Grid key={product._id} item lg={2} md={4} xs={6}>
-              <Link href={`/products?id=${product._id}`}>
+              <Link href={`/products/${product._id}`}>
                 <Box
                   sx={{
                     overflow: "hidden",
@@ -110,7 +110,7 @@ const Slider = ({ cat }) => {
       ) : (
         <Carousel slidesToShow={6} responsive={responsive}>
           {products.map((product) => (
-            <Link key={product._id} href={`/products?id=${product._id}`}>
+            <Link key={product._id} href={`/products/${product._id}`}>
               <Box
                 sx={{
                   overflow: "hidden",

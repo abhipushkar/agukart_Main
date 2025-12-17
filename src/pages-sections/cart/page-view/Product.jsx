@@ -64,10 +64,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const isVariantSelectionRequired = useMemo(() => {
         // If no combination data, no variants are required
         if (!hasCombinationData) return false;
-        
+
         // If it's a child product (already has parent variant selected), internal variants are NOT required
         if (isChildProduct) return false;
-        
+
         // If it's NOT a child product and has combination data, then at least one variant is required
         return true;
     }, [hasCombinationData, isChildProduct]);
@@ -77,9 +77,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         // Only show error if:
         // 1. Variant selection is required (not a child product + has combination data)
         // 2. AND no variants are selected (neither internal nor parent)
-        return isVariantSelectionRequired && 
-               !hasInternalVariants && 
-               !isChildProduct;
+        return isVariantSelectionRequired &&
+            !hasInternalVariants &&
+            !isChildProduct;
     }, [isVariantSelectionRequired, hasInternalVariants, isChildProduct]);
 
     // Check if product has any variants selected
@@ -94,7 +94,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
         // Get all variant combinations from the variants array
         const selectedVariantValues = product.variants.map(v => v.attributeName);
-        
+
         // Search through combinationData for a match
         for (const combinationGroup of product.combinationData) {
             for (const combination of combinationGroup.combinations || []) {
@@ -102,25 +102,25 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 if (combination.combValues && Array.isArray(combination.combValues)) {
                     const combValuesSet = new Set(combination.combValues.map(v => v.trim().toLowerCase()));
                     const selectedValuesSet = new Set(selectedVariantValues.map(v => v.trim().toLowerCase()));
-                    
+
                     // Check if sets are equal (order doesn't matter)
-                    if (combValuesSet.size === selectedValuesSet.size && 
+                    if (combValuesSet.size === selectedValuesSet.size &&
                         [...combValuesSet].every(value => selectedValuesSet.has(value))) {
                         return combination;
                     }
                 }
             }
         }
-        
+
         return null;
     }, [product?.variants, product?.combinationData, hasInternalVariants]);
 
     // Get combinations based on selected variants
     const getCombinations = (arr) => {
         if (!arr || arr.length === 0) return [];
-        
+
         let combinations = arr.map(item => [item]);
-        
+
         if (arr.length > 1) {
             for (let i = 0; i < arr.length; i++) {
                 for (let j = i + 1; j < arr.length; j++) {
@@ -128,7 +128,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 }
             }
         }
-        
+
         return combinations;
     };
 
@@ -137,7 +137,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         // Case 1: Child product (has parent variants)
         if (isChildProduct) {
             const variantAttributeIds = product?.variant_attribute_id || [];
-            
+
             // If no internal variants, check parent combinations
             if (!hasInternalVariants) {
                 // Check if there's a matching parent combination
@@ -145,7 +145,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     const matchingParentCombination = parentCombinationData?.find(
                         item => item.combination_id === variantAttributeIds[0]
                     );
-                    
+
                     if (matchingParentCombination) {
                         // Check if sold out from parent combination
                         if (matchingParentCombination.sold_out) {
@@ -153,11 +153,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                         }
                     }
                 }
-                
+
                 // Fall back to product stock
                 return +product.stock || 0;
             }
-            
+
             // Case 2: Child product with internal variants
             const internalCombination = findInternalCombination;
             if (internalCombination) {
@@ -168,10 +168,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     return +internalCombination.qty;
                 }
             }
-            
+
             return +product.stock || 0;
         }
-        
+
         // Case 3: Product with internal variants only (not a child product)
         if (hasInternalVariants) {
             const internalCombination = findInternalCombination;
@@ -183,10 +183,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     return +internalCombination.qty;
                 }
             }
-            
+
             return +product.stock || 0;
         }
-        
+
         // Case 4: Simple product (no variants)
         return +product.stock || 0;
     };
@@ -199,25 +199,25 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     // Calculate price based on variant combinations
     const calculateVariantPrice = () => {
         let basePrice = +product.original_price || +product.real_price || 0;
-        
+
         // Check for internal variant price adjustment
         if (findInternalCombination) {
             if (findInternalCombination.price && findInternalCombination.price !== "") {
                 basePrice = +findInternalCombination.price;
             }
         }
-        
+
         // Check for parent combination price adjustment
         if (isChildProduct && parentCombinationData?.length > 0) {
             const variantAttributeIds = product?.variant_attribute_id || [];
             const matchingParentCombination = parentCombinationData?.find(
                 item => item.combination_id === variantAttributeIds[0]
             );
-            
+
             // Note: Parent combinations might have their own pricing logic
             // This would need to be implemented based on backend data structure
         }
-        
+
         return basePrice;
     };
 
@@ -232,11 +232,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         }
 
         const variantPrice = calculateVariantPrice();
-        
+
         // --- NEW LOGIC: Calculate price based on local quantity and centralized rules ---
-        const couponValues = cart?.vendor_coupon || {}; 
+        const couponValues = cart?.vendor_coupon || {};
         const isSynced = couponValues?.isSynced || couponValues?.coupon_data?.isSynced || false;
-        
+
         // Calculate total qty for shop-level offers based on LOCAL quantity
         const otherProductsQty = cart?.products?.reduce((acc, item) => {
             return item.product_id === product.product_id ? acc : acc + (item?.qty || 0);
@@ -251,10 +251,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
             if (promo.promotion_type === 'qty_total_shop') return promo.qty <= newTotalShopQty;
             return false;
         }) || [];
-        
+
         if (validPromotions.length > 0) {
-                bestPromotion = validPromotions.reduce((prev, current) => {
-                const prevFinalPrice = calculatePriceAfterDiscount(prev.offer_type, prev.discount_amount, variantPrice); 
+            bestPromotion = validPromotions.reduce((prev, current) => {
+                const prevFinalPrice = calculatePriceAfterDiscount(prev.offer_type, prev.discount_amount, variantPrice);
                 const currentFinalPrice = calculatePriceAfterDiscount(current.offer_type, current.discount_amount, variantPrice);
                 return (variantPrice - currentFinalPrice) > (variantPrice - prevFinalPrice) ? current : prev;
             });
@@ -277,9 +277,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     shop_name: cart?.shop_name,
                     slug: cart?.slug,
                     products: [
-                        { 
-                            ...product, 
-                            sale_price: finalPrice, 
+                        {
+                            ...product,
+                            sale_price: finalPrice,
                             qty: quantity,
                             variants: product?.variants || [],
                             variantData: product?.variantData || [],
@@ -422,7 +422,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
     // Handle edit product to select variants
     const handleEditProduct = () => {
-        router.push(`/products?id=${product?.product_id}`);
+        router.push(`/products/${product?.product_id}`);
     };
 
     useEffect(() => {
@@ -441,7 +441,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         // Calculate next promotion hint only
         const nextPromotion = product?.promotionalOfferData?.reduce((next, promotion) => {
             if (promotion.promotion_type === 'qty_per_product' && promotion.qty > product?.qty) {
-                 if (!next || promotion.qty < next.qty) return promotion;
+                if (!next || promotion.qty < next.qty) return promotion;
             }
             return next;
         }, null);
@@ -455,7 +455,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     // Render variant information
     const renderVariantInfo = () => {
         const variantInfo = [];
-        
+
         // Show parent variant info (for child products)
         if (isChildProduct && product?.variantData?.length > 0) {
             product.variantData.forEach((variant, index) => {
@@ -472,7 +472,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 }
             });
         }
-        
+
         // Show internal variant info
         if (hasInternalVariants && product?.variants?.length > 0) {
             product.variants.forEach((variant, index) => {
@@ -486,7 +486,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 );
             });
         }
-        
+
         return variantInfo;
     };
 
@@ -624,14 +624,14 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                     lineHeight={1.7}
                                 >
                                     <Link
-                                        href={`/products?id=${product?.product_id}`}
+                                        href={`/products/${product?.product_id}`}
                                         component={NextLink}
                                     >
                                         {parse(product?.product_name)}
                                     </Link>
                                 </Typography>
                                 {renderVariantInfo()}
-                                
+
                                 {product?.customize == "Yes" && (
                                     <>
                                         {product?.customizationData?.map((item, index) => (
@@ -660,7 +660,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 <p>Shop the sale</p>
                                             </>
                                         )}
-                                        
+
                                         {/* Show edit button ONLY if variant selection is incomplete */}
                                         {isVariantSelectionIncomplete && (
                                             <Box
@@ -685,7 +685,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 </Typography>
                                             </Box>
                                         )}
-                                        
+
                                         {/* Show quantity selector if:
                                             1. Variant selection is complete OR 
                                             2. Product is a child product (parent variant already selected) OR
@@ -729,7 +729,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         {(!product?.status || product?.isDeleted) ? "Currently Unavailable" : "Sold Out"}
                                     </Typography>
                                 )}
-                                
+
                                 {showButtons && (
                                     <Typography component="div" mt={2}>
                                         <Button
@@ -823,15 +823,15 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             >
                                                 <Typography component="span" fontSize="12px" fontWeight="bold">
                                                     {(product.appliedPromotion.promotion_type === 'qty_total_shop' || product.appliedPromotion.promotion_type === 'amount') ? 'SHOP OFFER: ' : ''}
-                                                    {product.appliedPromotion.offer_type === "flat" 
-                                                        ? `${currency?.symbol}${product.appliedPromotion.discount_amount} OFF` 
+                                                    {product.appliedPromotion.offer_type === "flat"
+                                                        ? `${currency?.symbol}${product.appliedPromotion.discount_amount} OFF`
                                                         : `${product.appliedPromotion.discount_amount}% OFF`}
                                                 </Typography>
                                             </Box>
                                         )}
                                         {/* Show Coupon Badge if synced and applied */}
                                         {cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced) && (
-                                             <Box
+                                            <Box
                                                 sx={{
                                                     display: "inline-block",
                                                     backgroundColor: "#2196f3",
@@ -847,7 +847,23 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 COUPON APPLIED
                                             </Box>
                                         )}
-                                        {!(cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced)) && (<Typography
+                                        {cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced) ? (<Typography
+                                            fontSize={19}
+                                            fontWeight={600}
+                                            textAlign={"right"}
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: {
+                                                    lg: "end",
+                                                    md: "end",
+                                                    xs: "start",
+                                                },
+                                            }}
+                                        >
+                                            {originalPrice != price && currency?.symbol}
+                                            {originalPrice != price && (originalPrice * currency.rate * quantity).toFixed(2)}
+                                        </Typography>) : (<Typography
                                             fontSize={19}
                                             fontWeight={600}
                                             textAlign={"right"}
@@ -863,7 +879,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         >
                                             {currency?.symbol}{(price * quantity * currency?.rate).toFixed(2)}
                                         </Typography>)}
-                                        <Typography
+                                        {!(cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced)) && (<Typography
                                             fontSize={19}
                                             fontWeight={600}
                                             textAlign={"right"}
@@ -889,7 +905,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 {originalPrice != price && currency?.symbol}
                                                 {originalPrice != price && (originalPrice * currency.rate * quantity).toFixed(2)}
                                             </Small>
-                                        </Typography>
+                                        </Typography>)}
                                         {quantity > 1 && (
                                             <Typography
                                                 fontSize={12}
@@ -905,10 +921,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     },
                                                 }}
                                             >
-                                        ({currency?.symbol}{(price * currency?.rate).toFixed(2)} each)
+                                                ({currency?.symbol}{(price * currency?.rate).toFixed(2)} each)
                                             </Typography>
                                         )}
-                                        
+
                                         {/* Upsell Message UI */}
                                         {product?.upsellData && (
                                             <Box

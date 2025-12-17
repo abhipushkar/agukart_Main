@@ -66,7 +66,7 @@ const section15 = ({ recentlyViewd, getRecentlyViewd }) => {
               return (
                 <Grid item xs={12} md={4} lg={2.4}>
                   <Box>
-                    <Link href={`/products?id=${product._id}`}>
+                    <Link href={`/products/${product._id}`}>
                       <BazaarCard
                         sx={{
                           background: "none",
@@ -119,17 +119,17 @@ const section15 = ({ recentlyViewd, getRecentlyViewd }) => {
             {recentlyViewd.map((product) => {
               return (
                 <Box>
-                  <Link href={`/products?id=${product._id}`}>
+                  <Link href={`/products/${product._id}`}>
                     <BazaarCard
                       sx={{
                         background: "none",
-                          borderRadius: "4px",
-                          position: "relative",
-                          overflow: 'hidden',
-                          transition: 'all 500ms',
-                          '&:hover': {
-                            boxShadow: '0 0 6px #c2c1c1'
-                          }
+                        borderRadius: "4px",
+                        position: "relative",
+                        overflow: 'hidden',
+                        transition: 'all 500ms',
+                        '&:hover': {
+                          boxShadow: '0 0 6px #c2c1c1'
+                        }
                       }}
                     >
                       <LazyImage

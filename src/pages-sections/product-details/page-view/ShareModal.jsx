@@ -19,8 +19,8 @@ import {
 
 const ShareModal = ({ open, onClose, product, usercredentials }) => {
     const shareUrl = usercredentials?.affiliate_code
-        ? `${process.env.NEXT_PUBLIC_WEB_URL}/products?id=${product?._id}&affiliate_code=${usercredentials?.affiliate_code}`
-        : `${process.env.NEXT_PUBLIC_WEB_URL}/products?id=${product?._id}`;
+        ? `${process.env.NEXT_PUBLIC_WEB_URL}/products/${product?._id}&affiliate_code=${usercredentials?.affiliate_code}`
+        : `${process.env.NEXT_PUBLIC_WEB_URL}/products/${product?._id}`;
 
     const shareTitle = encodeURIComponent(product?.product_title || '');
     const encodedShareUrl = encodeURIComponent(shareUrl);

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     FormControl,
     Select,
@@ -36,8 +36,7 @@ const VariantSelector = ({
     const [guideOpen, setGuideOpen] = useState(false);
     const [currentGuide, setCurrentGuide] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
-    const gridContainerRef = useRef(null);
+    const [itemsPerPage] = useState(10);
 
     // Check if variant has guide information
     const hasGuide = variant.guide_file || variant.guide_name || variant.guide_description;
@@ -52,6 +51,9 @@ const VariantSelector = ({
 
     // Calculate items per row
     const itemsPerRow = Math.ceil(itemsPerPage / 2);
+
+    const row1Items = currentPageItems.slice(0, itemsPerRow);
+    const row2Items = currentPageItems.slice(itemsPerRow);
 
     const renderAttributePrice = (attribute) => {
         if (variant.type === 'parent') {
@@ -76,29 +78,29 @@ const VariantSelector = ({
 
             return null;
         } else if (variant.type === 'internal') {
-            // Use calculateAttributeData if available
+            // Use calculateAttributeData as single source of truth
             let attributeData = {};
 
             if (calculateAttributeData && selectedVariants) {
                 attributeData = calculateAttributeData(attribute.id, selectedVariants);
             } else {
-                // Fallback to filterVariantAttributes
+                // Fallback
                 const variantAttr = filterVariantAttributes.find(attr =>
                     attr._id === attribute.id || attr.attribute_value === attribute.value
                 );
-
                 if (variantAttr) {
                     attributeData = {
                         price: variantAttr.price,
                         quantity: variantAttr.quantity,
                         priceRange: variantAttr.priceRange,
                         quantityRange: variantAttr.quantityRange,
-                        isSoldOut: variantAttr.isSoldOut
+                        isSoldOut: variantAttr.isSoldOut,
+                        isIndependent: variantAttr.isIndependent
                     };
                 }
             }
 
-            const { price, priceRange, quantity, quantityRange, isSoldOut } = attributeData;
+            const { price, priceRange, quantity, quantityRange, isSoldOut, isIndependent } = attributeData;
 
             // Check if sold out
             if (isSoldOut || (quantity !== null && quantity === 0)) {
@@ -108,10 +110,25 @@ const VariantSelector = ({
             // Show price info
             let priceText = '';
 
-            if (price !== null && price !== undefined && !isNaN(price)) {
+            // 1️⃣ Independent pricing - ALWAYS show fixed price
+            if (isIndependent) {
+                if (price !== null && !isNaN(price)) {
+                    priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
+                } else if (priceRange && priceRange.min === priceRange.max) {
+                    priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)})`;
+                }
+            }
+            // 2️⃣ Show fixed price if available
+            else if (price !== null && !isNaN(price)) {
                 priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
-            } else if (priceRange) {
-                priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(priceRange.max * currency?.rate).toFixed(2)})`;
+            }
+            // 3️⃣ Show price range
+            else if (priceRange) {
+                if (priceRange.min === priceRange.max) {
+                    priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)})`;
+                } else {
+                    priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(priceRange.max * currency?.rate).toFixed(2)})`;
+                }
             }
 
             // Add quantity info if available
@@ -304,9 +321,6 @@ const VariantSelector = ({
         }
     };
 
-    const row1Items = currentPageItems.slice(0, itemsPerRow);
-    const row2Items = currentPageItems.slice(itemsPerRow);
-
     const renderParentVariantGrid = () => {
         return (
             <Box sx={{ mb: 3 }}>
@@ -340,7 +354,19 @@ const VariantSelector = ({
                     )}
                 </Box>
 
-                <Box sx={{ mb: 1 }}>
+                {/* Main container with hover out handler */}
+                <Box
+                    sx={{
+                        mb: 1,
+                        position: 'relative'
+                    }}
+                    onMouseLeave={() => {
+                        if (onHoverOut) {
+                            onHoverOut();
+                        }
+                    }}
+                >
+                    {/* First row */}
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'flex-start',
@@ -348,17 +374,27 @@ const VariantSelector = ({
                         mb: 1.5
                     }}>
                         {row1Items.map((attr) => (
-                            <Box 
+                            <Box
                                 key={attr.id}
-                                sx={{ p: 0.75 }}
+                                sx={{
+                                    p: 0.75,
+                                    position: 'relative',
+                                    // Create larger invisible hover zone for vertical space
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: -15,    // Extended vertical space
+                                        left: -10,
+                                        right: -10,
+                                        bottom: -15, // Extended vertical space
+                                        zIndex: 1,
+                                        pointerEvents: 'none', // CRITICAL: Allow clicks to pass through
+                                        // For debugging: backgroundColor: 'rgba(255,0,0,0.1)'
+                                    }
+                                }}
                                 onMouseEnter={() => {
                                     if (!isAttributeDisabled(attr) && onHover) {
                                         onHover(attr.id);
-                                    }
-                                }}
-                                onMouseLeave={() => {
-                                    if (!isAttributeDisabled(attr) && onHoverOut) {
-                                        onHoverOut();
                                     }
                                 }}
                             >
@@ -367,7 +403,6 @@ const VariantSelector = ({
                                     isSelected={selectedValue === attr.id}
                                     isDisabled={isAttributeDisabled(attr)}
                                     onChange={onChange}
-                                    // Hover handled by parent Box to prevent flickering
                                     variantId={variant.id}
                                     priceText={renderAttributePrice(attr)}
                                     getPreviewImage={getPreviewImage}
@@ -376,23 +411,34 @@ const VariantSelector = ({
                         ))}
                     </Box>
 
+                    {/* Second row */}
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'flex-start',
                         flexWrap: 'wrap'
                     }}>
                         {row2Items.map((attr) => (
-                            <Box 
+                            <Box
                                 key={attr.id}
-                                sx={{ p: 0.75 }}
+                                sx={{
+                                    p: 0.75,
+                                    position: 'relative',
+                                    // Create larger invisible hover zone for vertical space
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: -15,    // Extended vertical space
+                                        left: -10,
+                                        right: -10,
+                                        bottom: -15, // Extended vertical space
+                                        zIndex: 1,
+                                        pointerEvents: 'none', // CRITICAL: Allow clicks to pass through
+                                        // For debugging: backgroundColor: 'rgba(0,255,0,0.1)'
+                                    }
+                                }}
                                 onMouseEnter={() => {
                                     if (!isAttributeDisabled(attr) && onHover) {
                                         onHover(attr.id);
-                                    }
-                                }}
-                                onMouseLeave={() => {
-                                    if (!isAttributeDisabled(attr) && onHoverOut) {
-                                        onHoverOut();
                                     }
                                 }}
                             >
@@ -401,7 +447,6 @@ const VariantSelector = ({
                                     isSelected={selectedValue === attr.id}
                                     isDisabled={isAttributeDisabled(attr)}
                                     onChange={onChange}
-                                    // Hover handled by parent Box to prevent flickering
                                     variantId={variant.id}
                                     priceText={renderAttributePrice(attr)}
                                     getPreviewImage={getPreviewImage}
@@ -410,7 +455,6 @@ const VariantSelector = ({
                         ))}
                     </Box>
                 </Box>
-
 
                 {totalPages > 1 && (
                     <Box sx={{
@@ -480,6 +524,46 @@ const VariantSelector = ({
         );
     };
 
+    // Add this function for dropdown price display
+    const renderAttributePriceForDropdown = (attribute) => {
+        if (!attribute || variant.type !== 'internal') return '';
+
+        // Use calculateAttributeData for single source of truth
+        let attributeData = {};
+
+        if (calculateAttributeData && selectedVariants) {
+            attributeData = calculateAttributeData(attribute.id, selectedVariants);
+        } else {
+            // Fallback
+            const variantAttr = filterVariantAttributes.find(attr =>
+                attr._id === attribute.id || attr.attribute_value === attribute.value
+            );
+            if (variantAttr) {
+                attributeData = {
+                    price: variantAttr.price,
+                    priceRange: variantAttr.priceRange,
+                    isSoldOut: variantAttr.isSoldOut,
+                    isIndependent: variantAttr.isIndependent
+                };
+            }
+        }
+
+        const { price, priceRange, isIndependent } = attributeData;
+
+        // Show price based on calculated data
+        if (price !== null && !isNaN(price)) {
+            return `(${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
+        } else if (priceRange) {
+            if (priceRange.min === priceRange.max) {
+                return `(${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)})`;
+            } else {
+                return `(${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(priceRange.max * currency?.rate).toFixed(2)})`;
+            }
+        }
+
+        return '';
+    };
+
     const renderInternalVariantDropdown = () => {
         return (
             <Grid item xs={12} sx={{ mb: 2 }}>
@@ -525,7 +609,21 @@ const VariantSelector = ({
                             const selectedAttr = variant.attributes.find(attr =>
                                 attr.id === selected || attr.value === selected
                             );
-                            return selectedAttr?.value || "Select an option";
+                            const priceText = renderAttributePriceForDropdown(selectedAttr);
+                            return (
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <span>{selectedAttr?.value || "Select an option"}</span>
+                                    {/* {priceText && (
+                                        <span style={{
+                                            marginLeft: '8px',
+                                            fontSize: '14px',
+                                            color: '#666'
+                                        }}>
+                                            {priceText}
+                                        </span>
+                                    )} */}
+                                </Box>
+                            );
                         }}
                         sx={{
                             border: "none",
@@ -539,8 +637,8 @@ const VariantSelector = ({
                         {variant.attributes.map((attr) => {
                             const isDisabled = isAttributeDisabled(attr);
                             const previewImage = getPreviewImage(attr);
-                            
-                            // Only show image in tooltip, no text
+                            const priceText = renderAttributePriceForDropdown(attr); // Get price text here
+
                             return (
                                 <MenuItem
                                     key={attr.id}
@@ -551,7 +649,10 @@ const VariantSelector = ({
                                         backgroundColor: isDisabled ? '#f5f5f5' : 'inherit',
                                         '&.Mui-disabled': {
                                             opacity: 0.5
-                                        }
+                                        },
+                                        // Make sure the menu item has enough space
+                                        py: 1.5,
+                                        px: 2
                                     }}
                                 >
                                     <Tooltip
@@ -589,37 +690,61 @@ const VariantSelector = ({
                                                         style={{
                                                             width: '24px',
                                                             height: '24px',
-                                                            marginRight: '8px',
+                                                            marginRight: '12px',
                                                             borderRadius: '3px',
                                                             objectFit: 'cover',
                                                             filter: isDisabled ? 'grayscale(100%)' : 'none'
                                                         }}
                                                     />
                                                 )}
-                                                <div style={{ flex: 1 }}>
+                                                <div style={{
+                                                    flex: 1,
+                                                    display: 'flex',
+                                                    // flexDirection: 'column'
+                                                    gap: "8px"
+                                                }}>
                                                     <span style={{
                                                         color: isDisabled ? '#999' : 'inherit',
                                                         textDecoration: isDisabled ? 'line-through' : 'none',
-                                                        display: 'block'
+                                                        display: 'block',
+                                                        fontSize: '14px',
+                                                        fontWeight: 500
                                                     }}>
                                                         {attr.value}
                                                     </span>
+                                                    {priceText && (
+                                                        <span style={{
+                                                            fontSize: '12px',
+                                                            color: isDisabled ? '#999' : '#666',
+                                                            marginTop: '2px'
+                                                        }}>
+                                                            {priceText}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            {isDisabled && (
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        color: '#d32f2f',
-                                                        fontWeight: 'bold',
-                                                        fontSize: '10px',
-                                                        marginLeft: '8px',
-                                                        flexShrink: 0
-                                                    }}
-                                                >
-                                                    Sold Out
-                                                </Typography>
-                                            )}
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                            }}>
+                                                {isDisabled && (
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            color: '#d32f2f',
+                                                            fontWeight: 'bold',
+                                                            fontSize: '10px',
+                                                            flexShrink: 0,
+                                                            backgroundColor: '#ffebee',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '3px'
+                                                        }}
+                                                    >
+                                                        Sold Out
+                                                    </Typography>
+                                                )}
+                                            </div>
                                         </div>
                                     </Tooltip>
                                 </MenuItem>

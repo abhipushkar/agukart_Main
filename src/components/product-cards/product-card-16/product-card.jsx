@@ -115,7 +115,7 @@ export default function ProductCard16({ product }) {
         }
       };
 
-      if(token){
+      if (token) {
         fetchCart()
       }
     }
@@ -125,7 +125,7 @@ export default function ProductCard16({ product }) {
   console.log({ discount });
   return (
     <div>
-      <Link href={`/products?id=${_id}`}>
+      <Link href={`/products/${_id}`}>
         <FlexBox position="relative" bgcolor="grey.50" borderRadius={3} mb={2}>
           <LazyImage
             alt={title}
@@ -148,7 +148,7 @@ export default function ProductCard16({ product }) {
 
       <FlexBetween alignItems="flex-end">
         <div>
-          <Link href={`/products?id=${_id}`}>
+          <Link href={`/products/${_id}`}>
             <H6
               sx={{
                 display: "-webkit-box",
