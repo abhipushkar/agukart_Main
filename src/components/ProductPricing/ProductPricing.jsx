@@ -57,7 +57,7 @@ const ProductPricing = ({
                         }}
                     >
                         {bestPromotion?.offer_type == "flat"
-                            ? `Flat ${bestPromotion?.discount_amount} OFF`
+                            ? `Flat ${currency?.symbol}${bestPromotion?.discount_amount} OFF`
                             : `${bestPromotion?.discount_amount}% OFF`}
                     </Box>
                 )}

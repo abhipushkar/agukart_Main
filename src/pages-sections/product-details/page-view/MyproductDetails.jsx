@@ -328,9 +328,43 @@ const MyproductDetails = ({ slug }) => {
     // Get base price from product - we should have this from the API
     const basePrice = myproduct?.sale_price || myproduct?.price || myproduct?.regular_price || 0;
   
-
     // Use combination price if available, otherwise use base price
-    const effectivePrice = combinationPrice !== null ? combinationPrice : basePrice;
+    let effectivePrice = combinationPrice !== null ? combinationPrice : basePrice;
+
+    // --- NEW LOGIC: If effective price is 0, find minimum price from relevant combinations ---
+    if (effectivePrice === 0 && myproduct?.combinationData) {
+        let minFoundPrice = Infinity;
+        let foundAny = false;
+
+        // Iterate through all combinations
+        for (const group of myproduct.combinationData) {
+            if (group.combinations) {
+                for (const comb of group.combinations) {
+                    // Check if this combination is valid for the OTHER selected variants
+                    // We want to find the best price for the CURRENT selection state
+                    // If we have selected some variants, we should respect them
+                    
+                    // Simple approach: Collect ALL prices from ALL combinations
+                    // Better approach: filter by relevant variants if possible, but for multiple internal variants it gets complex.
+                    // Given the request: "if a combination of a variant has price... and when we are not selecting any internal variant then it will shows the price... if i choose any one of them... it is still showing 0.0 so it should show the minimum price"
+                    
+                    // Let's collect all prices > 0
+                    let p = null;
+                    if (comb.price && comb.price !== "") p = +comb.price;
+                    
+                    if (p && p > 0) {
+                        minFoundPrice = Math.min(minFoundPrice, p);
+                        foundAny = true;
+                    }
+                }
+            }
+        }
+
+        if (foundAny) {
+            effectivePrice = minFoundPrice;
+        }
+    }
+    // ---------------------------------------------------------------------------------------
 
     // Add customization prices
     let finalPrice = effectivePrice + customizeDropdownPrice + customizeTextPrice;
@@ -981,7 +1015,7 @@ const MyproductDetails = ({ slug }) => {
 
       {/* Promotion Info */}
       {nextPromotion && Object.keys(nextPromotion).length > 0 && +nextPromotion?.qty > quantity && (
-        <Typography>
+        <Typography sx={{ fontSize: "17px", fontWeight: "600", color: "#20538f", pt: 2 }}>
           Save {nextPromotion?.offer_type == "flat" ? `$ ${nextPromotion?.discount_amount}` : `${nextPromotion?.discount_amount} %`} when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ""} items at this shop
         </Typography>
       )}
@@ -1007,6 +1041,7 @@ const MyproductDetails = ({ slug }) => {
         isCombination={myproduct?.isCombination}
         plusToggle={plusToggle}
         bestPromotion={bestPromotion}
+        quantity={quantity}
       />
 
       {/* Variants */}

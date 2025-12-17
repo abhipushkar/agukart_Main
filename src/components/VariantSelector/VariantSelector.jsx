@@ -67,7 +67,7 @@ const VariantSelector = ({
                 return " [Sold Out]";
             }
 
-            if (minPrice !== 0) {
+            if (minPrice !== 0 && !isNaN(minPrice)) {
                 if (minPrice === maxPrice) {
                     return ` (${currency?.symbol}${(minPrice * currency?.rate).toFixed(2)})`;
                 }
@@ -108,7 +108,7 @@ const VariantSelector = ({
             // Show price info
             let priceText = '';
 
-            if (price !== null && price !== undefined) {
+            if (price !== null && price !== undefined && !isNaN(price)) {
                 priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
             } else if (priceRange) {
                 priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(priceRange.max * currency?.rate).toFixed(2)})`;
@@ -344,46 +344,73 @@ const VariantSelector = ({
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'flex-start',
-                        gap: 1.5,
+                        flexWrap: 'wrap',
                         mb: 1.5
                     }}>
                         {row1Items.map((attr) => (
-                            <VariantButton
+                            <Box 
                                 key={attr.id}
-                                attr={attr}
-                                isSelected={selectedValue === attr.id}
-                                isDisabled={isAttributeDisabled(attr)}
-                                onChange={onChange}
-                                onHover={onHover}
-                                onHoverOut={onHoverOut}
-                                variantId={variant.id}
-                                priceText={renderAttributePrice(attr)}
-                                getPreviewImage={getPreviewImage}
-                            />
+                                sx={{ p: 0.75 }}
+                                onMouseEnter={() => {
+                                    if (!isAttributeDisabled(attr) && onHover) {
+                                        onHover(attr.id);
+                                    }
+                                }}
+                                onMouseLeave={() => {
+                                    if (!isAttributeDisabled(attr) && onHoverOut) {
+                                        onHoverOut();
+                                    }
+                                }}
+                            >
+                                <VariantButton
+                                    attr={attr}
+                                    isSelected={selectedValue === attr.id}
+                                    isDisabled={isAttributeDisabled(attr)}
+                                    onChange={onChange}
+                                    // Hover handled by parent Box to prevent flickering
+                                    variantId={variant.id}
+                                    priceText={renderAttributePrice(attr)}
+                                    getPreviewImage={getPreviewImage}
+                                />
+                            </Box>
                         ))}
                     </Box>
 
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'flex-start',
-                        gap: 1.5
+                        flexWrap: 'wrap'
                     }}>
                         {row2Items.map((attr) => (
-                            <VariantButton
+                            <Box 
                                 key={attr.id}
-                                attr={attr}
-                                isSelected={selectedValue === attr.id}
-                                isDisabled={isAttributeDisabled(attr)}
-                                onChange={onChange}
-                                onHover={onHover}
-                                onHoverOut={onHoverOut}
-                                variantId={variant.id}
-                                priceText={renderAttributePrice(attr)}
-                                getPreviewImage={getPreviewImage}
-                            />
+                                sx={{ p: 0.75 }}
+                                onMouseEnter={() => {
+                                    if (!isAttributeDisabled(attr) && onHover) {
+                                        onHover(attr.id);
+                                    }
+                                }}
+                                onMouseLeave={() => {
+                                    if (!isAttributeDisabled(attr) && onHoverOut) {
+                                        onHoverOut();
+                                    }
+                                }}
+                            >
+                                <VariantButton
+                                    attr={attr}
+                                    isSelected={selectedValue === attr.id}
+                                    isDisabled={isAttributeDisabled(attr)}
+                                    onChange={onChange}
+                                    // Hover handled by parent Box to prevent flickering
+                                    variantId={variant.id}
+                                    priceText={renderAttributePrice(attr)}
+                                    getPreviewImage={getPreviewImage}
+                                />
+                            </Box>
                         ))}
                     </Box>
                 </Box>
+
 
                 {totalPages > 1 && (
                     <Box sx={{
@@ -512,47 +539,8 @@ const VariantSelector = ({
                         {variant.attributes.map((attr) => {
                             const isDisabled = isAttributeDisabled(attr);
                             const previewImage = getPreviewImage(attr);
-                            const priceText = renderAttributePrice(attr);
-
-                            // Get attribute data for tooltip
-                            let attributeData = {};
-                            let tooltipContent = attr.value;
-
-                            if (calculateAttributeData && selectedVariants) {
-                                attributeData = calculateAttributeData(attr.id, selectedVariants);
-                            } else {
-                                const variantAttr = filterVariantAttributes.find(fAttr =>
-                                    fAttr._id === attr.id || fAttr.attribute_value === attr.value
-                                );
-
-                                if (variantAttr) {
-                                    attributeData = {
-                                        price: variantAttr.price,
-                                        priceRange: variantAttr.priceRange,
-                                        quantity: variantAttr.quantity,
-                                        quantityRange: variantAttr.quantityRange,
-                                        isSoldOut: variantAttr.isSoldOut
-                                    };
-                                }
-                            }
-
-                            // Build tooltip content
-                            if (attributeData.price !== null) {
-                                tooltipContent += `\nPrice: ${currency?.symbol}${(attributeData.price * currency?.rate).toFixed(2)}`;
-                            } else if (attributeData.priceRange) {
-                                tooltipContent += `\nPrice Range: ${currency?.symbol}${(attributeData.priceRange.min * currency?.rate).toFixed(2)} - ${currency?.symbol}${(attributeData.priceRange.max * currency?.rate).toFixed(2)}`;
-                            }
-
-                            if (attributeData.quantity !== null) {
-                                tooltipContent += `\nQuantity: ${attributeData.quantity}`;
-                            } else if (attributeData.quantityRange) {
-                                tooltipContent += `\nQuantity Range: ${attributeData.quantityRange.min}-${attributeData.quantityRange.max}`;
-                            }
-
-                            if (isDisabled) {
-                                tooltipContent += '\n(Sold Out)';
-                            }
-
+                            
+                            // Only show image in tooltip, no text
                             return (
                                 <MenuItem
                                     key={attr.id}
@@ -568,8 +556,8 @@ const VariantSelector = ({
                                 >
                                     <Tooltip
                                         title={
-                                            <Box sx={{ p: 1 }}>
-                                                {previewImage ? (
+                                            previewImage ? (
+                                                <Box sx={{ p: 1 }}>
                                                     <img
                                                         src={previewImage}
                                                         alt={attr.value}
@@ -577,15 +565,11 @@ const VariantSelector = ({
                                                             width: 100,
                                                             height: 100,
                                                             objectFit: 'cover',
-                                                            marginBottom: 8,
                                                             borderRadius: 4
                                                         }}
                                                     />
-                                                ) : null}
-                                                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
-                                                    {tooltipContent}
-                                                </Typography>
-                                            </Box>
+                                                </Box>
+                                            ) : null
                                         }
                                         placement='left-start'
                                         arrow
@@ -620,19 +604,6 @@ const VariantSelector = ({
                                                     }}>
                                                         {attr.value}
                                                     </span>
-                                                    {priceText && (
-                                                        <Typography
-                                                            variant="caption"
-                                                            sx={{
-                                                                color: isDisabled ? '#d32f2f' : '#666',
-                                                                fontSize: '11px',
-                                                                display: 'block',
-                                                                mt: 0.5
-                                                            }}
-                                                        >
-                                                            {priceText}
-                                                        </Typography>
-                                                    )}
                                                 </div>
                                             </div>
                                             {isDisabled && (
