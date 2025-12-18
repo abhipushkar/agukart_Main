@@ -23,25 +23,25 @@ import { useCurrency } from "contexts/CurrencyContext";
 
 // =========================================================
 export default function MiniCart({ toggleSidenav }) {
-  const {currency} = useCurrency();
+  const { currency } = useCurrency();
   const { usercredentials } = useMyProvider();
   const { push } = useRouter();
-  const { state, dispatch, getCartItems,getCartDetails} = useCart();
+  const { state, dispatch, getCartItems, getCartDetails } = useCart();
   const { token } = useAuth();
   const { addToast } = useToasts();
   const cartList = state.cart;
 
   console.log(cartList, "kkkkkkkkkkkkkkk")
 
-  const handleCartAmountChange = async(data, amount, product) => {
-    console.log("called",data,amount, product);
-    if(token){
-      if(data?.coupon_status){
+  const handleCartAmountChange = async (data, amount, product) => {
+    console.log("called", data, amount, product);
+    if (token) {
+      if (data?.coupon_status) {
         toggleSidenav();
         return addToast("Please remove the coupon first", {
-              appearance: "error",
-              autoDismiss: true,
-          });
+          appearance: "error",
+          autoDismiss: true,
+        });
       }
       if (amount === 0) {
         const fetchCart = async () => {
@@ -49,7 +49,7 @@ export default function MiniCart({ toggleSidenav }) {
             const res = await postAPIAuth("user/delete-cart", {
               cart_id: product.cart_id,
             });
-            if(res.status === 200){
+            if (res.status === 200) {
               getCartItems();
               getCartDetails();
             }
@@ -61,20 +61,28 @@ export default function MiniCart({ toggleSidenav }) {
         if (token) {
           fetchCart();
         }
-      }else if(amount > 0){
+      } else if (amount > 0) {
         try {
+          // Calculate delta quantity (User passes target amount, backend requires increment/decrement value)
+          const currentQty = product?.qty || 0;
+          const deltaQty = amount - currentQty;
+
+          if (deltaQty === 0) return;
+
           const payload = {
             product_id: product?.product_id,
             vendor_id: data?.vendor_id,
-            qty: amount,
-            price:product?.sale_price,
+            qty: deltaQty,
+            price: product?.sale_price,
             isCombination: product?.isCombination,
             variant_id: [],
-            variant_attribute_id: []
+            variant_attribute_id: [],
+            customize: product?.customize,
+            customizationData: product?.customizationData || []
           }
-          if(product?.isCombination){
+          if (product?.isCombination) {
             payload.variant_id = product?.variant_id,
-            payload.variant_attribute_id = product?.variant_attribute_id
+              payload.variant_attribute_id = product?.variant_attribute_id
           }
           const res = await postAPIAuth("user/add-to-cart", payload);
           if (res.status === 200) {
@@ -85,16 +93,16 @@ export default function MiniCart({ toggleSidenav }) {
           console.log(error);
         }
       }
-    }else{
+    } else {
       dispatch({
         type: "CHANGE_CART_AMOUNT",
         payload: {
           vendor_id: data?.vendor_id,
           vendor_name: data?.vendor_name,
-          shop_icon:data?.shop_icon,
+          shop_icon: data?.shop_icon,
           shop_name: data?.shop_name,
           slug: data?.slug,
-          products:[
+          products: [
             { ...product, qty: amount }
           ]
         },

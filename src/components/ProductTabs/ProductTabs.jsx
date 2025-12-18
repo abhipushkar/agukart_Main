@@ -480,8 +480,7 @@ const ProductTabs = ({ product }) => {
 
                         <TabPanel value="4">
                             <DeliveryAndReturnPolicy
-                                shippingTemplate={product?.shipping_templates}
-                                exchangePolicy={product?.exchangePolicy}
+                                product={product}
                             />
                         </TabPanel>
 

@@ -42,6 +42,7 @@ import MessagePopup from "./MessagePopup";
 import HomeTab from "./HomeTab";
 import { useToasts } from "react-toast-notifications";
 import UseScrollToHash from "./UseScrollToHash";
+import { Carousel } from "components/carousel";
 
 const ShopView = () => {
   UseScrollToHash();
@@ -273,23 +274,68 @@ const ShopView = () => {
           Object.values(vendorDetail || {}).length > 0 ? (
             <>
               <Box>
-                <Box
-                  component="img"
-                  src={vendorDetail?.shop_icon}
-                  alt=""
-                  sx={{
-                    width: "100%",
-                    objectFit: "cover",
-                    aspectRatio: "1 / 1",
-                    maxHeight: {
-                      xs: "200px",
-                      md: "400px"
-                    },
-                    mt: {
-                      xs: 2
-                    }
-                  }}
-                />
+                {vendorDetail?.shop_banner && vendorDetail.shop_banner.length > 0 ? (
+                  vendorDetail.shop_banner.length > 1 ? (
+                    <Carousel slidesToShow={1} arrows={false} dots autoplay>
+                      {vendorDetail.shop_banner.map((item, ind) => (
+                        <Box
+                          key={ind}
+                          component="img"
+                          src={item.editedImage || item.image}
+                          alt=""
+                          sx={{
+                            width: "100%",
+                            objectFit: "cover",
+                            aspectRatio: "20 / 9",
+                            maxHeight: {
+                              xs: "200px",
+                              md: "400px"
+                            },
+                            mt: {
+                              xs: 2
+                            }
+                          }}
+                        />
+                      ))}
+                    </Carousel>
+                  ) : (
+                    <Box
+                      component="img"
+                      src={vendorDetail.shop_banner[0]?.editedImage || vendorDetail.shop_banner[0]?.image}
+                      alt=""
+                      sx={{
+                        width: "100%",
+                        objectFit: "cover",
+                        aspectRatio: "1 / 1",
+                        maxHeight: {
+                          xs: "200px",
+                          md: "400px"
+                        },
+                        mt: {
+                          xs: 2
+                        }
+                      }}
+                    />
+                  )
+                ) : (
+                  <Box
+                    component="img"
+                    src={vendorDetail?.shop_icon}
+                    alt=""
+                    sx={{
+                      width: "100%",
+                      objectFit: "cover",
+                      aspectRatio: "1 / 1",
+                      maxHeight: {
+                        xs: "200px",
+                        md: "400px"
+                      },
+                      mt: {
+                        xs: 2
+                      }
+                    }}
+                  />
+                )}
               </Box>
               <SectionCreator p={3} mb={0}>
                 <Box container pb={3} spacing={3} sx={{

@@ -1,286 +1,266 @@
-import React from 'react';
-import {
-    Box,
-    Typography,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper
-} from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import React, { useMemo } from "react";
+import { Box, Typography, Divider, Tooltip, Popper, Autocomplete, TextField } from "@mui/material";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined";
+import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import parse from "html-react-parser";
+import { useLocation } from "contexts/location_context";
+import { LocationOn } from "@mui/icons-material";
 
-const DeliveryAndReturnPolicy = ({ shippingTemplate, exchangePolicy }) => {
-    return (
-        <Box>
-            {/* Shipping Policy Section */}
-            {shippingTemplate && (
-                <Accordion defaultExpanded sx={{ mb: 2 }}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" fontWeight="bold">
-                            Shipping Information
-                        </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <ShippingPolicy shippingTemplate={shippingTemplate} />
-                    </AccordionDetails>
-                </Accordion>
-            )}
+const DeliveryAndReturnPolicy = ({ product }) => {
+    const whiteTooltipProps = {
+        tooltip: {
+            sx: {
+                bgcolor: "#fff",
+                color: "#000",
+                borderRadius: 2,
+                boxShadow: "0px 4px 12px rgba(0,0,0,0.12)",
+                fontSize: 12,
+                px: 3,
+                py: 2,
+                width: 250,
+            },
+        },
+        arrow: {
+            sx: {
+                color: "#fff",
+            },
+        },
+    };
 
-            {/* Return & Exchange Policy Section */}
-            {exchangePolicy && (
-                <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" fontWeight="bold">
-                            Return & Exchange Policy
-                        </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <ReturnExchangePolicy exchangePolicy={exchangePolicy} />
-                    </AccordionDetails>
-                </Accordion>
-            )}
+    const { location, setLocation, countries } = useLocation();
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const open = Boolean(anchorEl);
 
-            {/* Default message if no policies */}
-            {!shippingTemplate && !exchangePolicy && (
-                <Typography color="textSecondary" textAlign="center" py={4}>
-                    No shipping and return policies available for this product.
-                </Typography>
-            )}
-        </Box>
-    );
-};
+    const shipping =
+        product?.shipping_templates?.shippingTemplateData?.standardShipping?.[0];
 
-const ShippingPolicy = ({ shippingTemplate }) => {
-    if (!shippingTemplate) return null;
+    const exchangePolicy = product?.exchangePolicy;
+
+    const deliveryRange = useMemo(() => {
+        if (!shipping?.transitTime) return "—";
+        return getDeliveryDateRange(
+            shipping.transitTime.minDays,
+            shipping.transitTime.maxDays
+        );
+    }, [shipping]);
+
+    const handleOpenCountryMenu = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleCloseCountryMenu = () => {
+        setAnchorEl(null);
+    };
+
+    const policyLabel = getPolicyLabel(exchangePolicy);
 
     return (
-        <Box>
-            {/* Shipping Cost Table */}
-            {shippingTemplate.shippingCosts?.length > 0 && (
-                <TableContainer component={Paper} sx={{ mb: 3 }}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', background: '#f5f5f5' }}>
-                                    Shipping Method
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', background: '#f5f5f5' }}>
-                                    Cost
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', background: '#f5f5f5' }}>
-                                    Estimated Delivery
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {shippingTemplate.shippingCosts.map((cost, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>{cost.shippingMethod || 'Standard Shipping'}</TableCell>
-                                    <TableCell>
-                                        {cost.cost === 0 ? 'Free' : `$${cost.cost}`}
-                                    </TableCell>
-                                    <TableCell>
-                                        {cost.estimatedDelivery || '5-7 business days'}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            )}
+        <Box sx={{ maxWidth: "75%", color: "#000", fontSize: 14 }}>
+            <Typography fontWeight={600} mb={1}>
+                Delivery and Return Policies
+            </Typography>
 
-            {/* Shipping Details */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Shipping Details
-                </Typography>
-                <Typography variant="body2" paragraph>
-                    {shippingTemplate.shippingDescription ||
-                        'We aim to process and ship all orders within 1-2 business days. You will receive a tracking number once your order has been shipped.'}
-                </Typography>
+            {/* Estimated Delivery + Tooltip */}
+            <Row icon={<LocalShippingOutlinedIcon />}>
 
-                {shippingTemplate.shipsFrom && (
-                    <Typography variant="body2" fontWeight="bold">
-                        Ships from: {shippingTemplate.shipsFrom}
-                    </Typography>
-                )}
-            </Box>
-
-            {/* Processing Time */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Processing Time
-                </Typography>
-                <Typography variant="body2">
-                    {shippingTemplate.processingTime ||
-                        'The time we need to prepare an order for shipping varies. For details, see individual product descriptions.'}
-                </Typography>
-            </Box>
-
-            {/* Custom Shipping Information */}
-            {shippingTemplate.customShippingInfo && (
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                        Additional Information
-                    </Typography>
-                    <Typography variant="body2">
-                        {shippingTemplate.customShippingInfo}
-                    </Typography>
-                </Box>
-            )}
-        </Box>
-    );
-};
-
-const ReturnExchangePolicy = ({ exchangePolicy }) => {
-    if (!exchangePolicy) return null;
-
-    return (
-        <Box>
-            {/* Return Policy Summary */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Return Policy
-                </Typography>
-                <Typography variant="body2" paragraph>
-                    {exchangePolicy.returnDescription ||
-                        'We want you to be completely satisfied with your purchase. If you\'re not happy with your order, we accept returns within a specified period.'}
-                </Typography>
-            </Box>
-
-            {/* Return Period */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Return Period
-                </Typography>
-                <Typography variant="body2">
-                    {exchangePolicy.returnDays
-                        ? `Items can be returned within ${exchangePolicy.returnDays} days of delivery.`
-                        : 'Items can be returned within 30 days of delivery.'
-                    }
-                </Typography>
-            </Box>
-
-            {/* Return Conditions */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Return Conditions
-                </Typography>
-                <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                    <li>
-                        <Typography variant="body2">
-                            Item must be in original condition with tags attached
-                        </Typography>
-                    </li>
-                    <li>
-                        <Typography variant="body2">
-                            Item must be unused and in its original packaging
-                        </Typography>
-                    </li>
-                    <li>
-                        <Typography variant="body2">
-                            Proof of purchase is required
-                        </Typography>
-                    </li>
-                    {exchangePolicy.returnConditions && (
-                        <li>
-                            <Typography variant="body2">
-                                {exchangePolicy.returnConditions}
+                <Typography>
+                    Estimated Delivery : Order today to get by {" "}
+                    <Tooltip
+                        title={
+                            <Typography fontSize={12}>
+                                Your order should arrive by this date if you buy today. To calculate
+                                an estimated delivery date we can count on, we look at things like
+                                the carrier's latest transit times, the seller's processing time and
+                                dispatch history, and where the order is dispatched from and
+                                delivered to.
                             </Typography>
-                        </li>
-                    )}
-                </ul>
-            </Box>
+                        }
+                        componentsProps={whiteTooltipProps}
+                        arrow
+                    >
+                        <Typography component={"span"} fontWeight={500} sx={{ textDecoration: "underline", cursor: "pointer" }}>{deliveryRange}</Typography>
+                    </Tooltip>
+                </Typography>
+            </Row>
 
-            {/* Non-returnable Items */}
-            {(exchangePolicy.nonReturnableItems || exchangePolicy.nonReturnable) && (
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="h6" gutterBottom color="error">
-                        Non-returnable Items
-                    </Typography>
-                    <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                        {exchangePolicy.nonReturnableItems?.map((item, index) => (
-                            <li key={index}>
-                                <Typography variant="body2">{item}</Typography>
-                            </li>
-                        ))}
-                        {exchangePolicy.nonReturnable && (
-                            <li>
-                                <Typography variant="body2">
-                                    {exchangePolicy.nonReturnable}
+            <Typography sx={{ color: "rgba(0,0,0,0.65)", mt: 0.5 }}>
+                Need it faster? Contact the seller or choose a shipping upgrade during checkout.
+            </Typography>
+
+            <Box mt={2}>
+                {policyLabel && (
+                    <Row icon={<AutorenewOutlinedIcon />}>
+                        <Tooltip
+                            title={
+                                <Typography fontSize={12}>
+                                    Buyers are responsible for return postage costs. If the item is not
+                                    returned in its original condition, the buyer is responsible for any
+                                    loss in value.
                                 </Typography>
-                            </li>
-                        )}
-                    </ul>
-                </Box>
-            )}
+                            }
+                            arrow
+                            componentsProps={whiteTooltipProps}
+                        >
+                            <Typography
+                                component="span"
+                                sx={{
+                                    textDecoration: "underline",
+                                    cursor: "pointer",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                {policyLabel}
+                            </Typography>
+                        </Tooltip>
 
-            {/* Exchange Policy */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Exchange Policy
-                </Typography>
-                <Typography variant="body2" paragraph>
-                    {exchangePolicy.exchangeDescription ||
-                        'We offer exchanges for items in the same price range. If you need a different size or color, please contact us.'}
-                </Typography>
-            </Box>
-
-            {/* Refund Policy */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Refunds
-                </Typography>
-                <Typography variant="body2" paragraph>
-                    {exchangePolicy.refundDescription ||
-                        'Once we receive your return, we will inspect it and process your refund. The refund will be issued to your original payment method within 5-10 business days.'}
-                </Typography>
-
-                {exchangePolicy.refundProcessingTime && (
-                    <Typography variant="body2" fontWeight="bold">
-                        Refund processing time: {exchangePolicy.refundProcessingTime}
-                    </Typography>
+                        <Typography component="span">
+                            {" "}within {exchangePolicy?.returnExchangeTime} days
+                        </Typography>
+                    </Row>
                 )}
+
+                {shipping?.shippingFee?.perOrder && (
+                    <Row icon={<PaidOutlinedIcon />}>
+                        <Typography>
+                            Delivery cost: ${shipping.shippingFee.perOrder}
+                        </Typography>
+                    </Row>
+                )}
+
+                <Row icon={<LocationOn />}>
+                    <Typography>Dispatched from: India</Typography>
+                </Row>
+                <Box
+                    display="inline-flex"
+                    alignItems="center"
+                    gap={0.5}
+                    sx={{ cursor: "pointer", width: "max-content", display: "flex", alignItems: "center", px: 3, py: 1, my: 2, borderRadius: 20, boxShadow: "0px 4px 12px rgba(0,0,0,0.12)", border: "1px solid #ccc" }}
+                    onClick={handleOpenCountryMenu}
+                >
+                    <Row icon={<LocationOn />}>
+                        <Box display="flex" alignItems="center" m="auto" gap={0.5}>
+                            <Typography>Deliver to</Typography>
+
+                            <Typography
+                                sx={{
+                                    textDecoration: "underline",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                {location?.countryName || "United States"}
+                            </Typography>
+
+                            <KeyboardArrowDownIcon sx={{ fontSize: 18 }} />
+                        </Box>
+                    </Row>
+                </Box>
+
+                <Popper
+                    open={open}
+                    anchorEl={anchorEl}
+                    placement="bottom-start"
+                    sx={{ zIndex: 1300 }}
+                >
+                    <Box
+                        sx={{
+                            width: 260,
+                            p: 1,
+                            bgcolor: "#fff",
+                            borderRadius: 2,
+                            boxShadow: "0px 4px 12px rgba(0,0,0,0.12)",
+                        }}
+                    >
+                        <Autocomplete
+                            autoFocus
+                            options={countries}
+                            getOptionLabel={(option) => option.name}
+                            value={
+                                countries.find(
+                                    (c) => c.name === location.countryName
+                                ) || null
+                            }
+                            onChange={(event, newValue) => {
+                                if (newValue) {
+                                    setLocation({
+                                        countryName: newValue.name,
+                                        countryCode: newValue.code,
+                                    });
+                                }
+                                handleCloseCountryMenu();
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    placeholder="Search country"
+                                    size="small"
+                                />
+                            )}
+                            sx={{
+                                "& .MuiAutocomplete-listbox": {
+                                    maxHeight: 220,
+                                },
+                            }}
+                        />
+                    </Box>
+                </Popper>
             </Box>
 
-            {/* Return Shipping */}
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Return Shipping
-                </Typography>
-                <Typography variant="body2">
-                    {exchangePolicy.returnShipping ||
-                        'Customers are responsible for return shipping costs unless the return is due to our error or a defective product.'}
-                </Typography>
+            <Divider sx={{ my: 1 }} />
+
+            {/* HTML from backend — DO NOT wrap in Typography */}
+            <Box sx={{ "& p": { margin: 0, fontSize: 14 } }}>
+                {exchangePolicy?.description && parse(exchangePolicy.description)}
             </Box>
 
-            {/* Contact Information */}
-            <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
-                <Typography variant="h6" gutterBottom>
-                    Need Help?
-                </Typography>
-                <Typography variant="body2">
-                    If you have any questions about returns or exchanges, please contact our customer service team.
+            <Box mt={2}>
+                <Typography fontSize={13}>
+                    Buyers are responsible for return postage costs. If the item is not
+                    returned in its original condition, the buyer is responsible for any
+                    loss in value.
                 </Typography>
             </Box>
         </Box>
     );
 };
 
-// Helper component for policy sections
-const PolicySection = ({ title, children }) => (
-    <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-            {title}
-        </Typography>
-        {children}
+export default DeliveryAndReturnPolicy;
+
+// -------- helpers --------
+const getDeliveryDateRange = (minDays, maxDays) => {
+    const today = new Date();
+
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() + Number(minDays));
+
+    const maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + Number(maxDays));
+
+    return `${minDate.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+    })} – ${maxDate.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+    })}`;
+};
+
+const getPolicyLabel = (policy) => {
+    if (!policy) return null;
+
+    if (policy.returns && policy.exchange) return "Returns & Exchanges Accepted";
+    if (policy.returns) return "Returns Accepted";
+    if (policy.exchange) return "Exchanges Accepted";
+
+    return null;
+};
+
+const Row = ({ icon, children }) => (
+    <Box display="flex" alignItems="center" gap={1.2}>
+        <Box sx={{ mt: "2px", color: "primary.main" }}>{icon}</Box>
+        <Box>{children}</Box>
     </Box>
 );
 
-export default DeliveryAndReturnPolicy;
+

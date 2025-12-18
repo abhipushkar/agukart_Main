@@ -194,6 +194,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const handleQuantityChange = (e) => {
         const newQuantity = e.target.value;
         setQuantity(newQuantity);
+        updateCart(newQuantity);
     };
 
     // Calculate price based on variant combinations
@@ -221,7 +222,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         return basePrice;
     };
 
-    const updateCart = async () => {
+    const updateCart = async (targetQty = quantity) => {
         // Don't update if variant selection is incomplete
         if (isVariantSelectionIncomplete) {
             addToast("Please select a variant before updating quantity", {
@@ -241,12 +242,12 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         const otherProductsQty = cart?.products?.reduce((acc, item) => {
             return item.product_id === product.product_id ? acc : acc + (item?.qty || 0);
         }, 0) || 0;
-        const newTotalShopQty = otherProductsQty + Number(quantity);
+        const newTotalShopQty = otherProductsQty + Number(targetQty);
 
         // Find Best Promotion
         let bestPromotion = null;
         const validPromotions = product?.promotionalOfferData?.filter(promo => {
-            if (promo.promotion_type === 'qty_per_product') return promo.qty <= quantity;
+            if (promo.promotion_type === 'qty_per_product') return promo.qty <= targetQty;
             if (promo.promotion_type === 'amount') return promo.offer_amount <= variantPrice;
             if (promo.promotion_type === 'qty_total_shop') return promo.qty <= newTotalShopQty;
             return false;
@@ -280,7 +281,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                         {
                             ...product,
                             sale_price: finalPrice,
-                            qty: quantity,
+                            qty: targetQty,
                             variants: product?.variants || [],
                             variantData: product?.variantData || [],
                             variantAttributeData: product?.variantAttributeData || []
@@ -290,15 +291,22 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
             });
         } else {
             try {
+                const currentServerQty = product?.qty || 0;
+                const deltaQty = Number(targetQty) - Number(currentServerQty);
+
+                if (deltaQty === 0) return;
+
                 const payload = {
                     product_id: product.product_id,
                     vendor_id: cart?.vendor_id,
-                    qty: quantity,
+                    qty: deltaQty,
                     price: finalPrice,
                     original_price: variantPrice,
                     isCombination: product?.isCombination,
                     variant_id: [],
-                    variant_attribute_id: []
+                    variant_attribute_id: [],
+                    customize: product?.customize,
+                    customizationData: product?.customizationData || []
                 };
 
                 // Handle parent variants
@@ -328,20 +336,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         }
     };
 
-    useEffect(() => {
-        const delayDebounce = setTimeout(() => {
-            if (product?.qty !== quantity) {
-                updateCart();
-            }
-        }, 500);
-        return () => clearTimeout(delayDebounce);
-    }, [product?.qty, quantity]);
 
-    useEffect(() => {
-        if (price && quantity && originalPrice && !isVariantSelectionIncomplete) {
-            updateCart();
-        }
-    }, [price, quantity, originalPrice, isVariantSelectionIncomplete]);
 
     const removeItemHandler = async () => {
         if (!token) {
@@ -640,7 +635,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     <div key={key}>
                                                         {typeof value === 'object' ? (
                                                             <div>
-                                                                {key}:{`${value?.value} (${currency?.symbol}${(value?.price * currency?.rate).toFixed(2)})`}
+                                                                {key}:{`${value?.value}`}
                                                             </div>
                                                         ) : (
                                                             <div>{key}: {value}</div>

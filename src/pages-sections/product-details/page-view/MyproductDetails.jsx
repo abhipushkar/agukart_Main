@@ -115,14 +115,13 @@ const MyproductDetails = ({ res }) => {
 
   // Data Fetching
   const fetchProductHandler = async () => {
-    const id = pathname.productId;
     try {
       setLoading(true);
 
       if (res.data) {
         const productData = {
-          image_url: res.data.image_url,
-          video_url: res.data.video_url,
+          image_url: res.image_url,
+          video_url: res.video_url,
           ...res.data,
         };
 
