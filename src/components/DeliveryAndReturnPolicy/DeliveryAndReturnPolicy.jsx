@@ -29,6 +29,8 @@ const DeliveryAndReturnPolicy = ({ product }) => {
         },
     };
 
+    console.log(product, "product data");
+
     const { location, setLocation, countries } = useLocation();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
