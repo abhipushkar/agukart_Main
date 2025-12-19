@@ -318,7 +318,7 @@ export default function CartProvider({ children }) {
 
     const getCartDetails = async (wallet, address_id, discount) => {
         try {
-            const res = await getAPIAuth(`user/getCartDetails?wallet=${wallet}&address_id=${address_id || ""}&voucher_discount=${discount}`, token);
+            const res = await getAPIAuth(`user/getCartDetails?wallet=${wallet}&address_id=${address_id || ""}&country=${location.countryName}&voucher_discount=${discount}`, token);
 
             if (res?.data?.status) {
                 dispatch({ type: "CALCULATION", payload: res.data.data });
