@@ -597,9 +597,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                 {(product?.cartAddedUserCount || product?.viewCount) && (<H4
                                     color={"#d23f57"}
                                     fontSize={16}
-                                    sx={{ textTransform: "uppercase" }}
+                                    sx={{ textTransform: "capitalize" }}
                                 >
-                                    {product?.cartAddedUserCount > 0 && `In ${product?.cartAddedUserCount} cart(s)`} {product?.viewCount > 0 && `${product?.cartAddedUserCount > 0 && "with"} ${product?.viewCount} view(s)`}
+                                    {product?.cartAddedUserCount > 0 && `In ${product?.cartAddedUserCount} carts`} {product?.viewCount > 0 && `${product?.cartAddedUserCount > 0 && "with"} ${product?.viewCount} views`}
                                 </H4>)}
                                 <Typography
                                     sx={{
@@ -633,7 +633,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     <div key={key}>
                                                         {typeof value === 'object' ? (
                                                             <div>
-                                                                {key}:{`${value?.value}`}
+                                                                {key}: {`${value?.value}`}
                                                             </div>
                                                         ) : (
                                                             <div>{key}: {value}</div>
