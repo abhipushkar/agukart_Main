@@ -7,13 +7,15 @@ const ProductActions = ({
     onAddToCart,
     onBuyNow,
     onWishlistToggle,
-    isInWishlist
+    isInWishlist,
+    disabled = false,
 }) => {
     return (
         <Typography pt={3} component="div">
             <Button
                 onClick={onAddToCart}
                 variant="contained"
+                disabled={disabled}
                 sx={{
                     background: "#fff",
                     color: "#000",
@@ -25,7 +27,9 @@ const ProductActions = ({
                     border: "2px solid #000",
                     "&:hover": {
                         background: "#f5f5f5",
-                    }
+                    },
+                    opacity: disabled ? 0.7 : 1,
+                    cursor: disabled ? "not-allowed" : "pointer"
                 }}
             >
                 Add to Cart
@@ -34,6 +38,7 @@ const ProductActions = ({
             <Button
                 onClick={onBuyNow}
                 variant="contained"
+                disabled={disabled}
                 sx={{
                     background: "#000",
                     padding: "12px 50px",
@@ -45,6 +50,8 @@ const ProductActions = ({
                     "&:hover": {
                         background: "#4f4e4e"
                     },
+                    opacity: disabled ? 0.7 : 1,
+                    cursor: disabled ? "not-allowed" : "pointer"
                 }}
             >
                 Buy Now

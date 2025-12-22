@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     FormControl,
     Select,
@@ -35,25 +35,39 @@ const VariantSelector = ({
 }) => {
     const [guideOpen, setGuideOpen] = useState(false);
     const [currentGuide, setCurrentGuide] = useState(null);
+    const scrollRef = useRef(null);
     const [currentPage, setCurrentPage] = useState(0);
-    const [itemsPerPage] = useState(10);
 
     // Check if variant has guide information
     const hasGuide = variant.guide_file || variant.guide_name || variant.guide_description;
 
-    // Calculate total pages
-    const totalPages = Math.ceil(variant.attributes.length / itemsPerPage);
+    const getTotalPages = () => {
+        if (!scrollRef.current) return 1;
+        return Math.ceil(
+            scrollRef.current.scrollWidth / scrollRef.current.clientWidth
+        );
+    };
 
-    // Get current page items
-    const startIndex = currentPage * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, variant.attributes.length);
-    const currentPageItems = variant.attributes.slice(startIndex, endIndex);
+    const scrollToPage = (page) => {
+        if (!scrollRef.current) return;
 
-    // Calculate items per row
-    const itemsPerRow = Math.ceil(itemsPerPage / 2);
+        scrollRef.current.scrollTo({
+            left: scrollRef.current.clientWidth * page,
+            behavior: 'smooth'
+        });
 
-    const row1Items = currentPageItems.slice(0, itemsPerRow);
-    const row2Items = currentPageItems.slice(itemsPerRow);
+        setCurrentPage(page);
+    };
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return;
+
+        const page = Math.round(
+            scrollRef.current.scrollLeft / scrollRef.current.clientWidth
+        );
+
+        setCurrentPage(page);
+    };
 
     const renderAttributePrice = (attribute) => {
         if (variant.type === 'parent') {
@@ -366,32 +380,29 @@ const VariantSelector = ({
                         }
                     }}
                 >
-                    {/* First row */}
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-start',
-                        flexWrap: 'wrap',
-                        mb: 1.5
-                    }}>
-                        {row1Items.map((attr) => (
+                    <Box
+                        ref={scrollRef}
+                        onScroll={handleScroll}
+                        sx={{
+                            display: 'grid',
+                            gridAutoFlow: 'column',
+                            gridTemplateRows: 'repeat(2, auto)',
+                            gap: 1,
+                            overflowX: 'auto',
+                            overflowY: 'hidden',
+                            scrollBehavior: 'smooth',
+
+                            /* hide scrollbar */
+                            scrollbarWidth: 'none',
+                            '&::-webkit-scrollbar': {
+                                display: 'none'
+                            }
+                        }}
+                    >
+                        {variant.attributes.map((attr) => (
                             <Box
                                 key={attr.id}
-                                sx={{
-                                    p: 0.75,
-                                    position: 'relative',
-                                    // Create larger invisible hover zone for vertical space
-                                    '&::before': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: -15,    // Extended vertical space
-                                        left: -10,
-                                        right: -10,
-                                        bottom: -15, // Extended vertical space
-                                        zIndex: 1,
-                                        pointerEvents: 'none', // CRITICAL: Allow clicks to pass through
-                                        // For debugging: backgroundColor: 'rgba(255,0,0,0.1)'
-                                    }
-                                }}
+                                sx={{ p: 0.75 }}
                                 onMouseEnter={() => {
                                     if (!isAttributeDisabled(attr) && onHover) {
                                         onHover(attr.id);
@@ -411,52 +422,9 @@ const VariantSelector = ({
                         ))}
                     </Box>
 
-                    {/* Second row */}
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-start',
-                        flexWrap: 'wrap'
-                    }}>
-                        {row2Items.map((attr) => (
-                            <Box
-                                key={attr.id}
-                                sx={{
-                                    p: 0.75,
-                                    position: 'relative',
-                                    // Create larger invisible hover zone for vertical space
-                                    '&::before': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: -15,    // Extended vertical space
-                                        left: -10,
-                                        right: -10,
-                                        bottom: -15, // Extended vertical space
-                                        zIndex: 1,
-                                        pointerEvents: 'none', // CRITICAL: Allow clicks to pass through
-                                        // For debugging: backgroundColor: 'rgba(0,255,0,0.1)'
-                                    }
-                                }}
-                                onMouseEnter={() => {
-                                    if (!isAttributeDisabled(attr) && onHover) {
-                                        onHover(attr.id);
-                                    }
-                                }}
-                            >
-                                <VariantButton
-                                    attr={attr}
-                                    isSelected={selectedValue === attr.id}
-                                    isDisabled={isAttributeDisabled(attr)}
-                                    onChange={onChange}
-                                    variantId={variant.id}
-                                    priceText={renderAttributePrice(attr)}
-                                    getPreviewImage={getPreviewImage}
-                                />
-                            </Box>
-                        ))}
-                    </Box>
                 </Box>
 
-                {totalPages > 1 && (
+                {getTotalPages() > 1 && (
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'center',
@@ -465,53 +433,25 @@ const VariantSelector = ({
                         gap: 2
                     }}>
                         <IconButton
-                            onClick={() => handlePageChange('prev')}
+                            onClick={() => scrollToPage(currentPage - 1)}
                             disabled={currentPage === 0}
-                            sx={{
-                                p: 0.5,
-                                backgroundColor: currentPage === 0 ? '#f5f5f5' : 'white',
-                                border: '1px solid #ddd',
-                                '&:hover:not(:disabled)': {
-                                    backgroundColor: '#f8f8f8'
-                                },
-                                '&:disabled': {
-                                    opacity: 0.5,
-                                    cursor: 'not-allowed'
-                                }
-                            }}
                         >
                             <ChevronLeftIcon fontSize="small" />
                         </IconButton>
 
-                        <Typography variant="body2" sx={{
-                            fontSize: '13px',
-                            color: '#666',
-                            minWidth: '60px',
-                            textAlign: 'center'
-                        }}>
-                            {currentPage + 1} / {totalPages}
+                        <Typography variant="body2">
+                            {currentPage + 1} / {getTotalPages()}
                         </Typography>
 
                         <IconButton
-                            onClick={() => handlePageChange('next')}
-                            disabled={currentPage === totalPages - 1}
-                            sx={{
-                                p: 0.5,
-                                backgroundColor: currentPage === totalPages - 1 ? '#f5f5f5' : 'white',
-                                border: '1px solid #ddd',
-                                '&:hover:not(:disabled)': {
-                                    backgroundColor: '#f8f8f8'
-                                },
-                                '&:disabled': {
-                                    opacity: 0.5,
-                                    cursor: 'not-allowed'
-                                }
-                            }}
+                            onClick={() => scrollToPage(currentPage + 1)}
+                            disabled={currentPage >= getTotalPages() - 1}
                         >
                             <ChevronRightIcon fontSize="small" />
                         </IconButton>
                     </Box>
                 )}
+
 
                 {error && (
                     <Typography color="error" sx={{ mt: 1, fontSize: '14px' }}>

@@ -20,12 +20,12 @@ const ProductCustomization = ({
     validationErrors,
     currency
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
     if (!customizationData) return null;
 
+    const [isExpanded, setIsExpanded] = useState((customizationData.isExpanded === "true" || customizationData.isExpanded === true) || false);
+
     return (
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ my: 2 }}>
             <Typography variant="h6" sx={{ fontSize: "18px", fontWeight: "600", color: "gray", mb: 2 }}>
                 {customizationData?.label}
             </Typography>
@@ -44,7 +44,7 @@ const ProductCustomization = ({
             </Button>
 
             {isExpanded && (
-                <Box sx={{ mt: 2 }}>
+                <Box>
                     {customizationData?.customizations?.map((customization, index) => (
                         <CustomizationField
                             key={index}
@@ -96,16 +96,16 @@ const CustomizationField = ({
 };
 
 const DropdownCustomization = ({ customization, selectedValue, onChange, validationError, currency }) => (
-    <Grid container spacing={2} sx={{ mb: 3 }}>
+    <Grid container spacing={0} sx={{}}>
         <Grid item xs={12}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.5 }}>
                 {customization.label}
                 {customization.isCompulsory ? (
                     <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>*</span>
-                ) : " (Optional)"}
+                ) : <span style={{ color: "gray", fontSize: "12px", fontWeight: "light", margin: "0 3px" }}>(Optional)</span>}
             </Typography>
             {customization.instructions && (
-                <Typography variant="body2" sx={{ color: 'gray', mb: 1 }}>
+                <Typography variant="body2" sx={{ color: 'gray', mb: 0.25 }}>
                     [{customization.instructions}]
                 </Typography>
             )}

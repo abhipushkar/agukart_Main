@@ -1,39 +1,26 @@
 "use client";
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import { useMemo } from "react";
 import Box from "@mui/material/Box";
-import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import { H4, Small } from "components/Typography";
 import Grid from "@mui/material/Grid";
 import Container from "@mui/material/Container";
 import { useRouter } from "next/navigation";
 import Alert from "@mui/material/Alert";
 
-import Snackbar, { SnackbarCloseReason } from "@mui/material/Snackbar";
+import Snackbar from "@mui/material/Snackbar";
 import {
-    Card,
-    CardContent,
-    CardMedia,
     Typography,
     Button,
     Dialog,
     DialogTitle,
-    DialogContent,
-    DialogContentText,
     DialogActions,
-    IconButton,
     AccordionSummary,
     AccordionDetails,
     FormControlLabel,
     CircularProgress, Skeleton,
 } from "@mui/material";
 import NextLink from "next/link";
-import EditIcon from "@mui/icons-material/Edit";
-import Radio from "@mui/material/Radio";
 import Checkbox from "@mui/material/Checkbox";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -42,30 +29,24 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import Divider from "@mui/material/Divider";
 import useCart from "hooks/useCart";
 
 import parse from "html-react-parser";
-import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
+import { postAPIAuth } from "utils/__api__/ApiServies";
 import React, { useEffect } from "react";
 
 import useAuth from "hooks/useAuth";
 import Accordion from "@mui/material/Accordion";
 import { useToasts } from "react-toast-notifications";
-import { PLACE_ORDER_VALIDATION } from "constant";
 import { useState } from "react";
-import { fontSize } from "theme/typography";
 import useMyProvider from "hooks/useMyProvider";
 import SingleVendorCart from "./SingleVendorCart";
-// import CartShimmerLoader from "./CartShimmerLoader";
 import { useCurrency } from "contexts/CurrencyContext";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import { calculatePriceAfterDiscount } from 'utils/calculatePriceAfterDiscount';
 import { useLocation } from "../../../contexts/location_context";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { CountryModal } from "./country_modal";
-import { truncate } from "lodash";
+import { Sell } from "@mui/icons-material";
 
 const Mycart = () => {
     const { currency } = useCurrency();
@@ -718,67 +699,97 @@ const Mycart = () => {
 
                                                         {/* VOUCHER INPUT FIELD */}
                                                         <TableRow>
-                                                            <TableCell colSpan={2}>
-                                                                <Box
+                                                            <TableCell colSpan={2} sx={{ p: 0 }}>
+                                                                <Accordion
+                                                                    elevation={0}
                                                                     sx={{
-                                                                        display: "flex",
-                                                                        flexDirection: { xs: "column", sm: "row" },
-                                                                        alignItems: "center",
-                                                                        gap: { xs: 1, sm: 2 },
-                                                                        backgroundColor: "#fff",
-                                                                        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                                                                        padding: "8px 16px",
-                                                                        height: { xs: "auto", sm: "56px" },
+                                                                        "&:before": { display: "none" },
                                                                     }}
                                                                 >
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        placeholder="Enter voucher code"
-                                                                        variant="outlined"
-                                                                        size="small"
+                                                                    {/* COLLAPSED HEADER */}
+                                                                    <AccordionSummary
+                                                                        expandIcon={<div></div>}
                                                                         sx={{
-                                                                            mr: { xs: 0, sm: 2 },
-                                                                            mb: { xs: 1, sm: 0 },
-                                                                            ".MuiOutlinedInput-root": {
-                                                                                background: "#f5f5f5",
-                                                                            },
-                                                                            ".MuiOutlinedInput-notchedOutline": {
-                                                                                border: "none",
-                                                                            },
-                                                                        }}
-                                                                        value={formValues?.voucher_code}
-                                                                        name="voucher_code"
-                                                                        onChange={handleChange}
-                                                                        error={Boolean(errors.voucher_code)}
-                                                                        disabled={voucherDetails?.voucherCode !== ""}
-                                                                    />
-                                                                    <Button
-                                                                        endIcon={applyinCoupon ?
-                                                                            <CircularProgress size={15} /> : null}
-                                                                        variant="contained"
-                                                                        color="primary"
-                                                                        size="small"
-                                                                        disabled={applyinCoupon}
-                                                                        sx={{
+                                                                            backgroundColor: "#f5f5f5",
+                                                                            px: 2,
+                                                                            minHeight: "48px",
                                                                             borderRadius: "20px",
-                                                                            textTransform: "none",
-                                                                            px: 3,
-                                                                            minWidth: "auto",
-                                                                            width: { xs: "100%", sm: "auto" },
+                                                                            width: 250,
+                                                                            border: "none",
+                                                                            "& .MuiAccordionSummary-content": {
+                                                                                alignItems: "center",
+                                                                                margin: 0,
+                                                                            },
                                                                         }}
-                                                                        onClick={voucherDetails?.voucherCode == 0 ? handleApply : handleRemove}
                                                                     >
-                                                                        {voucherDetails?.voucherCode == 0 ? "Apply" : "Remove"}
-                                                                    </Button>
-                                                                </Box>
-                                                                {errors?.voucher_code && (
-                                                                    <Typography color="error" fontSize={13} mt={0.5} ml={1}>
-                                                                        {errors.voucher_code}
-                                                                    </Typography>
-                                                                )}
+                                                                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                                                            <Sell sx={{ transform: "rotate(90deg)", color: "#05913fff" }} />
+                                                                            <Typography fontWeight={500}>
+                                                                                <strong>Apply </strong> Voucher <strong>code</strong>
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </AccordionSummary>
+
+                                                                    {/* EXPANDED CONTENT */}
+                                                                    <AccordionDetails sx={{ px: 2, pb: 2 }}>
+                                                                        <Box
+                                                                            sx={{
+                                                                                display: "flex",
+                                                                                flexDirection: { xs: "column", sm: "row" },
+                                                                                gap: 1.5,
+                                                                            }}
+                                                                        >
+                                                                            <TextField
+                                                                                fullWidth
+                                                                                placeholder="Enter voucher code"
+                                                                                size="small"
+                                                                                name="voucher_code"
+                                                                                value={formValues.voucher_code}
+                                                                                onChange={handleChange}
+                                                                                error={Boolean(errors.voucher_code)}
+                                                                                disabled={voucherDetails?.voucherCode !== ""}
+                                                                                sx={{
+                                                                                    background: "#f5f5f5",
+                                                                                    borderRadius: "6px",
+                                                                                    "& .MuiOutlinedInput-notchedOutline": {
+                                                                                        border: "none",
+                                                                                    },
+                                                                                }}
+                                                                            />
+
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                color="primary"
+                                                                                disabled={applyinCoupon}
+                                                                                onClick={
+                                                                                    voucherDetails?.voucherCode === ""
+                                                                                        ? handleApply
+                                                                                        : handleRemove
+                                                                                }
+                                                                                sx={{
+                                                                                    minWidth: "120px",
+                                                                                    borderRadius: "20px",
+                                                                                    textTransform: "none",
+                                                                                }}
+                                                                                endIcon={
+                                                                                    applyinCoupon ? <CircularProgress size={14} /> : null
+                                                                                }
+                                                                            >
+                                                                                {voucherDetails?.voucherCode === ""
+                                                                                    ? "Apply"
+                                                                                    : "Remove"}
+                                                                            </Button>
+                                                                        </Box>
+
+                                                                        {errors?.voucher_code && (
+                                                                            <Typography color="error" fontSize={13} mt={1}>
+                                                                                {errors.voucher_code}
+                                                                            </Typography>
+                                                                        )}
+                                                                    </AccordionDetails>
+                                                                </Accordion>
                                                             </TableCell>
                                                         </TableRow>
-
                                                         <TableRow>
                                                             <TableCell>
                                                                 <Typography

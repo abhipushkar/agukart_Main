@@ -119,6 +119,8 @@ const MyproductDetails = ({ res }) => {
       setLoading(true);
 
       if (res.data) {
+        console.log("Product Data", res.data);
+
         const productData = {
           image_url: res.image_url,
           video_url: res.video_url,
@@ -169,21 +171,42 @@ const MyproductDetails = ({ res }) => {
     }
   };
 
+
+  const isVariantSelected = useMemo(() => {
+    if (!myproduct?.isCombination) return true;
+    return Object.keys(selectedVariants || {}).filter((key) => normalizeVariantData().some((variant) => variant.id === key && variant.type === "internal")).length > 0;
+  }, [myproduct, selectedVariants]);
+
   useEffect(() => {
-    if (myproduct?.isCombination && currentCombinationData) {
-      if (currentCombinationData.quantity !== null) {
-        setStock(currentCombinationData.quantity);
-      } else if (currentCombinationData.quantityRange) {
-        // Use the maximum available quantity from range
-        setStock(currentCombinationData.quantityRange.max);
-      } else {
-        // Fallback to product quantity
-        setStock(myproduct?.qty || 0);
-      }
-    } else {
-      setStock(myproduct?.qty || 0);
+    // 1️⃣ No variant selected → no stock shown
+    if (myproduct?.isCombination && !isVariantSelected) {
+      setStock(null);
+      return;
     }
-  }, [myproduct, currentCombinationData]);
+
+    // 2️⃣ Combination product
+    if (myproduct?.isCombination) {
+      // Quantity controlled by combinations
+      if (myproduct?.form_values?.isCheckedQuantity) {
+        if (currentCombinationData?.quantity !== null) {
+          setStock(currentCombinationData.quantity);
+        } else if (currentCombinationData?.quantityRange) {
+          setStock(currentCombinationData.quantityRange.max);
+        } else {
+          setStock(0);
+        }
+      }
+      // Quantity NOT controlled by combinations
+      else {
+        setStock(Number(myproduct?.qty || 0));
+      }
+      return;
+    }
+
+    // 3️⃣ Simple product
+    setStock(Number(myproduct?.qty || 0));
+
+  }, [myproduct, currentCombinationData, isVariantSelected]);
 
   const handleParentProductVariants = (productData) => {
     const product_id = productData?._id;
@@ -826,6 +849,8 @@ const MyproductDetails = ({ res }) => {
     router.push("/cart");
   };
 
+
+
   const toggelFollowShopHandler = async () => {
     if (!token) {
       router.push("/login");
@@ -1071,17 +1096,27 @@ const MyproductDetails = ({ res }) => {
       )}
 
       {/* Stock Info */}
-      <Typography
-        component="div"
-        sx={{
-          fontSize: "17px",
-          fontWeight: "600",
-          color: "#bc1111",
-        }}
-        pt={2}
-      >
-        {stock == 0 ? "Sold Out" : myproduct?.cartProductCount > 0 ? `Only ${stock} left and in ${myproduct?.cartProductCount || 0} cart${myproduct?.cartProductCount === 1 ? '' : 's'}` : `Only ${stock} left`}
-      </Typography>
+      {isVariantSelected && stock !== null && (
+        <Typography
+          sx={{
+            fontSize: "17px",
+            fontWeight: "600",
+            color: "#bc1111",
+            pt: 2,
+          }}
+        >
+          {stock === 0 && "Sold Out"}
+
+          {stock > 0 && stock < 8 &&
+            `Only ${stock} left!`
+          }
+
+          {stock >= 8 && stock < 20 &&
+            `Only few left!`
+          }
+        </Typography>
+      )}
+
 
       {/* Pricing */}
       <ProductPricing
@@ -1117,6 +1152,8 @@ const MyproductDetails = ({ res }) => {
             quantity={quantity}
             stock={stock}
             onQuantityChange={setQuantity}
+            disabled={myproduct?.isCombination && !isVariantSelected}
+            showVariantWarning={myproduct?.isCombination && !isVariantSelected}
           />
 
           <ProductActions
@@ -1124,6 +1161,7 @@ const MyproductDetails = ({ res }) => {
             onBuyNow={handleBuyNow}
             onWishlistToggle={handleWishlistToggle}
             isInWishlist={toggleWishlist}
+            disabled={(myproduct?.isCombination && !isVariantSelected) || stock === 0}
           />
         </>
       )}

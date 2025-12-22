@@ -26,8 +26,6 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const { token } = useAuth();
     const { dispatch, getCartDetails, getCartItems } = useCart();
     const combinationVariant = new Set();
-    const [promotion, setPromotion] = useState({});
-    const [bestPromotion, setBestPromotion] = useState({});
     const [nextPromotion, setNextPromotion] = useState({});
     const [quantity, setQuantity] = useState(0);
     const [price, setPrice] = useState(0);
@@ -596,13 +594,13 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                     },
                                 }}
                             >
-                                <H4
+                                {(product?.cartAddedUserCount || product?.viewCount) && (<H4
                                     color={"#d23f57"}
                                     fontSize={16}
                                     sx={{ textTransform: "uppercase" }}
                                 >
-                                    In {product?.cartAddedUserCount} carts with {product?.viewCount} views
-                                </H4>
+                                    {product?.cartAddedUserCount > 0 && `In ${product?.cartAddedUserCount} cart(s)`} {product?.viewCount > 0 && `${product?.cartAddedUserCount > 0 && "with"} ${product?.viewCount} view(s)`}
+                                </H4>)}
                                 <Typography
                                     sx={{
                                         textOverflow: "ellipsis",
