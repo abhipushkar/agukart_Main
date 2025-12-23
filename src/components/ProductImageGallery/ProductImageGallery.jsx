@@ -51,30 +51,30 @@ const ProductImageGallery = ({
     // Improved video detection
     const isVideo = (mediaItem) => {
         if (!mediaItem) return false;
-        
+
         // Check if it's a video by type
         if (mediaItem.type === 'video') return true;
-        
+
         // Check if it has video source structure
         if (mediaItem.sources && Array.isArray(mediaItem.sources)) return true;
-        
+
         // Check by URL extension
         const url = mediaItem.url || mediaItem;
         if (typeof url === 'string') {
-            return url.includes(".mp4") || 
-                   url.includes(".webm") || 
-                   url.includes(".mov") || 
-                   url.includes(".avi");
+            return url.includes(".mp4") ||
+                url.includes(".webm") ||
+                url.includes(".mov") ||
+                url.includes(".avi");
         }
-        
+
         // Check if mediaItem is a direct video URL string
         if (typeof mediaItem === 'string') {
-            return mediaItem.includes(".mp4") || 
-                   mediaItem.includes(".webm") || 
-                   mediaItem.includes(".mov") || 
-                   mediaItem.includes(".avi");
+            return mediaItem.includes(".mp4") ||
+                mediaItem.includes(".webm") ||
+                mediaItem.includes(".mov") ||
+                mediaItem.includes(".avi");
         }
-        
+
         return false;
     };
 
@@ -98,12 +98,12 @@ const ProductImageGallery = ({
         if (mediaItem.url) {
             return mediaItem.url;
         }
-        
+
         // If mediaItem is a string URL
         if (typeof mediaItem === 'string') {
             return mediaItem;
         }
-        
+
         return null;
     };
 
@@ -149,7 +149,7 @@ const ProductImageGallery = ({
             if (mediaItem.type === 'video' && mediaItem.sources) {
                 return mediaItem;
             }
-            
+
             // Create proper video structure for lightbox
             return {
                 type: "video",
@@ -319,33 +319,6 @@ const ProductImageGallery = ({
                                                 />
                                             )}
                                         </Button>
-
-                                        {/* Tooltip for variant images */}
-                                        {isVariantImage && (
-                                            <Tooltip
-                                                title={
-                                                    <Box sx={{ p: 1 }}>
-                                                        <Typography variant="body2">
-                                                            {mediaItem.displayText || 'Variant Image'}
-                                                        </Typography>
-                                                    </Box>
-                                                }
-                                                placement="right"
-                                                arrow
-                                            >
-                                                <Box
-                                                    sx={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        right: 0,
-                                                        bottom: 0,
-                                                        cursor: 'help',
-                                                        zIndex: 1
-                                                    }}
-                                                />
-                                            </Tooltip>
-                                        )}
                                     </ListItem>
                                 );
                             })}

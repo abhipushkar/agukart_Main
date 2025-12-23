@@ -7,7 +7,10 @@ import {
     Select,
     MenuItem,
     Grid,
-    Typography
+    Typography,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
 
@@ -25,40 +28,54 @@ const ProductCustomization = ({
     const [isExpanded, setIsExpanded] = useState((customizationData.isExpanded === "true" || customizationData.isExpanded === true) || false);
 
     return (
-        <Box sx={{ my: 2 }}>
+        <Box sx={{ my: 1 }}>
             <Typography variant="h6" sx={{ fontSize: "18px", fontWeight: "600", color: "gray", mb: 2 }}>
                 {customizationData?.label}
             </Typography>
 
-            <Button
-                variant="contained"
-                sx={{
+            <Accordion expanded={isExpanded} onChange={() => setIsExpanded(!isExpanded)} sx={{
+                border: "none",
+                boxShadow: "none",
+                width: "fit-content",
+                height: "fit-content",
+                minHeight: "fit-content",
+                "& .Mui-expanded": {
+                    minHeight: "fit-content",
+                },
+            }}>
+                <AccordionSummary component={"button"} expandIcon={<ExpandMore fontSize="inherit" />} sx={{
+                    width: "fit-content",
+                    height: "fit-content",
+                    "& .MuiAccordionSummary-content": {
+                        my: 0,
+                    },
+                    "& .Mui-expanded": {
+                        minHeight: "fit-content",
+                    },
                     background: "#f6bc3b",
                     fontSize: "17px",
                     borderRadius: "25px",
-                    mb: 2
-                }}
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                Customize <ExpandMore fontSize="inherit" />
-            </Button>
-
-            {isExpanded && (
-                <Box>
-                    {customizationData?.customizations?.map((customization, index) => (
-                        <CustomizationField
-                            key={index}
-                            customization={customization}
-                            selectedValue={selectedDropdowns[customization.label]}
-                            textValue={customizationText[customization.label]}
-                            onDropdownChange={onDropdownChange}
-                            onTextChange={onTextChange}
-                            validationError={validationErrors[customization.label]}
-                            currency={currency}
-                        />
-                    ))}
-                </Box>
-            )}
+                    fontWeight: "500",
+                }}>
+                    Customize
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 0 }}>
+                    <Box>
+                        {customizationData?.customizations?.map((customization, index) => (
+                            <CustomizationField
+                                key={index}
+                                customization={customization}
+                                selectedValue={selectedDropdowns[customization.label]}
+                                textValue={customizationText[customization.label]}
+                                onDropdownChange={onDropdownChange}
+                                onTextChange={onTextChange}
+                                validationError={validationErrors[customization.label]}
+                                currency={currency}
+                            />
+                        ))}
+                    </Box>
+                </AccordionDetails>
+            </Accordion>
         </Box>
     );
 };
@@ -96,11 +113,11 @@ const CustomizationField = ({
 };
 
 const DropdownCustomization = ({ customization, selectedValue, onChange, validationError, currency }) => (
-    <Grid container spacing={0} sx={{}}>
+    <Grid container spacing={0} sx={{ my: 2 }}>
         <Grid item xs={12}>
             <Typography variant="subtitle1" sx={{ fontWeight: 'bold', lineHeight: 1.5 }}>
                 {customization.label}
-                {customization.isCompulsory ? (
+                {customization.isCompulsory === "true" || customization.isCompulsory === true ? (
                     <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>*</span>
                 ) : <span style={{ color: "gray", fontSize: "12px", fontWeight: "light", margin: "0 3px" }}>(Optional)</span>}
             </Typography>
