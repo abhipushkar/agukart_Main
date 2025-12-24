@@ -456,7 +456,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 if (variant && attribute) {
                     variantInfo.push(
                         <Typography fontSize={14} color="gray" key={`parent-variant-${index}`}>
-                            {variant.variant_name}:{" "}
+                            {variant.variant_name} :{" "}
                             <Typography fontSize={14} component="span" color="#000">
                                 {attribute.attribute_value}
                             </Typography>
@@ -471,7 +471,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
             product.variants.forEach((variant, index) => {
                 variantInfo.push(
                     <Typography fontSize={14} color="gray" key={`internal-variant-${index}`}>
-                        {variant.variantName}:{" "}
+                        {variant.variantName} :{" "}
                         <Typography fontSize={14} component="span" color="#000">
                             {variant.attributeName}
                         </Typography>
@@ -633,10 +633,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     <div key={key}>
                                                         {typeof value === 'object' ? (
                                                             <div>
-                                                                {key}: {`${value?.value}`}
+                                                                {key} : {`${value?.value}`}
                                                             </div>
                                                         ) : (
-                                                            <div>{key}: {value}</div>
+                                                            <div>{key} : {value}</div>
                                                         )}
                                                     </div>
                                                 ))}
