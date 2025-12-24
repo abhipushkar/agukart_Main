@@ -584,6 +584,8 @@ const VariantSelector = ({
                                     key={attr.id}
                                     value={attr.id}
                                     disabled={isDisabled}
+                                    onMouseEnter={() => onHover(attr.id)}
+                                    onMouseLeave={() => onHoverOut()}
                                     sx={{
                                         opacity: isDisabled ? 0.5 : 1,
                                         backgroundColor: isDisabled ? '#f5f5f5' : 'inherit',

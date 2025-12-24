@@ -80,15 +80,19 @@ const ProductImageGallery = ({
 
     // Get current display URL
     const getCurrentDisplayImage = () => {
-        if (hoveredImage) {
-            // hoveredImage could be a URL string or object
-            if (typeof hoveredImage === 'string') {
-                return hoveredImage;
-            }
-            if (hoveredImage.url) {
-                return hoveredImage.url;
-            }
-            return hoveredImage;
+        // if (hoveredImage) {
+        //     // hoveredImage could be a URL string or object
+        //     if (typeof hoveredImage === 'string') {
+        //         return hoveredImage;
+        //     }
+        //     if (hoveredImage.url) {
+        //         return hoveredImage.url;
+        //     }
+        //     return hoveredImage;
+        // }
+
+        if (hoveredImage?.type === "hover-preview") {
+            return hoveredImage.url;
         }
 
         const mediaItem = getCurrentMediaItem();
@@ -401,7 +405,7 @@ const ProductImageGallery = ({
                             />
 
                             {/* Variant image indicator on main display */}
-                            {currentMediaItem?.isVariantImage && (
+                            {currentMediaItem?.isVariantImage && !hoveredImage && (
                                 <Box
                                     sx={{
                                         position: 'absolute',
@@ -470,7 +474,7 @@ const ProductImageGallery = ({
                     )}
 
                     {/* Product Badge */}
-                    {product?.product_bedge && (
+                    {product?.product_bedge && !hoveredImage && (
                         <ProductBadge badge={product.product_bedge} />
                     )}
 

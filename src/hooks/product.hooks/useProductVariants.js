@@ -122,13 +122,21 @@ export const useProductVariants = (product) => {
                     })
                     .map(attr => {
                         const pvAttr = pvAttributesMap[attr.attribute_value];
+                        const productPreview =
+                            pvAttr?.edit_preview_image ||
+                            pvAttr?.preview_image ||
+                            '';
+
+                        const productThumbnail =
+                            pvAttr?.thumbnail ||
+                            '';
 
                         return {
                             id: attr._id,
                             value: attr.attribute_value,
                             images: pvAttr?.main_images || [],
-                            thumbnail: pvAttr?.thumbnail || attr.thumbnail || '',
-                            preview_image: pvAttr?.preview_image || attr.preview_image || '',
+                            thumbnail: productThumbnail,
+                            preview_image: productPreview,
                             edit_preview_image: pvAttr?.edit_preview_image || '',
                             price: null,
                             quantity: null,
@@ -329,6 +337,8 @@ export const useProductVariants = (product) => {
             max: Math.max(...attrData.prices)
         } : null;
 
+        console.log("Product Data", attrData);
+
         const quantityRange = attrData.quantities.length > 0 ? {
             min: Math.min(...attrData.quantities),
             max: Math.max(...attrData.quantities)
@@ -365,6 +375,7 @@ export const useProductVariants = (product) => {
         }
 
         // For internal variants
+        // INTERNAL VARIANTS
         if (product?.isCombination) {
             const { combinationsMap } = internalCombinationsMap;
 
@@ -377,27 +388,36 @@ export const useProductVariants = (product) => {
             if (!attributeVariant) return false;
 
             tempSelections[attributeVariant.id] = attributeId;
-            const selectionIds = Object.values(tempSelections).filter(id => id);
+            const selectedIds = Object.values(tempSelections).filter(Boolean);
 
-            if (selectionIds.length === 0) {
-                // Check single attribute quantity
-                const attrData = internalCombinationsMap.attributeCombinations?.get(attributeId);
-                if (attrData && attrData.quantities.length > 0) {
-                    const allZero = attrData.quantities.every(qty => qty === 0);
-                    return allZero;
+            // Collect ALL matching combinations
+            let hasStock = false;
+            let hasAnyCombo = false;
+
+            combinationsMap.forEach((combo, key) => {
+                const ids = key.split(',').filter(Boolean);
+
+                // Must include this attribute
+                if (!ids.includes(attributeId)) return;
+
+                // Must match current partial selection
+                const matches = selectedIds.every(id => ids.includes(id));
+                if (!matches) return;
+
+                hasAnyCombo = true;
+
+                if (Number(combo.qty) > 0) {
+                    hasStock = true;
                 }
-                return false;
-            }
+            });
 
-            // Check combination quantity
-            const selectionString = selectionIds.sort().join(',');
-            const comboData = combinationsMap?.get(selectionString);
-            if (comboData) {
-                return comboData.qty == 0;
-            }
+            // ❌ No combos → NOT sold out
+            if (!hasAnyCombo) return false;
 
-            return false;
+            // ✅ Sold out ONLY if NO stock anywhere
+            return !hasStock;
         }
+
 
         return false;
     }, [product, soldOutCombinations, normalizeVariantData, internalCombinationsMap]);
@@ -594,40 +614,78 @@ export const useProductVariants = (product) => {
 
 
     // Get product image for hover based on current selections and hovered attribute
-    const getHoverProductImage = useCallback((hoveredAttributeId) => {
-        if (!product?.parent_id || !hoveredAttributeId) return null;
+    const getHoverProductImage = useCallback(
+        (hoveredAttributeId) => {
+            if (!hoveredAttributeId) return null;
 
-        const parentCombinations = extractParentCombinations();
-        const currentSelections = { ...selectedVariants };
+            const normalizedVariants = normalizeVariantData();
 
-        const normalizedVariants = normalizeVariantData();
-        const hoveredVariant = normalizedVariants.find(v =>
-            v.attributes.some(attr => attr.id === hoveredAttributeId)
-        );
+            // Find which variant this attribute belongs to
+            const hoveredVariant = normalizedVariants.find(v =>
+                v.attributes.some(attr => attr.id === hoveredAttributeId)
+            );
 
-        if (!hoveredVariant) return null;
+            if (!hoveredVariant) return null;
 
-        const tempSelections = { ...currentSelections };
-        tempSelections[hoveredVariant.id] = hoveredAttributeId;
+            // ─────────────────────────────────────
+            // 1️⃣ PARENT VARIANT → SKU image
+            // ─────────────────────────────────────
+            if (hoveredVariant.type === 'parent') {
+                if (!product?.parent_id) return null;
 
-        const selectionIds = Object.values(tempSelections).filter(id => id);
+                const parentCombinations = extractParentCombinations();
+                const currentSelections = { ...selectedVariants };
 
-        if (selectionIds.length === 0) return null;
+                currentSelections[hoveredVariant.id] = hoveredAttributeId;
 
-        const selectionString = selectionIds.sort().join(',');
+                const selectionIds = Object.values(currentSelections).filter((val) => val === hoveredAttributeId);
+                if (selectionIds.length === 0) return null;
 
-        const targetCombination = parentCombinations.find((combo) => {
-            const comboString = combo.combination_ids.sort().join(',');
-            return comboString === selectionString;
-        });
+                const selectionString = selectionIds.sort().join(',');
 
-        return targetCombination?.sku_first_image || null;
-    }, [product, selectedVariants, extractParentCombinations, normalizeVariantData]);
+                const targetCombination = parentCombinations.find(combo =>
+                    combo.combination_ids.sort().join(',') === selectionString
+                );
+
+                return {
+                    type: 'hover-preview',
+                    url: targetCombination?.sku_first_image || null,
+                    source: 'parent-variant',
+                    attributeId: hoveredAttributeId
+                };
+            }
+
+            // ─────────────────────────────────────
+            // 2️⃣ INTERNAL VARIANT → first main_image
+            // ─────────────────────────────────────
+            if (hoveredVariant.type === 'internal') {
+                const attr = hoveredVariant.attributes.find(a => a.id === hoveredAttributeId);
+
+                if (attr?.images && attr.images.length > 0) {
+                    return {
+                        type: 'hover-preview',
+                        url: attr.images[0],
+                        source: 'internal-variant',
+                        attributeId: hoveredAttributeId
+                    };
+                }
+
+                return null;
+            }
+
+            return null;
+        },
+        [
+            product,
+            selectedVariants,
+            extractParentCombinations,
+            normalizeVariantData
+        ]
+    );
+
 
     // Handle variant hover for image preview
     const handleVariantHover = useCallback((attributeId) => {
-        if (!product?.parent_id) return;
-
         const hoverImage = getHoverProductImage(attributeId);
         setHoveredVariantImage(hoverImage);
     }, [product, getHoverProductImage]);
