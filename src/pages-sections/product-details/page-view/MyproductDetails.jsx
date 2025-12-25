@@ -70,6 +70,7 @@ const MyproductDetails = ({ res }) => {
   const [plusToggle, setPlusToggle] = useState(false);
   const [openPopup, setOpenPopup] = useState(false);
   const [openModal, setOpenModal] = useState(false);
+  const [hoveredCustomizationImage, setHoveredCustomizationImage] = useState(null);
   const pathname = useParams();
 
   // Custom Hooks
@@ -87,6 +88,7 @@ const MyproductDetails = ({ res }) => {
     currentCombinationData,
     calculateAttributeData,
     selectedVariantImages,
+    areAllInternalVariantsSelected,
   } = useProductVariants(myproduct);
 
   const {
@@ -207,6 +209,21 @@ const MyproductDetails = ({ res }) => {
     setStock(Number(myproduct?.qty || 0));
 
   }, [myproduct, currentCombinationData, isVariantSelected]);
+
+  const handleCustomizationOptionHover = (option) => {
+    if (option.main_images.length > 0) {
+      setHoveredCustomizationImage({
+        type: 'hover-preview',
+        url: option.main_images[0],
+        source: 'customization',
+        optionName: option.optionName
+      });
+    }
+  };
+
+  const handleCustomizationOptionHoverOut = () => {
+    setHoveredCustomizationImage(null);
+  };
 
   const handleParentProductVariants = (productData) => {
     const product_id = productData?._id;
@@ -967,6 +984,24 @@ const MyproductDetails = ({ res }) => {
   const getCombinedMedia = useCallback(() => {
     const combined = [];
 
+    Object.values(selectedDropdowns).forEach((dropdown, index) => {
+      if (dropdown.main_images) {
+        // Handle multiple images (comma-separated)
+        const images = dropdown.main_images.filter(img => img.trim() !== '');
+        images.forEach((img, imgIndex) => {
+          combined.push({
+            type: 'customization',
+            id: `customization-${dropdown.value}-${index}-${imgIndex}`,
+            url: img.trim(),
+            customizationName: dropdown.value,
+            isVariantImage: false,
+            index: combined.length,
+            displayText: `Customization: ${dropdown.value}`
+          });
+        });
+      }
+    });
+
     // Add variant images first (prioritized)
     if (selectedVariantImages && selectedVariantImages.length > 0) {
       selectedVariantImages.forEach((variantImg, index) => {
@@ -1043,7 +1078,7 @@ const MyproductDetails = ({ res }) => {
 
     console.log("Combined media array:", combined);
     return combined;
-  }, [selectedVariantImages, media, myproduct]);
+  }, [selectedDropdowns, selectedVariantImages, media, myproduct]);
 
   useEffect(() => {
     const combinedMedia = getCombinedMedia();
@@ -1142,6 +1177,8 @@ const MyproductDetails = ({ res }) => {
           onTextChange={handleTextChange}
           validationErrors={validationErrors}
           currency={currency}
+          onOptionHover={handleCustomizationOptionHover}
+          onOptionHoverOut={handleCustomizationOptionHoverOut}
         />
       )}
 
@@ -1161,7 +1198,7 @@ const MyproductDetails = ({ res }) => {
             onBuyNow={handleBuyNow}
             onWishlistToggle={handleWishlistToggle}
             isInWishlist={toggleWishlist}
-            disabled={(myproduct?.isCombination && !isVariantSelected) || stock === 0}
+            disabled={(myproduct?.isCombination && !isVariantSelected) || stock === 0 || !areAllInternalVariantsSelected()}
           />
         </>
       )}
@@ -1232,7 +1269,7 @@ const MyproductDetails = ({ res }) => {
                 onShareClick={() => setOpenModal(true)}
                 isInWishlist={toggleWishlist}
                 userDesignation={usercredentials?.designation_id}
-                hoveredImage={hoveredVariantImage}
+                hoveredImage={hoveredVariantImage || hoveredCustomizationImage}
                 selectedVariantImages={selectedVariantImages}
               />
             </Box>

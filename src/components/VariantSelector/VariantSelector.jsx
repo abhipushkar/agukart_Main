@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     FormControl,
     Select,
@@ -20,6 +20,19 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import parse from 'html-react-parser';
 
+// Debounce utility
+const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+};
+
 const VariantSelector = ({
     variant,
     selectedValue,
@@ -36,38 +49,159 @@ const VariantSelector = ({
     const [guideOpen, setGuideOpen] = useState(false);
     const [currentGuide, setCurrentGuide] = useState(null);
     const scrollRef = useRef(null);
+    const itemRef = useRef(null);
+    const pageWidthRef = useRef(0);
     const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const resizeObserverRef = useRef(null);
 
     // Check if variant has guide information
     const hasGuide = variant.guide_file || variant.guide_name || variant.guide_description;
 
-    const getTotalPages = () => {
-        if (!scrollRef.current) return 1;
-        return Math.ceil(
-            scrollRef.current.scrollWidth / scrollRef.current.clientWidth
-        );
-    };
+    // Calculate page width and items per page
+    const calculatePageMetrics = useCallback(() => {
+        if (!scrollRef.current || !itemRef.current) return;
 
-    const scrollToPage = (page) => {
-        if (!scrollRef.current) return;
+        try {
+            const itemWidth = itemRef.current.offsetWidth;
+            if (!itemWidth || itemWidth <= 0) return;
+
+            const gap = 8; // Theme spacing ~8px
+
+            // Calculate items per page based on container width
+            const container = scrollRef.current.parentElement;
+            const availableWidth = container ? container.clientWidth : scrollRef.current.clientWidth;
+
+            // Account for padding and margins
+            const effectiveWidth = Math.max(availableWidth - 16, 200); // Min 200px
+            const itemsPerPage = Math.max(2, Math.floor(effectiveWidth / (itemWidth + gap)));
+
+            // Calculate page width
+            const pageWidth = (itemWidth + gap) * itemsPerPage;
+            pageWidthRef.current = pageWidth;
+
+            // Calculate total pages
+            const scrollWidth = scrollRef.current.scrollWidth;
+            const total = Math.max(1, Math.ceil(scrollWidth / pageWidth));
+
+            setTotalPages(total);
+
+            // Update current page based on current scroll position
+            const scrollLeft = scrollRef.current.scrollLeft;
+            const newPage = Math.min(Math.round(scrollLeft / pageWidth), total - 1);
+            setCurrentPage(newPage);
+        } catch (error) {
+            console.error('Error calculating page metrics:', error);
+        }
+    }, []);
+
+    // Initialize and update page metrics
+    useEffect(() => {
+        // Initial calculation after a small delay to ensure DOM is ready
+        const timer = setTimeout(() => {
+            calculatePageMetrics();
+        }, 100);
+
+        // Set up resize observer for container changes
+        if (scrollRef.current) {
+            const container = scrollRef.current.parentElement;
+            if (container && window.ResizeObserver) {
+                resizeObserverRef.current = new ResizeObserver(() => {
+                    calculatePageMetrics();
+                });
+                resizeObserverRef.current.observe(container);
+            }
+        }
+
+        return () => {
+            clearTimeout(timer);
+            if (resizeObserverRef.current) {
+                resizeObserverRef.current.disconnect();
+            }
+        };
+    }, [variant.attributes.length, calculatePageMetrics]);
+
+    // Handle window resize
+    useEffect(() => {
+        const handleResize = debounce(() => {
+            calculatePageMetrics();
+        }, 150);
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [calculatePageMetrics]);
+
+    // Scroll to page function
+    const scrollToPage = useCallback((page) => {
+        if (!scrollRef.current || !pageWidthRef.current) return;
+
+        const targetPage = Math.max(0, Math.min(page, totalPages - 1));
+        const scrollPosition = targetPage * pageWidthRef.current;
 
         scrollRef.current.scrollTo({
-            left: scrollRef.current.clientWidth * page,
+            left: scrollPosition,
             behavior: 'smooth'
         });
 
-        setCurrentPage(page);
-    };
+        // Update page immediately for better UX
+        setCurrentPage(targetPage);
+    }, [totalPages]);
 
-    const handleScroll = () => {
-        if (!scrollRef.current) return;
+    // Handle scroll with proper debouncing and edge detection
+    const handleScroll = useCallback(debounce(() => {
+        if (!scrollRef.current || !pageWidthRef.current || pageWidthRef.current <= 0) return;
 
-        const page = Math.round(
-            scrollRef.current.scrollLeft / scrollRef.current.clientWidth
-        );
+        const scrollLeft = scrollRef.current.scrollLeft;
+        const scrollWidth = scrollRef.current.scrollWidth;
+        const clientWidth = scrollRef.current.clientWidth;
 
-        setCurrentPage(page);
-    };
+        // Handle edge cases
+        if (scrollWidth <= clientWidth) {
+            setCurrentPage(0);
+            return;
+        }
+
+        // Calculate current page with edge detection
+        const pageWidth = pageWidthRef.current;
+        const maxScroll = scrollWidth - clientWidth;
+
+        // Check if at the beginning or end
+        if (scrollLeft <= 0) {
+            setCurrentPage(0);
+            return;
+        }
+
+        if (scrollLeft >= maxScroll - 5) { // 5px tolerance for rounding errors
+            setCurrentPage(totalPages - 1);
+            return;
+        }
+
+        // Calculate current page with rounding
+        const calculatedPage = Math.round(scrollLeft / pageWidth);
+        const boundedPage = Math.max(0, Math.min(calculatedPage, totalPages - 1));
+
+        if (boundedPage !== currentPage) {
+            setCurrentPage(boundedPage);
+        }
+    }, 100), [totalPages, currentPage]);
+
+    // Enhanced scroll handler that also fires immediately
+    const handleScrollImmediate = useCallback(() => {
+        if (!scrollRef.current || !pageWidthRef.current) return;
+
+        const scrollLeft = scrollRef.current.scrollLeft;
+        const pageWidth = pageWidthRef.current;
+
+        if (pageWidth > 0) {
+            const calculatedPage = Math.round(scrollLeft / pageWidth);
+            if (calculatedPage !== currentPage) {
+                setCurrentPage(calculatedPage);
+            }
+        }
+
+        // Call the debounced handler
+        handleScroll();
+    }, [currentPage, handleScroll]);
 
     const renderAttributePrice = (attribute) => {
         if (variant.type === 'parent') {
@@ -92,13 +226,11 @@ const VariantSelector = ({
 
             return null;
         } else if (variant.type === 'internal') {
-            // Use calculateAttributeData as single source of truth
             let attributeData = {};
 
             if (calculateAttributeData && selectedVariants) {
                 attributeData = calculateAttributeData(attribute.id, selectedVariants);
             } else {
-                // Fallback
                 const variantAttr = filterVariantAttributes.find(attr =>
                     attr._id === attribute.id || attr.attribute_value === attribute.value
                 );
@@ -116,15 +248,12 @@ const VariantSelector = ({
 
             const { price, priceRange, quantity, quantityRange, isSoldOut, isIndependent } = attributeData;
 
-            // Check if sold out
             if (isSoldOut || (quantity !== null && quantity === 0)) {
                 return " [Sold Out]";
             }
 
-            // Show price info
             let priceText = '';
 
-            // 1️⃣ Independent pricing - ALWAYS show fixed price
             if (isIndependent) {
                 if (price !== null && !isNaN(price)) {
                     priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
@@ -132,11 +261,9 @@ const VariantSelector = ({
                     priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)})`;
                 }
             }
-            // 2️⃣ Show fixed price if available
             else if (price !== null && !isNaN(price)) {
                 priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
             }
-            // 3️⃣ Show price range
             else if (priceRange) {
                 if (priceRange.min === priceRange.max) {
                     priceText = ` (${currency?.symbol}${(priceRange.min * currency?.rate).toFixed(2)})`;
@@ -145,7 +272,6 @@ const VariantSelector = ({
                 }
             }
 
-            // Add quantity info if available
             let quantityText = '';
             if (quantity !== null && quantity !== undefined) {
                 quantityText = ` [${quantity} in stock]`;
@@ -327,21 +453,23 @@ const VariantSelector = ({
         </Dialog>
     );
 
-    const handlePageChange = (direction) => {
-        if (direction === 'prev' && currentPage > 0) {
-            setCurrentPage(currentPage - 1);
-        } else if (direction === 'next' && currentPage < totalPages - 1) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
+    const selectedAttr = variant.attributes.find(
+        attr => attr.id === selectedValue
+    );
 
     const renderParentVariantGrid = () => {
         return (
             <Box sx={{ mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                     <Typography variant="h6" sx={{ fontSize: "17px", fontWeight: 600 }}>
-                        {variant.name}
-                        <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>*</span>
+                        {variant.name}{" "}
+                        {
+                            selectedAttr && (
+                                <span style={{ fontSize: "15px", fontWeight: 400 }}>
+                                    : {selectedAttr.value}
+                                </span>
+                            )
+                        }
                     </Typography>
 
                     {hasGuide && (
@@ -368,7 +496,7 @@ const VariantSelector = ({
                     )}
                 </Box>
 
-                {/* Main container with hover out handler */}
+                {/* Scroll container */}
                 <Box
                     sx={{
                         mb: 1,
@@ -382,7 +510,7 @@ const VariantSelector = ({
                 >
                     <Box
                         ref={scrollRef}
-                        onScroll={handleScroll}
+                        onScroll={handleScrollImmediate}
                         sx={{
                             display: 'grid',
                             gridAutoFlow: 'column',
@@ -391,17 +519,16 @@ const VariantSelector = ({
                             overflowX: 'auto',
                             overflowY: 'hidden',
                             scrollBehavior: 'smooth',
-
-                            /* hide scrollbar */
                             scrollbarWidth: 'none',
                             '&::-webkit-scrollbar': {
                                 display: 'none'
                             }
                         }}
                     >
-                        {variant.attributes.map((attr) => (
+                        {variant.attributes.map((attr, index) => (
                             <Box
                                 key={attr.id}
+                                ref={index === 0 ? itemRef : null}
                                 sx={{ p: 0.75 }}
                                 onMouseEnter={() => {
                                     if (!isAttributeDisabled(attr) && onHover) {
@@ -421,10 +548,9 @@ const VariantSelector = ({
                             </Box>
                         ))}
                     </Box>
-
                 </Box>
 
-                {getTotalPages() > 1 && (
+                {totalPages > 1 && (
                     <Box sx={{
                         display: 'flex',
                         justifyContent: 'center',
@@ -435,23 +561,24 @@ const VariantSelector = ({
                         <IconButton
                             onClick={() => scrollToPage(currentPage - 1)}
                             disabled={currentPage === 0}
+                            size="small"
                         >
                             <ChevronLeftIcon fontSize="small" />
                         </IconButton>
 
-                        <Typography variant="body2">
-                            {currentPage + 1} / {getTotalPages()}
+                        <Typography variant="body2" sx={{ minWidth: '60px', textAlign: 'center' }}>
+                            {currentPage + 1} / {totalPages}
                         </Typography>
 
                         <IconButton
                             onClick={() => scrollToPage(currentPage + 1)}
-                            disabled={currentPage >= getTotalPages() - 1}
+                            disabled={currentPage >= totalPages - 1}
+                            size="small"
                         >
                             <ChevronRightIcon fontSize="small" />
                         </IconButton>
                     </Box>
                 )}
-
 
                 {error && (
                     <Typography color="error" sx={{ mt: 1, fontSize: '14px' }}>
@@ -464,17 +591,14 @@ const VariantSelector = ({
         );
     };
 
-    // Add this function for dropdown price display
     const renderAttributePriceForDropdown = (attribute) => {
         if (!attribute || variant.type !== 'internal') return '';
 
-        // Use calculateAttributeData for single source of truth
         let attributeData = {};
 
         if (calculateAttributeData && selectedVariants) {
             attributeData = calculateAttributeData(attribute.id, selectedVariants);
         } else {
-            // Fallback
             const variantAttr = filterVariantAttributes.find(attr =>
                 attr._id === attribute.id || attr.attribute_value === attribute.value
             );
@@ -490,7 +614,6 @@ const VariantSelector = ({
 
         const { price, priceRange, isIndependent } = attributeData;
 
-        // Show price based on calculated data
         if (price !== null && !isNaN(price)) {
             return `(${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
         } else if (priceRange) {
@@ -541,7 +664,6 @@ const VariantSelector = ({
                         value={selectedValue || ""}
                         displayEmpty
                         onChange={(e) => {
-                            console.log(`Internal variant ${variant.id} changed to:`, e.target.value);
                             onChange(variant.id, e.target.value);
                         }}
                         renderValue={(selected) => {
@@ -549,19 +671,9 @@ const VariantSelector = ({
                             const selectedAttr = variant.attributes.find(attr =>
                                 attr.id === selected || attr.value === selected
                             );
-                            const priceText = renderAttributePriceForDropdown(selectedAttr);
                             return (
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <span>{selectedAttr?.value || "Select an option"}</span>
-                                    {/* {priceText && (
-                                        <span style={{
-                                            marginLeft: '8px',
-                                            fontSize: '14px',
-                                            color: '#666'
-                                        }}>
-                                            {priceText}
-                                        </span>
-                                    )} */}
                                 </Box>
                             );
                         }}
@@ -577,22 +689,21 @@ const VariantSelector = ({
                         {variant.attributes.map((attr) => {
                             const isDisabled = isAttributeDisabled(attr);
                             const previewImage = getPreviewImage(attr);
-                            const priceText = renderAttributePriceForDropdown(attr); // Get price text here
+                            const priceText = renderAttributePriceForDropdown(attr);
 
                             return (
                                 <MenuItem
                                     key={attr.id}
                                     value={attr.id}
                                     disabled={isDisabled}
-                                    onMouseEnter={() => onHover(attr.id)}
-                                    onMouseLeave={() => onHoverOut()}
+                                    onMouseEnter={() => onHover && onHover(attr.id)}
+                                    onMouseLeave={() => onHoverOut && onHoverOut()}
                                     sx={{
                                         opacity: isDisabled ? 0.5 : 1,
                                         backgroundColor: isDisabled ? '#f5f5f5' : 'inherit',
                                         '&.Mui-disabled': {
                                             opacity: 0.5
                                         },
-                                        // Make sure the menu item has enough space
                                         py: 1.5,
                                         px: 2
                                     }}
@@ -642,7 +753,6 @@ const VariantSelector = ({
                                                 <div style={{
                                                     flex: 1,
                                                     display: 'flex',
-                                                    // flexDirection: 'column'
                                                     gap: "8px"
                                                 }}>
                                                     <span style={{
@@ -724,6 +834,10 @@ const VariantButton = ({
     priceText,
     getPreviewImage
 }) => {
+    const hasThumbnail = Boolean(
+        getPreviewImage(attr) || attr.thumbnail
+    );
+
     return (
         <Box sx={{
             flexShrink: 0,
@@ -738,7 +852,6 @@ const VariantButton = ({
                 <Button
                     onClick={() => {
                         if (!isDisabled) {
-                            console.log(`Parent variant ${variantId} changed to:`, attr.id);
                             onChange(variantId, attr.id);
                         }
                     }}
@@ -752,7 +865,7 @@ const VariantButton = ({
                         minHeight: '69px',
                         padding: 0,
                         border: isDisabled ? '1px solid #ccc' : '1px solid #D23F57',
-                        borderRadius: '8px',
+                        borderRadius: '10px',
                         backgroundColor: isDisabled ? '#f5f5f5' : '#ffffff',
                         position: 'relative',
                         overflow: 'hidden',
@@ -772,7 +885,15 @@ const VariantButton = ({
                             '& img': {
                                 filter: 'grayscale(100%)'
                             }
-                        }
+                        },
+                        width: hasThumbnail ? 69 : 'auto',
+                        minWidth: hasThumbnail ? 69 : 'unset',
+                        height: hasThumbnail ? 69 : 36,
+                        padding: hasThumbnail ? '6px' : '6px 12px',
+                        border: isSelected ? '2px solid #D23F57' : '1px solid #ccc',
+                        backgroundColor: isSelected ? '#fff5f7' : '#fff',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled ? 0.5 : 1,
                     }}
                 >
                     {attr.thumbnail ? (
@@ -856,7 +977,7 @@ const VariantButton = ({
                 >
                     {attr.thumbnail ? attr.value : null}
                 </Typography>
-                {(priceText || priceText !== NaN) && (
+                {priceText && (
                     <Typography
                         variant="caption"
                         sx={{

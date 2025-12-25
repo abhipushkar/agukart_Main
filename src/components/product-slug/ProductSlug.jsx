@@ -149,17 +149,18 @@ const ProductSlug = () => {
                 <Grid item lg={12} sm={12} xs={12} >
                   {childCategories.length > 1 && (
                     <H5
-                      sx={{ textAlign: "center", marginTop: "56px", }}
+                      sx={{ textAlign: "center", }}
                       lineHeight={1}
                       mb={1}
                     >
                       {childCategories.map((cat, i) => {
+                        console.log("product Data", cat);
                         if (childCategories.length - 1 === i)
                           return <span>{cat.title}</span>;
                         return (
                           <>
                             <Link
-                              href={`/product?slug=${cat.slug}&title=${cat.title}&_id=${cat._id}`}
+                              href={`/product?slug=${cat.slug}&title=${cat.title}&id=${cat._id}`}
                               passHref
                             >
                               <span style={{ cursor: "pointer" }}>
@@ -199,20 +200,7 @@ const ProductSlug = () => {
                           <AdminChildCat cat={item} />
                         </Grid>
                       ))
-                    ) : (
-                      <Box
-                        sx={{
-                          height: "30vh",
-                          alignItems: "center",
-                          display: "flex",
-                          justifyContent: "center",
-                          width: "100%",
-                          gap: "10px",
-                        }}
-                      >
-                        <Typography variant="h6">No Data Found</Typography>
-                      </Box>
-                    )}
+                    ) : null}
                   </>
                 )}
               </Grid>

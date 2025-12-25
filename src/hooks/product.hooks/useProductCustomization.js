@@ -7,16 +7,24 @@ export const useProductCustomization = (product) => {
     const [customizeDropdownPrice, setCustomizeDropdownPrice] = useState(0);
     const [customizeTextPrice, setCustomizeTextPrice] = useState(0);
 
-    const handleDropdownChange = (label, { value, price }) => {
+    // useProductCustomization.js - Updated handleDropdownChange
+    const handleDropdownChange = (label, option) => {
         setSelectedDropdowns(prev => {
-            if (price == "") {
+            if (!option || option.optionName === "") {
                 const updatedDropdowns = { ...prev };
                 delete updatedDropdowns[label];
                 return updatedDropdowns;
             }
             return {
                 ...prev,
-                [label]: { value, price },
+                [label]: {
+                    value: option.optionName,
+                    price: option.priceDifference,
+                    thumbnail: option.thumbnail,
+                    preview_image: option.preview_image,
+                    main_images: option.main_images,
+                    option // Store full option object
+                },
             };
         });
         setValidationErrors(prv => ({ ...prv, [label]: "" }));

@@ -337,8 +337,6 @@ export const useProductVariants = (product) => {
             max: Math.max(...attrData.prices)
         } : null;
 
-        console.log("Product Data", attrData);
-
         const quantityRange = attrData.quantities.length > 0 ? {
             min: Math.min(...attrData.quantities),
             max: Math.max(...attrData.quantities)
@@ -346,6 +344,23 @@ export const useProductVariants = (product) => {
 
         return { priceRange, quantityRange, isIndependent: attrData.isIndependent };
     }, [internalCombinationsMap]);
+
+    const areAllInternalVariantsSelected = useCallback(() => {
+        const normalizedVariants = normalizeVariantData();
+
+        // Get all internal variants
+        const internalVariants = normalizedVariants.filter(v => v.type === 'internal');
+
+        // If there are no internal variants, return true (no validation needed)
+        if (internalVariants.length === 0) {
+            return true;
+        }
+
+        // Check if every internal variant has a selected value
+        return internalVariants.every(variant =>
+            selectedVariants[variant.id] && selectedVariants[variant.id] !== ''
+        );
+    }, [normalizeVariantData, selectedVariants]);
 
     // Check if a specific attribute combination is sold out or has 0 quantity
     const isAttributeCombinationSoldOut = useCallback((attributeId, currentSelections = {}) => {
@@ -751,8 +766,11 @@ export const useProductVariants = (product) => {
         });
 
         setErrors(errors);
-        return Object.keys(errors).length === 0;
-    }, [selectedVariants, normalizeVariantData]);
+
+        const allInternalSelected = areAllInternalVariantsSelected();
+
+        return Object.keys(errors).length === 0 && allInternalSelected;
+    }, [selectedVariants, normalizeVariantData, areAllInternalVariantsSelected]);
 
     // Initialize internal combinations when product loads
     useEffect(() => {
@@ -1199,6 +1217,7 @@ export const useProductVariants = (product) => {
         getAttributeQuantity,
         getAttributeRanges,
         validateVariants,
-        normalizeVariantData
+        normalizeVariantData,
+        areAllInternalVariantsSelected,
     };
 };
