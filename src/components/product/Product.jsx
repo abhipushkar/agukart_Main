@@ -70,7 +70,9 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
     }
   };
 
-  const handleWishlist = async () => {
+  const handleWishlist = async (e) => {
+    e.stopPropagation(); // Prevent navigation when clicking wishlist
+    e.preventDefault(); // Also prevent Link navigation
     if (!token) {
       router.push("/login");
     }
@@ -169,8 +171,30 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       y: clamp(y, -maxY, maxY),
     };
   };
+
+  const handleShopNameClick = (e) => {
+    e.stopPropagation(); // Prevent product navigation when clicking shop name
+    e.preventDefault(); // Prevent Link navigation
+    const baseUrl = `/store/${product?.vendorDetails?.slug}`;
+    window.open(baseUrl, "_blank");
+  };
+
+  // Helper to check if we should show rating
+  const shouldShowRating = product?.ratingAvg > 0;
+
+  // Helper to check if we should show promotion time left
+  const timeLeftText = promotion && Object.keys(promotion).length > 0 && promotion?.qty <= 1
+    ? getTimeLeftText(promotion.start_date, promotion.expiry_date)
+    : null;
+
+  // Helper to check if we should show next promotion
+  const shouldShowNextPromotion = nextPromotion?.offer_type;
+
   return (
-    <>
+    <Link
+      href={`/products/${product._id}`}
+      style={{ textDecoration: "none", color: "inherit" }}
+    >
       <Box
         pb={1}
         sx={{
@@ -178,10 +202,12 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           display: "flex",
           flexDirection: "column",
           cursor: "pointer",
+          position: "relative", // For absolute positioning of wishlist button
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+        {/* Image Container */}
         <Box
           sx={{
             position: "relative",
@@ -326,21 +352,18 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               position: "absolute",
               bottom: "8px",
               right: "8px",
-              // backgroundColor: "primary.main",
               width: "32px",
               height: "32px",
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              // opacity: isHovered ? 1 : 0,
             }}>
               <PlayCircle color="primary.main" htmlColor="primary.main" style={{
                 color: "primary.main"
               }} fontSize="medium" />
             </Box>
-          )
-          }
+          )}
 
           {/* Wishlist Heart Icon */}
           {usercredentials?.designation_id != "4" && (
@@ -359,15 +382,15 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 opacity: isHovered ? 1 : 0,
                 transform: isHovered ? "translateY(0)" : "translateY(-10px)",
                 transition: "all 0.3s ease-in-out",
-                zIndex: 2,
+                zIndex: 3, // Higher z-index to be above the Link
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 "&:hover": {
                   background: "#f8f8f8",
                 },
               }}
+              onClick={handleWishlist}
             >
               <Button
-                onClick={handleWishlist}
                 sx={{ minWidth: "32px", minHeight: "32px", p: 0 }}
               >
                 {toggleWishlist ? (
@@ -382,65 +405,63 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
 
         {/* Product Details */}
         <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
-          {/* Product Title */}
-          <Link
-            href={`/products/${product._id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <Typography
-              sx={{
-                fontSize: "14px",
-                lineHeight: 1.4,
-                fontWeight: 400,
-                color: "#222",
-                mb: 1,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                minHeight: "40px",
-                "&:hover": {
-                  color: "#000",
-                },
-              }}
-            >
-              {product?.product_title.replace(/<\/?[^>]+(>|$)/g, "")}
-            </Typography>
-          </Link>
-
-          {/* Rating */}
-          <FlexRowCenter
-            gap={0.5}
+          {/* Product Title - Only 1 line with ellipsis */}
+          <Typography
             sx={{
-              justifyContent: "flex-start",
+              fontSize: "14px",
+              lineHeight: 1.4,
+              fontWeight: 400,
+              color: "#222",
               mb: 1,
-              alignItems: "center",
+              display: "-webkit-box",
+              WebkitLineClamp: 1, // Changed from 2 to 1
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap", // Ensure single line
+              minHeight: "auto", // Remove fixed height
+              "&:hover": {
+                color: "#000",
+              },
             }}
           >
-            <Rating
-              value={product.ratingAvg}
-              size="large"
-              readOnly
+            {product?.product_title.replace(/<\/?[^>]+(>|$)/g, "")}
+          </Typography>
+
+          {/* Rating - Only show when there are reviews */}
+          {shouldShowRating && (
+            <FlexRowCenter
+              gap={0.5}
               sx={{
-                fontSize: "24px",
-                color: "black",
-                '& .MuiRating-icon': {
-                  marginRight: '1px'
-                }
-              }}
-            />
-            <Small
-              sx={{
-                fontSize: "18px",
-                color: "#666",
-                fontWeight: 400,
-                ml: 0.5,
+                justifyContent: "flex-start",
+                mb: 1,
+                alignItems: "center",
               }}
             >
-              ({product.userReviewCount})
-            </Small>
-          </FlexRowCenter>
+              <Rating
+                value={product.ratingAvg}
+                size="large"
+                readOnly
+                sx={{
+                  fontSize: "24px",
+                  color: "black",
+                  '& .MuiRating-icon': {
+                    marginRight: '1px'
+                  }
+                }}
+              />
+              <Small
+                sx={{
+                  fontSize: "18px",
+                  color: "#666",
+                  fontWeight: 400,
+                  ml: 0.5,
+                }}
+              >
+                ({product.userReviewCount})
+              </Small>
+            </FlexRowCenter>
+          )}
 
           {/* Price */}
           <FlexBox
@@ -491,45 +512,41 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
             )}
           </FlexBox>
 
-          {/* Promotion Time Left */}
-          {promotion && Object.keys(promotion).length > 0 && promotion?.qty <= 1 && (() => {
-            const timeLeftText = getTimeLeftText(promotion.start_date, promotion.expiry_date);
-            return timeLeftText ? (
-              <Typography
-                sx={{
-                  fontSize: "12px",
-                  color: "#007600",
-                  fontWeight: 500,
-                  mb: 0.5,
-                }}
-              >
-                {timeLeftText}
-              </Typography>
-            ) : null;
-          })()}
+          {/* Promotion Time Left - Only show when time left text exists */}
+          {timeLeftText && (
+            <Typography
+              sx={{
+                fontSize: "12px",
+                color: "#007600",
+                fontWeight: 500,
+                mb: 0.5,
+              }}
+            >
+              {timeLeftText}
+            </Typography>
+          )}
 
-          {/* Shop Name */}
-          <Typography
-            onClick={() => {
-              const baseUrl = `/store/${product?.vendorDetails?.slug}`;
-              window.open(baseUrl, "_blank");
-            }}
-            sx={{
-              fontSize: "12px",
-              color: "#666",
-              cursor: "pointer",
-              mt: "auto",
-              "&:hover": {
-                color: "#000",
-                textDecoration: "underline",
-              },
-            }}
-          >
-            {product?.vendorDetails?.shop_name}
-          </Typography>
+          {/* Shop Name (with custom handler) */}
+          {product?.vendorDetails?.shop_name && (
+            <Typography
+              onClick={handleShopNameClick}
+              sx={{
+                fontSize: "12px",
+                color: "#666",
+                cursor: "pointer",
+                mt: "auto",
+                "&:hover": {
+                  color: "#000",
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              {product?.vendorDetails?.shop_name}
+            </Typography>
+          )}
 
-          {/* Next Promotion */}
-          {nextPromotion?.offer_type && (
+          {/* Next Promotion - Only show when it exists */}
+          {shouldShowNextPromotion && (
             <Typography
               sx={{
                 fontSize: "11px",
@@ -546,7 +563,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           )}
         </Box>
       </Box>
-    </>
+    </Link>
   );
 };
 

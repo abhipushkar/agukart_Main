@@ -219,63 +219,42 @@ export default function ProductCategoriesSearchPageView() {
   };
 
   return (
-    <div className="bg-white  pb-4">
-      <Container sx={{ px: 0, pb: 4 }}>
-        <Container maxWidth="xl" sx={{ px: 0 }}>
-          <Box sx={{ mt: 5 }}>
-            <Grid container>
-              <Grid item xs={12}>
-                <ProductsCategoriesPage
-                  childCategories={childCategories}
-                  title={title}
-                  products={PRODUCTS_CATE}
-                  SetProductIncreaseValue={SetProductIncreaseValue}
-                  isproductIncreaseValue={isproductIncreaseValue}
-                  SetIsProductIncreaseValue={SetIsProductIncreaseValue}
-                  subcategoryMenus={subcategoryMenus}
-                  isLoading={isLoading}
-                  productlength={subcategoryMenus?.length}
-                />
-              </Grid>
+    <Container sx={{ bgcolor: "background.paper", pb: 4 }}>
+      {/* Main Content */}
+      <Box sx={{ pb: 4 }}>
+        {/* Products Categories Page */}
+        <Box sx={{ mt: 5, px: { xs: 2, sm: 0 } }}>
+          <Grid container>
+            <Grid item xs={12}>
+              <ProductsCategoriesPage
+                childCategories={childCategories}
+                title={title}
+                products={PRODUCTS_CATE}
+                SetProductIncreaseValue={SetProductIncreaseValue}
+                isproductIncreaseValue={isproductIncreaseValue}
+                SetIsProductIncreaseValue={SetIsProductIncreaseValue}
+                subcategoryMenus={subcategoryMenus}
+                isLoading={isLoading}
+                productlength={subcategoryMenus?.length}
+              />
             </Grid>
-          </Box>
+          </Grid>
+        </Box>
 
-          {/* Sort + Filter Row */}
-          <FlexBetween flexWrap="wrap" alignItems="center" gap={2} mb={3} sx={{ px: 2 }}>
+        {/* Sort + Filter Row */}
+        <Box sx={{
+          mb: 3,
+          px: { xs: 2, sm: 0 },
+
+          mx: "auto"
+        }}>
+          <FlexBetween
+            flexWrap="wrap"
+            alignItems="center"
+            gap={2}
+          >
             <Box flex="1 1 0">
-              {/* <Button
-                onClick={() => toggleDrawer(true)}
-                variant="text"
-                sx={{
-                  background: "#fff",
-                  border: "1px solid gray",
-                  borderRadius: "30px",
-                  padding: "4px 16px",
-                  transition: "all 500ms",
-                  "&:hover": {
-                    boxShadow: "0 0 3px #000",
-                  },
-                }}
-              >
-                <Typography component="div" display="flex" alignItems="center">
-                  <svg
-                    height="20px"
-                    width="20px"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-                    />
-                  </svg>
-                  <Typography component="span" sx={{ marginLeft: "5px" }}>
-                    All Filter
-                  </Typography>
-                </Typography>
-              </Button> */}
+              {/* Filter button can be added here if needed */}
             </Box>
             <Box>
               <FlexBox
@@ -314,60 +293,81 @@ export default function ProductCategoriesSearchPageView() {
               </FlexBox>
             </Box>
           </FlexBetween>
+        </Box>
+
+        {/* Products Grid */}
+        <Box sx={{
+          px: { xs: 2, sm: 0 },
+
+          mx: "auto"
+        }}>
           {loading ? (
-            <Container sx={{ padding: "30px 16px" }}>
-              <Grid container spacing={4}>
-                {[...Array(64)].map((_, index) => (
-                  <Grid key={index} item xs={6} md={4} lg={3}>
-                    <ProductCardShimmer />
-                  </Grid>
-                ))}
-              </Grid>
-            </Container>
+            <Grid container spacing={2}>
+              {[...Array(12)].map((_, index) => (
+                <Grid key={index} item xs={6} sm={4} md={3}>
+                  <ProductCardShimmer />
+                </Grid>
+              ))}
+            </Grid>
           ) : (
-            <Container sx={{ padding: " 0px" }}>
-              <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
-                {productList?.length > 0 ? (
-                  productList?.map((product) => (
-                    <Grid item lg={3} md={4} xs={6}>
+            <>
+              {productList?.length > 0 ? (
+                <Grid container spacing={2}>
+                  {productList?.map((product) => (
+                    <Grid key={product._id} item xs={6} sm={4} md={3}>
                       <Product
-                        key={product._id}
                         product={product}
                         imageBaseUrl={imageBaseUrl}
                         videoBaseUrl={videoBaseUrl}
                       />
                     </Grid>
-                  ))
-                ) : (
-                  <>
-                    <Box
-                      sx={{
-                        textAlign: "center",
-                        fontSize: "20px",
-                        textTransform: "uppercase",
-                        fontWeight: 900,
-                      }}
-                    >
-                      Products Not Found
-                    </Box>
-                  </>
-                )}
-              </Grid>
-            </Container>
+                  ))}
+                </Grid>
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                    textAlign: "center",
+                    fontSize: "20px",
+                    textTransform: "uppercase",
+                    fontWeight: 900,
+                    py: 8,
+                  }}
+                >
+                  Products Not Found
+                </Box>
+              )}
+            </>
           )}
-          {productList?.length > 0 && (
-            <Box mt={4} display="flex" justifyContent="center">
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                variant="outlined"
-                shape="rounded"
-              />
-            </Box>
-          )}
-        </Container>
-      </Container>
+        </Box>
+
+        {/* Pagination */}
+        {productList?.length > 0 && (
+          <Box
+            sx={{
+              mt: 4,
+              display: "flex",
+              justifyContent: "center",
+              px: { xs: 2, sm: 0 },
+
+              mx: "auto"
+            }}
+          >
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              variant="outlined"
+              shape="rounded"
+            />
+          </Box>
+        )}
+      </Box>
+
+      {/* Filter Drawer */}
       <Drawer open={open} onClose={() => toggleDrawer(false)}>
         <Box sx={{ width: 400, position: "relative" }} role="presentation">
           <Typography
@@ -606,6 +606,6 @@ export default function ProductCategoriesSearchPageView() {
           </SectionCreator>
         </Box>
       </Drawer>
-    </div>
+    </Container>
   );
 }
