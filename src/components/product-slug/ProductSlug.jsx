@@ -143,74 +143,73 @@ const ProductSlug = () => {
     <>
       <div className="bg-white pb-4">
         <Container sx={{ px: 0, pt: 4, pb: 4 }}>
-          <Container maxWidth="xl" sx={{ px: 0 }}>
-            <Box>
-              <Grid container justifyContent={"center"} spacing={3} sx={{ mb: 2 }}>
-                <Grid item lg={12} sm={12} xs={12} >
-                  {childCategories.length > 1 && (
-                    <H5
-                      sx={{ textAlign: "center", }}
-                      lineHeight={1}
-                      mb={1}
-                    >
-                      {childCategories.map((cat, i) => {
-                        console.log("product Data", cat);
-                        if (childCategories.length - 1 === i)
-                          return <span>{cat.title}</span>;
-                        return (
-                          <>
-                            <Link
-                              href={`/product?slug=${cat.slug}&title=${cat.title}&id=${cat._id}`}
-                              passHref
-                            >
-                              <span style={{ cursor: "pointer" }}>
-                                {cat.title}
-                              </span>
-                            </Link>
-                            <span>/</span>
-                          </>
-                        );
-                      })}
-                    </H5>
-                  )}
-
-                  <H4
-                    style={{
-                      textTransform: "capitalize",
-                    }}
-                    sx={{ textAlign: "center", marginTop: "20px" }}
-                    fontSize={30}
-                    color={"#000"}
+          <Box>
+            <Grid container justifyContent={"space-between"} spacing={1}>
+              <Grid item lg={12} sm={12} xs={12} >
+                {childCategories.length > 1 && (
+                  <H5
+                    sx={{ textAlign: "center", }}
+                    lineHeight={1}
+                    mb={1}
                   >
-                    {title}
-                  </H4>
-                </Grid>
-                {loading ? (
-                  <Grid container spacing={3} >
-                    {[...Array(6)].map((_, index) => (
-                      <ProductCategoryShimmer key={index} />
-                    ))}
-
-                  </Grid>
-                ) : (
-                  <>
-                    {childrenCategory.length > 0 ? (
-                      childrenCategory?.map((item) => (
-                        <Grid item key={item._id} >
-                          <AdminChildCat cat={item} />
-                        </Grid>
-                      ))
-                    ) : null}
-                  </>
+                    {childCategories.map((cat, i) => {
+                      console.log("product Data", cat);
+                      if (childCategories.length - 1 === i)
+                        return <span>{cat.title}</span>;
+                      return (
+                        <>
+                          <Link
+                            href={`/product?slug=${cat.slug}&title=${cat.title}&id=${cat._id}`}
+                            passHref
+                          >
+                            <span style={{ cursor: "pointer" }}>
+                              {cat.title}
+                            </span>
+                          </Link>
+                          <span>/</span>
+                        </>
+                      );
+                    })}
+                  </H5>
                 )}
+
+                <H4
+                  style={{
+                    textTransform: "capitalize",
+                  }}
+                  sx={{ textAlign: "center", marginTop: "20px" }}
+                  fontSize={30}
+                  color={"#000"}
+                >
+                  {title}
+                </H4>
               </Grid>
-            </Box>
+              {loading ? (
+                <Grid container spacing={3} >
+                  {[...Array(6)].map((_, index) => (
+                    <ProductCategoryShimmer key={index} />
+                  ))}
+
+                </Grid>
+              ) : (
+                <>
+                  {childrenCategory.length > 0 ? (
+                    childrenCategory?.map((item) => (
+                      <Grid item key={item._id} >
+                        <AdminChildCat cat={item} />
+                      </Grid>
+                    ))
+                  ) : null}
+                </>
+              )}
+            </Grid>
+          </Box>
 
 
-            {/* Sort + Filter Row */}
-            <FlexBetween flexWrap="wrap" alignItems="center" gap={2} mb={3}>
-              <Box flex="1 1 0">
-                {/* <Button
+          {/* Sort + Filter Row */}
+          <FlexBetween flexWrap="wrap" alignItems="center" gap={2} mb={3}>
+            <Box flex="1 1 0">
+              {/* <Button
                     onClick={() => toggleDrawer(true)}
                     variant="text"
                     sx={{
@@ -243,99 +242,94 @@ const ProductSlug = () => {
                       </Typography>
                     </Typography>
                   </Button> */}
-              </Box>
-              <Box sx={{ px: 2 }}>
-                <FlexBox
-                  alignItems="center"
-                  sx={{
-                    border: "1px solid #ccc",
-                    borderRadius: "30px",
-                    px: 2,
-                    py: 0.5,
-                    transition: "0.3s",
-                    "&:hover": {
-                      boxShadow: "0 0 5px rgba(0,0,0,0.2)",
-                    },
-                  }}
-                  gap={1}
-                >
-                  <Paragraph color="grey.600">Sort by:</Paragraph>
-                  <TextField
-                    select
-                    size="small"
-                    value={sortBy}
-                    variant="outlined"
-                    onChange={(e) => handleChangeSortBy(e.target.value)}
-                    sx={{
-                      minWidth: 120,
-                      "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                      "& .MuiSelect-select": { pl: 0 },
-                    }}
-                  >
-                    {SORT_OPTIONS.map((item) => (
-                      <MenuItem key={item.value} value={item.value}>
-                        {item.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </FlexBox>
-              </Box>
-            </FlexBetween>
-            {productLoading ? (
-              <Container >
-                <Grid container spacing={4}>
-                  {[...Array(64)].map((_, index) => (
-                    <Grid key={index} item xs={6} md={4} lg={3}>
-                      <ProductCardShimmer />
-                    </Grid>
-                  ))}
-                </Grid>
-              </Container>
-            ) : (
-              <Container sx={{ px: 0 }} >
-                <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
-                  {productList?.length > 0 ? (
-                    productList?.map((product) => (
-                      <Grid item lg={3} md={4} xs={6}>
-                        <Product
-                          key={product._id}
-                          product={product}
-                          imageBaseUrl={imageBaseUrl}
-                          videoBaseUrl={videoBaseUrl}
-                        />
-                      </Grid>
-                    ))
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        width: "100%",
-                        textAlign: "center",
-                        fontSize: "20px",
-                        textTransform: "uppercase",
-                        fontWeight: 900,
-                      }}
-                    >
-                      Products Not Found
-                    </Box>
-                  )}
-                </Grid>
-              </Container>
-            )}
-            {productList?.length > 0 && (
-              <Box mt={4} display="flex" justifyContent="center">
-                <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={handlePageChange}
+            </Box>
+            <Box sx={{ px: 2 }}>
+              <FlexBox
+                alignItems="center"
+                sx={{
+                  border: "1px solid #ccc",
+                  borderRadius: "30px",
+                  px: 2,
+                  py: 0.5,
+                  transition: "0.3s",
+                  "&:hover": {
+                    boxShadow: "0 0 5px rgba(0,0,0,0.2)",
+                  },
+                }}
+                gap={1}
+              >
+                <Paragraph color="grey.600">Sort by:</Paragraph>
+                <TextField
+                  select
+                  size="small"
+                  value={sortBy}
                   variant="outlined"
-                  shape="rounded"
-                />
-              </Box>
-            )}
-          </Container>
+                  onChange={(e) => handleChangeSortBy(e.target.value)}
+                  sx={{
+                    minWidth: 120,
+                    "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                    "& .MuiSelect-select": { pl: 0 },
+                  }}
+                >
+                  {SORT_OPTIONS.map((item) => (
+                    <MenuItem key={item.value} value={item.value}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </FlexBox>
+            </Box>
+          </FlexBetween>
+          {productLoading ? (
+            <Grid container spacing={4}>
+              {[...Array(64)].map((_, index) => (
+                <Grid key={index} item xs={6} md={4} lg={3}>
+                  <ProductCardShimmer />
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
+              {productList?.length > 0 ? (
+                productList?.map((product) => (
+                  <Grid item lg={3} md={4} xs={6}>
+                    <Product
+                      key={product._id}
+                      product={product}
+                      imageBaseUrl={imageBaseUrl}
+                      videoBaseUrl={videoBaseUrl}
+                    />
+                  </Grid>
+                ))
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                    textAlign: "center",
+                    fontSize: "20px",
+                    textTransform: "uppercase",
+                    fontWeight: 900,
+                  }}
+                >
+                  Products Not Found
+                </Box>
+              )}
+            </Grid>
+          )}
+          {productList?.length > 0 && (
+            <Box mt={4} display="flex" justifyContent="center">
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePageChange}
+                variant="outlined"
+                shape="rounded"
+              />
+            </Box>
+          )}
         </Container>
         <Drawer open={open} onClose={() => toggleDrawer(false)}>
           <Box sx={{ width: 400, position: "relative" }} role="presentation">
