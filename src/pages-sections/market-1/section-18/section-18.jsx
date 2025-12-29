@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { postAPI } from "utils/__api__/ApiServies";
 
-const section18 = () => {
+const Section18 = () => {
   const [featureBrand, setFeatureBrand] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,23 +63,73 @@ const section18 = () => {
       ) : (
         <Carousel slidesToShow={featureBrand.length <= 2 ? featureBrand.length : 3} responsive={responsive}>
           {featureBrand.map((brand) => (
-            <Link key={brand._id} href={`${brand?.link}`}>
-              <BazaarCard className="p-1">
-                <LazyImage
-                  width={385}
-                  height={240}
-                  alt="banner"
-                  sx={{ height: { xs: "auto", sm: "auto", md: "240px", lg: "auto" }, objectFit: "cover", aspectRatio: "3/2" }}
-                  src={brand?.image}
-                />
-                <H4 fontSize={14} pt={1} sx={{ textTransform: "capitalize", px: 2 }}>
-                  {brand?.title}
-                </H4>
-                <H4 fontSize={14} pt={1} sx={{ textTransform: "capitalize", px: 2 }}>
-                  {brand?.description}
-                </H4>
-              </BazaarCard>
-            </Link>
+            <Box key={brand._id} px={1}>
+              <Link href={`${brand?.link}`} style={{ display: 'block', textDecoration: 'none' }}>
+                <BazaarCard
+                  className="p-1"
+                  sx={{
+                    overflow: 'hidden',
+                    transition: 'transform 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 3
+                    }
+                  }}
+                >
+                  <Box sx={{
+                    overflow: 'hidden',
+                    borderRadius: '8px'
+                  }}>
+                    <LazyImage
+                      width={385}
+                      height={240}
+                      alt="banner"
+                      sx={{
+                        height: { xs: "auto", sm: "auto", md: "240px", lg: "auto" },
+                        objectFit: "cover",
+                        aspectRatio: "3/2",
+                        width: '100%',
+                        transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'scale(1.1)',
+                        }
+                      }}
+                      src={brand?.image}
+                    />
+                  </Box>
+                  <H4
+                    fontSize={14}
+                    pt={1}
+                    sx={{
+                      textTransform: "capitalize",
+                      px: 2,
+                      color: 'text.primary',
+                      transition: 'color 0.3s ease',
+                      '&:hover': {
+                        color: 'primary.main'
+                      }
+                    }}
+                  >
+                    {brand?.title}
+                  </H4>
+                  <H4
+                    fontSize={14}
+                    pt={1}
+                    sx={{
+                      textTransform: "capitalize",
+                      px: 2,
+                      color: 'text.secondary',
+                      transition: 'color 0.3s ease',
+                      '&:hover': {
+                        color: 'text.primary'
+                      }
+                    }}
+                  >
+                    {brand?.description}
+                  </H4>
+                </BazaarCard>
+              </Link>
+            </Box>
           ))}
         </Carousel>
       )}
@@ -87,4 +137,4 @@ const section18 = () => {
   );
 };
 
-export default section18;
+export default Section18;

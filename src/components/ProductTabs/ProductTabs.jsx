@@ -451,12 +451,12 @@ const ProductTabs = ({ product }) => {
                                 scrollButtons="auto"
                                 aria-label="scrollable auto tabs example"
                             >
-                                <Tab label="Description" value="1" />
-                                <Tab label="Product specification & details" value="2" />
-                                <Tab label="Reviews" value="3" />
-                                <Tab label="Shipping and return policies" value="4" />
+                                <Tab label="Description" value="1" sx={{ textTransform: "capitalize" }} />
+                                <Tab label="Product specification & details" value="2" sx={{ textTransform: "capitalize" }} />
+                                <Tab label="Reviews" value="3" sx={{ textTransform: "capitalize" }} />
+                                <Tab label="Shipping and return policies" value="4" sx={{ textTransform: "capitalize" }} />
                                 {product?.tabs?.map((item, index) => (
-                                    <Tab key={index} label={item.title} value={String(index + 5)} />
+                                    <Tab key={index} label={item.title} value={String(index + 5)} sx={{ textTransform: "capitalize" }} />
                                 ))}
                             </TabList>
                         </Box>

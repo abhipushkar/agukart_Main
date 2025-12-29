@@ -286,10 +286,10 @@ const ShopView = () => {
                           sx={{
                             width: "100%",
                             objectFit: "cover",
-                            aspectRatio: "20 / 9",
+                            aspectRatio: "4",
                             maxHeight: {
-                              xs: "200px",
-                              md: "400px"
+                              xs: "100%",
+                              md: "100%"
                             },
                             mt: {
                               xs: 2
@@ -342,6 +342,7 @@ const ShopView = () => {
                   margin: "0",
                   width: "100%",
                   display: "flex",
+                  justifyContent: { md: "space-between" },
                   flexDirection: {
                     xs: "column",
                     md: "row",
@@ -502,7 +503,7 @@ const ShopView = () => {
                       </Typography>
                     </Box>
                   </Box>
-                  <Box
+                  {vendorDetail?.shop_announcement && (<Box
                     // lg={4}
                     // md={4}
                     // xs={12}
@@ -536,7 +537,7 @@ const ShopView = () => {
                         {announcementShowMore ? "Show less" : "Show more"}
                       </Typography>
                     </Box>
-                  </Box>
+                  </Box>)}
 
                   <Box
                     sx={{

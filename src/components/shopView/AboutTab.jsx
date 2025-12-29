@@ -10,12 +10,12 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
 
-const AboutTab = ({ vendorDetail,vendorCategories }) => {
-  console.log({vendorCategories});
+const AboutTab = ({ vendorDetail, vendorCategories }) => {
+  console.log({ vendorCategories });
   const [newVendorShopReadMore, setNewVendorShop] = useState(false);
   console.log({ vendorDetail });
 
-   const mediaItems = [
+  const mediaItems = [
     ...(vendorDetail?.shop_photos || []).map((shop) => ({
       type: "image",
       url: shop?.imageUrl,
@@ -130,38 +130,38 @@ const AboutTab = ({ vendorDetail,vendorCategories }) => {
                     content: '"❯"',
                   },
                 }}>
-                <Slider {...settings}>
-                  {mediaItems?.map((item, index) => (
-                    <div key={index}>
-                      {item.type === "image" ? (
-                        <img
-                          src={item.url}
-                          alt={`shop-media-${index}`}
-                          style={{
-                            width: "100%",
-                            height: "530px",
-                            objectFit: "contain",
-                            borderRadius: "8px",
-                          }}
-                        />
-                      ) : (
-                        <video
-                          controls
+                  <Slider {...settings}>
+                    {mediaItems?.map((item, index) => (
+                      <div key={index}>
+                        {item.type === "image" ? (
+                          <img
+                            src={item.url}
+                            alt={`shop-media-${index}`}
                             style={{
                               width: "100%",
                               height: "530px",
                               objectFit: "contain",
                               borderRadius: "8px",
                             }}
-                        >
-                          <source src={item.url} type="video/mp4" />
-                          Your browser does not support the video tag.
-                        </video>
-                      )}
-                    </div>
-                  ))}
-                </Slider>
-              </Typography>
+                          />
+                        ) : (
+                          <video
+                            controls
+                            style={{
+                              width: "100%",
+                              height: "530px",
+                              objectFit: "contain",
+                              borderRadius: "8px",
+                            }}
+                          >
+                            <source src={item.url} type="video/mp4" />
+                            Your browser does not support the video tag.
+                          </video>
+                        )}
+                      </div>
+                    ))}
+                  </Slider>
+                </Typography>
               }
               <Typography component="div" mt={5}>
                 <Typography variant="h5">
@@ -172,8 +172,8 @@ const AboutTab = ({ vendorDetail,vendorCategories }) => {
                 </Typography>
                 <Typography>
                   {newVendorShopReadMore
-                    ?  <HtmlRenderer html={ vendorDetail?.story_description || ""} />
-                    : <HtmlRenderer html={ vendorDetail?.story_description.slice(0, 100) || ""} />}
+                    ? <HtmlRenderer html={vendorDetail?.story_description || ""} />
+                    : <HtmlRenderer html={vendorDetail?.story_description.slice(0, 100) || ""} />}
                 </Typography>
                 <Typography
                   mt={2}
@@ -193,25 +193,29 @@ const AboutTab = ({ vendorDetail,vendorCategories }) => {
                 <Typography fontWeight={600} fontSize={16}>
                   Shop members
                 </Typography>
-                <Typography component="div" mt={2}>
-                  <Typography
+                <Box component="div" mt={2}>
+                  <Grid
+                    container
                     mb={2}
                     component="div"
-                    sx={{
-                      display: {
-                        lg: "flex",
-                        md: "flex",
-                        xs: "block",
-                      },
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
+                    spacing={3}
+                  // sx={{
+                  //   display: {
+                  //     lg: "flex",
+                  //     md: "flex",
+                  //     xs: "block",
+                  //   },
+                  //   alignItems: "center",
+                  //   justifyContent: "space-between",
+                  // }}
                   >
                     {vendorDetail?.members.map((member, i) => {
                       return (
-                        <Box
+                        <Grid
+                          item
+                          xs={12} md={7} lg={6}
                           key={i}
-                          sx={{ display: "flex", alignItems: "center" }}
+                          sx={{ display: "flex", alignItems: "flex-start" }}
                         >
                           <Typography component="span">
                             <img
@@ -230,17 +234,17 @@ const AboutTab = ({ vendorDetail,vendorCategories }) => {
                               {member.name}
                             </Typography>
                             <Typography>
-                              {member.roles.map((role) => {
-                                return role;
-                              })}
-                              , customer services
+                              {member.roles.join(", ")}
+                            </Typography>
+                            <Typography sx={{ mt: 2 }}>
+                              {member.bio}
                             </Typography>
                           </Typography>
-                        </Box>
+                        </Grid>
                       );
                     })}
-                  </Typography>
-                </Typography>
+                  </Grid>
+                </Box>
 
                 <Typography
                   mt={5}

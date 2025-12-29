@@ -164,7 +164,7 @@ const CollectionTab = ({
     } catch (error) {
       setStoreProductLoading(false);
       console.log(error);
-    } finally{
+    } finally {
       setStoreProductLoading(false);
     }
   };
@@ -249,7 +249,7 @@ const CollectionTab = ({
         </Box>
       </Box>
       <Grid container spacing={3}>
-        <Grid item lg={3} md={4} xs={12}>
+        <Grid item lg={2.5} md={3.5} xs={12}>
           <Box sx={{ pr: { lg: 2, md: 2, xs: 0 } }}>
             <Box sx={{ display: { xs: "block", md: "none" }, mb: 2 }}>
               <Select
@@ -361,10 +361,10 @@ const CollectionTab = ({
               Contact shop owner
             </Button>
 
-            <Typography mt={2} sx={{ display: { xs: "none",   md: "flex" }}}>
-               
-                  {vendorCategories?.sale_count} Sales</Typography>
-            <Typography mt={1} sx={{ display: { xs: "none",   md: "flex" }}} >
+            <Typography mt={2} sx={{ display: { xs: "none", md: "flex" } }}>
+
+              {vendorCategories?.sale_count} Sales</Typography>
+            <Typography mt={1} sx={{ display: { xs: "none", md: "flex" } }} >
               <Link
                 href="#"
                 style={{ textDecoration: "underline", color: "#000" }}
@@ -373,14 +373,14 @@ const CollectionTab = ({
               </Link>
             </Typography>
 
-            <Box mt={2} sx={{ display: { xs: "none",   md: "flex" }}} >
-              <ReportShop  shop_id={vendorDetail?._id} />
+            <Box mt={2} sx={{ display: { xs: "none", md: "flex" } }} >
+              <ReportShop shop_id={vendorDetail?._id} />
             </Box>
           </Box>
         </Grid>
-        <Grid item lg={9} md={8} xs={12}>
+        <Grid item lg={9.5} md={8.5} xs={12}>
           <Grid container spacing={3}>
-            {storeProductLoading ?(
+            {storeProductLoading ? (
               <>
                 {[...Array(40)].map((_, index) => (
                   <Grid key={index} item xs={6} md={4} lg={3}>

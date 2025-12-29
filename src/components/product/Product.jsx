@@ -175,7 +175,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const handleShopNameClick = (e) => {
     e.stopPropagation(); // Prevent product navigation when clicking shop name
     e.preventDefault(); // Prevent Link navigation
-    const baseUrl = `/store/${product?.vendorDetails?.slug}`;
+    const baseUrl = `/store/${product?.vendorDetails?.shop_name.toLowerCase() || product?.shop_name.toLowerCase()}`;
     window.open(baseUrl, "_blank");
   };
 
@@ -248,7 +248,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                   objectFit: "contain",
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
+                  objectFit: "contain",
                   transformOrigin: "center center",
                   ...(() => {
                     const { x, y, scale } = clampPan(product?.zoom || {});
@@ -527,7 +527,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           )}
 
           {/* Shop Name (with custom handler) */}
-          {product?.vendorDetails?.shop_name && (
+          {(product?.vendorDetails?.shop_name || product?.shop_name) && (
             <Typography
               onClick={handleShopNameClick}
               sx={{
@@ -541,7 +541,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 },
               }}
             >
-              {product?.vendorDetails?.shop_name}
+              {product?.vendorDetails?.shop_name || product?.shop_name}
             </Typography>
           )}
 
