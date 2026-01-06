@@ -43,6 +43,13 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
     const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
     const [isNoteOpen, setIsNoteOpen] = useState(false);
     const [vendorNote, setVendorNote] = useState("");
+    const [buyerNote, setBuyerNote] = useState({
+        cart_id: cart?.products?.[0]?.cart_id,
+        product_id: cart?.products?.[0]?.product_id,
+        vendor_id: cart?.vendor_id,
+        buyer_note: "",
+        _id: null,
+    })
     const [deliveryOption, setDeliveryOption] = useState("standardShipping");
     const [isModalOpen, setModalOpen] = useState(false);
     const [showCountryModal, setShowCountryModal] = useState(false);
@@ -242,14 +249,13 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                     autoDismiss: true,
                 }
             );
-            const payload = {
-                cart_id: cart?.products?.[0]?.cart_id,
-                product_id: cart?.products?.[0]?.product_id,
-                vendor_id: cart?.vendor_id,
-                note: vendorNote
-            }
+            const { _id, ...noteWithoutId } = buyerNote;
+            const payload = buyerNote._id ? buyerNote : noteWithoutId;
             const res = await postAPIAuth("user/save-note", payload);
             if (res.status === 200) {
+                
+                setBuyerNote(res.data.buyerNote);
+                console.log("Order Data", res.data.buyerNote);
                 return addToast(
                     "Add note successfully",
                     {
@@ -258,6 +264,8 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                     }
                 );
             }
+
+            
         } catch (error) {
             console.log(error);
             return addToast(
@@ -760,6 +768,10 @@ const SingleVendorCart = ({wallet, cart, defaultAddress, voucherDetails, isSingl
                                                             name="vendor_note"
                                                             onChange={(e) => {
                                                                 setVendorNote(e.target.value);
+                                                                setBuyerNote((prev) => ({
+                                                                    ...prev,
+                                                                    buyer_note:  e.target.value
+                                                                }))
                                                             }}
                                                         />
                                                         <Button

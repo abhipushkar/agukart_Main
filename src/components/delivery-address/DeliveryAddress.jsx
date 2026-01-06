@@ -360,83 +360,44 @@ const DeliveryAddress = () => {
   };
 
   const orderConfirmation = async () => {
-    // try {
-    //   setLoading(true);
-    //   const res = await postAPIAuth(
-    //     "user/checkout",
-    //     {
-    //       address_id: allAddress[addressIndex]?._id,
-    //       voucher_id:voucherDetails?._id || null,
-    //       voucher_discount:voucherDetails?.discount,
-    //       wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
-    //     },
-    //     token,
-    //     addToast
-    //   );
-
-    //   if (res.status === 200) {
-    //     setUserCredentials(res?.data?.updateUser);
-    //     setVoucherDetails({discount:0,voucherCode:""});
-    //     localStorage.removeItem("voucherDetails");
-    //     getCartItems();
-    //     addToast(res.data.message, {
-    //       appearance: "success",
-    //       autoDismiss: true,
-    //     });
-    //     setLoading(false);
-    //     router.push(`/order-confirmation?order-id=${res.data.orderId}`);
-    //     setPlaceOrderValidate(false);
-    //   }
-    // } catch (error) {
-    //   setLoading(false);
-    //   console.log(error);
-    // }
-   try {
+    try {
       setLoading(true);
-      const payloads = ids.map((vendor_id) => ({
+      
+      const payload = {
         address_id: allAddress[addressIndex]?._id,
-        vendor_id,
-        shop_count:ids?.length || 1,
+        shop_count: ids?.length > 0 ? ids?.length : state?.cart?.length || 1,
         voucher_id:voucherDetails?._id || null,
         voucher_discount:voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
-      }));
-      const responses = await Promise.all(
-        payloads.map((payload) =>
-          postAPIAuth(`user/vendorWiseCheckout`, payload, token)
-        )
+      };
+
+      if (ids.length === 1) {
+        payload.vendor_id = ids[0];
+      }
+
+      const res = await postAPIAuth(
+        "user/checkout",
+        payload,
+        token,
+        addToast
       );
 
-      console.log("All responses", responses);
-
-      // check all responses
-      // responses.forEach((res) => {
-      //   if (res.status === 200) {
-      //     addToast(res?.data?.message, {
-      //       appearance: "success",
-      //       autoDismiss: true,
-      //     });
-      //   }
-      // });
-      addToast("Checkout Successfully", {
-        appearance: "success",
-        autoDismiss: true,
-      });
-      setLoading(false);
-      const orderIds = responses.map((res) => res?.data?.orderId).filter(Boolean);
-      localStorage.removeItem("voucherDetails");
-      getCartItems();
-      const queryString = new URLSearchParams(
-        orderIds.map((id) => ["order-id", id])
-      ).toString();
-      router.push(`/order-confirmation?${queryString}`);
+      if (res.status === 200) {
+        setUserCredentials(res?.data?.updateUser);
+        setVoucherDetails({discount:0,voucherCode:""});
+        localStorage.removeItem("voucherDetails");
+        getCartItems();
+        addToast(res.data.message, {
+          appearance: "success",
+          autoDismiss: true,
+        });
+        setLoading(false);
+        router.push(`/order-confirmation?order-id=${res.data.orderId}`);
+        setPlaceOrderValidate(false);
+      }
     } catch (error) {
       setLoading(false);
-      console.log("errorr", error);
-      return addToast(error?.response?.data?.message, {
-        appearance: "error",
-        autoDismiss: true,
-      });
+      console.log(error);
     }
   };
 

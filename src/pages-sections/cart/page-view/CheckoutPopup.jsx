@@ -430,19 +430,18 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   }
 
   const handlePlaceOrder = async()=>{
-    const vendorIds =  state?.cart?.map((item)=>item?.vendor_id);
     try {
       const payload = {
         address_id: defaultAddress?._id,
         vendor_id: vendor_id,
-        shop_count:vendorIds?.length || 1,
+        shop_count: state?.cart?.length || 1,
         voucher_id:voucherDetails?._id || null,
         voucher_discount:voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
       }
       setLoading(true);
       const res = await postAPIAuth(
-        `user/vendorWiseCheckout`,
+        `user/checkout`,
         payload,
         token
       );
