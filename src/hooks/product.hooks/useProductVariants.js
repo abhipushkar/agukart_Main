@@ -12,6 +12,33 @@ export const useProductVariants = (product) => {
     const [selectedVariantImages, setSelectedVariantImages] = useState([]);
     const router = useRouter();
 
+    // Get controlling variants from form_values
+    const getControllingVariants = useCallback((field) => {
+        if (!product?.form_values?.[field]) return [];
+        
+        const value = product.form_values[field];
+        if (!value || typeof value !== 'string') return [];
+        
+        // Split by " and " to get variant names
+        return value.split(' and ').filter(name => name.trim() !== '');
+    }, [product]);
+
+    // Get controlling variant names for price and quantity
+    const priceControllingVariants = useMemo(() => getControllingVariants('prices'), [getControllingVariants]);
+    const quantityControllingVariants = useMemo(() => getControllingVariants('quantities'), [getControllingVariants]);
+
+    // Check if combination logic should be applied for price
+    const shouldUseCombinationPrice = useMemo(() => {
+        return product?.form_values?.isCheckedPrice === true && 
+               (product?.sale_price === 0 || product?.sale_price === "0");
+    }, [product]);
+
+    // Check if combination logic should be applied for quantity
+    const shouldUseCombinationQuantity = useMemo(() => {
+        return product?.form_values?.isCheckedQuantity === true && 
+               (product?.qty === 0 || product?.qty === "0");
+    }, [product]);
+
     // Normalize all variant data into a consistent structure
     const normalizeVariantData = useCallback(() => {
         if (!product) return [];
@@ -264,7 +291,7 @@ export const useProductVariants = (product) => {
                     if (attributeIds.length > 0) {
                         const sortedIds = [...attributeIds].sort().join(',');
 
-                        // Store combination data
+                        // Store combination data - ignore empty strings
                         const price = combo.price && combo.price !== "" ? parseFloat(combo.price) : null;
                         const qty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
 
@@ -332,14 +359,22 @@ export const useProductVariants = (product) => {
         const attrData = internalCombinationsMap.attributeCombinations.get(attributeId);
         if (!attrData) return null;
 
-        const priceRange = attrData.prices.length > 0 ? {
-            min: Math.min(...attrData.prices),
-            max: Math.max(...attrData.prices)
+        // Filter out null/undefined and zero when non-zero exists for quantities
+        const validPrices = attrData.prices.filter(p => p !== null && !isNaN(p));
+        const validQuantities = attrData.quantities.filter(q => q !== null && !isNaN(q));
+        
+        // For quantity ranges, ignore zero if there are non-zero values
+        const nonZeroQuantities = validQuantities.filter(q => q > 0);
+        const quantityValues = nonZeroQuantities.length > 0 ? nonZeroQuantities : validQuantities;
+
+        const priceRange = validPrices.length > 0 ? {
+            min: Math.min(...validPrices),
+            max: Math.max(...validPrices)
         } : null;
 
-        const quantityRange = attrData.quantities.length > 0 ? {
-            min: Math.min(...attrData.quantities),
-            max: Math.max(...attrData.quantities)
+        const quantityRange = quantityValues.length > 0 ? {
+            min: Math.min(...quantityValues),
+            max: Math.max(...quantityValues)
         } : null;
 
         return { priceRange, quantityRange, isIndependent: attrData.isIndependent };
@@ -389,9 +424,8 @@ export const useProductVariants = (product) => {
             return soldOutCombinations.has(selectionString);
         }
 
-        // For internal variants
-        // INTERNAL VARIANTS
-        if (product?.isCombination) {
+        // For internal variants - only apply if quantity is controlled by combinations
+        if (product?.isCombination && shouldUseCombinationQuantity) {
             const { combinationsMap } = internalCombinationsMap;
 
             const tempSelections = { ...currentSelections };
@@ -402,8 +436,20 @@ export const useProductVariants = (product) => {
 
             if (!attributeVariant) return false;
 
-            tempSelections[attributeVariant.id] = attributeId;
-            const selectedIds = Object.values(tempSelections).filter(Boolean);
+            // Only consider controlling variants for quantity
+            const controllingSelections = {};
+            Object.entries(tempSelections).forEach(([variantName, attrId]) => {
+                if (quantityControllingVariants.includes(variantName)) {
+                    controllingSelections[variantName] = attrId;
+                }
+            });
+            
+            // Add current attribute if it belongs to a controlling variant
+            if (quantityControllingVariants.includes(attributeVariant.id)) {
+                controllingSelections[attributeVariant.id] = attributeId;
+            }
+
+            const selectedIds = Object.values(controllingSelections).filter(Boolean);
 
             // Collect ALL matching combinations
             let hasStock = false;
@@ -415,7 +461,7 @@ export const useProductVariants = (product) => {
                 // Must include this attribute
                 if (!ids.includes(attributeId)) return;
 
-                // Must match current partial selection
+                // Must match current partial selection of controlling variants
                 const matches = selectedIds.every(id => ids.includes(id));
                 if (!matches) return;
 
@@ -433,9 +479,8 @@ export const useProductVariants = (product) => {
             return !hasStock;
         }
 
-
         return false;
-    }, [product, soldOutCombinations, normalizeVariantData, internalCombinationsMap]);
+    }, [product, soldOutCombinations, normalizeVariantData, internalCombinationsMap, shouldUseCombinationQuantity, quantityControllingVariants]);
 
 
     const getSelectedVariantMainImages = useCallback((currentSelections = selectedVariants) => {
@@ -532,7 +577,7 @@ export const useProductVariants = (product) => {
 
     // Get price for an attribute or combination
     const getAttributePrice = useCallback((attributeId, currentSelections = {}) => {
-        if (!product?.isCombination) return null;
+        if (!product?.isCombination || !shouldUseCombinationPrice) return null;
 
         const { combinationsMap } = internalCombinationsMap;
 
@@ -544,8 +589,20 @@ export const useProductVariants = (product) => {
 
         if (!attributeVariant) return null;
 
-        tempSelections[attributeVariant.id] = attributeId;
-        const selectionIds = Object.values(tempSelections).filter(id => id);
+        // Only consider controlling variants for price
+        const controllingSelections = {};
+        Object.entries(tempSelections).forEach(([variantName, attrId]) => {
+            if (priceControllingVariants.includes(variantName)) {
+                controllingSelections[variantName] = attrId;
+            }
+        });
+        
+        // Add current attribute if it belongs to a controlling variant
+        if (priceControllingVariants.includes(attributeVariant.id)) {
+            controllingSelections[attributeVariant.id] = attributeId;
+        }
+
+        const selectionIds = Object.values(controllingSelections).filter(id => id);
 
         if (selectionIds.length === 0) {
             // Return price range for single attribute
@@ -578,11 +635,11 @@ export const useProductVariants = (product) => {
             max: ranges.priceRange.max,
             isIndependent: ranges.isIndependent
         } : null;
-    }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges]);
+    }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges, shouldUseCombinationPrice, priceControllingVariants]);
 
     // Get quantity for an attribute or combination
     const getAttributeQuantity = useCallback((attributeId, currentSelections = {}) => {
-        if (!product?.isCombination) return null;
+        if (!product?.isCombination || !shouldUseCombinationQuantity) return null;
 
         const { combinationsMap } = internalCombinationsMap;
 
@@ -594,8 +651,20 @@ export const useProductVariants = (product) => {
 
         if (!attributeVariant) return null;
 
-        tempSelections[attributeVariant.id] = attributeId;
-        const selectionIds = Object.values(tempSelections).filter(id => id);
+        // Only consider controlling variants for quantity
+        const controllingSelections = {};
+        Object.entries(tempSelections).forEach(([variantName, attrId]) => {
+            if (quantityControllingVariants.includes(variantName)) {
+                controllingSelections[variantName] = attrId;
+            }
+        });
+        
+        // Add current attribute if it belongs to a controlling variant
+        if (quantityControllingVariants.includes(attributeVariant.id)) {
+            controllingSelections[attributeVariant.id] = attributeId;
+        }
+
+        const selectionIds = Object.values(controllingSelections).filter(id => id);
 
         if (selectionIds.length === 0) {
             // Return quantity range for single attribute
@@ -625,7 +694,7 @@ export const useProductVariants = (product) => {
             min: ranges.quantityRange.min,
             max: ranges.quantityRange.max
         } : null;
-    }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges]);
+    }, [product, normalizeVariantData, internalCombinationsMap, getAttributeRanges, shouldUseCombinationQuantity, quantityControllingVariants]);
 
 
     // Get product image for hover based on current selections and hovered attribute
@@ -910,109 +979,85 @@ export const useProductVariants = (product) => {
     }, [selectedVariants, product]);
 
     const getCurrentCombinationData = useCallback(() => {
-
         if (!product?.isCombination || !selectedVariants || Object.keys(selectedVariants).length === 0) {
             return { price: null, quantity: null, priceRange: null, quantityRange: null };
         }
 
-        // Get variant names and their selected attribute values
-        const variantSelections = {};
+        // Get controlling variants for price and quantity
+        const priceControlVariants = priceControllingVariants;
+        const quantityControlVariants = quantityControllingVariants;
+
+        // Build selection strings for controlling variants only
+        const priceSelectionIds = [];
+        const quantitySelectionIds = [];
 
         Object.entries(selectedVariants).forEach(([variantName, attrId]) => {
-            const attr = product.variant_attribute_id?.find(a => a._id === attrId);
-            if (attr) {
-                // Find which variant this attribute belongs to
-                const variant = product.variant_id?.find(v => v._id === attr.variant);
-                if (variant) {
-                    const actualVariantName = variant.variant_name;
-                    variantSelections[actualVariantName] = attr.attribute_value;
-                }
+            if (priceControlVariants.includes(variantName)) {
+                priceSelectionIds.push(attrId);
+            }
+            if (quantityControlVariants.includes(variantName)) {
+                quantitySelectionIds.push(attrId);
             }
         });
 
-        if (Object.keys(variantSelections).length === 0) {
-            return { price: null, quantity: null, priceRange: null, quantityRange: null };
+        const { combinationsMap } = internalCombinationsMap;
+
+        let priceResult = null;
+        let quantityResult = null;
+
+        // Resolve price from combinations if applicable
+        if (shouldUseCombinationPrice && priceSelectionIds.length > 0) {
+            const priceKey = priceSelectionIds.sort().join(',');
+            const priceCombo = combinationsMap.get(priceKey);
+            
+            if (priceCombo && priceCombo.price !== null) {
+                priceResult = priceCombo.price;
+            }
         }
 
-        // Get values from selections
-        const ringSizeValue = variantSelections["Ring Size"];
-        const gemstoneValue = variantSelections["Gemstones"];
-        const metalTypeValue = variantSelections["Metal Type"];
-
-        let ringSizeQty = null;
-        let gemstoneMetalPrice = null;
-        let gemstoneMetalQty = null;
-        let foundRingSize = false;
-        let foundGemstoneMetal = false;
-
-        // Search through combinationData
-        product.combinationData?.forEach((comboGroup) => {
-            if (comboGroup.combinations && Array.isArray(comboGroup.combinations)) {
-                comboGroup.combinations.forEach(combo => {
-                    // Check for Ring Size combinations (single value)
-                    if (combo.name1 === "Ring Size" && combo.value1) {
-                        if (combo.value1 === ringSizeValue) {
-                            ringSizeQty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
-                            foundRingSize = true;
-                        }
-                    }
-
-                    // Check for Gemstones + Metal Type combinations (pair values)
-                    if (combo.name1 === "Gemstones" && combo.name2 === "Metal Type") {
-                        if (combo.value1 === gemstoneValue && combo.value2 === metalTypeValue) {
-                            gemstoneMetalPrice = combo.price && combo.price !== "" ? parseFloat(combo.price) : null;
-                            gemstoneMetalQty = combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
-                            foundGemstoneMetal = true;
+        // Resolve quantity from combinations if applicable
+        if (shouldUseCombinationQuantity && quantitySelectionIds.length > 0) {
+            const quantityKey = quantitySelectionIds.sort().join(',');
+            const quantityCombo = combinationsMap.get(quantityKey);
+            
+            if (quantityCombo && quantityCombo.qty !== null) {
+                quantityResult = quantityCombo.qty;
+            }
+            
+            // If no exact match, find minimum non-zero quantity from all matching combos
+            if (quantityResult === null) {
+                let minQuantity = Infinity;
+                let foundAny = false;
+                
+                combinationsMap.forEach((combo, key) => {
+                    const ids = key.split(',');
+                    
+                    // Check if this combo matches all controlling quantity selections
+                    const matches = quantitySelectionIds.every(id => ids.includes(id));
+                    if (matches && combo.qty !== null) {
+                        foundAny = true;
+                        if (combo.qty > 0) {
+                            minQuantity = Math.min(minQuantity, combo.qty);
                         }
                     }
                 });
+                
+                if (minQuantity !== Infinity && minQuantity > 0) {
+                    quantityResult = minQuantity;
+                } else if (foundAny) {
+                    quantityResult = 0;
+                }
             }
-        });
-
-        // Calculate final quantity (take the minimum of available quantities)
-        let finalQuantity = null;
-        if (ringSizeQty !== null && gemstoneMetalQty !== null) {
-            finalQuantity = Math.min(ringSizeQty, gemstoneMetalQty);
-        } else if (ringSizeQty !== null) {
-            finalQuantity = ringSizeQty;
-        } else if (gemstoneMetalQty !== null) {
-            finalQuantity = gemstoneMetalQty;
         }
 
-        // If we found both combinations
-        if (foundRingSize && foundGemstoneMetal) {
-            return {
-                price: gemstoneMetalPrice,
-                quantity: finalQuantity,
-                priceRange: null,
-                quantityRange: null,
-                isVisible: true
-            };
-        }
-
-        // If we only found Gemstones+Metal combination
-        if (foundGemstoneMetal) {
-            return {
-                price: gemstoneMetalPrice,
-                quantity: gemstoneMetalQty,
-                priceRange: null,
-                quantityRange: null,
-                isVisible: true
-            };
-        }
-
-        // If we only found Ring Size
-        if (foundRingSize) {
-            return {
-                price: null,
-                quantity: ringSizeQty,
-                priceRange: null,
-                quantityRange: null,
-                isVisible: true
-            };
-        }
-        return { price: null, quantity: null, priceRange: null, quantityRange: null };
-    }, [product, selectedVariants]);
+        return {
+            price: priceResult,
+            quantity: quantityResult,
+            priceRange: null,
+            quantityRange: null,
+            isVisible: true
+        };
+    }, [product, selectedVariants, internalCombinationsMap, shouldUseCombinationPrice, shouldUseCombinationQuantity, priceControllingVariants, quantityControllingVariants]);
 
     const currentCombinationData = useMemo(() => {
         return getCurrentCombinationData();
@@ -1079,123 +1124,132 @@ export const useProductVariants = (product) => {
             const attrMeta = attributeCombinations.get(attributeId);
             const isIndependent = attrMeta?.isIndependent || false;
 
-            const selectedAttrIds = Object.values(currentSelections);
-            const isThisAttributeSelected = selectedAttrIds.includes(attributeId);
-
-            // ─────────────────────────────────────
-            // Collect ALL combos that include this attribute
-            // ─────────────────────────────────────
-            const relatedCombos = [];
-            combinationsMap.forEach((combo, key) => {
-                const ids = key.split(',').filter(Boolean);
-                if (ids.includes(attributeId)) {
-                    relatedCombos.push({ ids, combo });
+            // Get controlling selections for price and quantity
+            const priceControlSelections = {};
+            const quantityControlSelections = {};
+            
+            Object.entries(currentSelections).forEach(([variantName, attrId]) => {
+                if (priceControllingVariants.includes(variantName)) {
+                    priceControlSelections[variantName] = attrId;
+                }
+                if (quantityControllingVariants.includes(variantName)) {
+                    quantityControlSelections[variantName] = attrId;
                 }
             });
 
-            // Find which OTHER attributes from this group are selected
-            const selectedFromSameGroup = new Set();
-            relatedCombos.forEach(({ ids }) => {
-                ids.forEach(id => {
-                    if (selectedAttrIds.includes(id)) {
-                        selectedFromSameGroup.add(id);
+            // Add current attribute if it belongs to controlling variants
+            if (priceControllingVariants.includes(attributeVariant.id)) {
+                priceControlSelections[attributeVariant.id] = attributeId;
+            }
+            if (quantityControllingVariants.includes(attributeVariant.id)) {
+                quantityControlSelections[attributeVariant.id] = attributeId;
+            }
+
+            const priceSelectedIds = Object.values(priceControlSelections);
+            const quantitySelectedIds = Object.values(quantityControlSelections);
+
+            // ─────────────────────────────────────
+            // Price Calculation
+            // ─────────────────────────────────────
+            let price = null;
+            let priceRange = null;
+
+            if (shouldUseCombinationPrice) {
+                if (priceSelectedIds.length === 0) {
+                    // No controlling selections - show range
+                    const ranges = getAttributeRanges(attributeId);
+                    priceRange = ranges?.priceRange || null;
+                } else {
+                    // Check for exact price match
+                    const priceKey = priceSelectedIds.sort().join(',');
+                    const priceCombo = combinationsMap.get(priceKey);
+                    
+                    if (priceCombo && priceCombo.price !== null) {
+                        price = priceCombo.price;
+                    } else {
+                        // No exact match - show range
+                        const ranges = getAttributeRanges(attributeId);
+                        priceRange = ranges?.priceRange || null;
                     }
-                });
-            });
-
-            const selectedCount = selectedFromSameGroup.size;
-
-            // ─────────────────────────────────────
-            // 1️⃣ Independent pricing (not your case here)
-            // ─────────────────────────────────────
-            if (isIndependent) {
-                const single = relatedCombos.find(c => c.ids.length === 1);
-                if (single) {
-                    return {
-                        price: single.combo.price,
-                        quantity: single.combo.qty,
-                        priceRange: null,
-                        quantityRange: null,
-                        isSoldOut: single.combo.qty === 0,
-                        isIndependent: true
-                    };
                 }
             }
 
             // ─────────────────────────────────────
-            // 2️⃣ NOTHING selected → RANGE
+            // Quantity Calculation
             // ─────────────────────────────────────
-            if (selectedCount === 0) {
-                const prices = relatedCombos
-                    .map(c => c.combo.price)
-                    .filter(p => p !== null);
+            let quantity = null;
+            let quantityRange = null;
 
-                return prices.length
-                    ? {
-                        price: null,
-                        quantity: null,
-                        priceRange: {
-                            min: Math.min(...prices),
-                            max: Math.max(...prices)
-                        },
-                        quantityRange: null,
-                        isSoldOut: prices.every(p => p === 0),
-                        isIndependent: false
+            if (shouldUseCombinationQuantity) {
+                if (quantitySelectedIds.length === 0) {
+                    // No controlling selections - show range
+                    const ranges = getAttributeRanges(attributeId);
+                    quantityRange = ranges?.quantityRange || null;
+                } else {
+                    // Check for exact quantity match
+                    const quantityKey = quantitySelectedIds.sort().join(',');
+                    const quantityCombo = combinationsMap.get(quantityKey);
+                    
+                    if (quantityCombo && quantityCombo.qty !== null) {
+                        quantity = quantityCombo.qty;
+                    } else {
+                        // No exact match - show range
+                        const ranges = getAttributeRanges(attributeId);
+                        quantityRange = ranges?.quantityRange || null;
                     }
-                    : {
-                        price: null,
-                        quantity: null,
-                        priceRange: null,
-                        quantityRange: null,
-                        isSoldOut: false,
-                        isIndependent: false
-                    };
+                }
             }
 
             // ─────────────────────────────────────
-            // 3️⃣ ONE OR MORE selected
-            // Selected attribute → NO price
-            // Other attributes → FIXED price
+            // Sold Out Calculation
             // ─────────────────────────────────────
-            if (isThisAttributeSelected) {
-                return {
-                    price: null,
-                    quantity: null,
-                    priceRange: null,
-                    quantityRange: null,
-                    isSoldOut: false,
-                    isIndependent: false
-                };
+            let isSoldOut = false;
+            
+            if (shouldUseCombinationQuantity && quantityControllingVariants.includes(attributeVariant.id)) {
+                // Only check sold out for quantity-controlling variants
+                const quantityKey = quantitySelectedIds.sort().join(',');
+                const quantityCombo = combinationsMap.get(quantityKey);
+                
+                if (quantityCombo && quantityCombo.qty === 0) {
+                    isSoldOut = true;
+                } else {
+                    // Check if ALL matching combos have qty === 0
+                    let hasStock = false;
+                    let hasAnyCombo = false;
+                    
+                    combinationsMap.forEach((combo, key) => {
+                        const ids = key.split(',');
+                        
+                        // Must include this attribute
+                        if (!ids.includes(attributeId)) return;
+                        
+                        // Must match current partial selection of controlling variants
+                        const matches = quantitySelectedIds.every(id => ids.includes(id));
+                        if (!matches) return;
+                        
+                        hasAnyCombo = true;
+                        
+                        if (Number(combo.qty) > 0) {
+                            hasStock = true;
+                        }
+                    });
+                    
+                    if (hasAnyCombo && !hasStock) {
+                        isSoldOut = true;
+                    }
+                }
             }
 
-            const matchingCombo = relatedCombos.find(({ ids }) =>
-                [...selectedFromSameGroup].every(id => ids.includes(id))
-            );
-
-            if (matchingCombo) {
-                return {
-                    price: matchingCombo.combo.price,
-                    quantity: matchingCombo.combo.qty,
-                    priceRange: null,
-                    quantityRange: null,
-                    isSoldOut: matchingCombo.combo.qty === 0,
-                    isIndependent: false
-                };
-            }
-
-            // ─────────────────────────────────────
-            // Fallback
-            // ─────────────────────────────────────
             return {
-                price: null,
-                quantity: null,
-                priceRange: null,
-                quantityRange: null,
-                isSoldOut: false,
-                isIndependent: false
+                price,
+                quantity,
+                priceRange,
+                quantityRange,
+                isSoldOut,
+                isIndependent
             };
         },
-        [product, selectedVariants, internalCombinationsMap, normalizeVariantData]
+        [product, selectedVariants, internalCombinationsMap, normalizeVariantData, getAttributeRanges, shouldUseCombinationPrice, shouldUseCombinationQuantity, priceControllingVariants, quantityControllingVariants]
     );
 
     return {

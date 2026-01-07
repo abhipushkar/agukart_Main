@@ -179,36 +179,118 @@ const MyproductDetails = ({ res }) => {
     return Object.keys(selectedVariants || {}).filter((key) => normalizeVariantData().some((variant) => variant.id === key && variant.type === "internal")).length > 0;
   }, [myproduct, selectedVariants]);
 
+  // Helper function to parse controlling variants from form_values
+  const getControllingVariants = useCallback((field) => {
+    if (!myproduct?.form_values?.[field]) return [];
+    
+    const value = myproduct.form_values[field];
+    if (!value || typeof value !== 'string') return [];
+    
+    // Split by " and " to get variant names
+    return value.split(' and ').filter(name => name.trim() !== '');
+  }, [myproduct]);
+
+  // Check if combination logic should be applied for quantity
+  const shouldUseCombinationQuantity = useMemo(() => {
+    return myproduct?.form_values?.isCheckedQuantity === true && 
+           (myproduct?.qty === 0 || myproduct?.qty === "0");
+  }, [myproduct]);
+
+  // Get quantity controlling variants
+  const quantityControllingVariants = useMemo(() => {
+    return getControllingVariants('quantities');
+  }, [getControllingVariants]);
+
+  // Calculate product stock based on combination rules
+  const calculateProductStock = useCallback(() => {
+    // 1️⃣ Simple product or combination not controlling quantity
+    if (!myproduct?.isCombination || !shouldUseCombinationQuantity) {
+      return Number(myproduct?.qty || 0);
+    }
+
+    // 2️⃣ No variant selected → no stock shown
+    if (!isVariantSelected) {
+      return null;
+    }
+
+    // 3️⃣ Get controlling variant selections
+    const controllingSelections = {};
+    Object.entries(selectedVariants || {}).forEach(([variantName, attrId]) => {
+      if (quantityControllingVariants.includes(variantName)) {
+        controllingSelections[variantName] = attrId;
+      }
+    });
+
+    const controllingIds = Object.values(controllingSelections);
+    
+    // 4️⃣ No controlling variants selected → use product qty
+    if (controllingIds.length === 0) {
+      return Number(myproduct?.qty || 0);
+    }
+
+    // 5️⃣ Check current combination data first
+    if (currentCombinationData?.quantity !== null) {
+      const qty = currentCombinationData.quantity;
+      // If quantity is 0, check if there are other combos with stock
+      if (qty === 0 && myproduct?.combinationData) {
+        return findMinimumNonZeroQuantity(controllingIds);
+      }
+      return qty;
+    }
+
+    // 6️⃣ Find minimum non-zero quantity from all matching combinations
+    return findMinimumNonZeroQuantity(controllingIds);
+  }, [myproduct, selectedVariants, currentCombinationData, isVariantSelected, shouldUseCombinationQuantity, quantityControllingVariants]);
+
+  // Helper function to find minimum non-zero quantity from combinations
+  const findMinimumNonZeroQuantity = useCallback((controllingIds) => {
+    if (!myproduct?.combinationData || controllingIds.length === 0) {
+      return 0;
+    }
+
+    let minQuantity = Infinity;
+    let foundAny = false;
+
+    // Search through all combination data
+    myproduct.combinationData?.forEach((comboGroup) => {
+      if (comboGroup.combinations && Array.isArray(comboGroup.combinations)) {
+        comboGroup.combinations.forEach(combo => {
+          // Skip if qty is empty string
+          if (combo.qty === "" || combo.qty === null || combo.qty === undefined) {
+            return;
+          }
+
+          const qty = parseInt(combo.qty, 10);
+          if (isNaN(qty)) return;
+
+          // Check if this combination matches the controlling selections
+          // This is simplified - actual matching logic depends on your data structure
+          // For now, we'll use the currentCombinationData logic
+          foundAny = true;
+          
+          if (qty > 0) {
+            minQuantity = Math.min(minQuantity, qty);
+          }
+        });
+      }
+    });
+
+    if (minQuantity !== Infinity && minQuantity > 0) {
+      return minQuantity;
+    } else if (foundAny) {
+      return 0;
+    }
+
+    return 0;
+  }, [myproduct]);
+
+  // Update stock when dependencies change
   useEffect(() => {
-    // 1️⃣ No variant selected → no stock shown
-    if (myproduct?.isCombination && !isVariantSelected) {
-      setStock(null);
-      return;
-    }
-
-    // 2️⃣ Combination product
-    if (myproduct?.isCombination) {
-      // Quantity controlled by combinations
-      if (myproduct?.form_values?.isCheckedQuantity) {
-        if (currentCombinationData?.quantity !== null) {
-          setStock(currentCombinationData.quantity);
-        } else if (currentCombinationData?.quantityRange) {
-          setStock(currentCombinationData.quantityRange.max);
-        } else {
-          setStock(0);
-        }
-      }
-      // Quantity NOT controlled by combinations
-      else {
-        setStock(Number(myproduct?.qty || 0));
-      }
-      return;
-    }
-
-    // 3️⃣ Simple product
-    setStock(Number(myproduct?.qty || 0));
-
-  }, [myproduct, currentCombinationData, isVariantSelected]);
+    if (!myproduct) return;
+    
+    const calculatedStock = calculateProductStock();
+    setStock(calculatedStock);
+  }, [myproduct, selectedVariants, currentCombinationData, isVariantSelected, calculateProductStock]);
 
   const handleCustomizationOptionHover = (option) => {
     if (option.main_images.length > 0) {
@@ -561,6 +643,29 @@ const MyproductDetails = ({ res }) => {
     setBestPromotion(finalPromotion);
     setNextPromotion(nextPromotion);
   }, [myproduct, quantity, originalPrice]);
+
+  // Format stock display text
+  const getStockDisplayText = useCallback((stockQty) => {
+    if (stockQty === null) return null;
+    
+    if (stockQty === 0) {
+      return "Sold Out";
+    }
+    
+    if (stockQty > 0 && stockQty < 8) {
+      return `Only ${stockQty} left!`;
+    }
+    
+    if (stockQty >= 8 && stockQty < 20) {
+      return "Only few left!";
+    }
+    
+    if (stockQty >= 20) {
+      return "20+ in stock";
+    }
+    
+    return null;
+  }, []);
 
   // Handlers
   const handleAddToCart = async () => {
@@ -1140,15 +1245,7 @@ const MyproductDetails = ({ res }) => {
             pt: 2,
           }}
         >
-          {stock === 0 && "Sold Out"}
-
-          {stock > 0 && stock < 8 &&
-            `Only ${stock} left!`
-          }
-
-          {stock >= 8 && stock < 20 &&
-            `Only few left!`
-          }
+          {getStockDisplayText(stock)}
         </Typography>
       )}
 

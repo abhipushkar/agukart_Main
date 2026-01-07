@@ -248,12 +248,20 @@ const VariantSelector = ({
 
             const { price, priceRange, quantity, quantityRange, isSoldOut, isIndependent } = attributeData;
 
-            if (isSoldOut || (quantity !== null && quantity === 0)) {
+            // Only show sold out if attribute is actually sold out
+            if (isSoldOut) {
                 return " [Sold Out]";
+            }
+
+            // Don't show quantity === 0 as sold out here - let the isSoldOut flag handle it
+            if (quantity !== null && quantity === 0 && !isSoldOut) {
+                // Don't show anything for zero quantity if not sold out
+                // (this allows other combinations to have stock)
             }
 
             let priceText = '';
 
+            // Only show price if attribute has price data
             if (isIndependent) {
                 if (price !== null && !isNaN(price)) {
                     priceText = ` (${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
@@ -272,14 +280,19 @@ const VariantSelector = ({
                 }
             }
 
-            let quantityText = '';
-            if (quantity !== null && quantity !== undefined) {
-                quantityText = ` [${quantity} in stock]`;
-            } else if (quantityRange) {
-                quantityText = ` [${quantityRange.min}-${quantityRange.max} in stock]`;
-            }
+            // let quantityText = '';
+            // Only show quantity if it's not zero or if it's a range
+            // if (quantity !== null && quantity !== undefined && quantity > 0) {
+            //     quantityText = ` [${quantity} in stock]`;
+            // } else if (quantityRange && quantityRange.max > 0) {
+            //     if (quantityRange.min === quantityRange.max) {
+            //         quantityText = ` [${quantityRange.min} in stock]`;
+            //     } else {
+            //         quantityText = ` [${quantityRange.min}-${quantityRange.max} in stock]`;
+            //     }
+            // }
 
-            return priceText + quantityText;
+            return priceText;
         }
 
         return null;
@@ -304,14 +317,18 @@ const VariantSelector = ({
                 }
             }
 
+            // Only disable if specifically marked as sold out
             if (attributeData.isSoldOut) {
                 return true;
             }
 
-            if (attributeData.quantity === 0) {
-                return true;
+            // Don't disable just because quantity is 0
+            // Let the combination logic determine sold out status
+            if (attributeData.quantity === 0 && !attributeData.isSoldOut) {
+                return false;
             }
 
+            // Use the improved combination sold out logic
             if (isAttributeCombinationSoldOut && selectedVariants) {
                 return isAttributeCombinationSoldOut(attribute.id, selectedVariants);
             }
@@ -319,6 +336,7 @@ const VariantSelector = ({
             return false;
         }
 
+        // For parent variants, use existing logic
         if (isAttributeCombinationSoldOut && selectedVariants) {
             const isSoldOut = isAttributeCombinationSoldOut(attribute.id, selectedVariants);
             if (isSoldOut) {
@@ -614,6 +632,7 @@ const VariantSelector = ({
 
         const { price, priceRange, isIndependent } = attributeData;
 
+        // Only show price if it exists
         if (price !== null && !isNaN(price)) {
             return `(${currency?.symbol}${(price * currency?.rate).toFixed(2)})`;
         } else if (priceRange) {
@@ -691,6 +710,36 @@ const VariantSelector = ({
                             const previewImage = getPreviewImage(attr);
                             const priceText = renderAttributePriceForDropdown(attr);
 
+                            // Get quantity info for display
+                            let quantityInfo = '';
+                            let attributeData = {};
+                            
+                            if (calculateAttributeData && selectedVariants) {
+                                attributeData = calculateAttributeData(attr.id, selectedVariants);
+                            } else {
+                                const variantAttr = filterVariantAttributes.find(fAttr =>
+                                    fAttr._id === attr.id || fAttr.attribute_value === attr.value
+                                );
+                                if (variantAttr) {
+                                    attributeData = {
+                                        quantity: variantAttr.quantity,
+                                        quantityRange: variantAttr.quantityRange,
+                                        isSoldOut: variantAttr.isSoldOut
+                                    };
+                                }
+                            }
+
+                            // Only show quantity if it's positive
+                            // if (attributeData.quantity !== null && attributeData.quantity > 0) {
+                            //     quantityInfo = ` [${attributeData.quantity} in stock]`;
+                            // } else if (attributeData.quantityRange && attributeData.quantityRange.max > 0) {
+                            //     if (attributeData.quantityRange.min === attributeData.quantityRange.max) {
+                            //         quantityInfo = ` [${attributeData.quantityRange.min} in stock]`;
+                            //     } else {
+                            //         quantityInfo = ` [${attributeData.quantityRange.min}-${attributeData.quantityRange.max} in stock]`;
+                            //     }
+                            // }
+
                             return (
                                 <MenuItem
                                     key={attr.id}
@@ -753,7 +802,8 @@ const VariantSelector = ({
                                                 <div style={{
                                                     flex: 1,
                                                     display: 'flex',
-                                                    gap: "8px"
+                                                    flexDirection: 'column',
+                                                    gap: "2px"
                                                 }}>
                                                     <span style={{
                                                         color: isDisabled ? '#999' : 'inherit',
@@ -764,15 +814,32 @@ const VariantSelector = ({
                                                     }}>
                                                         {attr.value}
                                                     </span>
-                                                    {priceText && (
-                                                        <span style={{
-                                                            fontSize: '12px',
-                                                            color: isDisabled ? '#999' : '#666',
-                                                            marginTop: '2px'
-                                                        }}>
-                                                            {priceText}
-                                                        </span>
-                                                    )}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        gap: '8px',
+                                                        alignItems: 'center'
+                                                    }}>
+                                                        {priceText && (
+                                                            <span style={{
+                                                                fontSize: '12px',
+                                                                color: isDisabled ? '#999' : '#666',
+                                                            }}>
+                                                                {priceText}
+                                                            </span>
+                                                        )}
+                                                        {quantityInfo && !isDisabled && (
+                                                            <span style={{
+                                                                fontSize: '11px',
+                                                                color: '#2e7d32',
+                                                                backgroundColor: '#e8f5e9',
+                                                                padding: '1px 6px',
+                                                                borderRadius: '3px',
+                                                                fontWeight: '500'
+                                                            }}>
+                                                                {quantityInfo}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div style={{
