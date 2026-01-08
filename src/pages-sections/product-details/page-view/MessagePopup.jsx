@@ -4,7 +4,6 @@ import {
   Button,
   Dialog,
   DialogContent,
-  Link,
   List,
   ListItem,
   TextField,
@@ -29,40 +28,47 @@ import {
 } from "firebase/firestore";
 import { db, storage } from "../../../../src/firebase/Firebase";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
-import useChat from "hooks/useChat";
 import { useCurrency } from "contexts/CurrencyContext";
+import { useRouter } from "next/navigation";
 
 const MessagePopup = ({
-  handleClickPopup,
-  vendorName,
-  shopName,
   handleClosePopup,
   openPopup,
-  SetOpenPopup,
+  vendorName,
+  shopName,
   productID,
   productTitle,
   originalPrice,
   productImage,
   receiverid,
   vendorImage,
-  shopImage
+  shopImage,
 }) => {
   const { currency } = useCurrency();
   const { usercredentials } = useMyProvider();
+  const router = useRouter();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [imagePreviews, setImagePreviews] = useState([]);
-  console.log({ imagePreviews });
   const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef(null);
   const receiverId = receiverid;
   const senderId = usercredentials?._id;
 
   const detectLink = (text) => {
+    if (!text) return text;
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, index) =>
       urlRegex.test(part) ? (
-        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "blue", textDecoration: "underline" }}
+        >
           {part}
         </a>
       ) : (
@@ -72,50 +78,79 @@ const MessagePopup = ({
   };
 
   useEffect(() => {
+    if (!receiverId || !senderId) {
+      setError("Please login to view messages");
+      return;
+    }
+
     const q = query(collection(db, "chatRooms"), orderBy("createdAt", "asc"));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newMessages = snapshot?.docs?.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        try {
+          const newMessages = snapshot?.docs?.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
 
-      const matchingDocument = newMessages?.filter((doc) => {
-        return (
-          doc?.receiverId === receiverId &&
-          doc?.user === senderId &&
-          doc?.productId === null &&
-          doc?.orderId === null
-        );
-      });
-      console.log("newMessagesnewMessages", matchingDocument);
+          const matchingDocument = newMessages?.filter((doc) => {
+            return (
+              doc?.receiverId === receiverId &&
+              doc?.user === senderId &&
+              doc?.productId === null &&
+              doc?.orderId === null
+            );
+          });
 
-      if (matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id) {
-        setMessages([]);
-        return;
+          if (
+            matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id
+          ) {
+            setMessages([]);
+            return;
+          }
+
+          if (matchingDocument.length > 0) {
+            const filterArr = matchingDocument[0]?.text?.filter((msg) => {
+              return msg.permanentDeleteUser !== senderId;
+            });
+            setMessages(filterArr || []);
+            setError("");
+          } else {
+            setMessages([]);
+          }
+        } catch (err) {
+          console.error("Error fetching messages:", err);
+          if (err.code === "permission-denied") {
+            setError(
+              "Firebase permissions error. Please check Firebase rules."
+            );
+          }
+        }
+      },
+      (error) => {
+        console.error("Firebase listener error:", error);
+        if (error.code === "permission-denied") {
+          setError(
+            "Permission denied. Please update Firebase Firestore rules."
+          );
+        }
       }
-      matchingDocument.forEach((data) => {
-        // console.log("qwwwwwsssssswwwwwwwdata", data);
-
-        const filterArr = data?.text?.filter((msg) => {
-          return msg.permanentDeleteUser !== senderId;
-        });
-
-        console.log(filterArr, "qwwwwwsssssswwwwwwwdata");
-
-        setMessages(filterArr);
-        // setUserIdData(data?.user);
-      });
-    });
+    );
 
     return () => unsubscribe();
-  }, [senderId, receiverId, productID]);
+  }, [senderId, receiverId, productID, usercredentials?._id]);
 
   const uploadImagesToFirebase = async () => {
-    const uploadPromises = files.map(async (file) => {
-      const storageRef = ref(storage, `chatImages/${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+    if (!usercredentials?._id) {
+      throw new Error("User not authenticated");
+    }
 
+    const uploadPromises = files.map(async (file) => {
+      const timestamp = Date.now();
+      const uniqueFileName = `${timestamp}_${file.name.replace(/\s+/g, "_")}`;
+      const storageRef = ref(storage, `chatImages/${uniqueFileName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
       await uploadTask;
       return getDownloadURL(uploadTask.snapshot.ref);
     });
@@ -124,105 +159,149 @@ const MessagePopup = ({
   };
 
   const sendMessage = async () => {
+    if (!usercredentials?._id) {
+      alert("Please login to send messages");
+      router.push("/login");
+      return;
+    }
+
+    if (!receiverId || !senderId) {
+      setError("Invalid receiver or sender ID");
+      return;
+    }
+
+    if (loading) return;
+
+    setLoading(true);
+    setError("");
+
     let imageUrls = [];
-    let productLink = `${process.env.NEXT_PUBLIC_WEB_URL}/products/${productID}`;
+    const productLink = `${process.env.NEXT_PUBLIC_WEB_URL}/products/${productID}`;
+
     if (input.trim() || files.length > 0) {
-      const querySnapshot = await getDocs(collection(db, "chatRooms"));
-      const documents = querySnapshot.docs.map((doc) => {
-        const docId = doc.id;
-        const docData = doc.data();
-        return {
-          id: docId,
-          data: docData,
-        };
-      });
+      try {
+        // Upload image if there is a file selected
+        if (files.length > 0) {
+          try {
+            imageUrls = await uploadImagesToFirebase();
+            handleClearPreview();
+          } catch (uploadError) {
+            console.error("Error uploading images:", uploadError);
+            setError("Failed to upload images. Please try again.");
+            setLoading(false);
+            return;
+          }
+        }
 
-      console.log("All documents: ", documents);
+        const querySnapshot = await getDocs(collection(db, "chatRooms"));
+        const documents = querySnapshot.docs.map((doc) => {
+          const docId = doc.id;
+          const docData = doc.data();
+          return {
+            id: docId,
+            data: docData,
+          };
+        });
 
-      const matchingDocument = documents?.find((doc) => {
-        return (
-          doc.data.receiverId === receiverId &&
-          doc.data.user === senderId &&
-          doc.data.productId == null &&
-          doc.data.orderId == null
-        );
-      });
-      // Upload image if there is a file selected
-      if (files.length > 0) {
-        imageUrls = await uploadImagesToFirebase();
-        handleClearPreview(); // Clear preview and file after upload
-      }
-      if (matchingDocument) {
-        console.log("Matching document:", matchingDocument);
+        const matchingDocument = documents?.find((doc) => {
+          return (
+            doc.data.receiverId === receiverId &&
+            doc.data.user === senderId &&
+            doc.data.productId == null &&
+            doc.data.orderId == null
+          );
+        });
 
-        if (matchingDocument.data.permanentDeleteUser1 === senderId) {
+        if (matchingDocument) {
+          if (matchingDocument.data.permanentDeleteUser1 === senderId) {
+            await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
+              permanentDeleteUser1: "",
+              isTempDelete1: "",
+            });
+          }
+
+          const existingText = matchingDocument.data.text || [];
+          let newText = {
+            senderType: "user",
+            createdAt: new Date(),
+            messageSenderId: senderId,
+            isNotification: false,
+            text: input,
+            imageUrls: imageUrls,
+            productId: productID,
+          };
+
+          const lastText =
+            existingText.length > 0
+              ? existingText[existingText.length - 1]
+              : null;
+          if (lastText?.productId !== productID) {
+            newText.productLink = productLink;
+            newText.productData = {
+              productTitle: productTitle,
+              price: originalPrice,
+              imageUrl: productImage,
+            };
+          }
+
+          const updatedText = [...existingText, newText];
           await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-            permanentDeleteUser1: "",
-            isTempDelete1: "",
+            text: updatedText,
+            currentTime: new Date(),
+          });
+        } else {
+          await addDoc(collection(db, "chatRooms"), {
+            text: [
+              {
+                senderType: "user",
+                text: input,
+                createdAt: new Date(),
+                messageSenderId: senderId,
+                isNotification: false,
+                imageUrls: imageUrls,
+                productId: productID,
+                productLink: productLink,
+                productData: {
+                  productTitle: productTitle,
+                  price: originalPrice,
+                  imageUrl: productImage,
+                },
+              },
+            ],
+            createdAt: new Date(),
+            user: senderId,
+            receiverId: receiverId,
+            isDeleted: false,
+            currentTime: new Date(),
+            userName: usercredentials?.name,
+            vendorName: vendorName,
+            shopName: shopName,
+            productId: null,
+            orderId: null,
           });
         }
-        const existingText = matchingDocument.data.text || [];
-        let newText = {
-          senderType: "user",
-          createdAt: new Date(),
-          messageSenderId: senderId,
-          isNotification: false,
-          text: input,
-          imageUrls: imageUrls,
-          productId: productID,
-        };
-        const lastText =
-          existingText.length > 0
-            ? existingText[existingText.length - 1]
-            : null;
-        if (lastText?.productId != productID) {
-          newText.productLink = productLink;
-          newText.productData = {
-            productTitle: productTitle,
-            price: originalPrice,
-            imageUrl: productImage,
-          };
+        setInput("");
+      } catch (error) {
+        console.error("Error sending message:", error);
+        if (error.code === "permission-denied") {
+          setError(
+            "Firebase Permission Denied. Please update Firebase rules to allow read/write for authenticated users."
+          );
+          alert(
+            "Firebase permission error. Please contact administrator to update Firebase rules."
+          );
+        } else if (error.code === "unavailable") {
+          setError(
+            "Firebase service unavailable. Please check your internet connection."
+          );
+        } else {
+          setError(`Error: ${error.message}`);
         }
-        const updatedText = [...existingText, newText];
-        await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-          text: updatedText,
-          currentTime: new Date(),
-        });
-
-        console.log("Updated document with new message array.");
-      } else {
-        console.log("No matching document found.");
-        await addDoc(collection(db, "chatRooms"), {
-          text: [
-            {
-              senderType: "user",
-              text: input,
-              createdAt: new Date(),
-              messageSenderId: senderId,
-              isNotification: false,
-              imageUrls: imageUrls,
-              productId: productID,
-              productLink: productLink,
-              productData: {
-                productTitle: productTitle,
-                price: originalPrice,
-                imageUrl: productImage,
-              },
-            },
-          ],
-          createdAt: new Date(),
-          user: senderId,
-          receiverId: receiverId,
-          isDeleted: false,
-          currentTime: new Date(),
-          userName: usercredentials?.name,
-          vendorName: vendorName,
-          shopName: shopName,
-          productId: null,
-          orderId: null,
-        });
+      } finally {
+        setLoading(false);
       }
-      setInput("");
+    } else {
+      setLoading(false);
     }
   };
 
@@ -241,17 +320,65 @@ const MessagePopup = ({
   const handleClearPreview = () => {
     setImagePreviews([]);
     setFiles([]);
-    fileInputRef.current.value = "";
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const formatDate = (timestamp) => {
-    const date = new Date(timestamp?.seconds * 1000);
+    if (!timestamp?.seconds) return "";
+    const date = new Date(timestamp.seconds * 1000);
     return date?.toLocaleDateString();
+  };
+
+  // Display error message if there's a Firebase permission issue
+  const renderErrorMessage = () => {
+    if (!error) return null;
+
+    return (
+      <Box
+        sx={{
+          p: 2,
+          backgroundColor: "#fff3cd",
+          border: "1px solid #ffeaa7",
+          borderRadius: "4px",
+          m: 2,
+        }}
+      >
+        <Typography sx={{ color: "#856404", fontSize: "14px" }}>
+          ⚠️ {error}
+        </Typography>
+        <Typography sx={{ color: "#856404", fontSize: "12px", mt: 1 }}>
+          To fix this, go to Firebase Console → Firestore Database → Rules and
+          update with:
+        </Typography>
+        <pre
+          style={{
+            backgroundColor: "#f8f9fa",
+            padding: "10px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            overflowX: "auto",
+            marginTop: "8px",
+          }}
+        >
+          {`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /chatRooms/{documentId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}`}
+        </pre>
+      </Box>
+    );
   };
 
   return (
     <Dialog
       open={openPopup}
+      onClose={handleClosePopup}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
       sx={{
@@ -324,6 +451,9 @@ const MessagePopup = ({
               </Typography>
             </Box>
           </Typography>
+
+          {renderErrorMessage()}
+
           <Typography
             p={3}
             component="div"
@@ -337,9 +467,15 @@ const MessagePopup = ({
             }}
           >
             <List>
-              {messages?.map((msg, index) => {
-                console.log("sdfsgdhjdfjh", msg);
+              {messages?.length === 0 && !error && (
+                <ListItem sx={{ justifyContent: "center", py: 4 }}>
+                  <Typography sx={{ color: "#666", fontStyle: "italic" }}>
+                    No messages yet. Start a conversation!
+                  </Typography>
+                </ListItem>
+              )}
 
+              {messages?.map((msg, index) => {
                 const currentMessageDate = formatDate(msg?.createdAt);
                 const prevMessageDate =
                   index > 0
@@ -350,7 +486,7 @@ const MessagePopup = ({
 
                 return (
                   <ListItem
-                    key={msg?.id}
+                    key={index}
                     sx={{
                       margin: "24px 0",
                       padding: "0",
@@ -440,32 +576,58 @@ const MessagePopup = ({
                                     ? "#e9e9e9"
                                     : "#fff",
                                 boxShadow: "0 0 3px #000",
-                                border: "1px solid #ccc", // Light gray border for text
+                                border: "1px solid #ccc",
                                 borderRadius: "6px",
                                 maxWidth: "340px",
                                 minWidth: "75px",
                                 textAlign: "initial",
-                                mt: 1, // Spacing between images and text
+                                mt: 1,
                               }}
                             >
                               <Typography
                                 sx={{
                                   wordWrap: "break-word",
-                                  whiteSpace: "pre-line"
+                                  whiteSpace: "pre-line",
                                 }}
                               >
                                 {detectLink(msg.text || "")}
                               </Typography>
                               {msg.productLink && (
-                                <Typography sx={{ wordWrap: "break-word", marginTop: "15px" }}>
-                                  <a href={msg.productLink} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
+                                <Typography
+                                  sx={{
+                                    wordWrap: "break-word",
+                                    marginTop: "15px",
+                                  }}
+                                >
+                                  <a
+                                    href={msg.productLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      color: "blue",
+                                      textDecoration: "underline",
+                                    }}
+                                  >
                                     {msg.productLink}
                                   </a>
                                 </Typography>
                               )}
                               {msg.shopLink && (
-                                <Typography sx={{ wordWrap: "break-word", marginTop: "15px" }}>
-                                  <a href={msg.shopLink} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
+                                <Typography
+                                  sx={{
+                                    wordWrap: "break-word",
+                                    marginTop: "15px",
+                                  }}
+                                >
+                                  <a
+                                    href={msg.shopLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      color: "blue",
+                                      textDecoration: "underline",
+                                    }}
+                                  >
                                     {msg.shopLink}
                                   </a>
                                 </Typography>
@@ -474,16 +636,12 @@ const MessagePopup = ({
                           )}
                         </div>
                         <div>
-                          <Typography
-                            fontSize={11}
-                            color={"gray"}
-                            // textAlign={"center"}
-                            pb={1}
-                          >
-                            {new Date(
-                              msg?.createdAt?.seconds * 1000
-                            ).toLocaleTimeString()}{" "}
-                            {/* Format time */}
+                          <Typography fontSize={11} color={"gray"} pb={1}>
+                            {msg?.createdAt?.seconds
+                              ? new Date(
+                                  msg.createdAt.seconds * 1000
+                                ).toLocaleTimeString()
+                              : ""}
                           </Typography>
                         </div>
                         {Object.keys(msg?.productData || {}).length > 0 && (
@@ -535,7 +693,8 @@ const MessagePopup = ({
                                 >
                                   {currency?.symbol}
                                   {(
-                                    currency?.rate * msg?.productData?.price
+                                    currency?.rate *
+                                    (msg?.productData?.price || 0)
                                   ).toFixed(2)}
                                 </Typography>
                               </Box>
@@ -552,10 +711,9 @@ const MessagePopup = ({
                                     "&:hover": { background: "black" },
                                   }}
                                   onClick={() => {
-                                    const url = `${msg.productLink}`
+                                    const url = `${msg.productLink}`;
                                     window.open(url, "_blank");
-                                  }
-                                  }
+                                  }}
                                 >
                                   Buy It Now
                                 </Button>
@@ -589,7 +747,7 @@ const MessagePopup = ({
                                 flexDirection: "column",
                                 textAlign: "left",
                                 marginBottom: "53px",
-                                gap: "7px"
+                                gap: "7px",
                               }}
                             >
                               <Box
@@ -623,10 +781,9 @@ const MessagePopup = ({
                                     "&:hover": { background: "black" },
                                   }}
                                   onClick={() => {
-                                    const url = `${msg.shopLink}`
+                                    const url = `${msg.shopLink}`;
                                     window.open(url, "_blank");
-                                  }
-                                  }
+                                  }}
                                 >
                                   Visit Now
                                 </Button>
@@ -717,7 +874,7 @@ const MessagePopup = ({
                 </svg>
               </Typography>
               <Typography fontSize={14} color={"#000"}>
-                Have a question? Just message us — we’re here to help!
+                Have a question? Just message us — we're here to help!
               </Typography>
             </Typography>
             <Box mt={2} sx={{ position: "relative" }}>
@@ -748,11 +905,19 @@ const MessagePopup = ({
                           position: "absolute",
                           top: "0",
                           left: "0",
-                          fontSize: "11px",
+                          minWidth: "20px",
+                          width: "20px",
+                          height: "20px",
+                          fontSize: "10px",
                           color: "white",
+                          backgroundColor: "rgba(0,0,0,0.5)",
+                          padding: 0,
+                          "&:hover": {
+                            backgroundColor: "rgba(0,0,0,0.7)",
+                          },
                         }}
                       >
-                        X
+                        ×
                       </Button>
                     </Box>
                   ))}
@@ -768,9 +933,13 @@ const MessagePopup = ({
                   maxRows={10}
                   variant="outlined"
                   fullWidth
+                  disabled={loading}
                   sx={{
                     ".MuiOutlinedInput-notchedOutline": {
                       border: "1px solid gray !important",
+                    },
+                    "& .MuiInputBase-input.Mui-disabled": {
+                      WebkitTextFillColor: "#000",
                     },
                   }}
                 />
@@ -781,10 +950,12 @@ const MessagePopup = ({
                   onChange={handleFileChange}
                   accept="image/*"
                   multiple
+                  disabled={loading}
                 />
                 <Tooltip title="Upload image" arrow placement="left">
                   <Button
                     onClick={() => fileInputRef.current.click()}
+                    disabled={loading}
                     sx={{
                       position: "absolute",
                       top: "10px",
@@ -798,11 +969,12 @@ const MessagePopup = ({
                       background: "#ffff",
                       transition: "all 500ms",
                       "&:hover": { boxShadow: "0 0 3px #000" },
+                      "&.Mui-disabled": {
+                        opacity: 0.5,
+                      },
                     }}
                   >
-                    <label htmlFor="upload-file">
-                      <WallpaperIcon />
-                    </label>
+                    <WallpaperIcon />
                   </Button>
                 </Tooltip>
                 <Typography
@@ -811,28 +983,51 @@ const MessagePopup = ({
                 >
                   <Button
                     onClick={sendMessage}
+                    disabled={loading || !input.trim()}
                     sx={{
                       background: "none !important",
                       color: "#fff",
                       border: "none",
+                      "&.Mui-disabled": {
+                        opacity: 0.5,
+                      },
                     }}
                   >
                     <ArrowCircleUpIcon
-                      sx={{ color: "#000", fontSize: "30px" }}
+                      sx={{
+                        color: loading ? "#ccc" : "#000",
+                        fontSize: "30px",
+                      }}
                     />
                   </Button>
                 </Typography>
               </Typography>
+              {loading && (
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    color: "#666",
+                    textAlign: "center",
+                    mt: 1,
+                  }}
+                >
+                  Sending message...
+                </Typography>
+              )}
             </Box>
           </Box>
         </Box>
       </DialogContent>
       <Button
         onClick={handleClosePopup}
+        disabled={loading}
         sx={{
           position: "absolute",
           top: { lg: "30px", md: "30px", xs: "10px" },
           right: { lg: "30px", md: "30px", xs: "10px" },
+          "&.Mui-disabled": {
+            opacity: 0.5,
+          },
         }}
       >
         <CloseIcon />

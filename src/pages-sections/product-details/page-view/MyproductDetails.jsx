@@ -70,7 +70,8 @@ const MyproductDetails = ({ res }) => {
   const [plusToggle, setPlusToggle] = useState(false);
   const [openPopup, setOpenPopup] = useState(false);
   const [openModal, setOpenModal] = useState(false);
-  const [hoveredCustomizationImage, setHoveredCustomizationImage] = useState(null);
+  const [hoveredCustomizationImage, setHoveredCustomizationImage] =
+    useState(null);
   const pathname = useParams();
 
   // Custom Hooks
@@ -102,7 +103,6 @@ const MyproductDetails = ({ res }) => {
     validateCustomization,
     checkInputMinValue,
   } = useProductCustomization(myproduct);
-
 
   const viewProduct = async () => {
     try {
@@ -141,9 +141,9 @@ const MyproductDetails = ({ res }) => {
         if (res.data.image && Array.isArray(res.data.image)) {
           res.data.image.forEach((img) => {
             productMedia.push({
-              type: 'image',
+              type: "image",
               url: img,
-              isVideo: false
+              isVideo: false,
             });
           });
         }
@@ -152,9 +152,9 @@ const MyproductDetails = ({ res }) => {
         if (res.data.videos && Array.isArray(res.data.videos)) {
           res.data.videos.forEach((video) => {
             productMedia.push({
-              type: 'video',
+              type: "video",
               url: video,
-              isVideo: true
+              isVideo: true,
             });
           });
         }
@@ -173,48 +173,65 @@ const MyproductDetails = ({ res }) => {
     }
   };
 
-
   const isVariantSelected = useMemo(() => {
     if (!myproduct?.isCombination) return true;
-    return Object.keys(selectedVariants || {}).filter((key) => normalizeVariantData().some((variant) => variant.id === key && variant.type === "internal")).length > 0;
+    return (
+      Object.keys(selectedVariants || {}).filter((key) =>
+        normalizeVariantData().some(
+          (variant) => variant.id === key && variant.type === "internal"
+        )
+      ).length > 0
+    );
   }, [myproduct, selectedVariants]);
 
   // Helper function to parse controlling variants from form_values
-  const getControllingVariants = useCallback((field) => {
-    if (!myproduct?.form_values?.[field]) return [];
-    
-    const value = myproduct.form_values[field];
-    if (!value || typeof value !== 'string') return [];
-    
-    // Split by " and " to get variant names
-    return value.split(' and ').filter(name => name.trim() !== '');
-  }, [myproduct]);
+  const getControllingVariants = useCallback(
+    (field) => {
+      if (!myproduct?.form_values?.[field]) return [];
+
+      const value = myproduct.form_values[field];
+      if (!value || typeof value !== "string") return [];
+
+      // Split by " and " to get variant names
+      return value.split(" and ").filter((name) => name.trim() !== "");
+    },
+    [myproduct]
+  );
 
   // Check if combination logic should be applied for quantity
   const shouldUseCombinationQuantity = useMemo(() => {
-    return myproduct?.form_values?.isCheckedQuantity === true && 
-           (myproduct?.qty === 0 || myproduct?.qty === "0");
+    return (
+      myproduct?.form_values?.isCheckedQuantity === true &&
+      (myproduct?.qty === 0 || myproduct?.qty === "0")
+    );
   }, [myproduct]);
 
   // Get quantity controlling variants
   const quantityControllingVariants = useMemo(() => {
-    return getControllingVariants('quantities');
+    return getControllingVariants("quantities");
   }, [getControllingVariants]);
 
   // Calculate product stock based on combination rules
   const calculateProductStock = useCallback(() => {
-    // 1️⃣ Simple product or combination not controlling quantity
-    if (!myproduct?.isCombination || !shouldUseCombinationQuantity) {
+    // 1️⃣ Simple product
+    if (!myproduct?.isCombination) {
       return Number(myproduct?.qty || 0);
     }
 
-    // 2️⃣ No variant selected → no stock shown
-    if (!isVariantSelected) {
-      return null;
+    // 3️⃣ Check if combination logic should be applied for quantity
+    if (!shouldUseCombinationQuantity) {
+      return Number(myproduct?.qty || 0);
     }
 
-    // 3️⃣ Get controlling variant selections
+    // 2️⃣ No variant selected → show minimum non-zero quantity from ALL combinations
+    if (!isVariantSelected) {
+      return findMinimumNonZeroQuantityFromAllCombinations();
+    }
+
+    // 4️⃣ Get controlling variant selections from form_values
+    const quantityControllingVariants = getControllingVariants("quantities");
     const controllingSelections = {};
+
     Object.entries(selectedVariants || {}).forEach(([variantName, attrId]) => {
       if (quantityControllingVariants.includes(variantName)) {
         controllingSelections[variantName] = attrId;
@@ -222,83 +239,130 @@ const MyproductDetails = ({ res }) => {
     });
 
     const controllingIds = Object.values(controllingSelections);
-    
-    // 4️⃣ No controlling variants selected → use product qty
+
+    // 5️⃣ No controlling variants selected → use min from all
     if (controllingIds.length === 0) {
-      return Number(myproduct?.qty || 0);
+      return findMinimumNonZeroQuantityFromAllCombinations();
     }
 
-    // 5️⃣ Check current combination data first
+    // 6️⃣ Check current combination data
     if (currentCombinationData?.quantity !== null) {
-      const qty = currentCombinationData.quantity;
-      // If quantity is 0, check if there are other combos with stock
-      if (qty === 0 && myproduct?.combinationData) {
-        return findMinimumNonZeroQuantity(controllingIds);
-      }
-      return qty;
+      return currentCombinationData.quantity;
     }
 
-    // 6️⃣ Find minimum non-zero quantity from all matching combinations
+    // 7️⃣ Find minimum non-zero quantity from matching combinations
     return findMinimumNonZeroQuantity(controllingIds);
-  }, [myproduct, selectedVariants, currentCombinationData, isVariantSelected, shouldUseCombinationQuantity, quantityControllingVariants]);
+  }, [
+    myproduct,
+    selectedVariants,
+    currentCombinationData,
+    isVariantSelected,
+    shouldUseCombinationQuantity,
+    getControllingVariants,
+  ]);
 
-  // Helper function to find minimum non-zero quantity from combinations
-  const findMinimumNonZeroQuantity = useCallback((controllingIds) => {
-    if (!myproduct?.combinationData || controllingIds.length === 0) {
-      return 0;
+  // Helper function to find minimum non-zero quantity from ALL combinations
+  const findMinimumNonZeroQuantityFromAllCombinations = useCallback(() => {
+    if (!myproduct?.combinationData) {
+      return null; // Return null when no variant selected and no combination data
     }
 
     let minQuantity = Infinity;
-    let foundAny = false;
 
-    // Search through all combination data
     myproduct.combinationData?.forEach((comboGroup) => {
       if (comboGroup.combinations && Array.isArray(comboGroup.combinations)) {
-        comboGroup.combinations.forEach(combo => {
-          // Skip if qty is empty string
-          if (combo.qty === "" || combo.qty === null || combo.qty === undefined) {
+        comboGroup.combinations.forEach((combo) => {
+          // Skip if qty is empty string or null
+          if (
+            combo.qty === "" ||
+            combo.qty === null ||
+            combo.qty === undefined
+          ) {
             return;
           }
 
           const qty = parseInt(combo.qty, 10);
-          if (isNaN(qty)) return;
+          if (isNaN(qty) || qty <= 0) return;
 
-          // Check if this combination matches the controlling selections
-          // This is simplified - actual matching logic depends on your data structure
-          // For now, we'll use the currentCombinationData logic
-          foundAny = true;
-          
-          if (qty > 0) {
-            minQuantity = Math.min(minQuantity, qty);
-          }
+          minQuantity = Math.min(minQuantity, qty);
         });
       }
     });
 
-    if (minQuantity !== Infinity && minQuantity > 0) {
-      return minQuantity;
-    } else if (foundAny) {
-      return 0;
-    }
-
-    return 0;
+    // Return null if no positive quantity found (instead of 0)
+    return minQuantity !== Infinity ? minQuantity : null;
   }, [myproduct]);
+
+  // Helper function to find minimum non-zero quantity from combinations
+  const findMinimumNonZeroQuantity = useCallback(
+    (controllingIds) => {
+      if (!myproduct?.combinationData || controllingIds.length === 0) {
+        return 0;
+      }
+
+      let minQuantity = Infinity;
+      let foundAny = false;
+
+      // Search through all combination data
+      myproduct.combinationData?.forEach((comboGroup) => {
+        if (comboGroup.combinations && Array.isArray(comboGroup.combinations)) {
+          comboGroup.combinations.forEach((combo) => {
+            // Skip if qty is empty string
+            if (
+              combo.qty === "" ||
+              combo.qty === null ||
+              combo.qty === undefined
+            ) {
+              return;
+            }
+
+            const qty = parseInt(combo.qty, 10);
+            if (isNaN(qty)) return;
+
+            // Check if this combination matches the controlling selections
+            // This is simplified - actual matching logic depends on your data structure
+            // For now, we'll use the currentCombinationData logic
+            foundAny = true;
+
+            if (qty > 0) {
+              minQuantity = Math.min(minQuantity, qty);
+            }
+          });
+        }
+      });
+
+      if (minQuantity !== Infinity && minQuantity > 0) {
+        return minQuantity;
+      } else if (foundAny) {
+        return 0;
+      }
+
+      return 0;
+    },
+    [myproduct]
+  );
 
   // Update stock when dependencies change
   useEffect(() => {
     if (!myproduct) return;
-    
+
     const calculatedStock = calculateProductStock();
     setStock(calculatedStock);
-  }, [myproduct, selectedVariants, currentCombinationData, isVariantSelected, calculateProductStock]);
+  }, [
+    myproduct,
+    selectedVariants,
+    currentCombinationData,
+    isVariantSelected,
+    calculateProductStock,
+  ]);
 
   const handleCustomizationOptionHover = (option) => {
     if (option.main_images.length > 0) {
       setHoveredCustomizationImage({
-        type: 'hover-preview',
+        type: "hover-preview",
         url: option.main_images[0],
-        source: 'customization',
-        optionName: option.optionName
+        source: "customization",
+        optionName: option.optionName,
       });
     }
   };
@@ -321,11 +385,13 @@ const MyproductDetails = ({ res }) => {
         // Check new structure (product_variants)
         if (productData.parent_id.product_variants) {
           for (const variant of productData.parent_id.product_variants) {
-            const attr = variant.variant_attributes.find(attr => attr._id === ids);
+            const attr = variant.variant_attributes.find(
+              (attr) => attr._id === ids
+            );
             if (attr) {
               variantAttr = {
                 ...attr,
-                variant: variant.variant_name // Use variant_name as identifier
+                variant: variant.variant_name, // Use variant_name as identifier
               };
               break;
             }
@@ -342,8 +408,9 @@ const MyproductDetails = ({ res }) => {
         if (variantAttr) {
           // For new structure, use variant_name as identifier
           // For old structure, use variant ID as identifier
-          const variantIdentifier = productData.parent_id.product_variants ?
-            variantAttr.variant : variantAttr.variant;
+          const variantIdentifier = productData.parent_id.product_variants
+            ? variantAttr.variant
+            : variantAttr.variant;
 
           handleVariantChange(variantIdentifier, variantAttr._id);
         }
@@ -449,19 +516,22 @@ const MyproductDetails = ({ res }) => {
   const calculateCombinationPrice = useCallback(() => {
     if (!myproduct?.isCombination) {
       // For non-combination products
-      const finalPrice = myproduct?.sale_price + customizeDropdownPrice + customizeTextPrice;
+      const finalPrice =
+        myproduct?.sale_price + customizeDropdownPrice + customizeTextPrice;
       setPrice(finalPrice);
       setOriginalPrice(finalPrice);
       setPlusToggle(false);
       return;
     }
 
-
-
     // Check if all dependent internal variants are selected
     const normalizedVariants = normalizeVariantData();
-    const internalVariants = normalizedVariants.filter(v => v.type === 'internal');
-    const allInternalSelected = internalVariants.every(v => selectedVariants[v.id]);
+    const internalVariants = normalizedVariants.filter(
+      (v) => v.type === "internal"
+    );
+    const allInternalSelected = internalVariants.every(
+      (v) => selectedVariants[v.id]
+    );
 
     let combinationPrice = null;
     let showPlusSign = false;
@@ -479,17 +549,24 @@ const MyproductDetails = ({ res }) => {
         // 1. There are dependent internal variants
         // 2. Not all are selected
         // 3. There's an actual price range (min ≠ max)
-        showPlusSign = hasDependentInternalVariants &&
+        showPlusSign =
+          hasDependentInternalVariants &&
           !allInternalSelected &&
-          currentCombinationData.priceRange.min !== currentCombinationData.priceRange.max;
+          currentCombinationData.priceRange.min !==
+            currentCombinationData.priceRange.max;
       }
     }
 
     // Get base price from product
-    const basePrice = myproduct?.sale_price || myproduct?.price || myproduct?.regular_price || 0;
+    const basePrice =
+      myproduct?.sale_price ||
+      myproduct?.price ||
+      myproduct?.regular_price ||
+      0;
 
     // Use combination price if available, otherwise use base price
-    let effectivePrice = combinationPrice !== null ? combinationPrice : basePrice;
+    let effectivePrice =
+      combinationPrice !== null ? combinationPrice : basePrice;
 
     // Find minimum price from all combinations if needed
     if (effectivePrice === 0 && myproduct?.combinationData) {
@@ -519,18 +596,24 @@ const MyproductDetails = ({ res }) => {
         // 1. There are dependent internal variants
         // 2. Not all are selected
         // 3. Multiple possible prices exist
-        showPlusSign = hasDependentInternalVariants &&
+        showPlusSign =
+          hasDependentInternalVariants &&
           !allInternalSelected &&
           priceSet.size > 1;
       }
     }
 
     // Add customization prices
-    let finalPrice = effectivePrice + customizeDropdownPrice + customizeTextPrice;
+    let finalPrice =
+      effectivePrice + customizeDropdownPrice + customizeTextPrice;
 
     // Special case: If no internal variants selected but there are dependent ones,
     // ALWAYS show + to indicate price can change
-    if (hasDependentInternalVariants && !allInternalSelected && internalVariants.length > 0) {
+    if (
+      hasDependentInternalVariants &&
+      !allInternalSelected &&
+      internalVariants.length > 0
+    ) {
       const hasAnySelection = Object.keys(selectedVariants || {}).length > 0;
       if (!hasAnySelection) {
         showPlusSign = true;
@@ -541,7 +624,11 @@ const MyproductDetails = ({ res }) => {
     setPlusToggle(showPlusSign);
 
     // Apply promotion if applicable
-    if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion.qty <= quantity) {
+    if (
+      bestPromotion &&
+      Object.keys(bestPromotion).length > 0 &&
+      bestPromotion.qty <= quantity
+    ) {
       const discountedPrice = calculatePriceAfterDiscount(
         bestPromotion?.offer_type,
         +bestPromotion?.discount_amount,
@@ -561,12 +648,17 @@ const MyproductDetails = ({ res }) => {
     bestPromotion,
     customizeDropdownPrice,
     customizeTextPrice,
-    normalizeVariantData
+    normalizeVariantData,
   ]);
 
   const calculateSimpleProductPrice = useCallback(() => {
-    const finalPrice = myproduct?.sale_price + customizeDropdownPrice + customizeTextPrice;
-    if (bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion.qty <= quantity) {
+    const finalPrice =
+      myproduct?.sale_price + customizeDropdownPrice + customizeTextPrice;
+    if (
+      bestPromotion &&
+      Object.keys(bestPromotion).length > 0 &&
+      bestPromotion.qty <= quantity
+    ) {
       setPrice(
         calculatePriceAfterDiscount(
           bestPromotion?.offer_type,
@@ -579,7 +671,13 @@ const MyproductDetails = ({ res }) => {
       setPrice(finalPrice);
       setOriginalPrice(finalPrice);
     }
-  }, [myproduct, bestPromotion, quantity, customizeDropdownPrice, customizeTextPrice]);
+  }, [
+    myproduct,
+    bestPromotion,
+    quantity,
+    customizeDropdownPrice,
+    customizeTextPrice,
+  ]);
 
   // Promotion Calculation
   useEffect(() => {
@@ -590,26 +688,51 @@ const MyproductDetails = ({ res }) => {
 
   const calculatePromotions = useCallback(() => {
     const bestPromotion = myproduct.promotionData.reduce((best, promotion) => {
-      if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty <= quantity) {
-        if (!best || promotion.qty > best.qty || (promotion.qty === best.qty && promotion.discount_amount > best.discount_amount)) {
+      if (
+        promotion.qty !== null &&
+        promotion.qty !== undefined &&
+        promotion.qty <= quantity
+      ) {
+        if (
+          !best ||
+          promotion.qty > best.qty ||
+          (promotion.qty === best.qty &&
+            promotion.discount_amount > best.discount_amount)
+        ) {
           return promotion;
         }
       }
       return best;
     }, null);
 
-    const bestAmountPromotion = myproduct.promotionData.reduce((best, promotion) => {
-      if (promotion.offer_amount !== null && promotion.offer_amount !== undefined && promotion.offer_amount <= originalPrice) {
-        if (!best || promotion.offer_amount > best.offer_amount) {
-          return promotion;
+    const bestAmountPromotion = myproduct.promotionData.reduce(
+      (best, promotion) => {
+        if (
+          promotion.offer_amount !== null &&
+          promotion.offer_amount !== undefined &&
+          promotion.offer_amount <= originalPrice
+        ) {
+          if (!best || promotion.offer_amount > best.offer_amount) {
+            return promotion;
+          }
         }
-      }
-      return best;
-    }, null);
+        return best;
+      },
+      null
+    );
 
     const nextPromotion = myproduct.promotionData.reduce((next, promotion) => {
-      if (promotion.qty !== null && promotion.qty !== undefined && promotion.qty > quantity) {
-        if (!next || promotion.qty < next.qty || (promotion.qty === next.qty && promotion.discount_amount > next.discount_amount)) {
+      if (
+        promotion.qty !== null &&
+        promotion.qty !== undefined &&
+        promotion.qty > quantity
+      ) {
+        if (
+          !next ||
+          promotion.qty < next.qty ||
+          (promotion.qty === next.qty &&
+            promotion.discount_amount > next.discount_amount)
+        ) {
           return promotion;
         }
       }
@@ -630,7 +753,8 @@ const MyproductDetails = ({ res }) => {
       );
       offerAmount = originalPrice - offerAmount;
       offerAmount2 = originalPrice - offerAmount2;
-      finalPromotion = offerAmount > offerAmount2 ? bestPromotion : bestAmountPromotion;
+      finalPromotion =
+        offerAmount > offerAmount2 ? bestPromotion : bestAmountPromotion;
     } else if (bestPromotion) {
       finalPromotion = bestPromotion;
     } else {
@@ -639,7 +763,6 @@ const MyproductDetails = ({ res }) => {
 
     console.log("PROMOTION ", finalPromotion, nextPromotion);
 
-
     setBestPromotion(finalPromotion);
     setNextPromotion(nextPromotion);
   }, [myproduct, quantity, originalPrice]);
@@ -647,23 +770,23 @@ const MyproductDetails = ({ res }) => {
   // Format stock display text
   const getStockDisplayText = useCallback((stockQty) => {
     if (stockQty === null) return null;
-    
+
     if (stockQty === 0) {
       return "Sold Out";
     }
-    
+
     if (stockQty > 0 && stockQty < 8) {
       return `Only ${stockQty} left!`;
     }
-    
+
     if (stockQty >= 8 && stockQty < 20) {
       return "Only few left!";
     }
-    
+
     if (stockQty >= 20) {
       return "20+ in stock";
     }
-    
+
     return null;
   }, []);
 
@@ -728,23 +851,23 @@ const MyproductDetails = ({ res }) => {
       Object.entries(selectedVariants).forEach(([variantName, attributeId]) => {
         // Check if this variant is internal
         const isInternalVariant = myproduct.product_variants.some(
-          pv => pv.variant_name === variantName
+          (pv) => pv.variant_name === variantName
         );
 
         if (isInternalVariant) {
           const attribute = myproduct?.variant_attribute_id?.find(
-            attr => attr._id === attributeId
+            (attr) => attr._id === attributeId
           );
 
           if (attribute) {
             const variant = myproduct?.variant_id?.find(
-              v => v._id === attribute.variant
+              (v) => v._id === attribute.variant
             );
 
             if (variant) {
               variantArray.push({
                 variantName: variant.variant_name,
-                attributeName: attribute.attribute_value
+                attributeName: attribute.attribute_value,
               });
             }
           }
@@ -773,9 +896,11 @@ const MyproductDetails = ({ res }) => {
           isCombination: myproduct?.isCombination,
           combinationData: myproduct?.combinationData,
           variantData: myproduct?.isCombination ? getVariantData() : [],
-          variantAttributeData: myproduct?.isCombination ? getVariantAttributeData() : [],
+          variantAttributeData: myproduct?.isCombination
+            ? getVariantAttributeData()
+            : [],
           variant_attribute_id: Object.values(selectedVariants),
-          variants: variantArray,  // Add internal variants array
+          variants: variantArray, // Add internal variants array
           customize: myproduct?.customize,
           customizationData: data,
         },
@@ -802,9 +927,9 @@ const MyproductDetails = ({ res }) => {
         price: price,
         original_price: originalPrice,
         isCombination: myproduct?.isCombination,
-        variant_id: [],  // For parent variants (if any)
-        variant_attribute_id: [],  // For parent variants (if any)
-        variants: [],  // NEW: For internal variants from product_variants
+        variant_id: [], // For parent variants (if any)
+        variant_attribute_id: [], // For parent variants (if any)
+        variants: [], // NEW: For internal variants from product_variants
         customize: myproduct?.customize,
         customizationData: [],
       };
@@ -818,57 +943,65 @@ const MyproductDetails = ({ res }) => {
         // Based on your data structure, parent variants come from parent_id.variant_id
         const normalizedVariants = normalizeVariantData();
 
-        Object.entries(selectedVariants).forEach(([variantIdentifier, attributeId]) => {
-          // Check if this variant is a parent variant
-          const variant = normalizedVariants.find(v => v.id === variantIdentifier);
-
-          if (variant?.type === 'parent') {
-            // For parent variants, we need to track them differently
-            // Find the actual variant from parent_id.variant_id
-            const parentVariant = myproduct?.parent_id?.variant_id?.find(
-              v => v.variant_name === variantIdentifier || v._id === variantIdentifier
+        Object.entries(selectedVariants).forEach(
+          ([variantIdentifier, attributeId]) => {
+            // Check if this variant is a parent variant
+            const variant = normalizedVariants.find(
+              (v) => v.id === variantIdentifier
             );
 
-            if (parentVariant) {
-              // For parent variants, we keep the IDs
-              payload.variant_id.push(parentVariant._id);
-              payload.variant_attribute_id.push(attributeId);
+            if (variant?.type === "parent") {
+              // For parent variants, we need to track them differently
+              // Find the actual variant from parent_id.variant_id
+              const parentVariant = myproduct?.parent_id?.variant_id?.find(
+                (v) =>
+                  v.variant_name === variantIdentifier ||
+                  v._id === variantIdentifier
+              );
+
+              if (parentVariant) {
+                // For parent variants, we keep the IDs
+                payload.variant_id.push(parentVariant._id);
+                payload.variant_attribute_id.push(attributeId);
+              }
             }
           }
-        });
+        );
       }
 
       // Handle internal variants (from product_variants)
       if (myproduct?.isCombination && myproduct?.product_variants) {
         const internalVariants = [];
 
-        Object.entries(selectedVariants).forEach(([variantName, attributeId]) => {
-          // Check if this variant is an internal variant (exists in product_variants)
-          const isInternalVariant = myproduct.product_variants.some(
-            pv => pv.variant_name === variantName
-          );
-
-          if (isInternalVariant) {
-            // Find the attribute details from variant_attribute_id
-            const attribute = myproduct?.variant_attribute_id?.find(
-              attr => attr._id === attributeId
+        Object.entries(selectedVariants).forEach(
+          ([variantName, attributeId]) => {
+            // Check if this variant is an internal variant (exists in product_variants)
+            const isInternalVariant = myproduct.product_variants.some(
+              (pv) => pv.variant_name === variantName
             );
 
-            if (attribute) {
-              // Find the variant to get the variant_name (not the _id)
-              const variant = myproduct?.variant_id?.find(
-                v => v._id === attribute.variant
+            if (isInternalVariant) {
+              // Find the attribute details from variant_attribute_id
+              const attribute = myproduct?.variant_attribute_id?.find(
+                (attr) => attr._id === attributeId
               );
 
-              if (variant) {
-                internalVariants.push({
-                  variantName: variant.variant_name,
-                  attributeName: attribute.attribute_value
-                });
+              if (attribute) {
+                // Find the variant to get the variant_name (not the _id)
+                const variant = myproduct?.variant_id?.find(
+                  (v) => v._id === attribute.variant
+                );
+
+                if (variant) {
+                  internalVariants.push({
+                    variantName: variant.variant_name,
+                    attributeName: attribute.attribute_value,
+                  });
+                }
               }
             }
           }
-        });
+        );
 
         payload.variants = internalVariants;
       }
@@ -957,7 +1090,9 @@ const MyproductDetails = ({ res }) => {
       if (res.status === 200) {
         await getWishList();
         addToast(
-          toggleWishlist ? "Product removed from wishlist" : "Product added to wishlist",
+          toggleWishlist
+            ? "Product removed from wishlist"
+            : "Product added to wishlist",
           { appearance: "success", autoDismiss: true }
         );
       }
@@ -970,8 +1105,6 @@ const MyproductDetails = ({ res }) => {
     await handleAddToCart();
     router.push("/cart");
   };
-
-
 
   const toggelFollowShopHandler = async () => {
     if (!token) {
@@ -993,22 +1126,26 @@ const MyproductDetails = ({ res }) => {
 
   // Render Methods
   const renderBreadcrumbs = () => (
-    <Box sx={{
-      width: '100%',
-      overflowX: 'auto',
-      whiteSpace: 'nowrap',
-      justifyContent: "center",
-      display: "flex",
-      paddingLeft: { xs: '94px', md: 1 },
-      paddingRight: { xs: '25px', md: 1 },
-      pt: 2,
-    }}>
-      <Box sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
+    <Box
+      sx={{
+        width: "100%",
+        overflowX: "auto",
+        whiteSpace: "nowrap",
         justifyContent: "center",
-        minWidth: 'max-content',
-      }}>
+        display: "flex",
+        paddingLeft: { xs: "94px", md: 1 },
+        paddingRight: { xs: "25px", md: 1 },
+        pt: 2,
+      }}
+    >
+      <Box
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: "max-content",
+        }}
+      >
         <Breadcrumbs
           separator={<ChevronRightIcon fontSize="small" />}
           aria-label="breadcrumb"
@@ -1033,38 +1170,38 @@ const MyproductDetails = ({ res }) => {
   const renderVariantsSection = () => {
     const normalizedVariants = normalizeVariantData();
 
-    return normalizedVariants.map(variant => {
+    return normalizedVariants.map((variant) => {
       let guideInfo = {};
 
-      if (variant.type === 'parent' && myproduct?.parent_id?.variant_id) {
+      if (variant.type === "parent" && myproduct?.parent_id?.variant_id) {
         const parentVariantInfo = myproduct.parent_id.variant_id.find(
-          v => v.variant_name === variant.name || v._id === variant.id
+          (v) => v.variant_name === variant.name || v._id === variant.id
         );
         if (parentVariantInfo) {
           guideInfo = {
             guide_name: parentVariantInfo.guide_name,
             guide_file: parentVariantInfo.guide_file,
             guide_type: parentVariantInfo.guide_type,
-            guide_description: parentVariantInfo.guide_description
+            guide_description: parentVariantInfo.guide_description,
           };
         }
-      } else if (variant.type === 'internal' && myproduct?.variant_id) {
+      } else if (variant.type === "internal" && myproduct?.variant_id) {
         const internalVariantInfo = myproduct.variant_id.find(
-          v => v.variant_name === variant.name
+          (v) => v.variant_name === variant.name
         );
         if (internalVariantInfo) {
           guideInfo = {
             guide_name: internalVariantInfo.guide_name,
             guide_file: internalVariantInfo.guide_file,
             guide_type: internalVariantInfo.guide_type,
-            guide_description: internalVariantInfo.guide_description
+            guide_description: internalVariantInfo.guide_description,
           };
         }
       }
 
       const variantWithGuide = {
         ...variant,
-        ...guideInfo
+        ...guideInfo,
       };
 
       return (
@@ -1092,16 +1229,16 @@ const MyproductDetails = ({ res }) => {
     Object.values(selectedDropdowns).forEach((dropdown, index) => {
       if (dropdown.main_images) {
         // Handle multiple images (comma-separated)
-        const images = dropdown.main_images.filter(img => img.trim() !== '');
+        const images = dropdown.main_images.filter((img) => img.trim() !== "");
         images.forEach((img, imgIndex) => {
           combined.push({
-            type: 'customization',
+            type: "customization",
             id: `customization-${dropdown.value}-${index}-${imgIndex}`,
             url: img.trim(),
             customizationName: dropdown.value,
             isVariantImage: false,
             index: combined.length,
-            displayText: `Customization: ${dropdown.value}`
+            displayText: `Customization: ${dropdown.value}`,
           });
         });
       }
@@ -1111,7 +1248,7 @@ const MyproductDetails = ({ res }) => {
     if (selectedVariantImages && selectedVariantImages.length > 0) {
       selectedVariantImages.forEach((variantImg, index) => {
         combined.push({
-          type: 'variant',
+          type: "variant",
           id: `variant-${variantImg.variantName}-${variantImg.attributeId}-${index}`,
           url: variantImg.imageUrl,
           variantName: variantImg.variantName,
@@ -1119,7 +1256,7 @@ const MyproductDetails = ({ res }) => {
           attributeId: variantImg.attributeId,
           isVariantImage: true,
           index: index,
-          displayText: `${variantImg.variantName}: ${variantImg.attributeValue}`
+          displayText: `${variantImg.variantName}: ${variantImg.attributeValue}`,
         });
       });
     }
@@ -1128,10 +1265,10 @@ const MyproductDetails = ({ res }) => {
     if (media && media.length > 0) {
       media.forEach((mediaItem, index) => {
         // FIX: Check if mediaItem is an object with type property
-        if (mediaItem.type === 'video') {
+        if (mediaItem.type === "video") {
           // For videos, create proper video object structure
           combined.push({
-            type: 'video',
+            type: "video",
             id: `product-video-${index}`,
             url: `${myproduct?.video_url}${mediaItem.url}`,
             // For thumbnail, try to create one from video URL
@@ -1140,41 +1277,43 @@ const MyproductDetails = ({ res }) => {
               : undefined,
             isVariantImage: false,
             index: selectedVariantImages.length + index,
-            originalData: mediaItem // Keep original data for reference
+            originalData: mediaItem, // Keep original data for reference
           });
-        } else if (mediaItem.type === 'image') {
+        } else if (mediaItem.type === "image") {
           // For images
           combined.push({
-            type: 'image',
+            type: "image",
             id: `product-image-${index}`,
             url: `${myproduct?.image_url}${mediaItem.url}`,
             isVariantImage: false,
             index: selectedVariantImages.length + index,
-            originalData: mediaItem
+            originalData: mediaItem,
           });
         } else {
           // Fallback: handle old structure where mediaItem might be a string
-          const mediaUrl = typeof mediaItem === 'string' ? mediaItem : mediaItem.url;
-          const isVideoMedia = mediaUrl?.includes(".mp4") || mediaUrl?.includes(".webm");
+          const mediaUrl =
+            typeof mediaItem === "string" ? mediaItem : mediaItem.url;
+          const isVideoMedia =
+            mediaUrl?.includes(".mp4") || mediaUrl?.includes(".webm");
 
           if (isVideoMedia) {
             combined.push({
-              type: 'video',
+              type: "video",
               id: `product-video-${index}`,
               url: `${myproduct?.video_url}${mediaUrl}`,
               thumbnail: myproduct?.video_url
                 ? `${myproduct.video_url}${mediaUrl.replace(/\.[^/.]+$/, "")}.jpg`
                 : undefined,
               isVariantImage: false,
-              index: selectedVariantImages.length + index
+              index: selectedVariantImages.length + index,
             });
           } else {
             combined.push({
-              type: 'image',
+              type: "image",
               id: `product-image-${index}`,
               url: `${myproduct?.image_url}${mediaUrl}`,
               isVariantImage: false,
-              index: selectedVariantImages.length + index
+              index: selectedVariantImages.length + index,
             });
           }
         }
@@ -1193,7 +1332,6 @@ const MyproductDetails = ({ res }) => {
       setSelectedImage(Math.max(0, combinedMedia.length - 1));
     }
   }, [selectedVariantImages, media]);
-
 
   const renderProductInfo = () => (
     <CardContent>
@@ -1229,14 +1367,28 @@ const MyproductDetails = ({ res }) => {
       <ProductRating product={myproduct} />
 
       {/* Promotion Info */}
-      {nextPromotion && Object.keys(nextPromotion).length > 0 && +nextPromotion?.qty > quantity && (
-        <Typography sx={{ fontSize: "17px", fontWeight: "600", color: "#20538f", pt: 2 }}>
-          Save {nextPromotion?.offer_type == "flat" ? `$ ${nextPromotion?.discount_amount}` : `${nextPromotion?.discount_amount} %`} when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ""} items at this shop
-        </Typography>
-      )}
+      {nextPromotion &&
+        Object.keys(nextPromotion).length > 0 &&
+        +nextPromotion?.qty > quantity && (
+          <Typography
+            sx={{
+              fontSize: "17px",
+              fontWeight: "600",
+              color: "#20538f",
+              pt: 2,
+            }}
+          >
+            Save{" "}
+            {nextPromotion?.offer_type == "flat"
+              ? `$ ${nextPromotion?.discount_amount}`
+              : `${nextPromotion?.discount_amount} %`}{" "}
+            when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ""}{" "}
+            items at this shop
+          </Typography>
+        )}
 
       {/* Stock Info */}
-      {isVariantSelected && stock !== null && (
+      {stock !== null && (
         <Typography
           sx={{
             fontSize: "17px",
@@ -1248,7 +1400,6 @@ const MyproductDetails = ({ res }) => {
           {getStockDisplayText(stock)}
         </Typography>
       )}
-
 
       {/* Pricing */}
       <ProductPricing
@@ -1288,6 +1439,8 @@ const MyproductDetails = ({ res }) => {
             onQuantityChange={setQuantity}
             disabled={myproduct?.isCombination && !isVariantSelected}
             showVariantWarning={myproduct?.isCombination && !isVariantSelected}
+            isCombination={myproduct?.isCombination}
+            variantSelected={isVariantSelected}
           />
 
           <ProductActions
@@ -1295,7 +1448,11 @@ const MyproductDetails = ({ res }) => {
             onBuyNow={handleBuyNow}
             onWishlistToggle={handleWishlistToggle}
             isInWishlist={toggleWishlist}
-            disabled={(myproduct?.isCombination && !isVariantSelected) || stock === 0 || !areAllInternalVariantsSelected()}
+            disabled={
+              (myproduct?.isCombination && !isVariantSelected) ||
+              stock === 0 ||
+              !areAllInternalVariantsSelected()
+            }
           />
         </>
       )}
@@ -1351,12 +1508,14 @@ const MyproductDetails = ({ res }) => {
         <Grid container spacing={{ xs: 0, md: 2 }}>
           {/* Image Gallery */}
           <Grid item lg={8} md={6} xs={12}>
-            <Box sx={{
-              position: "relative",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column"
-            }}>
+            <Box
+              sx={{
+                position: "relative",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <ProductImageGallery
                 product={myproduct}
                 media={getCombinedMedia()}
@@ -1387,9 +1546,10 @@ const MyproductDetails = ({ res }) => {
       <ShopProducts product_id={pathname.productId} />
 
       {/* Modals */}
+      {/* Message Popup */}
       <MessagePopup
-        open={openPopup}
-        onClose={() => setOpenPopup(false)}
+        handleClosePopup={() => setOpenPopup(false)}
+        openPopup={openPopup}
         vendorName={myproduct?.vendor_id?.name}
         shopName={myproduct?.vendor_details?.shop_name}
         vendorImage={`${myproduct?.vendor_base_url}${myproduct?.vendor_id?.image}`}
