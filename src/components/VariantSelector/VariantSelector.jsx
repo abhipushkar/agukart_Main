@@ -894,7 +894,7 @@ const VariantSelector = ({
                     "&.Mui-disabled": {
                       opacity: 0.5,
                     },
-                    py: 1.5,
+                    py: 0.2,
                     px: 2,
                   }}
                 >
@@ -939,8 +939,8 @@ const VariantSelector = ({
                             src={attr.thumbnail}
                             alt=""
                             style={{
-                              width: "24px",
-                              height: "24px",
+                              width: "48px",
+                              height: "48px",
                               marginRight: "12px",
                               borderRadius: "3px",
                               objectFit: "cover",
@@ -952,7 +952,8 @@ const VariantSelector = ({
                           style={{
                             flex: 1,
                             display: "flex",
-                            flexDirection: "column",
+                            // flexDirection: "column",
+                            justifyContent: "space-between",
                             gap: "2px",
                           }}
                         >
