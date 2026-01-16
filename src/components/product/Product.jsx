@@ -108,22 +108,47 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       const minimumPrice = mergedCombinations
         ?.filter((obj) => +obj.price > 0)
         ?.reduce((min, obj) => Math.min(min, +obj.price), Infinity);
-      setPrice(minimumPrice === Infinity ? +product.sale_price : minimumPrice)
-      setOriginalPrice(minimumPrice === Infinity ? +product.sale_price : minimumPrice);
-      if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-        setPrice(calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, minimumPrice === Infinity ? +product.sale_price : minimumPrice))
+      setPrice(minimumPrice === Infinity ? +product.sale_price : minimumPrice);
+      setOriginalPrice(
+        minimumPrice === Infinity ? +product.sale_price : minimumPrice
+      );
+      if (
+        promotion &&
+        Object.keys(promotion).length > 0 &&
+        promotion.qty <= 1
+      ) {
+        setPrice(
+          calculatePriceAfterDiscount(
+            promotion?.offer_type,
+            +promotion?.discount_amount,
+            minimumPrice === Infinity ? +product.sale_price : minimumPrice
+          )
+        );
       }
     } else {
       setPrice(+product?.sale_price);
       setOriginalPrice(+product?.sale_price);
-      if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-        setPrice(calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, +product?.sale_price))
+      if (
+        promotion &&
+        Object.keys(promotion).length > 0 &&
+        promotion.qty <= 1
+      ) {
+        setPrice(
+          calculatePriceAfterDiscount(
+            promotion?.offer_type,
+            +promotion?.discount_amount,
+            +product?.sale_price
+          )
+        );
       }
     }
   }, [product, promotion]);
 
   useEffect(() => {
-    if (Array.isArray(product?.promotionData) && product?.promotionData.length > 0) {
+    if (
+      Array.isArray(product?.promotionData) &&
+      product?.promotionData.length > 0
+    ) {
       const promotion = product.promotionData.reduce((best, promotion) => {
         if (!promotion.qty || promotion.qty === null) return best;
 
@@ -131,7 +156,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           !best ||
           best.qty === null ||
           promotion.qty < best.qty ||
-          (promotion.qty === best.qty && promotion.discount_amount > best.discount_amount)
+          (promotion.qty === best.qty &&
+            promotion.discount_amount > best.discount_amount)
         ) {
           return promotion;
         }
@@ -139,21 +165,23 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
         return best;
       }, null);
 
-      const nextPromotion = product.promotionData.reduce(
-        (next, promotion) => {
+      const nextPromotion = product.promotionData.reduce((next, promotion) => {
+        if (
+          promotion.qty !== null &&
+          promotion.qty !== undefined &&
+          promotion.qty > 1
+        ) {
           if (
-            promotion.qty !== null &&
-            promotion.qty !== undefined &&
-            promotion.qty > 1
+            !next ||
+            promotion.qty < next.qty ||
+            (promotion.qty === next.qty &&
+              promotion.discount_amount > next.discount_amount)
           ) {
-            if (!next || promotion.qty < next.qty || (promotion.qty === next.qty && promotion.discount_amount > next.discount_amount)) {
-              return promotion;
-            }
+            return promotion;
           }
-          return next;
-        },
-        null
-      );
+        }
+        return next;
+      }, null);
       setPromotion(promotion);
       setNextPromotion(nextPromotion);
     }
@@ -163,8 +191,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const VIEW_H = 224;
   const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
   const clampPan = ({ scale = 1, x = 0, y = 0 }) => {
-    const maxX = ((VIEW_W * scale) - VIEW_W) / 2;
-    const maxY = ((VIEW_H * scale) - VIEW_H) / 2;
+    const maxX = (VIEW_W * scale - VIEW_W) / 2;
+    const maxY = (VIEW_H * scale - VIEW_H) / 2;
     return {
       scale,
       x: clamp(x, -maxX, maxX),
@@ -183,9 +211,10 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const shouldShowRating = product?.ratingAvg > 0;
 
   // Helper to check if we should show promotion time left
-  const timeLeftText = promotion && Object.keys(promotion).length > 0 && promotion?.qty <= 1
-    ? getTimeLeftText(promotion.start_date, promotion.expiry_date)
-    : null;
+  const timeLeftText =
+    promotion && Object.keys(promotion).length > 0 && promotion?.qty <= 1
+      ? getTimeLeftText(promotion.start_date, promotion.expiry_date)
+      : null;
 
   // Helper to check if we should show next promotion
   const shouldShowNextPromotion = nextPromotion?.offer_type;
@@ -237,10 +266,13 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               />
             </Box>
           ) : (
-            <Box sx={{
-              width: "100%", height: "100%",
-              overflow: "hidden"
-            }}>
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+              }}
+            >
               <img
                 alt="image"
                 src={imageBaseUrl + product?.image[0]}
@@ -348,20 +380,27 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           )}
 
           {product?.videos?.length > 0 && (
-            <Box sx={{
-              position: "absolute",
-              bottom: "8px",
-              right: "8px",
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-              <PlayCircle color="primary.main" htmlColor="primary.main" style={{
-                color: "primary.main"
-              }} fontSize="medium" />
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: "8px",
+                right: "8px",
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <PlayCircle
+                color="primary.main"
+                htmlColor="primary.main"
+                style={{
+                  color: "primary.main",
+                }}
+                fontSize="medium"
+              />
             </Box>
           )}
 
@@ -390,9 +429,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               }}
               onClick={handleWishlist}
             >
-              <Button
-                sx={{ minWidth: "32px", minHeight: "32px", p: 0 }}
-              >
+              <Button sx={{ minWidth: "32px", minHeight: "32px", p: 0 }}>
                 {toggleWishlist ? (
                   <FavoriteIcon sx={{ color: "red", fontSize: "18px" }} />
                 ) : (
@@ -445,9 +482,9 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 sx={{
                   fontSize: "24px",
                   color: "black",
-                  '& .MuiRating-icon': {
-                    marginRight: '1px'
-                  }
+                  "& .MuiRating-icon": {
+                    marginRight: "1px",
+                  },
                 }}
               />
               <Small
@@ -496,20 +533,22 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               </Typography>
             )}
 
-            {promotion && Object.keys(promotion).length > 0 && promotion?.qty <= 1 && (
-              <Typography
-                component="span"
-                sx={{
-                  fontSize: "12px",
-                  color: "#d10000",
-                  fontWeight: 500,
-                }}
-              >
-                {promotion?.offer_type == "flat"
-                  ? `Save ${currency?.symbol}${promotion?.discount_amount}`
-                  : `Save ${promotion?.discount_amount}%`}
-              </Typography>
-            )}
+            {promotion &&
+              Object.keys(promotion).length > 0 &&
+              promotion?.qty <= 1 && (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: "12px",
+                    color: "#d10000",
+                    fontWeight: 500,
+                  }}
+                >
+                  {promotion?.offer_type == "flat"
+                    ? `Save ${currency?.symbol}${promotion?.discount_amount}`
+                    : `Save ${promotion?.discount_amount}%`}
+                </Typography>
+              )}
           </FlexBox>
 
           {/* Promotion Time Left - Only show when time left text exists */}
@@ -534,7 +573,6 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 fontSize: "12px",
                 color: "#666",
                 cursor: "pointer",
-                mt: "auto",
                 "&:hover": {
                   color: "#000",
                   textDecoration: "underline",
@@ -558,7 +596,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               {nextPromotion?.offer_type == "flat"
                 ? `${currency?.symbol}${nextPromotion?.discount_amount}`
                 : `${nextPromotion?.discount_amount}%`}{" "}
-              off when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ""} items
+              off when you buy{" "}
+              {nextPromotion?.qty != 0 ? nextPromotion?.qty : ""} items
             </Typography>
           )}
         </Box>
