@@ -50,10 +50,19 @@ const ProductCustomization = ({
           border: "none",
           boxShadow: "none",
           width: "fit-content",
-          height: "fit-content",
-          minHeight: "fit-content",
-          "& .Mui-expanded": {
-            minHeight: "fit-content",
+          "& .MuiAccordionSummary-root": {
+            minHeight: "48px !important",
+            height: "48px",
+          },
+          "& .MuiAccordionSummary-root.Mui-expanded": {
+            minHeight: "48px !important",
+            height: "48px",
+          },
+          "& .MuiAccordionSummary-content": {
+            margin: "0 !important",
+          },
+          "& .MuiAccordionSummary-content.Mui-expanded": {
+            margin: "0 !important",
           },
         }}
       >
@@ -62,17 +71,25 @@ const ProductCustomization = ({
           expandIcon={<ExpandMore fontSize="inherit" />}
           sx={{
             width: "fit-content",
-            height: "fit-content",
+            height: "48px", // Fixed height instead of fit-content
+            minHeight: "48px !important", // Force fixed min-height
+            "&.Mui-expanded": {
+              minHeight: "48px !important", // Keep same height when expanded
+            },
             "& .MuiAccordionSummary-content": {
               my: 0,
-            },
-            "& .Mui-expanded": {
-              minHeight: "fit-content",
+              "&.Mui-expanded": {
+                my: 0,
+                margin: "0 !important", // Remove any expanded margins
+              },
             },
             background: "#f6bc3b",
             fontSize: "17px",
             borderRadius: "25px",
             fontWeight: "500",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 20px",
           }}
         >
           Customize
@@ -279,93 +296,100 @@ const DropdownCustomization = ({
             }}
           >
             <MenuItem value="">Select an option</MenuItem>
-            {customization.optionList.map((option, index) => (
-              <MenuItem
-                key={index}
-                value={option.optionName}
-                sx={{
-                  py: 1.5,
-                  px: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.04)",
-                  },
-                }}
-              >
-                <Tooltip
-                  placement="left"
-                  arrow
-                  title={
-                    hoveredOption === option &&
-                    option.preview_image && (
-                      <Box>
+            {customization.optionList
+              .filter(
+                (option) =>
+                  option?.isVisible === "true" ||
+                  option?.isVisible === true ||
+                  false
+              )
+              .map((option, index) => (
+                <MenuItem
+                  key={index}
+                  value={option.optionName}
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    "&:hover": {
+                      backgroundColor: "rgba(0, 0, 0, 0.04)",
+                    },
+                  }}
+                >
+                  <Tooltip
+                    placement="left"
+                    arrow
+                    title={
+                      hoveredOption === option &&
+                      option.preview_image && (
+                        <Box>
+                          <img
+                            src={
+                              option.edit_preview_image || option.preview_image
+                            }
+                            alt={option.optionName}
+                            style={{
+                              width: 100,
+                              height: 100,
+                              borderRadius: 4,
+                              objectFit: "cover",
+                              border: "1px solid #e0e0e0",
+                            }}
+                          />
+                        </Box>
+                      )
+                    }
+                    key={index}
+                  >
+                    <div
+                      style={{ display: "flex", alignItems: "center", flex: 1 }}
+                    >
+                      {option.thumbnail && (
                         <img
-                          src={
-                            option.edit_preview_image || option.preview_image
-                          }
-                          alt={option.optionName}
+                          src={option.thumbnail}
+                          alt=""
                           style={{
-                            width: 100,
-                            height: 100,
-                            borderRadius: 4,
+                            width: 24,
+                            height: 24,
+                            marginRight: 12,
+                            borderRadius: 3,
                             objectFit: "cover",
-                            border: "1px solid #e0e0e0",
                           }}
                         />
-                      </Box>
-                    )
-                  }
-                  key={index}
-                >
-                  <div
-                    style={{ display: "flex", alignItems: "center", flex: 1 }}
-                  >
-                    {option.thumbnail && (
-                      <img
-                        src={option.thumbnail}
-                        alt=""
+                      )}
+                      <div
                         style={{
-                          width: 24,
-                          height: 24,
-                          marginRight: 12,
-                          borderRadius: 3,
-                          objectFit: "cover",
+                          flex: 1,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                         }}
-                      />
-                    )}
-                    <div
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div style={{ fontSize: "14px", fontWeight: 500 }}>
-                        {option.optionName}
+                      >
+                        <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                          {option.optionName}
+                        </div>
+                        {option.priceDifference &&
+                          option.priceDifference !== 0 && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#666",
+                                marginTop: 2,
+                              }}
+                            >
+                              + {currency?.symbol}
+                              {(
+                                +option.priceDifference * currency?.rate
+                              ).toFixed(2)}
+                            </div>
+                          )}
                       </div>
-                      {option.priceDifference &&
-                        option.priceDifference !== 0 && (
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              color: "#666",
-                              marginTop: 2,
-                            }}
-                          >
-                            + {currency?.symbol}
-                            {(+option.priceDifference * currency?.rate).toFixed(
-                              2
-                            )}
-                          </div>
-                        )}
                     </div>
-                  </div>
-                </Tooltip>
-              </MenuItem>
-            ))}
+                  </Tooltip>
+                </MenuItem>
+              ))}
           </Select>
           {validationError && (
             <Typography color="error" sx={{ mt: 1, fontSize: "14px" }}>
@@ -385,7 +409,7 @@ const TextCustomization = ({
   validationError,
   currency,
 }) => (
-  <Grid container spacing={2} sx={{ mb: 3 }}>
+  <Grid container spacing={0} sx={{ mb: 3 }}>
     <Grid item xs={9}>
       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
         {customization.label}

@@ -70,20 +70,16 @@ export const useProductVariants = (product) => {
       ) {
         product.parent_id.product_variants.forEach((variant) => {
           // Find corresponding variant info from variant_id array for guide data
-          const variantInfo = product.parent_id.variant_id?.find(
-            (v) =>
-              v.variant_name === variant.variant_name ||
-              v._id === variant.variant_name
-          );
+          const guideData = variant?.guide;
 
           allVariants.push({
             type: "parent",
             id: variant.variant_name,
             name: variant.variant_name,
-            guide_name: variantInfo?.guide_name || "",
-            guide_file: variantInfo?.guide_file || "",
-            guide_type: variantInfo?.guide_type || "",
-            guide_description: variantInfo?.guide_description || "",
+            guide_name: guideData?.guide_name || "",
+            guide_file: guideData?.guide_file || "",
+            guide_type: guideData?.guide_type || "",
+            guide_description: guideData?.guide_description || "",
             attributes:
               variant.variant_attributes?.map((attr) => ({
                 id: attr._id,
@@ -128,6 +124,11 @@ export const useProductVariants = (product) => {
     if (product?.product_variants?.length > 0) {
       product.product_variants.forEach((variant) => {
         // Find corresponding variant info from variant_id array for guide data
+        const guideData =
+          variant?.guide && variant?.guide.length > 0
+            ? variant?.guide[0]
+            : null;
+
         const variantInfo = product.variant_id?.find(
           (v) =>
             v.variant_name === variant.variant_name ||
@@ -203,10 +204,10 @@ export const useProductVariants = (product) => {
             type: "internal",
             id: variant.variant_name,
             name: variant.variant_name,
-            guide_name: variantInfo?.guide_name || "",
-            guide_file: variantInfo?.guide_file || "",
-            guide_type: variantInfo?.guide_type || "",
-            guide_description: variantInfo?.guide_description || "",
+            guide_name: guideData?.guide_name || "",
+            guide_file: guideData?.guide_file || "",
+            guide_type: guideData?.guide_type || "",
+            guide_description: guideData?.guide_description || "",
             attributes: filteredAttributes,
           });
         } else {
@@ -933,7 +934,11 @@ export const useProductVariants = (product) => {
           (a) => a.id === hoveredAttributeId
         );
 
-        if (attr?.images && attr.images.length > 0) {
+        if (
+          attr?.images &&
+          attr.images.length > 0 &&
+          typeof attr.images[0] === "string"
+        ) {
           return {
             type: "hover-preview",
             url: attr.images[0],

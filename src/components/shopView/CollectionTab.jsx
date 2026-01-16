@@ -13,7 +13,7 @@ import TabPanel from "@mui/lab/TabPanel";
 import { FlexBox } from "components/flex-box";
 import AddIcon from "@mui/icons-material/Add";
 import Pagination from "@mui/material/Pagination";
-import Select from '@mui/material/Select';
+import Select from "@mui/material/Select";
 
 import {
   Checkbox,
@@ -223,10 +223,14 @@ const CollectionTab = ({
         </Box>
         <Box sx={{ minWidth: "150px" }}>
           <FlexBox alignItems="center" gap={1}>
-            <Typography color="grey.600" sx={{
-              whiteSpace: "nowrap",
-
-            }}>Sort by:</Typography>
+            <Typography
+              color="grey.600"
+              sx={{
+                whiteSpace: "nowrap",
+              }}
+            >
+              Sort by:
+            </Typography>
             <TextField
               select
               size="small"
@@ -256,7 +260,9 @@ const CollectionTab = ({
                 value={selectedStoreId}
                 onChange={(e) => {
                   const value = e.target.value;
-                  const currentParams = new URLSearchParams(window.location.search);
+                  const currentParams = new URLSearchParams(
+                    window.location.search
+                  );
                   currentParams.set("store_id", value);
                   router.push(
                     `${window.location.pathname}?${currentParams.toString()}#collection`
@@ -269,7 +275,7 @@ const CollectionTab = ({
                   height: "40px",
                   bgcolor: "#fff",
                   border: "1px solid #ccc",
-                  "& fieldset": { border: "none" } // Remove default border
+                  "& fieldset": { border: "none" }, // Remove default border
                 }}
                 displayEmpty
               >
@@ -283,13 +289,15 @@ const CollectionTab = ({
               </Select>
             </Box>
 
-            <List sx={{
-              borderRight: { md: "1px solid #d6d6d6", xs: "none" },
-              display: {
-                xs: "none",  // hide on small screens
-                md: "block"  // show on desktop and larger
-              }
-            }}>
+            <List
+              sx={{
+                borderRight: { md: "1px solid #d6d6d6", xs: "none" },
+                display: {
+                  xs: "none", // hide on small screens
+                  md: "block", // show on desktop and larger
+                },
+              }}
+            >
               <ListItem sx={{ px: 0, mb: 2 }}>
                 <Typography fontWeight={600} fontSize={16}>
                   All Product
@@ -303,10 +311,13 @@ const CollectionTab = ({
                     window.location.search
                   );
                   currentParams.set("store_id", "all");
+                  currentParams.set("page", 1);
+
                   router.push(
                     `${window.location.pathname}?${currentParams.toString()}#collection`
                   );
                   setSelectedStoreId("all");
+                  setPage(1);
                 }}
               >
                 <Typography
@@ -325,10 +336,12 @@ const CollectionTab = ({
                       window.location.search
                     );
                     currentParams.set("store_id", store._id);
+                    currentParams.set("page", 1);
                     router.push(
                       `${window.location.pathname}?${currentParams.toString()}#collection`
                     );
                     setSelectedStoreId(store._id);
+                    setPage(1);
                   }}
                 >
                   <Typography
@@ -353,18 +366,18 @@ const CollectionTab = ({
                 borderRadius: "4px",
                 textTransform: "none",
                 display: {
-                  xs: "none",   // hide on mobile
-                  md: "flex"    // show on desktop
-                }
+                  xs: "none", // hide on mobile
+                  md: "flex", // show on desktop
+                },
               }}
             >
               Contact shop owner
             </Button>
 
             <Typography mt={2} sx={{ display: { xs: "none", md: "flex" } }}>
-
-              {vendorCategories?.sale_count} Sales</Typography>
-            <Typography mt={1} sx={{ display: { xs: "none", md: "flex" } }} >
+              {vendorCategories?.sale_count} Sales
+            </Typography>
+            <Typography mt={1} sx={{ display: { xs: "none", md: "flex" } }}>
               <Link
                 href="#"
                 style={{ textDecoration: "underline", color: "#000" }}
@@ -373,7 +386,7 @@ const CollectionTab = ({
               </Link>
             </Typography>
 
-            <Box mt={2} sx={{ display: { xs: "none", md: "flex" } }} >
+            <Box mt={2} sx={{ display: { xs: "none", md: "flex" } }}>
               <ReportShop shop_id={vendorDetail?._id} />
             </Box>
           </Box>

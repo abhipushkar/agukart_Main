@@ -1179,10 +1179,10 @@ const MyproductDetails = ({ res }) => {
         );
         if (parentVariantInfo) {
           guideInfo = {
-            guide_name: parentVariantInfo.guide_name,
-            guide_file: parentVariantInfo.guide_file,
-            guide_type: parentVariantInfo.guide_type,
-            guide_description: parentVariantInfo.guide_description,
+            guide_name: variant.guide_name,
+            guide_file: variant.guide_file,
+            guide_type: variant.guide_type,
+            guide_description: variant.guide_description,
           };
         }
       } else if (variant.type === "internal" && myproduct?.variant_id) {
@@ -1191,10 +1191,10 @@ const MyproductDetails = ({ res }) => {
         );
         if (internalVariantInfo) {
           guideInfo = {
-            guide_name: internalVariantInfo.guide_name,
-            guide_file: internalVariantInfo.guide_file,
-            guide_type: internalVariantInfo.guide_type,
-            guide_description: internalVariantInfo.guide_description,
+            guide_name: variant.guide_name,
+            guide_file: variant.guide_file,
+            guide_type: variant.guide_type,
+            guide_description: variant.guide_description,
           };
         }
       }
