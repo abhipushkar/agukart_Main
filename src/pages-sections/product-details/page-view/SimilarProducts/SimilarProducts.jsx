@@ -58,138 +58,134 @@ const SimilarProducts = ({ product_id }) => {
   return (
     <SectionCreator title="Similar Products From Agukart">
       <Container sx={{ padding: "30px 16px" }}>
-        {
-          loading ? (
-            <Box px={2}>
-              <Grid container spacing={4}>
-                {[...Array(6)].map((_, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                    <ProductCardShimmer />
-                  </Grid>
-                ))}
-              </Grid>
-              <Grid container spacing={4} mt={1}>
-                {[...Array(6)].map((_, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={2} key={index + 6}>
-                    <ProductCardShimmer />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          ):(
-            similarProducts?.length > 0 ? (
-              similarProducts.length >= 12 ? (
-                <Typography
-                  component="div"
-                  mt={3}
-                  sx={{
-                    maxWidth: "100%",
-                    "& .slick-prev, & .slick-next": {
-                      zIndex: 2,
-                      width: { xs: "30px", sm: "35px", md: "40px", lg: "40px" },
-                      height: { xs: "40px", sm: "40px", md: "60px", lg: "78px" },
-                      background: "rgb(255 255 255 / 17%)",
-                      borderRadius: "2px",
-                      boxShadow: "0px 0px 3px #434242",
-                      display: "flex !important",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    },
-                    "& .slick-prev": {
-                      left: "0px",
-                    },
-                    "& .slick-prev::before, & .slick-next::before": {
-                      fontSize: { xs: "16px", sm: "16px", md: "19px", lg: "21px" },
-                      fontWeight: "bold",
-                      color: "#333",
-                      opacity: 1,
-                    },
-                    "& .slick-prev::before": {
-                      content: '"❮"',
-                    },
-                    "& .slick-next": {
-                      right: "0px",
-                    },
-                    "& .slick-next::before": {
-                      content: '"❯"',
-                    },
-                  }}
-                >
-                  <Slider {...sliderSettings}>
-                    {slides.map((slide, index) => {
-                      const row1 = slide.slice(0, 6); // first 6 products
-                      const row2 = slide.slice(6, 12); // next 6 products
-
-                      return (
-                        <Box key={index} px={2}>
-                          <Grid container spacing={4}>
-                            {row1.map((product) => (
-                              <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={4}
-                                lg={2}
-                                key={product._id}
-                              >
-                                <Product
-                                  product={product}
-                                  imageBaseUrl={imageBaseUrl}
-                                  videoBaseUrl={videoBaseUrl}
-                                />
-                              </Grid>
-                            ))}
-                          </Grid>
-                          <Grid container spacing={4} mt={1}>
-                            {row2.map((product) => (
-                              <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={4}
-                                lg={2}
-                                key={product._id}
-                              >
-                                <Product
-                                  product={product}
-                                  imageBaseUrl={imageBaseUrl}
-                                  videoBaseUrl={videoBaseUrl}
-                                />
-                              </Grid>
-                            ))}
-                          </Grid>
-                        </Box>
-                      );
-                    })}
-                  </Slider>
-                </Typography>
-              ) : (
-                <Grid container spacing={4}>
-                  {similarProducts.map((product) => (
-                    <Grid item xs={12} sm={6} md={4} lg={2} key={product._id}>
-                      <Product
-                        product={product}
-                        imageBaseUrl={imageBaseUrl}
-                        videoBaseUrl={videoBaseUrl}
-                      />
-                    </Grid>
-                  ))}
+        {loading ? (
+          <Box px={2}>
+            <Grid container spacing={4}>
+              {[...Array(6)].map((_, index) => (
+                <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
+                  <ProductCardShimmer />
                 </Grid>
-              )
-            ) : (
-              <Box
-                sx={{
-                  textAlign: "center",
-                  fontSize: "20px",
-                  textTransform: "uppercase",
-                  fontWeight: 900,
-                }}
-              >
-                Products Not Found
-              </Box>
-            )
+              ))}
+            </Grid>
+            <Grid container spacing={4} mt={1}>
+              {[...Array(6)].map((_, index) => (
+                <Grid item xs={12} sm={6} md={4} lg={2} key={index + 6}>
+                  <ProductCardShimmer />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ) : similarProducts?.length > 0 ? (
+          similarProducts.length >= 12 ? (
+            <Typography
+              component="div"
+              mt={3}
+              sx={{
+                maxWidth: "100%",
+                "& .slick-prev, & .slick-next": {
+                  zIndex: 2,
+                  width: { xs: "30px", sm: "35px", md: "40px", lg: "40px" },
+                  height: { xs: "40px", sm: "40px", md: "60px", lg: "78px" },
+                  background: "rgb(255 255 255 / 17%)",
+                  borderRadius: "2px",
+                  boxShadow: "0px 0px 3px #434242",
+                  display: "flex !important",
+                  alignItems: "center",
+                  justifyContent: "center",
+                },
+                "& .slick-prev": {
+                  left: "0px",
+                },
+                "& .slick-prev::before, & .slick-next::before": {
+                  fontSize: { xs: "16px", sm: "16px", md: "19px", lg: "21px" },
+                  fontWeight: "bold",
+                  color: "#333",
+                  opacity: 1,
+                },
+                "& .slick-prev::before": {
+                  content: '"❮"',
+                },
+                "& .slick-next": {
+                  right: "0px",
+                },
+                "& .slick-next::before": {
+                  content: '"❯"',
+                },
+              }}
+            >
+              <Slider {...sliderSettings}>
+                {slides.map((slide, index) => {
+                  const row1 = slide.slice(0, 6); // first 6 products
+                  const row2 = slide.slice(6, 12); // next 6 products
+
+                  return (
+                    <Box key={index} px={2}>
+                      <Grid container spacing={4}>
+                        {row1.map((product) => (
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={4}
+                            lg={2}
+                            key={product._id}
+                          >
+                            <Product
+                              product={product}
+                              imageBaseUrl={imageBaseUrl}
+                              videoBaseUrl={videoBaseUrl}
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                      <Grid container spacing={4} mt={1}>
+                        {row2.map((product) => (
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={4}
+                            lg={2}
+                            key={product._id}
+                          >
+                            <Product
+                              product={product}
+                              imageBaseUrl={imageBaseUrl}
+                              videoBaseUrl={videoBaseUrl}
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  );
+                })}
+              </Slider>
+            </Typography>
+          ) : (
+            <Grid container spacing={4}>
+              {similarProducts.map((product) => (
+                <Grid item xs={12} sm={6} md={4} lg={2} key={product._id}>
+                  <Product
+                    product={product}
+                    imageBaseUrl={imageBaseUrl}
+                    videoBaseUrl={videoBaseUrl}
+                  />
+                </Grid>
+              ))}
+            </Grid>
           )
-        }
+        ) : (
+          <Box
+            sx={{
+              textAlign: "center",
+              fontSize: "20px",
+              textTransform: "uppercase",
+              fontWeight: 900,
+            }}
+          >
+            Products Not Found
+          </Box>
+        )}
       </Container>
     </SectionCreator>
   );

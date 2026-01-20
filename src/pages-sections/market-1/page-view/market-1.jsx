@@ -103,11 +103,9 @@ export default function MarketOnePageView() {
     }
   };
 
-
   const getDeals = async () => {
     try {
       const res = await getAPIAuth("get-deals", token);
-      console.log("getDealssss", res);
       if (res.status === 200) {
         setDealsData({
           base_url: res.data.base_url,
@@ -119,7 +117,6 @@ export default function MarketOnePageView() {
       console.log(error);
     }
   };
-
 
   useEffect(() => {
     getDiscountsProducts();
@@ -153,7 +150,7 @@ export default function MarketOnePageView() {
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");

@@ -37,8 +37,6 @@ const ChatContextProvider = ({ children }) => {
   const [searchText, setSearchText] = useState("");
   const { token } = useAuth();
 
-  console.log(vendorDetails, "dllllllluuhvv");
-
   const handleCheckboxChange = (event, id) => {
     if (event.target.checked) {
       setCheckMessage([...checkMessage, id]);
@@ -57,7 +55,7 @@ const ChatContextProvider = ({ children }) => {
         const docRef = doc(
           db,
           pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId
+          docId,
         );
         await updateDoc(docRef, {
           isTempDelete1: "",
@@ -79,7 +77,7 @@ const ChatContextProvider = ({ children }) => {
         const docRef = doc(
           db,
           pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId
+          docId,
         );
         await updateDoc(docRef, {
           isTempDelete1: usercredentials?._id,
@@ -98,7 +96,7 @@ const ChatContextProvider = ({ children }) => {
         const docRef = doc(
           db,
           pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId
+          docId,
         );
         const docSnap = await getDoc(docRef);
 
@@ -113,12 +111,12 @@ const ChatContextProvider = ({ children }) => {
             doc(
               db,
               pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-              docId
+              docId,
             ),
             {
               permanentDeleteUser1: usercredentials?._id,
               text: updateArr,
-            }
+            },
           );
         }
         setCheckMessage([]);
@@ -136,7 +134,7 @@ const ChatContextProvider = ({ children }) => {
         const docRef = doc(
           db,
           pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId
+          docId,
         );
         const docSnap = await getDoc(docRef);
 
@@ -154,11 +152,11 @@ const ChatContextProvider = ({ children }) => {
             doc(
               db,
               pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-              docId
+              docId,
             ),
             {
               text: updateArr,
-            }
+            },
           );
         }
         setCheckMessage([]);
@@ -175,7 +173,7 @@ const ChatContextProvider = ({ children }) => {
         const docRef = doc(
           db,
           pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId
+          docId,
         );
         const docSnap = await getDoc(docRef);
 
@@ -193,11 +191,11 @@ const ChatContextProvider = ({ children }) => {
             doc(
               db,
               pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-              docId
+              docId,
             ),
             {
               text: updateArr,
-            }
+            },
           );
         }
         setCheckMessage([]);
@@ -215,9 +213,9 @@ const ChatContextProvider = ({ children }) => {
     const q = query(
       collection(
         db,
-        pathname === "/messages/etsy" ? "composeChat" : "chatRooms"
+        pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
       ),
-      orderBy("currentTime", "desc")
+      orderBy("currentTime", "desc"),
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -246,24 +244,26 @@ const ChatContextProvider = ({ children }) => {
 
       if (pathname === "/messages") {
         const isDeletefilterData = matchingDocument.filter(
-          (item) => item.isTempDelete1 !== usercredentials?._id
+          (item) => item.isTempDelete1 !== usercredentials?._id,
         );
         setChats(isDeletefilterData);
         return;
       }
       if (pathname === "/messages/etsy") {
-        const filterData = newMessages?.filter((item)=>item.type == "allusers")
+        const filterData = newMessages?.filter(
+          (item) => item.type == "allusers",
+        );
         setChats(filterData);
         return;
       }
 
       if (pathname === "/messages/inbox") {
         const isDeletefilterData = matchingDocument.filter(
-          (item) => item.isTempDelete1 !== usercredentials?._id
+          (item) => item.isTempDelete1 !== usercredentials?._id,
         );
 
         const filteredData = isDeletefilterData?.filter((item) =>
-          item.text.some((msg) => msg.messageSenderId !== usercredentials?._id)
+          item.text.some((msg) => msg.messageSenderId !== usercredentials?._id),
         );
         setChats(filteredData);
         return;
@@ -271,7 +271,7 @@ const ChatContextProvider = ({ children }) => {
 
       if (pathname === "/messages/sent") {
         const isDeletefilterData = matchingDocument.filter(
-          (item) => item.isTempDelete1 !== usercredentials?._id
+          (item) => item.isTempDelete1 !== usercredentials?._id,
         );
         setChats(isDeletefilterData);
         return;
@@ -282,8 +282,8 @@ const ChatContextProvider = ({ children }) => {
           item.text.some(
             (msg) =>
               msg.messageSenderId !== usercredentials?._id &&
-              msg?.isNotification === false
-          )
+              msg?.isNotification === false,
+          ),
         );
         setChats(filteredData);
         return;
@@ -291,7 +291,7 @@ const ChatContextProvider = ({ children }) => {
 
       if (pathname === "/messages/trash") {
         const isDeletefilterData = matchingDocument.filter(
-          (item) => item.isTempDelete1 === usercredentials?._id
+          (item) => item.isTempDelete1 === usercredentials?._id,
         );
         setChats(isDeletefilterData);
       }
@@ -331,12 +331,12 @@ const ChatContextProvider = ({ children }) => {
   useEffect(() => {
     const composeChatQuery = query(
       collection(db, "composeChat"),
-      orderBy("currentTime", "desc")
+      orderBy("currentTime", "desc"),
     );
 
     const chatRoomsQuery = query(
       collection(db, "chatRooms"),
-      orderBy("currentTime", "desc")
+      orderBy("currentTime", "desc"),
     );
 
     const getUnreadCounts = async () => {
@@ -358,9 +358,8 @@ const ChatContextProvider = ({ children }) => {
               filterArr.push(msg);
             }
           });
-          console.log({ newMessages, etsyMsgIds }, "lddddddddiieppe");
           setEtsyCount(newMessages.length - filterArr.length);
-        }
+        },
       );
 
       // Fetch and calculate unread messages for chatRooms (other routes)
@@ -378,8 +377,8 @@ const ChatContextProvider = ({ children }) => {
           parent?.text?.some(
             (notification) =>
               !notification?.isNotification &&
-              notification.messageSenderId !== usercredentials?._id
-          )
+              notification.messageSenderId !== usercredentials?._id,
+          ),
         );
 
         chatRoomsUnreadCount = unreadMessages.length;
@@ -432,7 +431,7 @@ const ChatContextProvider = ({ children }) => {
         {
           message_id: arr,
         },
-        token
+        token,
       );
       if (res.status === 200) {
         getMessageId();
@@ -464,7 +463,7 @@ const ChatContextProvider = ({ children }) => {
     }
   };
 
-  // search chat 
+  // search chat
 
   const searchHandler = () => {
     const filteredArr = chats.filter((item) => {
@@ -504,7 +503,7 @@ const ChatContextProvider = ({ children }) => {
         searchText,
         setSearchText,
         searchHandler,
-        getSingleVendorDetails
+        getSingleVendorDetails,
       }}
     >
       {children}

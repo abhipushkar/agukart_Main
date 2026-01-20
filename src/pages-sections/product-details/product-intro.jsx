@@ -77,7 +77,6 @@ export default function ProductIntro({ product }) {
   // HANDLE SELECT IMAGE
 
   //   const handleImageClick = (ind) => () =>
-  // {console.log("=====indddddd",ind);
   // setSelectedImage(ind);}
   // HANDLE CHANGE CART
 
@@ -147,8 +146,8 @@ export default function ProductIntro({ product }) {
           }
         };
 
-        if(token){
-          fetchCart()
+        if (token) {
+          fetchCart();
         }
       }
     }

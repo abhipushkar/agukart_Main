@@ -34,7 +34,6 @@ export default function CategoryList({ open, position = "absolute" }) {
   useEffect(() => {
     getCategoriesData();
   }, [token]);
-  console.log({categoryMenus},"rthrhrhrthrthr")
   return (
     <StyledRoot open={open} position={position}>
       {categoryMenus?.map((item) => {

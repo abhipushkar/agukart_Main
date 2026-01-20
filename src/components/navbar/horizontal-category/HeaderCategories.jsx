@@ -14,7 +14,6 @@ const HeaderCategories = () => {
   const getAdminCategory = async () => {
     try {
       const res = await getAPIAuth("get-admin-menu-category", token);
-      console.log(res, "category res");
       if (res.status === 200) {
         setCat(res.data.data);
       }
@@ -28,10 +27,9 @@ const HeaderCategories = () => {
   }, []);
 
   const navigation = (cat) => {
-    if(cat === 'home') {
+    if (cat === "home") {
       router.push("/");
-    }
-    else if (cat === 'gift-card-category') {
+    } else if (cat === "gift-card-category") {
       router.push("/gift-card-category");
     } else {
       router.push(`/product?slug=${cat.slug}&title=${cat.title}&id=${cat._id}`);
@@ -39,21 +37,28 @@ const HeaderCategories = () => {
   };
   return (
     <Box sx={{ display: "flex", gap: "16px", marginLeft: "24px" }}>
-      <Button onClick={() => navigation("home")} sx={{ whiteSpace: 'nowrap' }}>
+      <Button onClick={() => navigation("home")} sx={{ whiteSpace: "nowrap" }}>
         Home
       </Button>
       {cat?.map((cat) => {
         return (
-          <Button onClick={() => navigation(cat)} key={cat._id} sx={{ whiteSpace: 'nowrap' }}>
+          <Button
+            onClick={() => navigation(cat)}
+            key={cat._id}
+            sx={{ whiteSpace: "nowrap" }}
+          >
             {cat.title}
           </Button>
         );
       })}
-      {
-        usercredentials?.designation_id != "4" && <Button onClick={() => navigation("gift-card-category")} sx={{ whiteSpace: 'nowrap' }}>
+      {usercredentials?.designation_id != "4" && (
+        <Button
+          onClick={() => navigation("gift-card-category")}
+          sx={{ whiteSpace: "nowrap" }}
+        >
           Gift Card
         </Button>
-      }
+      )}
     </Box>
   );
 };

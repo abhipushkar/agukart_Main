@@ -72,52 +72,51 @@ const socialLinks = [
 ];
 
 const countries = [
-  { "symbol": "$", "country": "United States", "code": "(USD)" },
-  { "symbol": "د.إ", "country": "United Arab Emirates", "code": "(AED)" },
-  { "symbol": "؋", "country": "Afghanistan", "code": "(AFN)" },
-  { "symbol": "L", "country": "Albania", "code": "(ALL)" },
-  { "symbol": "֏", "country": "Armenia", "code": "(AMD)" },
-  { "symbol": "ƒ", "country": "Netherlands Antilles", "code": "(ANG)" },
-  { "symbol": "Kz", "country": "Angola", "code": "(AOA)" },
-  { "symbol": "$", "country": "Argentina", "code": "(ARS)" },
-  { "symbol": "$", "country": "Australia", "code": "(AUD)" },
-  { "symbol": "ƒ", "country": "Aruba", "code": "(AWG)" },
-  { "symbol": "₼", "country": "Azerbaijan", "code": "(AZN)" },
-  { "symbol": "KM", "country": "Bosnia and Herzegovina", "code": "(BAM)" },
-  { "symbol": "$", "country": "Barbados", "code": "(BBD)" },
-  { "symbol": "৳", "country": "Bangladesh", "code": "(BDT)" },
-  { "symbol": "лв", "country": "Bulgaria", "code": "(BGN)" },
-  { "symbol": "ب.د", "country": "Bahrain", "code": "(BHD)" },
-  { "symbol": "FBu", "country": "Burundi", "code": "(BIF)" },
-  { "symbol": "$", "country": "Bermuda", "code": "(BMD)" },
-  { "symbol": "$", "country": "Brunei", "code": "(BND)" },
-  { "symbol": "Bs.", "country": "Bolivia", "code": "(BOB)" },
-  { "symbol": "R$", "country": "Brazil", "code": "(BRL)" },
-  { "symbol": "$", "country": "Bahamas", "code": "(BSD)" },
-  { "symbol": "Nu.", "country": "Bhutan", "code": "(BTN)" },
-  { "symbol": "P", "country": "Botswana", "code": "(BWP)" },
-  { "symbol": "Br", "country": "Belarus", "code": "(BYN)" },
-  { "symbol": "$", "country": "Belize", "code": "(BZD)" },
-  { "symbol": "$", "country": "Canada", "code": "(CAD)" },
-  { "symbol": "FC", "country": "Congo", "code": "(CDF)" },
-  { "symbol": "CHF", "country": "Switzerland", "code": "(CHF)" },
-  { "symbol": "$", "country": "Chile", "code": "(CLP)" },
-  { "symbol": "¥", "country": "China", "code": "(CNY)" },
-  { "symbol": "$", "country": "Colombia", "code": "(COP)" },
-  { "symbol": "₡", "country": "Costa Rica", "code": "(CRC)" },
-  { "symbol": "$", "country": "Cuba", "code": "(CUP)" },
-  { "symbol": "$", "country": "Cape Verde", "code": "(CVE)" },
-  { "symbol": "Kč", "country": "Czech Republic", "code": "(CZK)" },
-  { "symbol": "Fdj", "country": "Djibouti", "code": "(DJF)" },
-  { "symbol": "kr", "country": "Denmark", "code": "(DKK)" },
-  { "symbol": "RD$", "country": "Dominican Republic", "code": "(DOP)" },
-  { "symbol": "دج", "country": "Algeria", "code": "(DZD)" },
-  { "symbol": "£", "country": "United Kingdom", "code": "(GBP)" },
-  { "symbol": "€", "country": "Eurozone", "code": "(EUR)" },
-  { "symbol": "₹", "country": "India", "code": "(INR)" },
-  { "symbol": "¥", "country": "Japan", "code": "(JPY)" }
-]
-
+  { symbol: "$", country: "United States", code: "(USD)" },
+  { symbol: "د.إ", country: "United Arab Emirates", code: "(AED)" },
+  { symbol: "؋", country: "Afghanistan", code: "(AFN)" },
+  { symbol: "L", country: "Albania", code: "(ALL)" },
+  { symbol: "֏", country: "Armenia", code: "(AMD)" },
+  { symbol: "ƒ", country: "Netherlands Antilles", code: "(ANG)" },
+  { symbol: "Kz", country: "Angola", code: "(AOA)" },
+  { symbol: "$", country: "Argentina", code: "(ARS)" },
+  { symbol: "$", country: "Australia", code: "(AUD)" },
+  { symbol: "ƒ", country: "Aruba", code: "(AWG)" },
+  { symbol: "₼", country: "Azerbaijan", code: "(AZN)" },
+  { symbol: "KM", country: "Bosnia and Herzegovina", code: "(BAM)" },
+  { symbol: "$", country: "Barbados", code: "(BBD)" },
+  { symbol: "৳", country: "Bangladesh", code: "(BDT)" },
+  { symbol: "лв", country: "Bulgaria", code: "(BGN)" },
+  { symbol: "ب.د", country: "Bahrain", code: "(BHD)" },
+  { symbol: "FBu", country: "Burundi", code: "(BIF)" },
+  { symbol: "$", country: "Bermuda", code: "(BMD)" },
+  { symbol: "$", country: "Brunei", code: "(BND)" },
+  { symbol: "Bs.", country: "Bolivia", code: "(BOB)" },
+  { symbol: "R$", country: "Brazil", code: "(BRL)" },
+  { symbol: "$", country: "Bahamas", code: "(BSD)" },
+  { symbol: "Nu.", country: "Bhutan", code: "(BTN)" },
+  { symbol: "P", country: "Botswana", code: "(BWP)" },
+  { symbol: "Br", country: "Belarus", code: "(BYN)" },
+  { symbol: "$", country: "Belize", code: "(BZD)" },
+  { symbol: "$", country: "Canada", code: "(CAD)" },
+  { symbol: "FC", country: "Congo", code: "(CDF)" },
+  { symbol: "CHF", country: "Switzerland", code: "(CHF)" },
+  { symbol: "$", country: "Chile", code: "(CLP)" },
+  { symbol: "¥", country: "China", code: "(CNY)" },
+  { symbol: "$", country: "Colombia", code: "(COP)" },
+  { symbol: "₡", country: "Costa Rica", code: "(CRC)" },
+  { symbol: "$", country: "Cuba", code: "(CUP)" },
+  { symbol: "$", country: "Cape Verde", code: "(CVE)" },
+  { symbol: "Kč", country: "Czech Republic", code: "(CZK)" },
+  { symbol: "Fdj", country: "Djibouti", code: "(DJF)" },
+  { symbol: "kr", country: "Denmark", code: "(DKK)" },
+  { symbol: "RD$", country: "Dominican Republic", code: "(DOP)" },
+  { symbol: "دج", country: "Algeria", code: "(DZD)" },
+  { symbol: "£", country: "United Kingdom", code: "(GBP)" },
+  { symbol: "€", country: "Eurozone", code: "(EUR)" },
+  { symbol: "₹", country: "India", code: "(INR)" },
+  { symbol: "¥", country: "Japan", code: "(JPY)" },
+];
 
 // [
 //   "$ Australia (AUS)",
@@ -179,30 +178,28 @@ const countries = [
 
 // ===========================================
 export default function Topbar({ bgColor }) {
-  const {currency,updateCurrency} = useCurrency();
+  const { currency, updateCurrency } = useCurrency();
   const { token } = useAuth();
-  console.log(currency,"Dhyrtuyrt")
   const { i18n, t } = useTranslation();
   const [expand, setExpand] = useState(false);
-  const [dealsData,setDealsData] = useState({});
+  const [dealsData, setDealsData] = useState({});
 
   const handleChangeLanguage = (language) => {
     i18n.changeLanguage(language);
   };
 
-  const handleCurrencyChange = async(country,onClose) => {
-    const targetCurrency = country.code.split('(')[1].split(')')[0];
-    const rate = await fetchConversionRate('USD',targetCurrency);
-    updateCurrency(country.country,country.symbol,country.code, rate);
+  const handleCurrencyChange = async (country, onClose) => {
+    const targetCurrency = country.code.split("(")[1].split(")")[0];
+    const rate = await fetchConversionRate("USD", targetCurrency);
+    updateCurrency(country.country, country.symbol, country.code, rate);
     onClose();
-  }
+  };
 
   const selectedLanguage = languageOptions[i18n.language];
 
-   const getDeals = async () => {
+  const getDeals = async () => {
     try {
       const res = await getAPIAuth("get-deals", token);
-      console.log("getDealssss", res);
       if (res.status === 200) {
         setDealsData({
           base_url: res.data.base_url,
@@ -215,26 +212,31 @@ export default function Topbar({ bgColor }) {
     }
   };
 
-  useEffect(()=>{
+  useEffect(() => {
     getDeals();
-  },[])
+  }, []);
 
   return (
     <StyledRoot bgColor={bgColor} expand={expand ? 1 : 0}>
       <StyledContainer sx={{ height: "30px !important" }}>
         <FlexBetween width="100%">
-          {
-            dealsData?.header_text && <FlexBox alignItems="center" gap={1} sx={{ margin: "0 auto" }}>
+          {dealsData?.header_text && (
+            <FlexBox alignItems="center" gap={1} sx={{ margin: "0 auto" }}>
               <StyledChip label={t("HOT")} size="small" />
-              <Span  sx={{
-                display: "-webkit-box",
-                WebkitLineClamp: 1,        
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                textOverflow: "ellipsis"
-              }} className="title">{t(`${dealsData?.header_text}`)}</Span>
+              <Span
+                sx={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                className="title"
+              >
+                {t(`${dealsData?.header_text}`)}
+              </Span>
             </FlexBox>
-          }
+          )}
           <IconButton
             disableRipple
             className="expand"
@@ -259,7 +261,7 @@ export default function Topbar({ bgColor }) {
                 <MenuItem
                   className="menuItem notranslate"
                   key={country.country}
-                  onClick={()=>handleCurrencyChange(country,onClose)}
+                  onClick={() => handleCurrencyChange(country, onClose)}
                 >
                   <Span className="menuTitle">
                     {`${country.symbol}  ${country.country}  ${country.code}`}

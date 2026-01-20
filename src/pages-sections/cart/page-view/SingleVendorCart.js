@@ -36,6 +36,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 const SingleVendorCart = ({
   wallet,
   cart,
+  rawCartItems,
   defaultAddress,
   voucherDetails,
   isSingleVendor,
@@ -47,8 +48,7 @@ const SingleVendorCart = ({
     coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
   });
 
-  const { state, dispatch, getCartDetails, getCartItems } = useCart();
-  const deliveryBreakdown = state?.deliveryBreakdown || {};
+  const { getCartDetails, getCartItems } = useCart();
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
   const [isNoteOpen, setIsNoteOpen] = useState(false);
@@ -110,12 +110,12 @@ const SingleVendorCart = ({
           const prevFinalPrice = calculatePriceAfterDiscount(
             prev.offer_type,
             prev.discount_amount,
-            variantPrice
+            variantPrice,
           );
           const currentFinalPrice = calculatePriceAfterDiscount(
             current.offer_type,
             current.discount_amount,
-            variantPrice
+            variantPrice,
           );
 
           const prevSavings = variantPrice - prevFinalPrice;
@@ -139,7 +139,7 @@ const SingleVendorCart = ({
           finalPrice = calculatePriceAfterDiscount(
             bestPromotion.offer_type,
             bestPromotion.discount_amount,
-            variantPrice
+            variantPrice,
           );
           appliedPromotion = bestPromotion;
         }
@@ -166,7 +166,7 @@ const SingleVendorCart = ({
               calculatePriceAfterDiscount(
                 appliedPromotion.offer_type,
                 appliedPromotion.discount_amount,
-                variantPrice
+                variantPrice,
               )
             : 0;
 
@@ -176,7 +176,7 @@ const SingleVendorCart = ({
               const potentialPrice = calculatePriceAfterDiscount(
                 promo.offer_type,
                 promo.discount_amount,
-                variantPrice
+                variantPrice,
               );
               const potentialSavings = variantPrice - potentialPrice;
               return { ...promo, potentialSavings };
@@ -247,38 +247,40 @@ const SingleVendorCart = ({
   }, [cart, cart?.coupon_status, cart?.vendor_coupon, totalShopProductQty]);
 
   // UPDATED: Delivery options now only show shipping name + date range
-  const deliveryOptions = cart?.matchedShippingOptions?.map((item) => {
-    const minDays = item?.options?.[0]?.minDays || 0;
-    const maxDays = item?.options?.[0]?.maxDays || 0;
-    const currentDate = new Date();
+  const deliveryOptions = cart?.matchedShippingOptions
+    ?.map((item) => {
+      const option = item?.options?.[0];
+      if (!option) return null;
 
-    const minDate = new Date(currentDate);
-    minDate.setDate(currentDate.getDate() + minDays);
+      const currentDate = new Date();
 
-    const maxDate = new Date(currentDate);
-    maxDate.setDate(currentDate.getDate() + maxDays);
+      const minDate = new Date(currentDate);
+      minDate.setDate(currentDate.getDate() + option.minDays);
 
-    const shippingLabel =
-      {
-        standardShipping: "Standard Delivery",
-        expedited: "Express Delivery",
-        twoDays: "Two days",
-        oneDay: "One day",
-      }[item?.shippingType] || item?.shippingType;
+      const maxDate = new Date(currentDate);
+      maxDate.setDate(currentDate.getDate() + option.maxDays);
 
-    console.log("Delivery Shipping ", deliveryBreakdown, state);
+      const shippingLabel =
+        {
+          standardShipping: "Standard Delivery",
+          expedited: "Express Delivery",
+          twoDays: "Two days",
+          oneDay: "One day",
+        }[item.shippingType] || item.shippingType;
 
-    const price = deliveryBreakdown[item?.shippingType] || 0;
+      const price =
+        option.perOrder + option.perItem * Math.max(0, totalShopProductQty - 1);
 
-    return {
-      value: item?.shippingType,
-      label: `${shippingLabel} (${formatDate(minDate)} - ${formatDate(maxDate)}) ${
-        price > 0
-          ? `— ${currency?.symbol}${(price * currency?.rate).toFixed(2)}`
-          : ""
-      }`,
-    };
-  });
+      return {
+        value: item.shippingType,
+        label: `${shippingLabel} (${formatDate(minDate)} - ${formatDate(maxDate)}) ${
+          price > 0
+            ? `— ${currency.symbol}${(price * currency.rate).toFixed(2)}`
+            : ""
+        }`,
+      };
+    })
+    .filter(Boolean);
 
   const handleNoteAccordionToggle = () => {
     setIsNoteOpen((prev) => !prev);
@@ -407,35 +409,63 @@ const SingleVendorCart = ({
 
   const addParentCart = async () => {
     try {
-      const shipping = cart?.matchedShippingOptions?.find(
-        (item) => item?.shippingType === deliveryOption
-      );
-      console.log({ shipping });
-      const currentDate = new Date();
+      // const shipping = cart?.matchedShippingOptions?.find(
+      //   (item) => item?.shippingType === deliveryOption,
+      // );
 
-      const minDate = new Date(currentDate);
-      minDate.setDate(currentDate.getDate() + shipping?.options?.[0]?.minDays);
+      // if (!shipping) return;
 
-      const maxDate = new Date(currentDate);
-      maxDate.setDate(currentDate.getDate() + shipping?.options?.[0]?.maxDays);
-      const payload = {
-        cart_id: cart?.products?.[0]?.cart_id,
-        vendor_data: {
-          vendor_id: cart?.vendor_id,
-          shipping_id: shipping?.options?.[0]?._id,
-          shippingName: shipping?.shippingType,
-          minDate: minDate,
-          maxDate: maxDate,
-          perOrder: shipping?.options?.[0]?.perOrder,
-          perItem: shipping?.options?.[0]?.perItem,
-        },
-      };
-      const res = await postAPIAuth("user/add-parent-cart", payload);
-      if (res.status === 200) {
-        const data = wallet ? "1" : "0";
-        getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-        console.log(res, "rrrtrffff");
+      // 🔑 CALL API ONCE PER PRODUCT
+      for (const product of cart.products) {
+        const productShipping = product.selectedShipping;
+
+        console.log(
+          "Order Data poduct shipping \n",
+          productShipping,
+          product,
+          cart,
+        );
+
+        if (!productShipping) return;
+
+        const currentDate = new Date();
+
+        const option = productShipping.shippingTemplateData[deliveryOption][0];
+
+        const minDate = new Date(currentDate);
+        minDate.setDate(
+          currentDate.getDate() +
+            productShipping.shippingTemplateData[deliveryOption][0].transitTime
+              .minDays,
+        );
+
+        const maxDate = new Date(currentDate);
+        maxDate.setDate(
+          currentDate.getDate() +
+            productShipping.shippingTemplateData[deliveryOption][0].transitTime
+              .maxDays,
+        );
+
+        const payload = {
+          cart_id: product.cart_id,
+          vendor_data: {
+            vendor_id: cart.vendor_id,
+            product_id: product.product_id,
+            shipping_id: productShipping._id,
+            shippingName: productShipping.shippingType,
+            minDate,
+            maxDate,
+            perOrder: option.shippingFee.perOrder,
+            perItem: option.shippingFee.perItem,
+            shippingName: deliveryOption,
+          },
+        };
+
+        await postAPIAuth("user/add-parent-cart", payload);
       }
+
+      const data = wallet ? "1" : "0";
+      getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
     } catch (error) {
       console.error(error);
     }
@@ -478,7 +508,7 @@ const SingleVendorCart = ({
                 getCartDetails(
                   data,
                   defaultAddress?._id,
-                  voucherDetails?.discount
+                  voucherDetails?.discount,
                 );
               }}
               selected={location.countryName === country.name}

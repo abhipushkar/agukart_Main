@@ -22,7 +22,6 @@ import { Autocomplete, Checkbox, FormControlLabel } from "@mui/material";
 
 // =============================================================
 export default function AddressForm({ address, id }) {
-  // console.log("dfddfgdfdhdghdiiiiiiiiiiiddddddddddddddd" , id);
   const { token } = useAuth();
   const [allAddress, setAllAddress] = useState(null);
   const [allCountries, setAllCountries] = useState([]);
@@ -101,7 +100,7 @@ export default function AddressForm({ address, id }) {
   const getPostCode = async (pincode, city) => {
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&format=json`
+        `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&format=json`,
       );
       const data = await res.json();
 
@@ -147,16 +146,16 @@ export default function AddressForm({ address, id }) {
       // const check = await getPostCode(values.pin_code, values?.city?.name);
 
       // if (check) {
-        const res = await postAPIAuth("user/add-address", param, token);
-        console.log("ressqwertyu", res);
-        if ((res.status = 200)) {
-          addToast(res?.data?.message, {
-            appearance: "success",
-            autoDismiss: true,
-          });
-          router.push("/profile/address");
-          setButtonDisable(false);
-        }
+      const res = await postAPIAuth("user/add-address", param, token);
+      console.log("ressqwertyu", res);
+      if ((res.status = 200)) {
+        addToast(res?.data?.message, {
+          appearance: "success",
+          autoDismiss: true,
+        });
+        router.push("/profile/address");
+        setButtonDisable(false);
+      }
       // } else {
       //   addToast("Please Enter Valid Pin Code", {
       //     appearance: "error",

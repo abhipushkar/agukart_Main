@@ -13,7 +13,6 @@ const INITIAL_STATE = {
   shopDiscount: 0,
   subTotal: 0,
   delivery: 0,
-  deliveryBreakdown: {},
   superTotal: 0,
   total: 0,
   walletAmount: 0,
@@ -45,10 +44,10 @@ const variantsEqual = (a, b) => {
   if (a.length !== b.length) return false;
 
   const sortedA = [...a].sort((x, y) =>
-    x.variantName?.localeCompare(y.variantName)
+    x.variantName?.localeCompare(y.variantName),
   );
   const sortedB = [...b].sort((x, y) =>
-    x.variantName?.localeCompare(y.variantName)
+    x.variantName?.localeCompare(y.variantName),
   );
 
   for (let i = 0; i < sortedA.length; i++) {
@@ -67,7 +66,7 @@ const variantDataEqual = (
   variantDataA,
   variantAttributeDataA,
   variantDataB,
-  variantAttributeDataB
+  variantAttributeDataB,
 ) => {
   if (
     !variantDataA &&
@@ -122,13 +121,13 @@ const reducer = (state, action) => {
                   product.variantData,
                   product.variantAttributeData,
                   productItem.variantData,
-                  productItem.variantAttributeData
+                  productItem.variantAttributeData,
                 );
 
                 // Check internal variants (variants array)
                 const internalVariantsMatch = variantsEqual(
                   product.variants,
-                  productItem.variants
+                  productItem.variants,
                 );
 
                 // If both parent and internal variants match, remove this product
@@ -157,13 +156,13 @@ const reducer = (state, action) => {
               product.variantData,
               product.variantAttributeData,
               productItem.variantData,
-              productItem.variantAttributeData
+              productItem.variantAttributeData,
             );
 
             // Check internal variants match
             const internalVariantsMatch = variantsEqual(
               product.variants,
-              productItem.variants
+              productItem.variants,
             );
 
             // If both match, update this product
@@ -191,7 +190,7 @@ const reducer = (state, action) => {
 
         if (!exist) {
           const vendorIndex = cartList.findIndex(
-            (vendor) => vendor.vendor_id === cartItem.vendor_id
+            (vendor) => vendor.vendor_id === cartItem.vendor_id,
           );
 
           // Prepare the product object with all variant data
@@ -228,7 +227,7 @@ const reducer = (state, action) => {
           const updatedCartList = cartList
             ?.map((vendor) => {
               const filteredProducts = vendor.products.filter(
-                (product) => product?.product_id !== productItem?.product_id
+                (product) => product?.product_id !== productItem?.product_id,
               );
               return { ...vendor, products: filteredProducts };
             })
@@ -256,7 +255,7 @@ const reducer = (state, action) => {
 
         if (!exist) {
           const vendorIndex = cartList.findIndex(
-            (vendor) => vendor.vendor_id === cartItem.vendor_id
+            (vendor) => vendor.vendor_id === cartItem.vendor_id,
           );
           if (vendorIndex >= 0) {
             updatedCartList[vendorIndex]?.products?.push({
@@ -292,7 +291,6 @@ const reducer = (state, action) => {
           action?.payload?.couponDiscount -
           action?.payload?.voucherDiscount,
         delivery: action?.payload?.delivery,
-        deliveryBreakdown: action?.payload?.deliveryBreakdown || {},
         superTotal:
           action?.payload?.subTotal -
           action?.payload?.couponDiscount -
@@ -320,7 +318,7 @@ export default function CartProvider({ children }) {
     if (token && cartData?.length) {
       const res = await getAPIAuth(
         `user/cart-list?address_id=${address_id || ""}&country=${location.countryName}`,
-        token
+        token,
       );
       if (res.status === 200) {
         dispatch({
@@ -335,7 +333,7 @@ export default function CartProvider({ children }) {
     try {
       const res = await getAPIAuth(
         `user/cart-list?address_id=${address_id || ""}&country=${location.countryName}`,
-        token
+        token,
       );
       if (res.status === 200) {
         dispatch({ type: "INIT_CART", payload: res?.data?.result });
@@ -367,7 +365,7 @@ export default function CartProvider({ children }) {
     try {
       const res = await getAPIAuth(
         `user/getCartDetails?wallet=${wallet}&address_id=${address_id || ""}&country=${location.countryName}&voucher_discount=${discount}`,
-        token
+        token,
       );
 
       if (res?.data?.status) {
@@ -394,7 +392,7 @@ export default function CartProvider({ children }) {
               productTotal + (product?.sale_price || 0) * (product?.qty || 1)
             );
           },
-          0
+          0,
         );
         return vendorTotal + productTotal;
       }, 0);
@@ -424,7 +422,7 @@ export default function CartProvider({ children }) {
       getCartItems,
       getCartDetails,
     }),
-    [state, dispatch]
+    [state, dispatch],
   );
 
   return (
