@@ -26,17 +26,17 @@ export const useProductVariants = (product) => {
       // Split by " and " to get variant names
       return value.split(" and ").filter((name) => name.trim() !== "");
     },
-    [product]
+    [product],
   );
 
   // Get controlling variant names for price and quantity
   const priceControllingVariants = useMemo(
     () => getControllingVariants("prices"),
-    [getControllingVariants]
+    [getControllingVariants],
   );
   const quantityControllingVariants = useMemo(
     () => getControllingVariants("quantities"),
-    [getControllingVariants]
+    [getControllingVariants],
   );
 
   // Check if combination logic should be applied for price
@@ -132,12 +132,12 @@ export const useProductVariants = (product) => {
         const variantInfo = product.variant_id?.find(
           (v) =>
             v.variant_name === variant.variant_name ||
-            v._id === variant.variant_name
+            v._id === variant.variant_name,
         );
 
         // Get variant attributes ONLY from variant_attribute_id that belong to this variant
         const variantInVariantId = product.variant_id?.find(
-          (v) => v.variant_name === variant.variant_name
+          (v) => v.variant_name === variant.variant_name,
         );
 
         if (!variantInVariantId) {
@@ -147,12 +147,12 @@ export const useProductVariants = (product) => {
         // Filter variant_attribute_id to get only attributes for this specific variant
         const variantAttributes =
           product.variant_attribute_id?.filter(
-            (attr) => attr.variant === variantInVariantId._id
+            (attr) => attr.variant === variantInVariantId._id,
           ) || [];
 
         // Find attribute data from product_variants structure
         const variantFromPV = product.product_variants.find(
-          (pv) => pv.variant_name === variant.variant_name
+          (pv) => pv.variant_name === variant.variant_name,
         );
 
         // Create a map of attributes from product_variants for quick lookup
@@ -173,7 +173,7 @@ export const useProductVariants = (product) => {
           .filter((attr) => {
             // Check if this attribute value exists in product_variants
             const existsInPV = variantFromPV?.variant_attributes?.some(
-              (pvAttr) => pvAttr.attribute === attr.attribute_value
+              (pvAttr) => pvAttr.attribute === attr.attribute_value,
             );
             return existsInPV;
           })
@@ -212,7 +212,7 @@ export const useProductVariants = (product) => {
           });
         } else {
           console.error(
-            `No filtered attributes for ${variant.variant_name}, skipping variant`
+            `No filtered attributes for ${variant.variant_name}, skipping variant`,
           );
         }
       });
@@ -290,13 +290,13 @@ export const useProductVariants = (product) => {
           // Handle value1 and name1
           if (combo.value1 && combo.name1) {
             const variant = product.variant_id?.find(
-              (v) => v.variant_name === combo.name1
+              (v) => v.variant_name === combo.name1,
             );
             if (variant) {
               const attribute = product.variant_attribute_id?.find(
                 (attr) =>
                   attr.variant === variant._id &&
-                  attr.attribute_value === combo.value1
+                  attr.attribute_value === combo.value1,
               );
               if (attribute) {
                 attributeIds.push(attribute._id);
@@ -312,13 +312,13 @@ export const useProductVariants = (product) => {
           // Handle value2 and name2 (for 2-attribute combinations)
           if (combo.value2 && combo.name2) {
             const variant = product.variant_id?.find(
-              (v) => v.variant_name === combo.name2
+              (v) => v.variant_name === combo.name2,
             );
             if (variant) {
               const attribute = product.variant_attribute_id?.find(
                 (attr) =>
                   attr.variant === variant._id &&
-                  attr.attribute_value === combo.value2
+                  attr.attribute_value === combo.value2,
               );
               if (attribute) {
                 attributeIds.push(attribute._id);
@@ -413,7 +413,7 @@ export const useProductVariants = (product) => {
 
       // Find which variant this attribute belongs to
       const attributeVariant = normalizedVariants.find((v) =>
-        v.attributes.some((a) => a.id === attributeId)
+        v.attributes.some((a) => a.id === attributeId),
       );
 
       if (!attributeVariant) return true; // Not an internal variant
@@ -436,12 +436,12 @@ export const useProductVariants = (product) => {
           ([variantName, attrId]) => {
             // Only check if this variant is represented in the combination
             const variantInCombo = combo.attributes.some(
-              (a) => a.variant === variantName
+              (a) => a.variant === variantName,
             );
             if (!variantInCombo) return true; // Variant not in this combination
 
             return ids.includes(attrId);
-          }
+          },
         );
 
         if (
@@ -454,7 +454,7 @@ export const useProductVariants = (product) => {
 
       return hasVisibleCombination;
     },
-    [product, internalCombinationsMap, normalizeVariantData]
+    [product, internalCombinationsMap, normalizeVariantData],
   );
 
   // Get price and quantity ranges for an attribute
@@ -468,10 +468,10 @@ export const useProductVariants = (product) => {
 
       // Filter out null/undefined and zero when non-zero exists for quantities
       const validPrices = attrData.prices.filter(
-        (p) => p !== null && !isNaN(p)
+        (p) => p !== null && !isNaN(p),
       );
       const validQuantities = attrData.quantities.filter(
-        (q) => q !== null && !isNaN(q)
+        (q) => q !== null && !isNaN(q),
       );
 
       // For quantity ranges, ignore zero if there are non-zero values
@@ -501,7 +501,7 @@ export const useProductVariants = (product) => {
         isIndependent: attrData.isIndependent,
       };
     },
-    [internalCombinationsMap]
+    [internalCombinationsMap],
   );
 
   const areAllInternalVariantsSelected = useCallback(() => {
@@ -509,7 +509,7 @@ export const useProductVariants = (product) => {
 
     // Get all internal variants
     const internalVariants = normalizedVariants.filter(
-      (v) => v.type === "internal"
+      (v) => v.type === "internal",
     );
 
     // If there are no internal variants, return true (no validation needed)
@@ -520,7 +520,7 @@ export const useProductVariants = (product) => {
     // Check if every internal variant has a selected value
     return internalVariants.every(
       (variant) =>
-        selectedVariants[variant.id] && selectedVariants[variant.id] !== ""
+        selectedVariants[variant.id] && selectedVariants[variant.id] !== "",
     );
   }, [normalizeVariantData, selectedVariants]);
 
@@ -538,7 +538,7 @@ export const useProductVariants = (product) => {
         const tempSelections = { ...currentSelections };
         const normalizedVariants = normalizeVariantData();
         const attributeVariant = normalizedVariants.find((v) =>
-          v.attributes.some((attr) => attr.id === attributeId)
+          v.attributes.some((attr) => attr.id === attributeId),
         );
 
         if (!attributeVariant) return false;
@@ -559,7 +559,7 @@ export const useProductVariants = (product) => {
         const tempSelections = { ...currentSelections };
         const normalizedVariants = normalizeVariantData();
         const attributeVariant = normalizedVariants.find((v) =>
-          v.attributes.some((attr) => attr.id === attributeId)
+          v.attributes.some((attr) => attr.id === attributeId),
         );
 
         if (!attributeVariant) return false;
@@ -578,7 +578,7 @@ export const useProductVariants = (product) => {
         }
 
         const selectedIds = Object.values(controllingSelections).filter(
-          Boolean
+          Boolean,
         );
 
         // Collect ALL matching VISIBLE combinations
@@ -621,7 +621,7 @@ export const useProductVariants = (product) => {
       internalCombinationsMap,
       shouldUseCombinationQuantity,
       quantityControllingVariants,
-    ]
+    ],
   );
 
   const getSelectedVariantMainImages = useCallback(
@@ -636,7 +636,7 @@ export const useProductVariants = (product) => {
         ([variantName, attributeId]) => {
           // Find the variant in product_variants
           const variant = product.product_variants.find(
-            (pv) => pv.variant_name === variantName
+            (pv) => pv.variant_name === variantName,
           );
 
           if (variant?.variant_attributes) {
@@ -645,13 +645,13 @@ export const useProductVariants = (product) => {
               (attr) => {
                 // Try to find by attribute value
                 const attrInVariantAttr = product.variant_attribute_id?.find(
-                  (va) => va._id === attributeId
+                  (va) => va._id === attributeId,
                 );
                 if (attrInVariantAttr) {
                   return attr.attribute === attrInVariantAttr.attribute_value;
                 }
                 return false;
-              }
+              },
             );
 
             // If attribute has main_images, add them
@@ -682,14 +682,14 @@ export const useProductVariants = (product) => {
               });
             }
           }
-        }
+        },
       );
 
       // Sort by priority (most recently selected first)
       variantImages.sort((a, b) => a.priority - b.priority);
       return variantImages;
     },
-    [product, selectedVariants]
+    [product, selectedVariants],
   );
 
   // Update selected variant images when selections change
@@ -726,7 +726,7 @@ export const useProductVariants = (product) => {
       // The getSelectedVariantMainImages function will handle the removal
       // based on the new selections
     },
-    []
+    [],
   );
 
   // Get price for an attribute or combination
@@ -739,7 +739,7 @@ export const useProductVariants = (product) => {
       const tempSelections = { ...currentSelections };
       const normalizedVariants = normalizeVariantData();
       const attributeVariant = normalizedVariants.find((v) =>
-        v.attributes.some((attr) => attr.id === attributeId)
+        v.attributes.some((attr) => attr.id === attributeId),
       );
 
       if (!attributeVariant) return null;
@@ -758,7 +758,7 @@ export const useProductVariants = (product) => {
       }
 
       const selectionIds = Object.values(controllingSelections).filter(
-        (id) => id
+        (id) => id,
       );
 
       if (selectionIds.length === 0) {
@@ -804,7 +804,7 @@ export const useProductVariants = (product) => {
       getAttributeRanges,
       shouldUseCombinationPrice,
       priceControllingVariants,
-    ]
+    ],
   );
 
   // Get quantity for an attribute or combination
@@ -817,7 +817,7 @@ export const useProductVariants = (product) => {
       const tempSelections = { ...currentSelections };
       const normalizedVariants = normalizeVariantData();
       const attributeVariant = normalizedVariants.find((v) =>
-        v.attributes.some((attr) => attr.id === attributeId)
+        v.attributes.some((attr) => attr.id === attributeId),
       );
 
       if (!attributeVariant) return null;
@@ -836,7 +836,7 @@ export const useProductVariants = (product) => {
       }
 
       const selectionIds = Object.values(controllingSelections).filter(
-        (id) => id
+        (id) => id,
       );
 
       if (selectionIds.length === 0) {
@@ -879,7 +879,7 @@ export const useProductVariants = (product) => {
       getAttributeRanges,
       shouldUseCombinationQuantity,
       quantityControllingVariants,
-    ]
+    ],
   );
 
   // Get product image for hover based on current selections and hovered attribute
@@ -891,7 +891,7 @@ export const useProductVariants = (product) => {
 
       // Find which variant this attribute belongs to
       const hoveredVariant = normalizedVariants.find((v) =>
-        v.attributes.some((attr) => attr.id === hoveredAttributeId)
+        v.attributes.some((attr) => attr.id === hoveredAttributeId),
       );
 
       if (!hoveredVariant) return null;
@@ -908,14 +908,14 @@ export const useProductVariants = (product) => {
         currentSelections[hoveredVariant.id] = hoveredAttributeId;
 
         const selectionIds = Object.values(currentSelections).filter(
-          (val) => val === hoveredAttributeId
+          (val) => val === hoveredAttributeId,
         );
         if (selectionIds.length === 0) return null;
 
         const selectionString = selectionIds.sort().join(",");
 
         const targetCombination = parentCombinations.find(
-          (combo) => combo.combination_ids.sort().join(",") === selectionString
+          (combo) => combo.combination_ids.sort().join(",") === selectionString,
         );
 
         return {
@@ -931,7 +931,7 @@ export const useProductVariants = (product) => {
       // ─────────────────────────────────────
       if (hoveredVariant.type === "internal") {
         const attr = hoveredVariant.attributes.find(
-          (a) => a.id === hoveredAttributeId
+          (a) => a.id === hoveredAttributeId,
         );
 
         if (
@@ -952,7 +952,12 @@ export const useProductVariants = (product) => {
 
       return null;
     },
-    [product, selectedVariants, extractParentCombinations, normalizeVariantData]
+    [
+      product,
+      selectedVariants,
+      extractParentCombinations,
+      normalizeVariantData,
+    ],
   );
 
   // Handle variant hover for image preview
@@ -961,7 +966,7 @@ export const useProductVariants = (product) => {
       const hoverImage = getHoverProductImage(attributeId);
       setHoveredVariantImage(hoverImage);
     },
-    [product, getHoverProductImage]
+    [product, getHoverProductImage],
   );
 
   // Handle variant hover out
@@ -974,12 +979,14 @@ export const useProductVariants = (product) => {
     (variantId, value) => {
       const previousSelections = { ...selectedVariants };
 
+      setHoveredVariantImage(null);
+
       setSelectedVariants((prev) => {
         const newSelected = { ...prev };
 
         const normalizedVariants = normalizeVariantData();
         const selectedVariant = normalizedVariants.find(
-          (v) => v.id === variantId
+          (v) => v.id === variantId,
         );
 
         if (selectedVariant?.type === "parent") {
@@ -1012,7 +1019,7 @@ export const useProductVariants = (product) => {
       cleanupVariantImages(previousSelections, newSelections);
       setErrors((prev) => ({ ...prev, [variantId]: "" }));
     },
-    [normalizeVariantData, selectedVariants, cleanupVariantImages]
+    [normalizeVariantData, selectedVariants, cleanupVariantImages],
   );
 
   // Validate variant selections
@@ -1022,7 +1029,7 @@ export const useProductVariants = (product) => {
 
     // Only validate parent variants for navigation
     const parentVariants = normalizedVariants.filter(
-      (v) => v.type === "parent"
+      (v) => v.type === "parent",
     );
 
     parentVariants.forEach((variant) => {
@@ -1057,11 +1064,11 @@ export const useProductVariants = (product) => {
             const priceData = getAttributePrice(attr.id, selectedVariants);
             const quantityData = getAttributeQuantity(
               attr.id,
-              selectedVariants
+              selectedVariants,
             );
             const isSoldOut = isAttributeCombinationSoldOut(
               attr.id,
-              selectedVariants
+              selectedVariants,
             );
             const isVisible = isAttributeVisible(attr.id, selectedVariants);
 
@@ -1098,7 +1105,7 @@ export const useProductVariants = (product) => {
           isSoldOut: attr.isSoldOut,
           isIndependent: attr.isIndependent,
           isVisible: attr.isVisible,
-        }))
+        })),
       );
 
       setFilterVariantAttributes(updatedVariantAttributes);
@@ -1161,7 +1168,7 @@ export const useProductVariants = (product) => {
       const parentCombinations = extractParentCombinations();
 
       const currentCombination = parentCombinations.find(
-        (combo) => combo.sku_product_id === product_id
+        (combo) => combo.sku_product_id === product_id,
       );
 
       if (currentCombination) {
@@ -1170,7 +1177,7 @@ export const useProductVariants = (product) => {
 
         currentCombination.combination_ids.forEach((combId) => {
           const variantAttr = variantAttributes.find(
-            (attr) => attr._id === combId
+            (attr) => attr._id === combId,
           );
 
           if (variantAttr) {
@@ -1360,7 +1367,7 @@ export const useProductVariants = (product) => {
       const normalizedVariants = normalizeVariantData();
 
       const attributeVariant = normalizedVariants.find((v) =>
-        v.attributes.some((a) => a.id === attributeId)
+        v.attributes.some((a) => a.id === attributeId),
       );
 
       if (!attributeVariant) {
@@ -1514,7 +1521,7 @@ export const useProductVariants = (product) => {
       priceControllingVariants,
       quantityControllingVariants,
       isAttributeVisible,
-    ]
+    ],
   );
 
   return {

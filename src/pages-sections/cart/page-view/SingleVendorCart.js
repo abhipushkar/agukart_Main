@@ -33,6 +33,42 @@ import CheckoutPopup from "./CheckoutPopup";
 import { useLocation } from "../../../contexts/location_context"; // Adjust path as needed
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 
+const DELIVERY_STORAGE_KEY = "persisted_delivery_options";
+
+// Helper functions for localStorage operations
+const getPersistedDeliveryOptions = () => {
+  try {
+    const stored = localStorage.getItem(DELIVERY_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.error("Error reading persisted delivery options:", error);
+    return {};
+  }
+};
+
+const setPersistedDeliveryOption = (vendorId, deliveryOption) => {
+  try {
+    const currentOptions = getPersistedDeliveryOptions();
+    const updatedOptions = {
+      ...currentOptions,
+      [vendorId]: deliveryOption,
+    };
+    localStorage.setItem(DELIVERY_STORAGE_KEY, JSON.stringify(updatedOptions));
+  } catch (error) {
+    console.error("Error persisting delivery option:", error);
+  }
+};
+
+const removePersistedDeliveryOption = (vendorId) => {
+  try {
+    const currentOptions = getPersistedDeliveryOptions();
+    delete currentOptions[vendorId];
+    localStorage.setItem(DELIVERY_STORAGE_KEY, JSON.stringify(currentOptions));
+  } catch (error) {
+    console.error("Error removing persisted delivery option:", error);
+  }
+};
+
 const SingleVendorCart = ({
   wallet,
   cart,
@@ -48,7 +84,7 @@ const SingleVendorCart = ({
     coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
   });
 
-  const { getCartDetails, getCartItems } = useCart();
+  const { state, getCartDetails, getCartItems } = useCart();
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
   const [isNoteOpen, setIsNoteOpen] = useState(false);
@@ -60,9 +96,45 @@ const SingleVendorCart = ({
     buyer_note: "",
     _id: null,
   });
-  const [deliveryOption, setDeliveryOption] = useState("standardShipping");
+  const [deliveryOption, setDeliveryOption] = useState(() => {
+    const persistedOptions = getPersistedDeliveryOptions();
+    const vendorId = cart?.vendor_id;
+
+    if (vendorId && persistedOptions[vendorId]) {
+      return persistedOptions[vendorId];
+    }
+
+    return cart?.selectedShipping || "standardShipping";
+  });
   const [isModalOpen, setModalOpen] = useState(false);
   const [showCountryModal, setShowCountryModal] = useState(false);
+  const [selectedShipping, setSelectedShipping] = useState(() => {
+    // Try to get from persisted storage first
+    const persistedOptions = getPersistedDeliveryOptions();
+    const vendorId = cart?.vendor_id;
+
+    if (vendorId && persistedOptions[vendorId]) {
+      return persistedOptions[vendorId];
+    }
+
+    // Fallback to cart's selectedShipping or default
+    return cart?.selectedShipping || "standardShipping";
+  });
+
+  const handleShippingChange = (e) => {
+    const newShippingOption = e.target.value;
+    const vendorId = cart?.vendor_id;
+
+    // Update both state variables
+    setSelectedShipping(newShippingOption);
+    setDeliveryOption(newShippingOption);
+
+    // Persist to localStorage
+    if (vendorId) {
+      setPersistedDeliveryOption(vendorId, newShippingOption);
+    }
+  };
+
   const formatDate = (date) => {
     const day = date.getDate();
     const month = date.toLocaleString("default", { month: "short" });
@@ -75,7 +147,6 @@ const SingleVendorCart = ({
   const processedCart = useMemo(() => {
     if (!cart) return null;
 
-    // Calculate Total Shop Value
     const totalShopValue = cart?.products?.reduce((acc, item) => {
       const price = +item.original_price || +item.real_price || 0;
       return acc + price * (item?.qty || 0);
@@ -89,10 +160,8 @@ const SingleVendorCart = ({
     const processedProducts = cart.products.map((product) => {
       const variantPrice = +product.original_price || +product.real_price || 0;
 
-      // 1. Find Best Promotion
       let bestPromotion = null;
 
-      // Filter valid promotions
       const validPromotions =
         product?.promotionalOfferData?.filter((promo) => {
           if (promo.promotion_type === "qty_per_product")
@@ -125,16 +194,13 @@ const SingleVendorCart = ({
         });
       }
 
-      // 2. Logic for isSynced
       let finalPrice = variantPrice;
       let appliedPromotion = null;
 
       if (isCouponApplied && isSynced) {
-        // Coupon applied AND Synced -> Remove promotional offers
         finalPrice = variantPrice;
         appliedPromotion = null;
       } else {
-        // Coupon NOT applied OR (Applied but NOT Synced) -> Apply best promotion
         if (bestPromotion) {
           finalPrice = calculatePriceAfterDiscount(
             bestPromotion.offer_type,
@@ -145,7 +211,6 @@ const SingleVendorCart = ({
         }
       }
 
-      // 3. Logic for Upsell (Next Best Offer)
       let upsellData = null;
       if (!isCouponApplied || (isCouponApplied && !isSynced)) {
         const lockedPromotions =
@@ -169,8 +234,6 @@ const SingleVendorCart = ({
                 variantPrice,
               )
             : 0;
-
-          // Find potentials that offer MORE savings than current
           const betterPromotions = lockedPromotions
             .map((promo) => {
               const potentialPrice = calculatePriceAfterDiscount(
@@ -183,13 +246,9 @@ const SingleVendorCart = ({
             })
             .filter((p) => p.potentialSavings > currentSavings);
 
-          // Sort by 'closest to reach' (simplistic heuristic: lowest required qty/amount first)
-          // or Sort by 'max savings'. Let's pick Nearest Target first to be realistic.
           if (betterPromotions.length > 0) {
             const nextBest = betterPromotions.sort((a, b) => {
-              // Normalize distance metric? Hard because units differ (qty vs amount).
-              // Prioritize Product Qty > Shop Amount > Shop Qty for simplicity/relevance
-              if (a.promotion_type !== b.promotion_type) return 0; // Keep order
+              if (a.promotion_type !== b.promotion_type) return 0;
               if (a.promotion_type === "amount")
                 return a.offer_amount - b.offer_amount;
               return a.qty - b.qty;
@@ -240,13 +299,12 @@ const SingleVendorCart = ({
     return {
       ...cart,
       products: processedProducts,
-      totalShopValue: calculatedShopValue, // This is based on calculatedPrice (so it's the Net Price before Cart-Coupon)
-      originalShopValue, // New: Gross Price
-      promotionDiscount, // New: Shop Offer Amount
+      totalShopValue: calculatedShopValue,
+      originalShopValue,
+      promotionDiscount,
     };
   }, [cart, cart?.coupon_status, cart?.vendor_coupon, totalShopProductQty]);
 
-  // UPDATED: Delivery options now only show shipping name + date range
   const deliveryOptions = cart?.matchedShippingOptions
     ?.map((item) => {
       const option = item?.options?.[0];
@@ -268,8 +326,12 @@ const SingleVendorCart = ({
           oneDay: "One day",
         }[item.shippingType] || item.shippingType;
 
+      const vendorFinalPrice = state.vendorDeliveryMap?.[cart.vendor_id];
+
       const price =
-        option.perOrder + option.perItem * Math.max(0, totalShopProductQty - 1);
+        selectedShipping === item.shippingType && vendorFinalPrice != null
+          ? vendorFinalPrice
+          : cart?.previewDelivery?.[item.shippingType] || 0;
 
       return {
         value: item.shippingType,
@@ -407,57 +469,99 @@ const SingleVendorCart = ({
     }
   }, [formValues.coupon_code]);
 
+  function getVendorReference(cart, selectedType) {
+    for (const product of cart.products) {
+      const templates = product.selectedShipping?.shippingTemplateData;
+      if (templates?.[selectedType]?.length) {
+        return {
+          shippingId: product.selectedShipping._id,
+          option: templates[selectedType][0],
+        };
+      }
+    }
+    return null;
+  }
+
+  function findNearestShippingProduct(products, currentIndex, deliveryOption) {
+    // check left
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const templates = products[i]?.selectedShipping?.shippingTemplateData;
+      if (templates?.[deliveryOption]?.length) {
+        return {
+          option: templates[deliveryOption][0],
+          shippingId: products[i].selectedShipping._id,
+        };
+      }
+    }
+
+    // check right
+    for (let i = currentIndex + 1; i < products.length; i++) {
+      const templates = products[i]?.selectedShipping?.shippingTemplateData;
+      if (templates?.[deliveryOption]?.length) {
+        return {
+          option: templates[deliveryOption][0],
+          shippingId: products[i].selectedShipping._id,
+        };
+      }
+    }
+
+    return null;
+  }
+
   const addParentCart = async () => {
     try {
-      // const shipping = cart?.matchedShippingOptions?.find(
-      //   (item) => item?.shippingType === deliveryOption,
-      // );
+      const products = cart.products;
 
-      // if (!shipping) return;
+      for (let index = 0; index < products.length; index++) {
+        const product = products[index];
+        const templates = product.selectedShipping?.shippingTemplateData;
 
-      // 🔑 CALL API ONCE PER PRODUCT
-      for (const product of cart.products) {
-        const productShipping = product.selectedShipping;
+        let option = null;
+        let shippingId = null;
 
-        console.log(
-          "Order Data poduct shipping \n",
-          productShipping,
-          product,
-          cart,
-        );
+        // 1️⃣ Product supports selected shipping
+        if (templates?.[deliveryOption]?.length) {
+          option = templates[deliveryOption][0];
+          shippingId = product.selectedShipping._id;
+        }
+        // 2️⃣ Borrow from nearest cart neighbor
+        else {
+          const nearest = findNearestShippingProduct(
+            products,
+            index,
+            deliveryOption,
+          );
 
-        if (!productShipping) return;
+          if (!nearest) {
+            console.warn(`Shipping ${deliveryOption} not supported for vendor`);
+            return;
+          }
 
-        const currentDate = new Date();
+          option = nearest.option;
+          shippingId = nearest.shippingId;
+        }
 
-        const option = productShipping.shippingTemplateData[deliveryOption][0];
+        // 3️⃣ Dates
+        const now = new Date();
+        const minDate = new Date(now);
+        minDate.setDate(now.getDate() + option.transitTime.minDays);
 
-        const minDate = new Date(currentDate);
-        minDate.setDate(
-          currentDate.getDate() +
-            productShipping.shippingTemplateData[deliveryOption][0].transitTime
-              .minDays,
-        );
+        const maxDate = new Date(now);
+        maxDate.setDate(now.getDate() + option.transitTime.maxDays);
 
-        const maxDate = new Date(currentDate);
-        maxDate.setDate(
-          currentDate.getDate() +
-            productShipping.shippingTemplateData[deliveryOption][0].transitTime
-              .maxDays,
-        );
-
+        // 4️⃣ Payload (CORRECT PER PRODUCT)
         const payload = {
           cart_id: product.cart_id,
           vendor_data: {
             vendor_id: cart.vendor_id,
             product_id: product.product_id,
-            shipping_id: productShipping._id,
-            shippingName: productShipping.shippingType,
+            shipping_id: shippingId,
+            shippingName: deliveryOption,
             minDate,
             maxDate,
             perOrder: option.shippingFee.perOrder,
             perItem: option.shippingFee.perItem,
-            shippingName: deliveryOption,
+            region: location.countryName,
           },
         };
 
@@ -466,8 +570,8 @@ const SingleVendorCart = ({
 
       const data = wallet ? "1" : "0";
       getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error("addParentCart error:", err);
     }
   };
 
@@ -922,8 +1026,8 @@ const SingleVendorCart = ({
                       Estimated delivery:
                     </Typography>
                     <Select
-                      value={deliveryOption}
-                      onChange={(e) => setDeliveryOption(e.target.value)}
+                      value={selectedShipping}
+                      onChange={handleShippingChange}
                       sx={{
                         borderBottom: "1px dashed gray",
                         width: {

@@ -13,6 +13,7 @@ const INITIAL_STATE = {
   shopDiscount: 0,
   subTotal: 0,
   delivery: 0,
+  vendorDeliveryMap: {},
   superTotal: 0,
   total: 0,
   walletAmount: 0,
@@ -291,6 +292,7 @@ const reducer = (state, action) => {
           action?.payload?.couponDiscount -
           action?.payload?.voucherDiscount,
         delivery: action?.payload?.delivery,
+        vendorDeliveryMap: action?.payload?.vendorDeliveryMap || {},
         superTotal:
           action?.payload?.subTotal -
           action?.payload?.couponDiscount -
