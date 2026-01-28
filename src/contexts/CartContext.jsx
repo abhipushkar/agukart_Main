@@ -363,10 +363,10 @@ export default function CartProvider({ children }) {
     }
   }, []);
 
-  const getCartDetails = async (wallet, address_id, discount) => {
+  const getCartDetails = async (wallet, address_id, discount, country) => {
     try {
       const res = await getAPIAuth(
-        `user/getCartDetails?wallet=${wallet}&address_id=${address_id || ""}&country=${location.countryName}&voucher_discount=${discount}`,
+        `user/getCartDetails?wallet=${wallet}&address_id=${address_id ?? ""}&country=${country ?? location.countryName}&voucher_discount=${discount}`,
         token,
       );
 

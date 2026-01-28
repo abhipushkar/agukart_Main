@@ -102,7 +102,7 @@ const DeliveryAddress = () => {
   const handleWalletChange = async (e) => {
     setWallet(e.target.checked);
     const data = !wallet ? "1" : "0";
-    getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount);
+    getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount,allAddress[addressIndex]?.country);
   };
 
   useEffect(() => {
@@ -410,7 +410,7 @@ const DeliveryAddress = () => {
         setWallet(false);
       }
       const data = (wallet == "true") ? "1" : "0";
-      getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount);
+      getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount,allAddress[addressIndex]?.country);
     }
   }, [token,allAddress,addressIndex]);
 

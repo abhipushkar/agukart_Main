@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Grid, Typography, Tooltip, tooltipClasses,Rating } from "@mui/material";
+import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating } from "@mui/material";
 import { styled, alpha } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -19,18 +19,20 @@ import { useToasts } from "react-toast-notifications";
 import Product from "./Product";
 import useAuth from "hooks/useAuth";
 import { postAPIAuth } from "utils/__api__/ApiServies";
+import { useMemo } from 'react';
 
-const Order = ({baseUrl,shopBaseUrl,filterOrders,getAllOrders,order}) => {
+
+const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const router = useRouter();
   const { token } = useAuth();
   const { addToast } = useToasts();
   const [reviewId, setReviewId] = useState("");
-  const [vendorId,setVendorId] = useState("");
+  const [vendorId, setVendorId] = useState("");
   const [openPopup, SetOpenPopup] = useState(false);
   const [deliveryRating, setDeliveryRating] = useState(0);
   const [itemRating, setItemRating] = useState(0);
 
-  const {currency} = useCurrency();
+  const { currency } = useCurrency();
   const isoString = order.createdAt;
   const date = new Date(isoString);
 
@@ -39,6 +41,15 @@ const Order = ({baseUrl,shopBaseUrl,filterOrders,getAllOrders,order}) => {
     setVendorId("");
     SetOpenPopup(false);
   };
+
+  const groupedByShop = useMemo(() => {
+    return (order?.saleDetaildata || []).reduce((acc, product) => {
+      const shop = product?.vendorData?.shop_name || 'Unknown';
+      acc[shop] = acc[shop] || [];
+      acc[shop].push(product);
+      return acc;
+    }, {});
+  }, [order?.saleDetaildata]);
 
   const LightTooltip = styled(({ className, ...props }) => (
     <Tooltip {...props} classes={{ popper: className }} />
@@ -50,7 +61,7 @@ const Order = ({baseUrl,shopBaseUrl,filterOrders,getAllOrders,order}) => {
       fontSize: 11,
     },
   }));
-  
+
   const formattedDate = date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
@@ -78,7 +89,7 @@ const Order = ({baseUrl,shopBaseUrl,filterOrders,getAllOrders,order}) => {
 
       const payload = {
         saleDetailId: reviewId,
-        vendor_id:vendorId,
+        vendor_id: vendorId,
         delivery_rating: `${values.deliveryRating}`,
         item_rating: `${values.itemRating}`,
         additional_comment: values.comments,
@@ -347,11 +358,35 @@ const Order = ({baseUrl,shopBaseUrl,filterOrders,getAllOrders,order}) => {
               {/* <Typography>Package was handed to resident</Typography> */}
             </Typography>
 
-            {order?.saleDetaildata?.map((product) => {
-              return (
-                <Product key = {product?._id} baseUrl = {baseUrl} shopBaseUrl={shopBaseUrl} SetOpenPopup = {SetOpenPopup} setReviewId = {setReviewId} setVendorId={setVendorId} order = {order} product={product}/>
-              );
-            })}
+            {Object.entries(groupedByShop).map(([shop, products]) => (
+              <Box key={shop}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <H4 sx={{color:'grey'}}>Shop name : {shop}</H4>
+                  <Box
+                    sx={{
+                      flexGrow: 1,
+                      height: '1px',
+                      backgroundColor: '#e0e0e0',
+                      ml: 2,
+                    }}
+                  />
+                </Box>
+
+                {products.map(product => (
+                  <Product
+                    key={product?._id}
+                    baseUrl={baseUrl}
+                    shopBaseUrl={shopBaseUrl}
+                    SetOpenPopup={SetOpenPopup}
+                    setReviewId={setReviewId}
+                    setVendorId={setVendorId}
+                    order={order}
+                    product={product}
+                  />
+                ))}
+              </Box>
+            ))}
+
           </Box>
         </Box>
       </Box>
