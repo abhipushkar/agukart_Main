@@ -207,6 +207,66 @@ const ChatContextProvider = ({ children }) => {
     });
   };
 
+  const parseUserCreatedAt = (value) => {
+    if (!value) return null;
+
+    // 1️⃣ Firestore Timestamp
+    if (typeof value === "object" && typeof value.toDate === "function") {
+      return value.toDate();
+    }
+
+    // 2️⃣ Already a Date object
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? null : value;
+    }
+
+    // 3️⃣ ISO string (contains T → safest check)
+    if (typeof value === "string" && value.includes("T")) {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // 4️⃣ Custom format: DD-MM-YYYY HH:mm:ss
+    if (typeof value === "string" && value.includes("-")) {
+      const [datePart, timePart] = value.split(" ");
+      if (!datePart || !timePart) return null;
+
+      const [dd, mm, yyyy] = datePart.split("-");
+      if (!dd || !mm || !yyyy) return null;
+
+      const d = new Date(`${yyyy}-${mm}-${dd}T${timePart}`);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    return null;
+  };
+
+  const isAudienceAllowed = (item, userCreatedAt) => {
+    if (!item.audienceMode || !item.userCreatedBefore) return false;
+
+    const cutoff = item.userCreatedBefore.toDate();
+
+    if (item.audienceMode === "snapshot") {
+      // old users only
+      return userCreatedAt <= cutoff;
+    }
+
+    if (item.audienceMode === "persistent") {
+      // new users only
+      return userCreatedAt > cutoff;
+    }
+
+    return false;
+  };
+
+  const isSpreadAllowed = (item, userCreatedAt) => {
+    if (!item.isSpreadStopped) return true;
+
+    if (!item.spreadStoppedAt) return false;
+
+    return userCreatedAt <= item.spreadStoppedAt.toDate();
+  };
+
   useEffect(() => {
     if (searchText) return;
     setCheckMessage([]);
@@ -250,9 +310,18 @@ const ChatContextProvider = ({ children }) => {
         return;
       }
       if (pathname === "/messages/etsy") {
-        const filterData = newMessages?.filter(
-          (item) => item.type == "allusers",
-        );
+        const userCreatedAt = parseUserCreatedAt(usercredentials?.createdAt);
+
+        const filterData = newMessages.filter((item) => {
+          if (item.type !== "allusers") return false;
+          if (!userCreatedAt) return false;
+
+          return (
+            isAudienceAllowed(item, userCreatedAt) &&
+            isSpreadAllowed(item, userCreatedAt)
+          );
+        });
+
         setChats(filterData);
         return;
       }
@@ -347,10 +416,20 @@ const ChatContextProvider = ({ children }) => {
       const unsubscribeComposeChat = onSnapshot(
         composeChatQuery,
         (snapshot) => {
-          const newMessages = snapshot?.docs?.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
+          const newMessages = snapshot?.docs
+            ?.filter((item) => {
+              if (item.type !== "allusers") return false;
+              if (!userCreatedAt) return false;
+
+              return (
+                isAudienceAllowed(item, userCreatedAt) &&
+                isSpreadAllowed(item, userCreatedAt)
+              );
+            })
+            ?.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
           let filterArr = [];
 
           newMessages.forEach((msg) => {
