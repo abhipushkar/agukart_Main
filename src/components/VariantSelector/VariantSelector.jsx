@@ -135,13 +135,20 @@ const VariantSelector = ({
 
   // prevent background scroll when selector open
   useEffect(() => {
-    if (!open) return;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
 
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (open) {
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
     };
   }, [open]);
 
@@ -154,6 +161,8 @@ const VariantSelector = ({
         triggerRef.current &&
         !triggerRef.current.contains(e.target)
       ) {
+        e.preventDefault();
+        e.stopPropagation();
         setOpen(false);
       }
     };
@@ -930,249 +939,252 @@ const VariantSelector = ({
               >
                 {selectedAttr?.value || "Select an option"}
               </Box>
-              <Box sx={{ pr: 2, marginLeft: "auto", color:"grey" }}>{open?"⏶":"⏷"}</Box>
+              <Box sx={{ pr: 2, marginLeft: "auto", color: "grey" }}>{open ? "⏶" : "⏷"}</Box>
             </Box>
 
             {/* Dropdown menu */}
             {open && (
-              <Box
-                ref={menuRef}
-                sx={{
-                  position: "fixed",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  left: dropdownLeft,
-                  width: dropdownWidth,
-                  background: "#fff",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  zIndex: 1300,
-                  maxHeight: "70vh",
-                  overflowY: "auto",
-                  borderRadius: "4px",
-                }}
-              >
-                {/* Empty option */}
+              <>
+                <Box sx={{ position: "fixed", inset: 0, background: "transparent", zIndex: 1100 }} />
                 <Box
-                  onClick={() => {
-                    onChange(variant.id, "");
-                    setOpen(false);
-                    onHoverOut && onHoverOut();
-                  }}
+                  ref={menuRef}
                   sx={{
-                    py: 1,
-                    px: 2,
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: "#eeeeee",
-
-                    },
+                    position: "fixed",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    left: dropdownLeft,
+                    width: dropdownWidth,
+                    background: "#fff",
+                    boxShadow: "0 7px 14px rgba(0,0,0,0.4)",
+                    zIndex: 1300,
+                    maxHeight: "80vh",
+                    overflowY: "auto",
+                    borderRadius: "4px",
                   }}
                 >
-                  Select an option
-                </Box>
+                  {/* Empty option */}
+                  <Box
+                    onClick={() => {
+                      onChange(variant.id, "");
+                      setOpen(false);
+                      onHoverOut && onHoverOut();
+                    }}
+                    sx={{
+                      py: 1,
+                      px: 2,
+                      cursor: "pointer",
+                      "&:hover": {
+                        backgroundColor: "#eeeeee",
 
-                {variant.attributes.map((attr) => {
-                  const isDisabled = isAttributeDisabled(attr);
-                  const isVisible = isAttributeVisible(attr);
-                  const previewImage = getPreviewImage(attr);
-                  const priceText = renderAttributePriceForDropdown(attr);
-                  const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
+                      },
+                    }}
+                  >
+                    Select an option
+                  </Box>
 
-                  // Get quantity info for display
-                  let quantityInfo = "";
-                  let attributeData = {};
+                  {variant.attributes.map((attr) => {
+                    const isDisabled = isAttributeDisabled(attr);
+                    const isVisible = isAttributeVisible(attr);
+                    const previewImage = getPreviewImage(attr);
+                    const priceText = renderAttributePriceForDropdown(attr);
+                    const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
 
-                  if (calculateAttributeData && selectedVariants) {
-                    attributeData = calculateAttributeData(
-                      attr.id,
-                      selectedVariants
-                    );
-                  } else {
-                    const variantAttr = filterVariantAttributes.find(
-                      (fAttr) =>
-                        fAttr._id === attr.id ||
-                        fAttr.attribute_value === attr.value
-                    );
-                    if (variantAttr) {
-                      attributeData = {
-                        quantity: variantAttr.quantity,
-                        quantityRange: variantAttr.quantityRange,
-                        isSoldOut: variantAttr.isSoldOut,
-                      };
+                    // Get quantity info for display
+                    let quantityInfo = "";
+                    let attributeData = {};
+
+                    if (calculateAttributeData && selectedVariants) {
+                      attributeData = calculateAttributeData(
+                        attr.id,
+                        selectedVariants
+                      );
+                    } else {
+                      const variantAttr = filterVariantAttributes.find(
+                        (fAttr) =>
+                          fAttr._id === attr.id ||
+                          fAttr.attribute_value === attr.value
+                      );
+                      if (variantAttr) {
+                        attributeData = {
+                          quantity: variantAttr.quantity,
+                          quantityRange: variantAttr.quantityRange,
+                          isSoldOut: variantAttr.isSoldOut,
+                        };
+                      }
                     }
-                  }
 
-                  // Only show quantity if it's positive
-                  // if (attributeData.quantity !== null && attributeData.quantity > 0) {
-                  //     quantityInfo = ` [${attributeData.quantity} in stock]`;
-                  // } else if (attributeData.quantityRange && attributeData.quantityRange.max > 0) {
-                  //     if (attributeData.quantityRange.min === attributeData.quantityRange.max) {
-                  //         quantityInfo = ` [${attributeData.quantityRange.min} in stock]`;
-                  //     } else {
-                  //         quantityInfo = ` [${attributeData.quantityRange.min}-${attributeData.quantityRange.max} in stock]`;
-                  //     }
-                  // }
+                    // Only show quantity if it's positive
+                    // if (attributeData.quantity !== null && attributeData.quantity > 0) {
+                    //     quantityInfo = ` [${attributeData.quantity} in stock]`;
+                    // } else if (attributeData.quantityRange && attributeData.quantityRange.max > 0) {
+                    //     if (attributeData.quantityRange.min === attributeData.quantityRange.max) {
+                    //         quantityInfo = ` [${attributeData.quantityRange.min} in stock]`;
+                    //     } else {
+                    //         quantityInfo = ` [${attributeData.quantityRange.min}-${attributeData.quantityRange.max} in stock]`;
+                    //     }
+                    // }
 
-                  if (!isVisible) return null;
+                    if (!isVisible) return null;
 
-                  return (
-                    <Box
-                      data-attr-id={attr.id}
-                      key={attr.id}
-                      onMouseEnter={() => !isDisabled && onHover && onHover(attr.id)}
-                      onMouseLeave={() => onHoverOut && onHoverOut()}
-                      onClick={() => {
-                        if (isDisabled) return;
-                        onChange(variant.id, attr.id);
-                        setOpen(false);
-                        onHoverOut && onHoverOut();
-                      }}
-                      sx={{
-                        opacity: isDisabled ? 0.5 : 1,
-                        backgroundColor: isSelected ? "#fde4ec" : isDisabled ? "#f5f5f5" : "inherit",
-                        py: 0.5,
-                        px: 2,
-                        cursor: isDisabled ? "not-allowed" : "pointer",
-                        "&:hover": {
-                          backgroundColor:
-                            isDisabled ? undefined : isSelected ? "#fae4e4" : "#eeeeee",
-                        },
-                      }}
-                    >
-                      <Tooltip
-                        title={
-                          previewImage ? (
-                            <Box sx={{ p: 1 }}>
-                              <img
-                                src={previewImage}
-                                alt={attr.value}
-                                style={{
-                                  width: 100,
-                                  height: 100,
-                                  objectFit: "cover",
-                                  borderRadius: 4,
-                                }}
-                              />
-                            </Box>
-                          ) : null
-                        }
-                        placement="left-start"
-                        arrow
+                    return (
+                      <Box
+                        data-attr-id={attr.id}
+                        key={attr.id}
+                        onMouseEnter={() => !isDisabled && onHover && onHover(attr.id)}
+                        onMouseLeave={() => onHoverOut && onHoverOut()}
+                        onClick={() => {
+                          if (isDisabled) return;
+                          onChange(variant.id, attr.id);
+                          setOpen(false);
+                          onHoverOut && onHoverOut();
+                        }}
+                        sx={{
+                          opacity: isDisabled ? 0.5 : 1,
+                          backgroundColor: isSelected ? "#ffedf3" : isDisabled ? "#e9e6e6" : "inherit",
+                          py: 0.5,
+                          px: 2,
+                          cursor: isDisabled ? "not-allowed" : "pointer",
+                          "&:hover": {
+                            backgroundColor:
+                              isDisabled ? undefined : isSelected ? "#f9e1e1" : "#eeeeee",
+                          },
+                        }}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            opacity: isDisabled ? 0.6 : 1,
-                          }}
+                        <Tooltip
+                          title={
+                            previewImage ? (
+                              <Box sx={{ p: 1 }}>
+                                <img
+                                  src={previewImage}
+                                  alt={attr.value}
+                                  style={{
+                                    width: 100,
+                                    height: 100,
+                                    objectFit: "cover",
+                                    borderRadius: 4,
+                                  }}
+                                />
+                              </Box>
+                            ) : null
+                          }
+                          placement="left-start"
+                          arrow
                         >
                           <div
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              flex: 1,
+                              justifyContent: "space-between",
+                              width: "100%",
+                              opacity: isDisabled ? 0.6 : 1,
                             }}
                           >
-                            {attr.thumbnail && (
-                              <img
-                                src={attr.thumbnail}
-                                alt=""
-                                style={{
-                                  width: "48px",
-                                  height: "48px",
-                                  marginRight: "12px",
-                                  borderRadius: "3px",
-                                  objectFit: "cover",
-                                  filter: isDisabled
-                                    ? "grayscale(100%)"
-                                    : "none",
-                                }}
-                              />
-                            )}
-
                             <div
                               style={{
-                                flex: 1,
                                 display: "flex",
-                                justifyContent: "space-between",
-                                gap: "2px",
+                                alignItems: "center",
+                                flex: 1,
                               }}
                             >
-                              <span
-                                style={{
-                                  color: isDisabled ? "#999" : "inherit",
-                                  textDecoration: isDisabled
-                                    ? "line-through"
-                                    : "none",
-                                  display: "block",
-                                  fontSize: "14px",
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {attr.value}
-                              </span>
+                              {attr.thumbnail && (
+                                <img
+                                  src={attr.thumbnail}
+                                  alt=""
+                                  style={{
+                                    width: "48px",
+                                    height: "48px",
+                                    marginRight: "12px",
+                                    borderRadius: "3px",
+                                    objectFit: "cover",
+                                    filter: isDisabled
+                                      ? "grayscale(100%)"
+                                      : "none",
+                                  }}
+                                />
+                              )}
 
                               <div
                                 style={{
+                                  flex: 1,
                                   display: "flex",
-                                  gap: "8px",
-                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: "2px",
                                 }}
                               >
-                                {priceText && (
-                                  <span
-                                    style={{
-                                      fontSize: "12px",
-                                      color: isDisabled
-                                        ? "#999"
-                                        : "#666",
-                                    }}
-                                  >
-                                    {priceText}
-                                  </span>
-                                )}
+                                <span
+                                  style={{
+                                    color: isDisabled ? "#999" : "inherit",
+                                    textDecoration: isDisabled
+                                      ? "line-through"
+                                      : "none",
+                                    display: "block",
+                                    fontSize: "14px",
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {attr.value}
+                                </span>
 
-                                {quantityInfo && !isDisabled && (
-                                  <span
-                                    style={{
-                                      fontSize: "11px",
-                                      color: "#2e7d32",
-                                      backgroundColor: "#e8f5e9",
-                                      padding: "1px 6px",
-                                      borderRadius: "3px",
-                                      fontWeight: "500",
-                                    }}
-                                  >
-                                    {quantityInfo}
-                                  </span>
-                                )}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "8px",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  {priceText && (
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        color: isDisabled
+                                          ? "#999"
+                                          : "#666",
+                                      }}
+                                    >
+                                      {priceText}
+                                    </span>
+                                  )}
+
+                                  {quantityInfo && !isDisabled && (
+                                    <span
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#2e7d32",
+                                        backgroundColor: "#e8f5e9",
+                                        padding: "1px 6px",
+                                        borderRadius: "3px",
+                                        fontWeight: "500",
+                                      }}
+                                    >
+                                      {quantityInfo}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {isDisabled && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "#d32f2f",
-                                fontWeight: "bold",
-                                fontSize: "10px",
-                                backgroundColor: "#ffebee",
-                                padding: "2px 6px",
-                                borderRadius: "3px",
-                              }}
-                            >
-                              Sold Out
-                            </Typography>
-                          )}
-                        </div>
-                      </Tooltip>
-                    </Box>
-                  );
-                })}
-              </Box>
+                            {isDisabled && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "#d32f2f",
+                                  fontWeight: "bold",
+                                  fontSize: "10px",
+                                  backgroundColor: "#ffebee",
+                                  padding: "2px 6px",
+                                  borderRadius: "3px",
+                                }}
+                              >
+                                Sold Out
+                              </Typography>
+                            )}
+                          </div>
+                        </Tooltip>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </>
             )}
           </Box>
 
