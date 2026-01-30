@@ -54,6 +54,12 @@ const VariantSelector = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const resizeObserverRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+  const hasAutoScrolledRef = useRef(false);
+  const triggerRef = useRef(null);
+  const [dropdownLeft, setDropdownLeft] = useState(0);
+  const [dropdownWidth, setDropdownWidth] = useState(0);
 
   // Check if variant has guide information
   const hasGuide =
@@ -126,6 +132,91 @@ const VariantSelector = ({
       }
     };
   }, [variant.attributes.length, calculatePageMetrics]);
+
+  // prevent background scroll when selector open
+  useEffect(() => {
+    if (!open) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutsideClick = (e) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [open]);
+
+
+  const selectedAttr = variant.attributes.find(
+    (attr) =>
+      attr.id === selectedValue || attr.value === selectedValue
+  );
+
+  // auto scroll to selected atrribute effect
+  useEffect(() => {
+    if (!open) {
+      // reset when dropdown closes
+      hasAutoScrolledRef.current = false;
+      return;
+    }
+
+    if (
+      hasAutoScrolledRef.current ||
+      !menuRef.current ||
+      !selectedAttr
+    ) {
+      return;
+    }
+
+    const el = menuRef.current.querySelector(
+      `[data-attr-id="${selectedAttr.id}"]`
+    );
+
+    if (el) {
+      hasAutoScrolledRef.current = true;
+
+      el.scrollIntoView({
+        block: "nearest",
+        behavior: "auto",
+      });
+    }
+  }, [open, selectedAttr]);
+
+  const handleToggle = () => {
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownLeft(rect.left);
+      setDropdownWidth(rect.width);
+    }
+    setOpen((prev) => !prev);
+  };
+  useEffect(() => {
+    if (!open) return;
+
+    const onEsc = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [open]);
+
 
   // Handle window resize
   useEffect(() => {
@@ -573,9 +664,6 @@ const VariantSelector = ({
     </Dialog>
   );
 
-  const selectedAttr = variant.attributes.find(
-    (attr) => attr.id === selectedValue
-  );
 
   const renderParentVariantGrid = () => {
     return (
@@ -810,230 +898,284 @@ const VariantSelector = ({
         </Box>
 
         <FormControl fullWidth>
-          <Select
-            value={selectedValue || ""}
-            displayEmpty
-            onChange={(e) => {
-              onChange(variant.id, e.target.value);
-            }}
-            renderValue={(selected) => {
-              if (!selected) return "Select an option";
-              const selectedAttr = variant.attributes.find(
-                (attr) => attr.id === selected || attr.value === selected
-              );
-              return (
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <span>{selectedAttr?.value || "Select an option"}</span>
-                </Box>
-              );
-            }}
-            sx={{
-              border: "none",
-              background: "#fff",
-              height: "40px",
-              boxShadow: "0 0 3px #000",
-              ".MuiOutlinedInput-notchedOutline": { border: "none" },
-            }}
-          >
-            <MenuItem value="">Select an option</MenuItem>
-            {variant.attributes.map((attr) => {
-              const isDisabled = isAttributeDisabled(attr);
-              const isVisible = isAttributeVisible(attr);
-              const previewImage = getPreviewImage(attr);
-              const priceText = renderAttributePriceForDropdown(attr);
+          <Box sx={{ position: "relative", width: "100%" }}>
+            {/* Selected value box */}
+            <Box
+              ref={triggerRef}
+              onClick={handleToggle}
+              sx={{
+                m: 0,
+                p: 0,
+                display: "flex",
+                border: "none",
+                background: "#fff",
+                height: "40px",
+                boxShadow: "0 0 3px #000",
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                userSelect: "none",
+                borderRadius: "4px"
+              }}>
+              <Box
+                sx={{
+                  border: "none",
+                  background: "#fff",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  px: 2,
+                  borderRadius: "4px"
+                }}
+              >
+                {selectedAttr?.value || "Select an option"}
+              </Box>
+              <Box sx={{ pr: 2, marginLeft: "auto", color:"grey" }}>{open?"⏶":"⏷"}</Box>
+            </Box>
 
-              // Get quantity info for display
-              let quantityInfo = "";
-              let attributeData = {};
-
-              if (calculateAttributeData && selectedVariants) {
-                attributeData = calculateAttributeData(
-                  attr.id,
-                  selectedVariants
-                );
-              } else {
-                const variantAttr = filterVariantAttributes.find(
-                  (fAttr) =>
-                    fAttr._id === attr.id ||
-                    fAttr.attribute_value === attr.value
-                );
-                if (variantAttr) {
-                  attributeData = {
-                    quantity: variantAttr.quantity,
-                    quantityRange: variantAttr.quantityRange,
-                    isSoldOut: variantAttr.isSoldOut,
-                  };
-                }
-              }
-
-              // Only show quantity if it's positive
-              // if (attributeData.quantity !== null && attributeData.quantity > 0) {
-              //     quantityInfo = ` [${attributeData.quantity} in stock]`;
-              // } else if (attributeData.quantityRange && attributeData.quantityRange.max > 0) {
-              //     if (attributeData.quantityRange.min === attributeData.quantityRange.max) {
-              //         quantityInfo = ` [${attributeData.quantityRange.min} in stock]`;
-              //     } else {
-              //         quantityInfo = ` [${attributeData.quantityRange.min}-${attributeData.quantityRange.max} in stock]`;
-              //     }
-              // }
-
-              if (!isVisible) {
-                return null;
-              }
-
-              return (
-                <MenuItem
-                  key={attr.id}
-                  value={attr.id}
-                  disabled={isDisabled}
-                  onMouseEnter={() => onHover && onHover(attr.id)}
-                  onMouseLeave={() => onHoverOut && onHoverOut()}
+            {/* Dropdown menu */}
+            {open && (
+              <Box
+                ref={menuRef}
+                sx={{
+                  position: "fixed",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  left: dropdownLeft,
+                  width: dropdownWidth,
+                  background: "#fff",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  zIndex: 1300,
+                  maxHeight: "70vh",
+                  overflowY: "auto",
+                  borderRadius: "4px",
+                }}
+              >
+                {/* Empty option */}
+                <Box
+                  onClick={() => {
+                    onChange(variant.id, "");
+                    setOpen(false);
+                    onHoverOut && onHoverOut();
+                  }}
                   sx={{
-                    opacity: isDisabled ? 0.5 : 1,
-                    backgroundColor: isDisabled ? "#f5f5f5" : "inherit",
-                    "&.Mui-disabled": {
-                      opacity: 0.5,
-                    },
-                    py: 0.2,
+                    py: 1,
                     px: 2,
+                    cursor: "pointer",
+                    "&:hover": {
+                      backgroundColor: "#eeeeee",
+
+                    },
                   }}
                 >
-                  <Tooltip
-                    title={
-                      previewImage ? (
-                        <Box sx={{ p: 1 }}>
-                          <img
-                            src={previewImage}
-                            alt={attr.value}
-                            style={{
-                              width: 100,
-                              height: 100,
-                              objectFit: "cover",
-                              borderRadius: 4,
-                            }}
-                          />
-                        </Box>
-                      ) : null
+                  Select an option
+                </Box>
+
+                {variant.attributes.map((attr) => {
+                  const isDisabled = isAttributeDisabled(attr);
+                  const isVisible = isAttributeVisible(attr);
+                  const previewImage = getPreviewImage(attr);
+                  const priceText = renderAttributePriceForDropdown(attr);
+                  const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
+
+                  // Get quantity info for display
+                  let quantityInfo = "";
+                  let attributeData = {};
+
+                  if (calculateAttributeData && selectedVariants) {
+                    attributeData = calculateAttributeData(
+                      attr.id,
+                      selectedVariants
+                    );
+                  } else {
+                    const variantAttr = filterVariantAttributes.find(
+                      (fAttr) =>
+                        fAttr._id === attr.id ||
+                        fAttr.attribute_value === attr.value
+                    );
+                    if (variantAttr) {
+                      attributeData = {
+                        quantity: variantAttr.quantity,
+                        quantityRange: variantAttr.quantityRange,
+                        isSoldOut: variantAttr.isSoldOut,
+                      };
                     }
-                    placement="left-start"
-                    arrow
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        opacity: isDisabled ? 0.6 : 1,
+                  }
+
+                  // Only show quantity if it's positive
+                  // if (attributeData.quantity !== null && attributeData.quantity > 0) {
+                  //     quantityInfo = ` [${attributeData.quantity} in stock]`;
+                  // } else if (attributeData.quantityRange && attributeData.quantityRange.max > 0) {
+                  //     if (attributeData.quantityRange.min === attributeData.quantityRange.max) {
+                  //         quantityInfo = ` [${attributeData.quantityRange.min} in stock]`;
+                  //     } else {
+                  //         quantityInfo = ` [${attributeData.quantityRange.min}-${attributeData.quantityRange.max} in stock]`;
+                  //     }
+                  // }
+
+                  if (!isVisible) return null;
+
+                  return (
+                    <Box
+                      data-attr-id={attr.id}
+                      key={attr.id}
+                      onMouseEnter={() => !isDisabled && onHover && onHover(attr.id)}
+                      onMouseLeave={() => onHoverOut && onHoverOut()}
+                      onClick={() => {
+                        if (isDisabled) return;
+                        onChange(variant.id, attr.id);
+                        setOpen(false);
+                        onHoverOut && onHoverOut();
+                      }}
+                      sx={{
+                        opacity: isDisabled ? 0.5 : 1,
+                        backgroundColor: isSelected ? "#fde4ec" : isDisabled ? "#f5f5f5" : "inherit",
+                        py: 0.5,
+                        px: 2,
+                        cursor: isDisabled ? "not-allowed" : "pointer",
+                        "&:hover": {
+                          backgroundColor:
+                            isDisabled ? undefined : isSelected ? "#fae4e4" : "#eeeeee",
+                        },
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          flex: 1,
-                        }}
+                      <Tooltip
+                        title={
+                          previewImage ? (
+                            <Box sx={{ p: 1 }}>
+                              <img
+                                src={previewImage}
+                                alt={attr.value}
+                                style={{
+                                  width: 100,
+                                  height: 100,
+                                  objectFit: "cover",
+                                  borderRadius: 4,
+                                }}
+                              />
+                            </Box>
+                          ) : null
+                        }
+                        placement="left-start"
+                        arrow
                       >
-                        {attr.thumbnail && (
-                          <img
-                            src={attr.thumbnail}
-                            alt=""
-                            style={{
-                              width: "48px",
-                              height: "48px",
-                              marginRight: "12px",
-                              borderRadius: "3px",
-                              objectFit: "cover",
-                              filter: isDisabled ? "grayscale(100%)" : "none",
-                            }}
-                          />
-                        )}
                         <div
                           style={{
-                            flex: 1,
                             display: "flex",
-                            // flexDirection: "column",
+                            alignItems: "center",
                             justifyContent: "space-between",
-                            gap: "2px",
+                            width: "100%",
+                            opacity: isDisabled ? 0.6 : 1,
                           }}
                         >
-                          <span
-                            style={{
-                              color: isDisabled ? "#999" : "inherit",
-                              textDecoration: isDisabled
-                                ? "line-through"
-                                : "none",
-                              display: "block",
-                              fontSize: "14px",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {attr.value}
-                          </span>
                           <div
                             style={{
                               display: "flex",
-                              gap: "8px",
                               alignItems: "center",
+                              flex: 1,
                             }}
                           >
-                            {priceText && (
-                              <span
+                            {attr.thumbnail && (
+                              <img
+                                src={attr.thumbnail}
+                                alt=""
                                 style={{
-                                  fontSize: "12px",
-                                  color: isDisabled ? "#999" : "#666",
-                                }}
-                              >
-                                {priceText}
-                              </span>
-                            )}
-                            {quantityInfo && !isDisabled && (
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  color: "#2e7d32",
-                                  backgroundColor: "#e8f5e9",
-                                  padding: "1px 6px",
+                                  width: "48px",
+                                  height: "48px",
+                                  marginRight: "12px",
                                   borderRadius: "3px",
-                                  fontWeight: "500",
+                                  objectFit: "cover",
+                                  filter: isDisabled
+                                    ? "grayscale(100%)"
+                                    : "none",
+                                }}
+                              />
+                            )}
+
+                            <div
+                              style={{
+                                flex: 1,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                gap: "2px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: isDisabled ? "#999" : "inherit",
+                                  textDecoration: isDisabled
+                                    ? "line-through"
+                                    : "none",
+                                  display: "block",
+                                  fontSize: "14px",
+                                  fontWeight: 500,
                                 }}
                               >
-                                {quantityInfo}
+                                {attr.value}
                               </span>
-                            )}
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "8px",
+                                  alignItems: "center",
+                                }}
+                              >
+                                {priceText && (
+                                  <span
+                                    style={{
+                                      fontSize: "12px",
+                                      color: isDisabled
+                                        ? "#999"
+                                        : "#666",
+                                    }}
+                                  >
+                                    {priceText}
+                                  </span>
+                                )}
+
+                                {quantityInfo && !isDisabled && (
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "#2e7d32",
+                                      backgroundColor: "#e8f5e9",
+                                      padding: "1px 6px",
+                                      borderRadius: "3px",
+                                      fontWeight: "500",
+                                    }}
+                                  >
+                                    {quantityInfo}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
+
+                          {isDisabled && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "#d32f2f",
+                                fontWeight: "bold",
+                                fontSize: "10px",
+                                backgroundColor: "#ffebee",
+                                padding: "2px 6px",
+                                borderRadius: "3px",
+                              }}
+                            >
+                              Sold Out
+                            </Typography>
+                          )}
                         </div>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        {isDisabled && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "#d32f2f",
-                              fontWeight: "bold",
-                              fontSize: "10px",
-                              flexShrink: 0,
-                              backgroundColor: "#ffebee",
-                              padding: "2px 6px",
-                              borderRadius: "3px",
-                            }}
-                          >
-                            Sold Out
-                          </Typography>
-                        )}
-                      </div>
-                    </div>
-                  </Tooltip>
-                </MenuItem>
-              );
-            })}
-          </Select>
+                      </Tooltip>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </Box>
+
         </FormControl>
 
         {error && (
