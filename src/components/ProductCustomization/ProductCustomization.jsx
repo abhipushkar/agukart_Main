@@ -31,7 +31,7 @@ const ProductCustomization = ({
   const [isExpanded, setIsExpanded] = useState(
     customizationData.isExpanded === "true" ||
       customizationData.isExpanded === true ||
-      false
+      false,
   );
 
   return (
@@ -257,7 +257,7 @@ const DropdownCustomization = ({
             displayEmpty
             onChange={(e) => {
               const selectedOption = customization.optionList.find(
-                (option) => option.optionName === e.target.value
+                (option) => option.optionName === e.target.value,
               );
               onChange(customization.label, selectedOption);
             }}
@@ -266,7 +266,7 @@ const DropdownCustomization = ({
             renderValue={(selected) => {
               if (!selected) return "Select an option";
               const selectedOption = customization.optionList.find(
-                (opt) => opt.optionName === selected
+                (opt) => opt.optionName === selected,
               );
               return (
                 <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -301,7 +301,7 @@ const DropdownCustomization = ({
                 (option) =>
                   option?.isVisible === "true" ||
                   option?.isVisible === true ||
-                  false
+                  false,
               )
               .map((option, index) => (
                 <MenuItem
@@ -413,7 +413,8 @@ const TextCustomization = ({
     <Grid item xs={9}>
       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
         {customization.label}
-        {customization.isCompulsory ? (
+        {customization.isCompulsory === "true" ||
+        customization.isCompulsory === true ? (
           <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>
             *
           </span>
@@ -448,7 +449,7 @@ const TextCustomization = ({
             +customization.price,
             +customization.min,
             +customization.max,
-            e.target.value
+            e.target.value,
           )
         }
         placeholder={customization.placeholder}
