@@ -12,6 +12,7 @@ import { ChevronRight as ChevronRightIcon } from "@mui/icons-material";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import parse from "html-react-parser";
+import { TOKEN_NAME } from "constant";
 
 // Hooks
 import { useProductVariants } from "hooks/product.hooks/useProductVariants";
@@ -52,7 +53,7 @@ const MyproductDetails = ({ res }) => {
   const { usercredentials } = useMyProvider();
   const { state, dispatch } = useCart();
   const router = useRouter();
-
+  const key = localStorage.getItem(TOKEN_NAME);
   // State
   const [myproduct, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -419,6 +420,7 @@ const MyproductDetails = ({ res }) => {
   };
 
   const getWishList = async () => {
+    if(!token || !key){ return;}
     try {
       const res = await getAPIAuth("user/get-wishlist");
       if (res.status === 200) {

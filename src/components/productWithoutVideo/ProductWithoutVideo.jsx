@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import { TOKEN_NAME } from "constant";
 
 const ProductWithoutVideo = ({ product }) => {
   const { currency } = useCurrency();
@@ -29,6 +30,7 @@ const ProductWithoutVideo = ({ product }) => {
   const [toggleWishlist, setToggleWishlist] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  const key = localStorage.getItem(TOKEN_NAME);
   const handleMouseEnter = () => {
     setIsHovered(true);
   };
@@ -47,6 +49,9 @@ const ProductWithoutVideo = ({ product }) => {
   }, [token, wishlistIdArr]);
 
   const getWishList = async () => {
+    if(!token || !key){
+      return;
+    }
     try {
       const res = await getAPIAuth("user/get-wishlist");
       if (res.status === 200) {

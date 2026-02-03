@@ -21,6 +21,7 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { FlexBox } from "components/flex-box";
 
+import { TOKEN_NAME } from "constant";
 import CollectionTab from "./CollectionTab";
 import ReviewsTab from "./ReviewsTab";
 import AboutTab from "./AboutTab";
@@ -45,7 +46,7 @@ const ShopView = () => {
   const [announcementShowMore, setAnnouncementShowMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const { usercredentials } = useMyProvider();
-
+  const key = localStorage.getItem(TOKEN_NAME)
   const [wishListProducts, setWishlistProducts] = useState([]);
 
   const [vendorDetail, setVendorDetail] = useState(null);
@@ -65,7 +66,7 @@ const ShopView = () => {
       autoDismiss: true,
     });
   };
-
+  const { token } = useAuth();
   const handleClickPopup = () => {
     if (!token) {
       router.push("/login");
@@ -77,7 +78,7 @@ const ShopView = () => {
   const handleClosePopup = () => {
     SetOpenPopup(false);
   };
-  const { token } = useAuth();
+  
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -135,7 +136,7 @@ const ShopView = () => {
     }
   };
   const getWishListProducts = async () => {
-    if (!token) {
+    if (!token || !key) {
       return;
     }
     try {

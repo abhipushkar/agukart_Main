@@ -78,7 +78,6 @@ const LoginPageView = ({ closeDialog = () => {} }) => {
         });
         resetForm();
         closeDialog(false);
-        router.push("/");
       }
     } catch (error) {
       console.log("error", error);
@@ -107,11 +106,6 @@ const LoginPageView = ({ closeDialog = () => {} }) => {
     },
   });
 
-  useEffect(() => {
-    if (token) {
-      router.push("/");
-    }
-  }, []);
   return (
     <form onSubmit={handleSubmit}>
       <BazaarTextField
