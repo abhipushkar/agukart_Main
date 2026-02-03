@@ -73,7 +73,7 @@ export default function ProductIntro({ product }) {
 
   console.log("hello", { state });
 
-  const cartItem = state.cart.find((item) => item._id === _id);
+        const cartItem = state.cart.find((item) => item._id === _id);
   // HANDLE SELECT IMAGE
 
   //   const handleImageClick = (ind) => () =>
