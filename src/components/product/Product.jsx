@@ -18,7 +18,6 @@ import styled from "@emotion/styled";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import { getTimeLeftText } from "components/getTimeLeftText/getTimeLeftText";
 import { PlayCircle } from "@mui/icons-material";
-import { TOKEN_NAME } from "constant"; 
 
 const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const videoRef = useRef(null);
@@ -33,7 +32,6 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const [wishlistIdArr, setWishlistIdArr] = useState([]);
   const [toggleWishlist, setToggleWishlist] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const key = localStorage.getItem(TOKEN_NAME)
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -59,7 +57,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   }, [token, wishlistIdArr]);
 
   const getWishList = async () => {
-    if(!token || !key){
+    if(!token){
       return;
     }
     try {

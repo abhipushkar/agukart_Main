@@ -4,27 +4,65 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import TabPanel from "@mui/lab/TabPanel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
 
 const AboutTab = ({ vendorDetail, vendorCategories }) => {
-  console.log({ vendorCategories });
+  console.log("cat", { vendorCategories });
   const [newVendorShopReadMore, setNewVendorShop] = useState(false);
-  console.log({ vendorDetail });
+  const [mediaItems, setMediaItems] = useState([]);
+  console.log("det", { vendorDetail });
+  const checkVideoExists = (url, timeout = 5000) =>
+    new Promise((resolve) => {
+      if (!url) return resolve(false);
 
-  const mediaItems = [
-    ...(vendorDetail?.shop_photos || []).map((shop) => ({
-      type: "image",
-      url: shop?.imageUrl,
-    })),
-    ...(vendorDetail?.shop_video ? [{
-      type: "video",
-      url: vendorDetail?.shop_video,
-    }] : []),
-  ];
+      const video = document.createElement("video");
+      let done = false;
+
+      const finish = (result) => {
+        if (!done) {
+          done = true;
+          video.src = "";
+          resolve(result);
+        }
+      };
+
+      video.preload = "metadata";
+      video.src = url;
+
+      video.onloadedmetadata = () => finish(true);
+      video.onerror = () => finish(false);
+
+      setTimeout(() => finish(false), timeout);
+    });
+
+  useEffect(() => {
+    if (!vendorDetail) return;
+
+    const buildMediaItems = async () => {
+      const items = [
+        ...(vendorDetail?.shop_photos || []).map((shop) => ({
+          type: "image",
+          url: shop?.imageUrl,
+        })),
+      ];
+      if (vendorDetail?.shop_video) {
+        const exists = await checkVideoExists(vendorDetail.shop_video);
+        if (exists) {
+          items.push({
+            type: "video",
+            url: vendorDetail.shop_video,
+          });
+        }
+      }
+      setMediaItems(items);
+    };
+    buildMediaItems();
+  }, [vendorDetail]);
+
   const settings = {
     dots: true,
     arrows: true,
@@ -167,29 +205,33 @@ const AboutTab = ({ vendorDetail, vendorCategories }) => {
                 <Typography variant="h5">
                   Welcome to {vendorDetail?.shop_name}
                 </Typography>
-                <Typography variant="h6">
-                  {vendorDetail?.story_headline}
-                </Typography>
-                <Typography>
-                  {newVendorShopReadMore
-                    ? <HtmlRenderer html={vendorDetail?.story_description || ""} />
-                    : <HtmlRenderer html={vendorDetail?.story_description.slice(0, 100) || ""} />}
-                </Typography>
-                <Typography
-                  mt={2}
-                  textAlign={"center"}
-                  sx={{
-                    textDecoration: "none",
-                    cursor: "pointer",
-                    color: "#000",
-                    "&:hover": { textDecoration: "underline" },
-                  }}
-                  onClick={() => setNewVendorShop((prv) => !prv)}
-                >
-                  {newVendorShopReadMore ? "Read less" : "Read more"}
-                </Typography>
+                {vendorDetail?.story_headline.length > 0 && (
+                  <>
+                    <Typography variant="h6">
+                      {vendorDetail?.story_headline}
+                    </Typography>
+                    <Typography>
+                      {newVendorShopReadMore
+                        ? <HtmlRenderer html={vendorDetail?.story_description || ""} />
+                        : <HtmlRenderer html={vendorDetail?.story_description.slice(0, 100) || ""} />}
+                    </Typography>
+                    {vendorDetail?.story_headline.length > 100 && (<Typography
+                      mt={2}
+                      textAlign={"center"}
+                      sx={{
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        color: "#000",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                      onClick={() => setNewVendorShop((prv) => !prv)}
+                    >
+                      {newVendorShopReadMore ? "Read less" : "Read more"}
+                    </Typography>)}
+                  </>
+                )}
               </Typography>
-              <Box mt={5}>
+              {vendorDetail.members.length > 0 && (< Box mt={5}>
                 <Typography fontWeight={600} fontSize={16}>
                   Shop members
                 </Typography>
@@ -258,7 +300,7 @@ const AboutTab = ({ vendorDetail, vendorCategories }) => {
                 >
                   {/* More */}
                 </Typography>
-              </Box>
+              </Box>)}
             </Typography>
           </Grid>
         </Grid>
