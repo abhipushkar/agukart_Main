@@ -215,7 +215,7 @@ const AboutTab = ({ vendorDetail, vendorCategories }) => {
                         ? <HtmlRenderer html={vendorDetail?.story_description || ""} />
                         : <HtmlRenderer html={vendorDetail?.story_description.slice(0, 100) || ""} />}
                     </Typography>
-                    {vendorDetail?.story_headline.length > 100 && (<Typography
+                    {vendorDetail?.story_description.length > 100 && (<Typography
                       mt={2}
                       textAlign={"center"}
                       sx={{
