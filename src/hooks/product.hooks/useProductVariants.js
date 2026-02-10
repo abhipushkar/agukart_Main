@@ -150,39 +150,68 @@ export const useProductVariants = (product) => {
             (attr) => attr.variant === variantInVariantId._id,
           ) || [];
 
+  // Find attribute data from product_variants structure
+        const variantFromPV = product.product_variants.find(
+          (pv) => pv.variant_name === variant.variant_name,
+        );
+
+        // Create a map of attributes from product_variants for quick lookup
+        const pvAttributesMap = {};
+        if (variantFromPV?.variant_attributes) {
+          variantFromPV.variant_attributes.forEach((pvAttr) => {
+            pvAttributesMap[pvAttr.attribute] = {
+              thumbnail: pvAttr.thumbnail || "",
+              preview_image: pvAttr.preview_image || "",
+              edit_preview_image: pvAttr.edit_preview_image || "",
+              main_images: pvAttr.main_images || [],
+            };
+          });
+        }
+
+        // Only include attributes that exist in product_variants
+        const filteredAttributes = variantAttributes
+          .filter((attr) => {
+            // Check if this attribute value exists in product_variants
+            const existsInPV = variantFromPV?.variant_attributes?.some(
+              (pvAttr) => pvAttr.attribute === attr.attribute_value,
+            );
+            return existsInPV;
+          })
+          .map((attr) => {
+            const pvAttr = pvAttributesMap[attr.attribute_value];
+            const productPreview =
+              pvAttr?.edit_preview_image || pvAttr?.preview_image || "";
+
+            const productThumbnail = pvAttr?.thumbnail || "";
+
+            return {
+              id: attr._id,
+              value: attr.attribute_value,
+              images: pvAttr?.main_images || [],
+              thumbnail: productThumbnail,
+              preview_image: productPreview,
+              edit_preview_image: pvAttr?.edit_preview_image || "",
+              price: null,
+              quantity: null,
+              priceRange: null,
+              quantityRange: null,
+              isSoldOut: false,
+            };
+          });
         const orderMap = new Map(
           variant.variant_attributes.map((attr, index) => [
             attr.attribute,
             index
           ])
         );
-        // Create an array with fixed length
-        const orderedVariantAttributes = new Array(variant.variant_attributes.length);
-        // Place each item into its exact position
-        variantAttributes.forEach(item => {
-          const index = orderMap.get(item.attribute_value);
-          if (index !== undefined) {
-            orderedVariantAttributes[index] = item; 
-          }
+        const orderedVariantAttributes = new Array(filteredAttributes.length);
+        filteredAttributes.forEach(item =>{
+          const index = orderMap.get(item.value)
+          if(index!==undefined)
+            orderedVariantAttributes[index] = item;
         });
-        // Find attribute data from product_variants structure
-        const filteredAttributes = orderedVariantAttributes.map(attr => {
-          return {
-            id: attr._id,
-            value: attr.attribute_value,
-            images: attr.main_images || [],
-            thumbnail: attr.thumbnail || "",
-            preview_image: attr?.edit_preview_image || attr?.preview_image || "",
-            edit_preview_image: attr?.edit_preview_image || "",
-            price: null,
-            quantity: null,
-            priceRange: null,
-            quantityRange: null,
-            isSoldOut: false,
-          }
-        });
-
-        if (filteredAttributes.length > 0) {
+        const cleanOrderedAttributes = orderedVariantAttributes.filter(Boolean);
+        if (cleanOrderedAttributes.length > 0) {
           allVariants.push({
             type: "internal",
             id: variant.variant_name,
@@ -191,7 +220,7 @@ export const useProductVariants = (product) => {
             guide_file: guideData?.guide_file || "",
             guide_type: guideData?.guide_type || "",
             guide_description: guideData?.guide_description || "",
-            attributes: filteredAttributes,
+            attributes: cleanOrderedAttributes,
           });
         } else {
           console.error(
