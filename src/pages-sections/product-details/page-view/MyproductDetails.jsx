@@ -42,6 +42,7 @@ import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import useMyProvider from "hooks/useMyProvider";
 import ProductRating from "components/ProductRating/ProductRating";
 import ProductPricing from "components/ProductPricing/ProductPricing";
+import { TOKEN_NAME } from "constant";
 
 const MyproductDetails = ({ res }) => {
   // Hooks and Context
@@ -417,9 +418,9 @@ const MyproductDetails = ({ res }) => {
       });
     }
   };
-
+  const key = localStorage.getItem(TOKEN_NAME)
   const getWishList = async () => {
-    if(!token){ return;}
+    if(!token || !key){ return;}
     try {
       const res = await getAPIAuth("user/get-wishlist");
       if (res.status === 200) {
