@@ -16,8 +16,7 @@ const Checkout = () => {
             style={{ layout: "vertical" }}
             createOrder={async () => {
               const res = await postAPIAuth("user/create-order",{},token)
-              console.log(res.data,"rthrhtrhrtyh")
-              return res?.data?.data?.orderId;
+              return res?.data?.data?.id;
             }}
             onApprove={async (data) => {
               const res = await postAPIAuth("user/capture-order",{orderID: data.orderID},token)
