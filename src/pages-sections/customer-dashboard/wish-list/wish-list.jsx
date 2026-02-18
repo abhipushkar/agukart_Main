@@ -14,6 +14,7 @@ import { getAPIAuth } from "utils/__api__/ApiServies";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
+import { TOKEN_NAME } from "constant";
 // ==================================================================
 
 // ==================================================================
@@ -26,6 +27,7 @@ export default function WishListPageView(props) {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
   const {token} = useAuth();
+  const key = localStorage.getItem(TOKEN_NAME);
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -35,7 +37,7 @@ export default function WishListPageView(props) {
   };
 
   const getWishlistProduct = async () => {
-    if(!token){ return;}
+    if(!token || !key){ return;}
     try {
       setShowloading(true);
       const res = await getAPIAuth(`user/get-wishlist?page=${page}&limit=16`);

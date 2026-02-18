@@ -36,6 +36,7 @@ import HomeTab from "./HomeTab";
 import { useToasts } from "react-toast-notifications";
 import UseScrollToHash from "./UseScrollToHash";
 import { Carousel } from "components/carousel";
+import { TOKEN_NAME } from "constant";
 
 const ShopView = () => {
   UseScrollToHash();
@@ -85,6 +86,7 @@ const ShopView = () => {
   const parts = pathname.split("/store/");
 
   const router = useRouter();
+  const key = localStorage.getItem(TOKEN_NAME);
 
   const getVendorDetail = async () => {
     try {
@@ -134,7 +136,7 @@ const ShopView = () => {
     }
   };
   const getWishListProducts = async () => {
-    if (!token) {
+    if (!token || !key) {
       return;
     }
     try {
