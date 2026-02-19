@@ -509,6 +509,10 @@ const Mycart = () => {
     }
   }, [token]);
 
+  const totalItems = state?.cart.reduce((sum, vendor) =>
+    sum + vendor.products.reduce((total, product) => total + product.qty, 0),
+  0);
+
   return (
     <>
       <div>
@@ -543,7 +547,7 @@ const Mycart = () => {
                   fontSize={20}
                   fontWeight={600}
                 >
-                  {state?.cart?.length || 0} items in your cart
+                  {totalItems || 0} items in your cart
                 </Typography>
                 <Box
                   sx={{
@@ -693,7 +697,7 @@ const Mycart = () => {
                                   fontWeight={600}
                                   component="div"
                                 >
-                                  Item(s) total
+                                  Total ({totalItems} items)
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
@@ -1013,7 +1017,7 @@ const Mycart = () => {
                                   fontWeight={600}
                                   component="div"
                                 >
-                                  Total({state?.cart?.length} items)
+                                  Total ({totalItems} items)
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">

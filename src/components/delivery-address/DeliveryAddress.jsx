@@ -61,7 +61,8 @@ import Checkout from "./Checkout";
 
 const DeliveryAddress = () => {
   const initialOptions = {
-    "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
+    // "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
+    "client-id": "Adp4wynJ83t9uJa6Nfr7z1gNpaz8KgNKCDCJBFihYhVDII2XeB-Q-doPyCjraqC0VkyelBhVR8GVNP7N",
     currency: "USD",
     intent: "capture",
   };
@@ -426,6 +427,10 @@ const DeliveryAddress = () => {
       }
     },[]);
 
+  const totalItems = state?.cart.reduce((sum, vendor) =>
+    sum + vendor.products.reduce((total, product) => total + product.qty, 0),
+  0);
+
   return (
     <>
       <Box p={5}>
@@ -621,7 +626,7 @@ const DeliveryAddress = () => {
                     )}
 
                     <TableRow>
-                      <TableCell>Item(s) total</TableCell>
+                      <TableCell>({totalItems} Items) Total</TableCell>
                       <TableCell align="right">
                         {currency?.symbol}
                         {(state?.total * currency?.rate).toFixed(2)}
@@ -670,7 +675,7 @@ const DeliveryAddress = () => {
                     <TableRow>
                       <TableCell>
                         <Typography fontWeight={600}>
-                          Total ({state?.cart?.length} items)
+                          Total ({totalItems} items)
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
@@ -731,7 +736,11 @@ const DeliveryAddress = () => {
             {paymentType === "2" && (
               <Box mt={2}>
                 <PayPalScriptProvider options={initialOptions}>
-                  <Checkout />
+                  <Checkout
+                    cartData={state.cart}
+                    selectedAddress={allAddress[addressIndex]}
+                    currencyCode="USD"
+                  />
                 </PayPalScriptProvider>
               </Box>
             )}

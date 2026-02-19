@@ -322,8 +322,8 @@ const SingleVendorCart = ({
         {
           standardShipping: "Standard Delivery",
           expedited: "Express Delivery",
-          twoDays: "Two days",
-          oneDay: "One day",
+          globalExpress: "Global Express Delivery",
+          priorityExpress: "Priority Express Delivery",
         }[item.shippingType] || item.shippingType;
 
       const vendorFinalPrice = state.vendorDeliveryMap?.[cart.vendor_id];
