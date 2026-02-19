@@ -138,6 +138,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
 
     const getVendorCartDetails = async (discountAmount = 0) => {
         try {
+          console.log("add:",defaultAddress??'no add');
             const res = await getAPIAuth(
                 `user/getVendorCartDetails/${vendor_id}?address_id=${defaultAddress?._id || ""}&discount=${discountAmount}`,
                 token
@@ -467,6 +468,9 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
       })
     }
   }
+
+  const totalItems = cart.products.reduce((total, product) => total + product.qty, 0);
+  console.log("items",totalItems);
 
   return (
     <>
@@ -923,7 +927,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                         {/* Use Frontend Calculated Values for Price Breakdown to support Stacking/Exclusive Logic */}
                         
                         {/* 1. Item Total: Should be Original Price (MRP) */}
-                        <Typography>Item(s) total: {currency?.symbol}{((cart?.originalShopValue || vendorCartDetails?.subTotal) * currency?.rate).toFixed(2)}</Typography>
+                        <Typography> ({totalItems} Items) Total : {currency?.symbol}{((cart?.originalShopValue || vendorCartDetails?.subTotal) * currency?.rate).toFixed(2)}</Typography>
                         
                         {/* 2. Shop Discount: Promotional Offers (Frontend Calculated) */}
                         {/* If isSynced is TRUE (Exclusive), promotionDiscount wil be 0, so this won't show. Correct. */}
@@ -954,7 +958,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                         
                         {/* 5. Grand Total */}
                         <Typography mt={1} fontWeight={600}>
-                          Total : {currency?.symbol}
+                          ({totalItems} items) Total : {currency?.symbol}
                           {(
                               ((cart?.originalShopValue || vendorCartDetails?.subTotal) 
                                 - (cart?.promotionDiscount || 0) 

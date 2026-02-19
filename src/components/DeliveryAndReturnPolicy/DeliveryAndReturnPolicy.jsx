@@ -51,8 +51,8 @@ const DeliveryAndReturnPolicy = ({ product }) => {
         const allShippingMethods = [
             ...(shippingTemplate.standardShipping || []),
             ...(shippingTemplate.expedited || []),
-            ...(shippingTemplate.twoDays || []),
-            ...(shippingTemplate.oneDay || [])
+            ...(shippingTemplate.globalExpress || []),
+            ...(shippingTemplate.priorityExpress || [])
         ];
 
         // Find shipping methods for the selected country
@@ -324,12 +324,12 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                                                 region.toLowerCase() === option.name.toLowerCase()
                                             )
                                         ) ||
-                                        shippingTemplate.twoDays?.some(method =>
+                                        shippingTemplate.globalExpress?.some(method =>
                                             method.region?.some(region =>
                                                 region.toLowerCase() === option.name.toLowerCase()
                                             )
                                         ) ||
-                                        shippingTemplate.oneDay?.some(method =>
+                                        shippingTemplate.priorityExpress?.some(method =>
                                             method.region?.some(region =>
                                                 region.toLowerCase() === option.name.toLowerCase()
                                             )
