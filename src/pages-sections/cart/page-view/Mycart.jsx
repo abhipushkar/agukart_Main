@@ -34,7 +34,7 @@ import useCart from "hooks/useCart";
 
 import parse from "html-react-parser";
 import { postAPIAuth } from "utils/__api__/ApiServies";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 import useAuth from "hooks/useAuth";
 import Accordion from "@mui/material/Accordion";
@@ -83,6 +83,8 @@ const Mycart = () => {
   });
   const [errors, setErrors] = useState({ voucher_code: "" });
   const router = useRouter();
+  
+  const debounceRef = useRef(null);
 
   // Check if cart has only one vendor
   const isSingleVendor = state?.cart?.length === 1;
@@ -264,6 +266,18 @@ const Mycart = () => {
       subTotal: globalItemTotal - globalShopDiscount - globalCouponDiscount,
     };
   }, [state.cart]);
+
+  const cartValue = useMemo(() => {
+  return state?.cart?.reduce((acc, vendor) => {
+    return (
+      acc +
+      vendor.products.reduce((sum, p) => {
+        const price = +p.original_price || +p.real_price || 0;
+        return sum + price * p.qty;
+      }, 0)
+    );
+  }, 0);
+}, [state.cart]);
 
   const [confirmation, setconfirmation] = React.useState(false);
 
@@ -467,6 +481,41 @@ const Mycart = () => {
     }
   };
 
+  const revalidateVoucher = async () => {
+  if (!voucherDetails?.voucherCode || !token) return;
+
+  try {
+    const payload = {
+      voucher_code: voucherDetails.voucherCode,
+    };
+
+    const res = await postAPIAuth("user/check-voucher-for-product", payload);
+
+    if (res.status === 200) {
+      const discount = res?.data?.discount || 0;
+
+      if (discount <= 0) {
+        // Voucher no longer valid
+        handleRemove();
+        addToast("Voucher removed because cart no longer meets requirements", {
+          appearance: "warning",
+          autoDismiss: true,
+        });
+      } else {
+        setVoucherDetails((prev) => ({
+          ...prev,
+          discount: discount,
+        }));
+
+        const walletdata = wallet ? "1" : "0";
+        getCartDetails(walletdata, null, discount);
+      }
+    }
+  } catch (error) {
+    handleRemove();
+  }
+};
+
   // Initialize store coupon form when vendor has coupon applied
   useEffect(() => {
     if (
@@ -508,6 +557,17 @@ const Mycart = () => {
       setCartLoading(false);
     }
   }, [token]);
+
+
+useEffect(() => {
+  if (!voucherDetails?.voucherCode) return;
+
+  clearTimeout(debounceRef.current);
+
+  debounceRef.current = setTimeout(() => {
+    revalidateVoucher();
+  }, 400);
+}, [cartValue]);
 
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
