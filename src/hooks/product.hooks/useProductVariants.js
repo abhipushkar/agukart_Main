@@ -71,7 +71,7 @@ export const useProductVariants = (product) => {
         product.parent_id.product_variants.forEach((variant) => {
           // Find corresponding variant info from variant_id array for guide data
           const guideData = variant?.guide;
-
+          console.log(variant);
           allVariants.push({
             type: "parent",
             id: variant.variant_name,
@@ -87,7 +87,7 @@ export const useProductVariants = (product) => {
                 images: attr.main_images || [],
                 thumbnail: attr.thumbnail || "",
                 preview_image: attr.preview_image || "",
-              })) || [],
+              })).filter(attr=>new Set(product.variant_attribute_id.map(a=>a._id)).has(attr.id)) || [],
           });
         });
       }
@@ -118,6 +118,7 @@ export const useProductVariants = (product) => {
           });
         });
       }
+      console.log("Var", allVariants);
     }
 
     // Handle internal variants - ONLY show variants that are in product_variants
@@ -150,7 +151,7 @@ export const useProductVariants = (product) => {
             (attr) => attr.variant === variantInVariantId._id,
           ) || [];
 
-  // Find attribute data from product_variants structure
+        // Find attribute data from product_variants structure
         const variantFromPV = product.product_variants.find(
           (pv) => pv.variant_name === variant.variant_name,
         );
@@ -919,9 +920,17 @@ export const useProductVariants = (product) => {
 
         currentSelections[hoveredVariant.id] = hoveredAttributeId;
 
-        const selectionIds = Object.values(currentSelections).filter(
-          (val) => val === hoveredAttributeId,
-        );
+        // Collect ALL selected parent variant IDs
+        const selectionIds = [];
+        const parentVariants = normalizedVariants.filter((v) => v.type === "parent");
+
+        parentVariants.forEach((variant) => {
+          const selectedId = currentSelections[variant.id];
+          if (selectedId) {
+            selectionIds.push(selectedId);
+          }
+        });
+
         if (selectionIds.length === 0) return null;
 
         const selectionString = selectionIds.sort().join(",");
