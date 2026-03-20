@@ -129,7 +129,13 @@ const prepareFieldRows = (groupedFields) => {
 // Product Specifications Component with dynamic fields only
 const ProductSpecifications = ({ product }) => {
     const dynamicFields = product?.dynamicFields || {};
-
+    if (dynamicFields){
+        //remove fields longer than length 4
+        Object.keys(dynamicFields).forEach(key=>{
+            if(Array.isArray(dynamicFields[key]) && dynamicFields[key].length > 4)
+                delete dynamicFields[key];
+        })
+    }
     // Convert dynamicFields object into array of key-value pairs
     const dynamicFieldsArray = Object.entries(dynamicFields);
 
@@ -144,7 +150,7 @@ const ProductSpecifications = ({ product }) => {
 
     // Group fields by base name
     const groupedFields = groupFieldsByBaseName(dynamicFieldsArray);
-
+    console.log("arr:",dynamicFields,"\ngroup:",groupedFields);
     // Prepare rows for display
     const fieldRows = prepareFieldRows(groupedFields);
 
@@ -152,6 +158,8 @@ const ProductSpecifications = ({ product }) => {
     const midPoint = Math.ceil(fieldRows.length / 2);
     const leftColumnRows = fieldRows.slice(0, midPoint);
     const rightColumnRows = fieldRows.slice(midPoint);
+    console.log(leftColumnRows,rightColumnRows);
+
 
     // Render a single field row
     const renderSingleField = (row) => (
