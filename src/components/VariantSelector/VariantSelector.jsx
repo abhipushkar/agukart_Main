@@ -696,7 +696,7 @@ const VariantSelector = ({
 
           {hasGuide && (
             <Button
-              startIcon={<HelpOutlineIcon />}
+              // startIcon={<HelpOutlineIcon />}
               onClick={handleGuideClick}
               size="small"
               variant="outlined"
@@ -713,7 +713,7 @@ const VariantSelector = ({
                 },
               }}
             >
-              Show Guide
+              {variant.guide_name}
             </Button>
           )}
         </Box>
@@ -884,7 +884,7 @@ const VariantSelector = ({
 
           {hasGuide && (
             <Button
-              startIcon={<HelpOutlineIcon />}
+              // startIcon={<HelpOutlineIcon />}
               onClick={handleGuideClick}
               size="small"
               variant="outlined"
@@ -901,7 +901,7 @@ const VariantSelector = ({
                 },
               }}
             >
-              Show Guide
+              {variant.guide_name}
             </Button>
           )}
         </Box>

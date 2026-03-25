@@ -12,8 +12,14 @@ import {
   AccordionSummary,
   AccordionDetails,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton
 } from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
+import { ExpandMore, Close as CloseIcon } from "@mui/icons-material";
+import parse from "html-react-parser";
 
 const ProductCustomization = ({
   customizationData,
@@ -169,10 +175,128 @@ const DropdownCustomization = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hoveredOption, setHoveredOption] = useState(null);
+  const [currentGuide, setCurrentGuide] = useState(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const hasGuide = customization?.guide && (customization.guide?.guide_file || customization.guide?.guide_name || customization.guide?.guide_description);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
+
+  const handleGuideClick = () => {
+    setCurrentGuide({
+      name: customization.guide?.guide_name,
+      file: customization.guide?.guide_file,
+      type: customization.guide?.guide_type,
+      description: customization.guide?.guide_description,
+    });
+    setGuideOpen(true);
+  };
+
+      const renderGuideModal = () => (
+      <Dialog
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            maxWidth: "90vw",
+            maxHeight: "90vh",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            m: 0,
+            p: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6" component="div">
+            {currentGuide?.name}
+          </Typography>
+          <IconButton
+            aria-label="close"
+            onClick={() => setGuideOpen(false)}
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+  
+        <DialogContent dividers sx={{ p: 3 }}>
+          {currentGuide?.description && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body1" component="div">
+                {parse(currentGuide.description)}
+              </Typography>
+            </Box>
+          )}
+  
+          {currentGuide?.file && currentGuide?.type === "image" && (
+            <Box sx={{ textAlign: "center", mb: 2 }}>
+              <img
+                src={currentGuide.file}
+                alt={currentGuide.name || "Guide Image"}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "60vh",
+                  objectFit: "contain",
+                  borderRadius: "8px",
+                }}
+              />
+            </Box>
+          )}
+  
+          {currentGuide?.file && currentGuide?.type === "video" && (
+            <Box sx={{ textAlign: "center", mb: 2 }}>
+              <video
+                controls
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "60vh",
+                  borderRadius: "8px",
+                }}
+              >
+                <source src={currentGuide.file} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </Box>
+          )}
+  
+          {currentGuide?.file && currentGuide?.type === "document" && (
+            <Box sx={{ textAlign: "center", mb: 2 }}>
+              <Button
+                variant="contained"
+                href={currentGuide.file}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ mt: 2 }}
+              >
+                Download Guide Document
+              </Button>
+            </Box>
+          )}
+  
+          {!currentGuide?.file && !currentGuide?.description && (
+            <Typography color="textSecondary" sx={{ textAlign: "center", py: 4 }}>
+              No guide content available
+            </Typography>
+          )}
+        </DialogContent>
+  
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setGuideOpen(false)} variant="contained">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -219,7 +343,8 @@ const DropdownCustomization = ({
 
   return (
     <Grid container spacing={0} sx={{ my: 2 }}>
-      <Grid item xs={12}>
+      <Grid item xs={12} display={"flex"} justifyContent={"space-between"} marginBottom={0.5}>
+        <Box>
         <Typography
           variant="subtitle1"
           sx={{ fontWeight: "bold", lineHeight: 1.5 }}
@@ -248,6 +373,29 @@ const DropdownCustomization = ({
             [{customization.instructions}]
           </Typography>
         )}
+        </Box>
+        {hasGuide && (
+                    <Button
+                      // startIcon={<HelpOutlineIcon />}
+                      onClick={handleGuideClick}
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        fontSize: "12px",
+                        padding: "2px 8px",
+                        minWidth: "auto",
+                        textTransform: "none",
+                        borderColor: "#D23F57",
+                        color: "#D23F57",
+                        "&:hover": {
+                          borderColor: "#b32e44",
+                          backgroundColor: "rgba(210, 63, 87, 0.04)",
+                        },
+                      }}
+                    >
+                      {customization.guide?.guide_name}
+                    </Button>
+                  )}
       </Grid>
 
       <Grid item xs={12}>
@@ -398,6 +546,7 @@ const DropdownCustomization = ({
           )}
         </FormControl>
       </Grid>
+      {renderGuideModal()}
     </Grid>
   );
 };
