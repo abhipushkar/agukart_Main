@@ -60,6 +60,7 @@ const VariantSelector = ({
   const triggerRef = useRef(null);
   const [dropdownLeft, setDropdownLeft] = useState(0);
   const [dropdownWidth, setDropdownWidth] = useState(0);
+  const [hoveredAttrValue, setHoveredAttrValue] = useState(null);
 
   // Check if variant has guide information
   const hasGuide =
@@ -689,7 +690,7 @@ const VariantSelector = ({
             {variant.name}{" "}
             {selectedAttr && (
               <span style={{ fontSize: "15px", fontWeight: 400 }}>
-                : {selectedAttr.value}
+                : {hoveredAttrValue || selectedAttr.value}
               </span>
             )}
           </Typography>
@@ -727,6 +728,7 @@ const VariantSelector = ({
           onMouseLeave={() => {
             if (onHoverOut) {
               onHoverOut();
+              setHoveredAttrValue(null);
             }
           }}
         >
@@ -755,6 +757,7 @@ const VariantSelector = ({
                 onMouseEnter={() => {
                   if (!isAttributeDisabled(attr) && onHover) {
                     onHover(attr.id);
+                    setHoveredAttrValue(attr.value);
                   }
                 }}
               >
@@ -848,7 +851,7 @@ const VariantSelector = ({
 
     // Only show sold out if attribute is actually sold out AND visible
     if (attributeData.isSoldOut) {
-      return " [Sold Out]";
+      return "";
     }
 
     const { price, priceRange, isIndependent } = attributeData;
@@ -1039,8 +1042,8 @@ const VariantSelector = ({
                           onHoverOut && onHoverOut();
                         }}
                         sx={{
-                          opacity: isDisabled ? 0.5 : 1,
-                          backgroundColor: isSelected ? "#ffedf3" : isDisabled ? "#e9e6e6" : "inherit",
+                          // opacity: isDisabled ? 0.5 : 1,
+                          backgroundColor: isSelected ? "#ffedf3" : isDisabled ? "#eeeeee" : "inherit",
                           py: 0.5,
                           px: 2,
                           cursor: isDisabled ? "not-allowed" : "pointer",
@@ -1076,7 +1079,7 @@ const VariantSelector = ({
                               alignItems: "center",
                               justifyContent: "space-between",
                               width: "100%",
-                              opacity: isDisabled ? 0.6 : 1,
+                              // opacity: isDisabled ? 0.6 : 1,
                             }}
                           >
                             <div
@@ -1096,9 +1099,6 @@ const VariantSelector = ({
                                     marginRight: "12px",
                                     borderRadius: "3px",
                                     objectFit: "cover",
-                                    filter: isDisabled
-                                      ? "grayscale(100%)"
-                                      : "none",
                                   }}
                                 />
                               )}
@@ -1114,9 +1114,6 @@ const VariantSelector = ({
                                 <span
                                   style={{
                                     color: isDisabled ? "#999" : "inherit",
-                                    textDecoration: isDisabled
-                                      ? "line-through"
-                                      : "none",
                                     display: "block",
                                     fontSize: "14px",
                                     fontWeight: 500,
@@ -1226,7 +1223,7 @@ const VariantButton = ({
       sx={{
         flexShrink: 0,
         width: "69px",
-        position: "relative",
+        position: "relative"
       }}
     >
       <Tooltip title={isDisabled ? "Sold Out" : null} placement="top" arrow>
@@ -1247,25 +1244,18 @@ const VariantButton = ({
             padding: 0,
             border: isDisabled ? "1px solid #ccc" : "1px solid #D23F57",
             borderRadius: "10px",
-            backgroundColor: isDisabled ? "#f5f5f5" : "#ffffff",
+            backgroundColor: isDisabled ? "#e6e6e6" : isSelected ? "#fff5f7" : "#fff",
             position: "relative",
-            overflow: "hidden",
+            overflow: "visible",
             display: "flex",
             outline: isSelected ? "3px solid #D23F57" : "",
             outlineOffset: 2,
             alignItems: "center",
             justifyContent: "center",
-            margin: 0,
+            mt: 0,
             "&:hover:not(:disabled)": {
               borderColor: isSelected ? "#000" : "#d84f66ff",
               boxShadow: "0 0 0 3px rgba(0, 113, 133, 0.1)",
-            },
-            "&:disabled": {
-              opacity: 0.4,
-              cursor: "not-allowed",
-              "& img": {
-                filter: "grayscale(100%)",
-              },
             },
             width: hasThumbnail ? 69 : "auto",
             minWidth: hasThumbnail ? 69 : "unset",
@@ -1274,7 +1264,7 @@ const VariantButton = ({
             border: isSelected ? "2px solid #D23F57" : "1px solid #ccc",
             backgroundColor: isSelected ? "#fff5f7" : "#fff",
             cursor: isDisabled ? "not-allowed" : "pointer",
-            opacity: isDisabled ? 0.5 : 1,
+            // opacity: isDisabled ? 0.5 : 1,
           }}
         >
           {attr.thumbnail ? (
@@ -1286,6 +1276,7 @@ const VariantButton = ({
                 height: "100%",
                 objectFit: "cover",
                 borderRadius: "6px",
+                zIndex: 100
               }}
             />
           ) : (
@@ -1312,32 +1303,22 @@ const VariantButton = ({
             <Box
               sx={{
                 position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(255, 255, 255, 0.8)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "6px",
-                zIndex: 10,
+                top: "-9px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "#fff", // 👈 IMPORTANT (cuts the border behind)
+                color: "#c32e2e",
+                fontSize: "9.5px",
+                fontWeight: "bold",
+                px: "1px",
+                py: "1px",
+                borderRadius: "4px",
+                zIndex: 50, // 👈 higher than button
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "#d32f2f",
-                  fontWeight: "bold",
-                  fontSize: "10px",
-                  textAlign: "center",
-                  backgroundColor: "rgba(255, 255, 255, 0.9)",
-                  padding: "2px 4px",
-                  borderRadius: "3px",
-                }}
-              >
-                Sold Out
-              </Typography>
+              SOLD OUT
             </Box>
           )}
         </Button>

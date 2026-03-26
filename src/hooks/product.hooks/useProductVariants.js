@@ -612,6 +612,11 @@ export const useProductVariants = (product) => {
 
         if (!attributeVariant) return false;
 
+        // Only apply combination sold-out logic if the variant actually controls quantity
+        if (!quantityControllingVariants.includes(attributeVariant.id)) {
+          return false;
+        }
+
         // Only consider controlling variants for quantity
         const controllingSelections = {};
         Object.entries(tempSelections).forEach(([variantName, attrId]) => {
