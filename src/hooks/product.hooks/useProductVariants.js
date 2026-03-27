@@ -15,16 +15,31 @@ export const useProductVariants = (product) => {
   const [selectedVariantImages, setSelectedVariantImages] = useState([]);
   const router = useRouter();
 
-  // Get controlling variants from form_values
+  // Get controlling variants from form_values or combinationData
   const getControllingVariants = useCallback(
     (field) => {
-      if (!product?.form_values?.[field]) return [];
+      // Old product structure: from form_values
+      if (product?.form_values?.[field]) {
+        const value = product.form_values[field];
+        if (typeof value === "string") {
+          return value.split(" and ").filter((name) => name.trim() !== "");
+        }
+      }
 
-      const value = product.form_values[field];
-      if (!value || typeof value !== "string") return [];
+      // New product structure: from combinationData
+      if (product?.combinationData && product.combinationData.length > 0) {
+        const targetField = field === "prices" ? "priceInput" : "quantityInput";
+        for (const group of product.combinationData) {
+          if (group.combinations && group.combinations.length > 0) {
+            const val = group.combinations[0][targetField];
+            if (val && typeof val === "string") {
+              return val.split(" and ").filter((name) => name.trim() !== "");
+            }
+          }
+        }
+      }
 
-      // Split by " and " to get variant names
-      return value.split(" and ").filter((name) => name.trim() !== "");
+      return [];
     },
     [product],
   );
@@ -41,18 +56,38 @@ export const useProductVariants = (product) => {
 
   // Check if combination logic should be applied for price
   const shouldUseCombinationPrice = useMemo(() => {
-    return (
-      product?.form_values?.isCheckedPrice === true &&
-      (product?.sale_price === 0 || product?.sale_price === "0")
-    );
+    let isChecked = product?.form_values?.isCheckedPrice === true;
+
+    if (!isChecked && product?.combinationData && product.combinationData.length > 0) {
+      for (const group of product.combinationData) {
+        if (group.combinations && group.combinations.length > 0) {
+          if (group.combinations[0].isCheckedPrice === "true" || group.combinations[0].isCheckedPrice === true) {
+            isChecked = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return isChecked;
   }, [product]);
 
   // Check if combination logic should be applied for quantity
   const shouldUseCombinationQuantity = useMemo(() => {
-    return (
-      product?.form_values?.isCheckedQuantity === true &&
-      (product?.qty === 0 || product?.qty === "0")
-    );
+    let isChecked = product?.form_values?.isCheckedQuantity === true;
+
+    if (!isChecked && product?.combinationData && product.combinationData.length > 0) {
+      for (const group of product.combinationData) {
+        if (group.combinations && group.combinations.length > 0) {
+          if (group.combinations[0].isCheckedQuantity === "true" || group.combinations[0].isCheckedQuantity === true) {
+            isChecked = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return isChecked;
   }, [product]);
 
   // Normalize all variant data into a consistent structure
@@ -419,7 +454,7 @@ export const useProductVariants = (product) => {
 
   const isAttributeVisible = useCallback(
     (attributeId, currentSelections = {}) => {
-      if (!product?.isCombination) return true;
+      if (!(product?.isCombination || (product?.combinationData && product.combinationData.length > 0))) return true;
 
       const { combinationsMap } = internalCombinationsMap;
       const normalizedVariants = normalizeVariantData();
@@ -566,7 +601,7 @@ export const useProductVariants = (product) => {
       }
 
       // For internal variants - only apply if quantity is controlled by combinations
-      if (product?.isCombination && shouldUseCombinationQuantity) {
+      if ((product?.isCombination || (product?.combinationData && product.combinationData.length > 0)) && shouldUseCombinationQuantity) {
         const { combinationsMap } = internalCombinationsMap;
 
         const tempSelections = { ...currentSelections };
@@ -576,6 +611,11 @@ export const useProductVariants = (product) => {
         );
 
         if (!attributeVariant) return false;
+
+        // Only apply combination sold-out logic if the variant actually controls quantity
+        if (!quantityControllingVariants.includes(attributeVariant.id)) {
+          return false;
+        }
 
         // Only consider controlling variants for quantity
         const controllingSelections = {};
@@ -745,7 +785,7 @@ export const useProductVariants = (product) => {
   // Get price for an attribute or combination
   const getAttributePrice = useCallback(
     (attributeId, currentSelections = {}) => {
-      if (!product?.isCombination || !shouldUseCombinationPrice) return null;
+      if (!(product?.isCombination || (product?.combinationData && product.combinationData.length > 0)) || !shouldUseCombinationPrice) return null;
 
       const { combinationsMap } = internalCombinationsMap;
 
@@ -823,7 +863,7 @@ export const useProductVariants = (product) => {
   // Get quantity for an attribute or combination
   const getAttributeQuantity = useCallback(
     (attributeId, currentSelections = {}) => {
-      if (!product?.isCombination || !shouldUseCombinationQuantity) return null;
+      if (!(product?.isCombination || (product?.combinationData && product.combinationData.length > 0)) || !shouldUseCombinationQuantity) return null;
 
       const { combinationsMap } = internalCombinationsMap;
 
@@ -1068,7 +1108,7 @@ export const useProductVariants = (product) => {
 
   // Initialize internal combinations when product loads
   useEffect(() => {
-    if (product?.isCombination && product?.combinationData) {
+    if ((product?.isCombination || (product?.combinationData && product.combinationData.length > 0)) && product?.combinationData) {
       const internalCombos = extractInternalCombinations();
       setInternalCombinationsMap(internalCombos);
     }
@@ -1076,7 +1116,7 @@ export const useProductVariants = (product) => {
 
   // Update variant attributes with price/quantity data
   useEffect(() => {
-    if (product?.isCombination) {
+    if ((product?.isCombination || (product?.combinationData && product.combinationData.length > 0))) {
       const normalizedVariants = normalizeVariantData();
       const updatedVariants = normalizedVariants.map((variant) => {
         if (variant.type === "internal") {
@@ -1234,7 +1274,7 @@ export const useProductVariants = (product) => {
   // Update to only consider visible combinations
   const getCurrentCombinationData = useCallback(() => {
     if (
-      !product?.isCombination ||
+      !(product?.isCombination || (product?.combinationData && product.combinationData.length > 0)) ||
       !selectedVariants ||
       Object.keys(selectedVariants).length === 0
     ) {
@@ -1371,7 +1411,7 @@ export const useProductVariants = (product) => {
 
   const calculateAttributeData = useCallback(
     (attributeId, currentSelections = selectedVariants) => {
-      if (!product?.isCombination) {
+      if (!(product?.isCombination || (product?.combinationData && product.combinationData.length > 0))) {
         return {
           price: null,
           quantity: null,
