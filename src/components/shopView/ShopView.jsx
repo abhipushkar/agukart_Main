@@ -86,7 +86,6 @@ const ShopView = () => {
   const parts = pathname.split("/store/");
 
   const router = useRouter();
-  const key = localStorage.getItem(TOKEN_NAME);
 
   const getVendorDetail = async () => {
     try {
@@ -136,6 +135,7 @@ const ShopView = () => {
     }
   };
   const getWishListProducts = async () => {
+    const key = localStorage.getItem(TOKEN_NAME);
     if (!token || !key) {
       return;
     }

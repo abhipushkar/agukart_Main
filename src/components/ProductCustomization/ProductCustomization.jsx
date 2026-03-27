@@ -31,14 +31,11 @@ const ProductCustomization = ({
   currency,
   onOptionHover,
   onOptionHoverOut,
+  productMainImage,
+  isExpanded,
+  setIsExpanded
 }) => {
   if (!customizationData) return null;
-
-  const [isExpanded, setIsExpanded] = useState(
-    customizationData.isExpanded === "true" ||
-      customizationData.isExpanded === true ||
-      false,
-  );
 
   return (
     <Box sx={{ my: 1 }}>
@@ -51,7 +48,7 @@ const ProductCustomization = ({
 
       <Accordion
         expanded={isExpanded}
-        onChange={() => setIsExpanded(!isExpanded)}
+        onChange={() => {setIsExpanded(!isExpanded);}}
         sx={{
           border: "none",
           boxShadow: "none",
@@ -118,6 +115,7 @@ const ProductCustomization = ({
                 currency={currency}
                 onOptionHover={onOptionHover}
                 onOptionHoverOut={onOptionHoverOut}
+                productMainImage={productMainImage}
               />
             ))}
           </Box>
@@ -137,6 +135,7 @@ const CustomizationField = ({
   currency,
   onOptionHover,
   onOptionHoverOut,
+  productMainImage
 }) => {
   if (customization.optionList) {
     return (
@@ -148,6 +147,7 @@ const CustomizationField = ({
         currency={currency}
         onOptionHover={onOptionHover}
         onOptionHoverOut={onOptionHoverOut}
+        productMainImage={productMainImage}
       />
     );
   } else {
@@ -172,13 +172,15 @@ const DropdownCustomization = ({
   currency,
   onOptionHover, // Added for hover preview
   onOptionHoverOut, // Added for hover preview
+  productMainImage,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hoveredOption, setHoveredOption] = useState(null);
   const [currentGuide, setCurrentGuide] = useState(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const hasGuide = customization?.guide && (customization.guide?.guide_file || customization.guide?.guide_name || customization.guide?.guide_description);
-
+  console.log(customization);
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -193,110 +195,310 @@ const DropdownCustomization = ({
     setGuideOpen(true);
   };
 
-      const renderGuideModal = () => (
-      <Dialog
-        open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        maxWidth="md"
-        fullWidth
+  const renderGuideModal = () => (
+    <Dialog
+      open={guideOpen}
+      onClose={() => setGuideOpen(false)}
+      maxWidth="md"
+      fullWidth
+      sx={{
+        "& .MuiDialog-paper": {
+          maxWidth: "90vw",
+          maxHeight: "90vh",
+        },
+      }}
+    >
+      <DialogTitle
         sx={{
-          "& .MuiDialog-paper": {
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-          },
+          m: 0,
+          p: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <DialogTitle
+        <Typography variant="h6" component="div">
+          {currentGuide?.name}
+        </Typography>
+        <IconButton
+          aria-label="close"
+          onClick={() => setGuideOpen(false)}
           sx={{
-            m: 0,
-            p: 2,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ p: 3 }}>
+        {currentGuide?.description && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body1" component="div">
+              {parse(currentGuide.description)}
+            </Typography>
+          </Box>
+        )}
+
+        {currentGuide?.file && currentGuide?.type === "image" && (
+          <Box sx={{ textAlign: "center", mb: 2 }}>
+            <img
+              src={currentGuide.file}
+              alt={currentGuide.name || "Guide Image"}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "60vh",
+                objectFit: "contain",
+                borderRadius: "8px",
+              }}
+            />
+          </Box>
+        )}
+
+        {currentGuide?.file && currentGuide?.type === "video" && (
+          <Box sx={{ textAlign: "center", mb: 2 }}>
+            <video
+              controls
+              style={{
+                maxWidth: "100%",
+                maxHeight: "60vh",
+                borderRadius: "8px",
+              }}
+            >
+              <source src={currentGuide.file} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </Box>
+        )}
+
+        {currentGuide?.file && currentGuide?.type === "document" && (
+          <Box sx={{ textAlign: "center", mb: 2 }}>
+            <Button
+              variant="contained"
+              href={currentGuide.file}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ mt: 2 }}
+            >
+              Download Guide Document
+            </Button>
+          </Box>
+        )}
+
+        {!currentGuide?.file && !currentGuide?.description && (
+          <Typography color="textSecondary" sx={{ textAlign: "center", py: 4 }}>
+            No guide content available
+          </Typography>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={() => setGuideOpen(false)} variant="contained">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  const ViewAllDialog = () => {
+    return (
+      <Dialog
+        open={isViewAllOpen}
+        onClose={() => setIsViewAllOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+            maxHeight: "80vh",
+          }
+        }}
+      >
+        <DialogTitle sx={{ p: 0 }}>
+          <Box sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            {currentGuide?.name}
-          </Typography>
-          <IconButton
-            aria-label="close"
-            onClick={() => setGuideOpen(false)}
-            sx={{
-              color: (theme) => theme.palette.grey[500],
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
+            p: 2,
+            borderBottom: "1px solid #e0e0e0"
+          }}>
+            <Typography variant="h6" sx={{ fontSize: "17px", fontWeight: 500 }}>
+              {customization.title || customization.label}
+            </Typography>
+            <IconButton onClick={() => setIsViewAllOpen(false)} size="small">
+              ✕
+            </IconButton>
+          </Box>
         </DialogTitle>
-  
-        <DialogContent dividers sx={{ p: 3 }}>
-          {currentGuide?.description && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body1" component="div">
-                {parse(currentGuide.description)}
-              </Typography>
-            </Box>
-          )}
-  
-          {currentGuide?.file && currentGuide?.type === "image" && (
-            <Box sx={{ textAlign: "center", mb: 2 }}>
-              <img
-                src={currentGuide.file}
-                alt={currentGuide.name || "Guide Image"}
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "60vh",
-                  objectFit: "contain",
-                  borderRadius: "8px",
-                }}
-              />
-            </Box>
-          )}
-  
-          {currentGuide?.file && currentGuide?.type === "video" && (
-            <Box sx={{ textAlign: "center", mb: 2 }}>
-              <video
-                controls
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "60vh",
-                  borderRadius: "8px",
-                }}
-              >
-                <source src={currentGuide.file} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            </Box>
-          )}
-  
-          {currentGuide?.file && currentGuide?.type === "document" && (
-            <Box sx={{ textAlign: "center", mb: 2 }}>
-              <Button
-                variant="contained"
-                href={currentGuide.file}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ mt: 2 }}
-              >
-                Download Guide Document
-              </Button>
-            </Box>
-          )}
-  
-          {!currentGuide?.file && !currentGuide?.description && (
-            <Typography color="textSecondary" sx={{ textAlign: "center", py: 4 }}>
-              No guide content available
+
+        <DialogContent sx={{ p: 2 }}>
+          {customization.instructions && (
+            <Typography variant="body2" sx={{ mb: 2, color: "#666", fontSize: "13px" }}>
+              {customization.instructions}
             </Typography>
           )}
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "repeat(2, 1fr)",
+                sm: "repeat(auto-fill, minmax(180px, 1fr))",
+              },
+              gap: 2,
+            }}
+          >
+            {customization.optionList
+              .filter(
+                (option) =>
+                  option?.isVisible === "true" ||
+                  option?.isVisible === true ||
+                  false
+              )
+              .map((option) => {
+                const isSelected = selectedValue?.optionName === option.optionName;
+
+                // Get image source
+                let imageSrc = null;
+                if (option.main_images && option.main_images.length > 0) {
+                  const validImage = option.main_images.find(img => img !== null);
+                  if (validImage) {
+                    imageSrc = validImage;
+                  }
+                }
+                if (!imageSrc && option.preview_image) {
+                  imageSrc = option.preview_image;
+                }
+                const showThumbnail = !imageSrc && option.thumbnail;
+                
+                if (!imageSrc && productMainImage) {
+                  imageSrc = Array.isArray(productMainImage)
+                    ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
+                    : `https://api.agukart.com/uploads/product/${productMainImage}`;
+                }
+
+                return (
+                  <Box
+                    key={option.optionName}
+                    onClick={() => {
+                      setIsViewAllOpen(false);
+                      onChange(customization.label, option);
+                    }}
+                    sx={{
+                      cursor: "pointer",
+                      position: "relative",
+                      border: isSelected ? "2px solid #D23F57" : "1px solid #e0e0e0",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: "relative",
+                        paddingTop: "100%",
+                        backgroundColor: "#f5f5f5",
+                      }}
+                    >
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={option.optionName}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#f5f5f5",
+                            color: "#999",
+                          }}
+                        >
+                          No Image
+                        </Box>
+                      )}
+
+                      {/* Small thumbnail in bottom right */}
+                      {showThumbnail && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            bottom: "8px",
+                            right: "8px",
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            border: "2px solid white",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                            backgroundColor: "white",
+                          }}
+                        >
+                          <img
+                            src={option.thumbnail}
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Box sx={{ p: 1.5, textAlign: "center" }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 500,
+                          fontSize: "13px",
+                          mb: 0.5,
+                        }}
+                      >
+                        {option.optionName}
+                      </Typography>
+                      {/* {option.priceDifference && option.priceDifference !== 0 && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#D23F57",
+                            fontSize: "11px",
+                            display: "block",
+                            fontWeight: 500,
+                          }}
+                        >
+                          + {currency?.symbol}
+                          {(+option.priceDifference * currency?.rate).toFixed(2)}
+                        </Typography>
+                      )} */}
+                    </Box>
+                  </Box>
+                );
+              })}
+          </Box>
         </DialogContent>
-  
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setGuideOpen(false)} variant="contained">
-            Close
-          </Button>
-        </DialogActions>
       </Dialog>
     );
+  };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -344,58 +546,59 @@ const DropdownCustomization = ({
   return (
     <Grid container spacing={0} sx={{ my: 2 }}>
       <Grid item xs={12} display={"flex"} justifyContent={"space-between"} marginBottom={0.5}>
-        <Box>
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: "bold", lineHeight: 1.5 }}
-        >
-          {customization.label}
-          {customization.isCompulsory === "true" ||
-          customization.isCompulsory === true ? (
-            <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>
-              *
-            </span>
-          ) : (
-            <span
-              style={{
-                color: "gray",
-                fontSize: "12px",
-                fontWeight: "light",
-                margin: "0 3px",
-              }}
+        <Box display={"flex"} justifyContent={"space-between"}>
+          <Box>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: "bold", lineHeight: 1.5 }}
             >
-              (Optional)
-            </span>
-          )}
-        </Typography>
-        {customization.instructions && (
-          <Typography variant="body2" sx={{ color: "gray", mb: 0.25 }}>
-            [{customization.instructions}]
-          </Typography>
-        )}
-        </Box>
+              {customization.label}
+              {customization.isCompulsory === "true" ||
+                customization.isCompulsory === true ? (
+                <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>
+                  *
+                </span>
+              ) : (
+                <span
+                  style={{
+                    color: "gray",
+                    fontSize: "12px",
+                    fontWeight: "light",
+                    margin: "0 3px",
+                  }}
+                >
+                  (Optional)
+                </span>
+              )}
+            </Typography>
+            {customization.instructions && (
+              <Typography variant="body2" sx={{ color: "gray", mb: 0.25 }}>
+                [{customization.instructions}]
+              </Typography>
+            )}
+          </Box></Box>
         {hasGuide && (
-                    <Button
-                      // startIcon={<HelpOutlineIcon />}
-                      onClick={handleGuideClick}
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        fontSize: "12px",
-                        padding: "2px 8px",
-                        minWidth: "auto",
-                        textTransform: "none",
-                        borderColor: "#D23F57",
-                        color: "#D23F57",
-                        "&:hover": {
-                          borderColor: "#b32e44",
-                          backgroundColor: "rgba(210, 63, 87, 0.04)",
-                        },
-                      }}
-                    >
-                      {customization.guide?.guide_name}
-                    </Button>
-                  )}
+          <Button
+            // startIcon={<HelpOutlineIcon />}
+            onClick={handleGuideClick}
+            size="small"
+            variant="outlined"
+            sx={{
+              fontSize: "12px",
+              padding: "2px 8px",
+              minWidth: "auto",
+              textTransform: "none",
+              borderColor: "#D23F57",
+              color: "#D23F57",
+              "&:hover": {
+                borderColor: "#b32e44",
+                backgroundColor: "rgba(210, 63, 87, 0.04)",
+              },
+            }}
+          >
+            {customization.guide?.guide_name}
+          </Button>
+        )}
       </Grid>
 
       <Grid item xs={12}>
@@ -443,7 +646,24 @@ const DropdownCustomization = ({
               boxShadow: "0 0 3px #000",
             }}
           >
-            <MenuItem value="">Select an option</MenuItem>
+            <MenuItem value="" sx={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Select an option</span>
+              <Tooltip title="View all options" placement="right" arrow>
+                <Button
+                  onClick={() => setIsViewAllOpen(true)}
+                  size="small"
+                  variant="text"
+                  sx={{
+                    fontSize: "12px",
+                    textTransform: "none",
+                    color: "#D23F57",
+                    fontWeight: "bold",
+                  }}
+                >
+                  View All
+                </Button>
+              </Tooltip>
+            </MenuItem>
             {customization.optionList
               .filter(
                 (option) =>
@@ -547,6 +767,7 @@ const DropdownCustomization = ({
         </FormControl>
       </Grid>
       {renderGuideModal()}
+      {isViewAllOpen && (ViewAllDialog())}
     </Grid>
   );
 };
@@ -563,7 +784,7 @@ const TextCustomization = ({
       <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
         {customization.label}
         {customization.isCompulsory === "true" ||
-        customization.isCompulsory === true ? (
+          customization.isCompulsory === true ? (
           <span style={{ color: "red", fontSize: "15px", margin: "0 3px" }}>
             *
           </span>

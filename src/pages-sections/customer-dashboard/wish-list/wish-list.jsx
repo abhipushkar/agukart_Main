@@ -27,7 +27,6 @@ export default function WishListPageView(props) {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
   const {token} = useAuth();
-  const key = localStorage.getItem(TOKEN_NAME);
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -37,6 +36,7 @@ export default function WishListPageView(props) {
   };
 
   const getWishlistProduct = async () => {
+    const key = localStorage.getItem(TOKEN_NAME);
     if(!token || !key){ return;}
     try {
       setShowloading(true);

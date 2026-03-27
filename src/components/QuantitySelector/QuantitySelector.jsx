@@ -21,7 +21,7 @@ const QuantitySelector = ({
     if (stock && stock > 0) {
       // Stock is the minimum non-zero quantity from all combinations
       quantityOptions = Array.from(
-        { length: Math.min(stock, 10) }, // Limit to 10 options max
+        { length: Math.min(stock, 20) }, // Limit to 10 options max
         (_, i) => i + 1
       );
       selectValue = quantityOptions.includes(quantity) ? quantity : 1;
@@ -57,7 +57,7 @@ const QuantitySelector = ({
       dropdownLabel = "Select variant first";
     } else {
       quantityOptions = Array.from(
-        { length: Math.min(availableStock || 0, 10) },
+        { length: Math.min(availableStock || 0, 20) },
         (_, i) => i + 1
       );
       selectValue = quantityOptions.includes(quantity) ? quantity : 1;
@@ -88,6 +88,13 @@ const QuantitySelector = ({
             },
             opacity: isDisabled ? 0.7 : 1,
             cursor: isDisabled ? "not-allowed" : "pointer",
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: {
+                maxHeight: "300px", // Adjust this value as needed
+              },
+            },
           }}
         >
           {dropdownLabel ? (

@@ -6,6 +6,11 @@ export const useProductCustomization = (product) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [customizeDropdownPrice, setCustomizeDropdownPrice] = useState(0);
   const [customizeTextPrice, setCustomizeTextPrice] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(
+    product?.customizationData.isExpanded === "true" ||
+    product?.customizationData.isExpanded === true ||
+    false,
+  );
 
   // useProductCustomization.js - Updated handleDropdownChange
   const handleDropdownChange = (label, option) => {
@@ -135,5 +140,7 @@ export const useProductCustomization = (product) => {
     handleTextChange,
     validateCustomization,
     checkInputMinValue,
+    isExpanded,
+    setIsExpanded,
   };
 };
