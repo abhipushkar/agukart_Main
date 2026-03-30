@@ -7,8 +7,8 @@ export const useProductCustomization = (product) => {
   const [customizeDropdownPrice, setCustomizeDropdownPrice] = useState(0);
   const [customizeTextPrice, setCustomizeTextPrice] = useState(0);
   const [isExpanded, setIsExpanded] = useState(
-    product?.customizationData.isExpanded === "true" ||
-    product?.customizationData.isExpanded === true ||
+    product?.customizationData?.isExpanded === "true" ||
+    product?.customizationData?.isExpanded === true ||
     false,
   );
 

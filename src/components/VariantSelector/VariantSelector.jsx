@@ -63,6 +63,7 @@ const VariantSelector = ({
   const [dropdownWidth, setDropdownWidth] = useState(0);
   const [hoveredAttrValue, setHoveredAttrValue] = useState(null);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // Check if variant has guide information
   const hasGuide =
@@ -680,8 +681,13 @@ const VariantSelector = ({
 
 
   const renderParentVariantGrid = () => {
+    const allHaveThumbnails = variant.attributes.every(
+      (attr) => getPreviewImage(attr) || attr.thumbnail
+    );
+
     return (
       <Box sx={{ mb: 3 }}>
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -701,7 +707,6 @@ const VariantSelector = ({
 
           {hasGuide && (
             <Button
-              // startIcon={<HelpOutlineIcon />}
               onClick={handleGuideClick}
               size="small"
               variant="outlined"
@@ -723,97 +728,197 @@ const VariantSelector = ({
           )}
         </Box>
 
-        {/* Scroll container */}
-        <Box
-          sx={{
-            mb: 1,
-            position: "relative",
-          }}
-          onMouseLeave={() => {
-            if (onHoverOut) {
-              onHoverOut();
-              setHoveredAttrValue(null);
-            }
-          }}
-        >
-          <Box
-            ref={scrollRef}
-            onScroll={handleScrollImmediate}
-            sx={{
-              display: "grid",
-              gridAutoFlow: "column",
-              gridTemplateRows: "repeat(2, auto)",
-              gap: 1,
-              overflowX: "auto",
-              overflowY: "hidden",
-              scrollBehavior: "smooth",
-              scrollbarWidth: "none",
-              "&::-webkit-scrollbar": {
-                display: "none",
-              },
-            }}
-          >
-            {variant.attributes.map((attr, index) => (
+        {/* ===== THUMBNAIL MODE (UNCHANGED) ===== */}
+        {allHaveThumbnails ? (
+          <>
+            <Box
+              sx={{ mb: 1, position: "relative" }}
+              onMouseLeave={() => {
+                if (onHoverOut) {
+                  onHoverOut();
+                  setHoveredAttrValue(null);
+                }
+              }}
+            >
               <Box
-                key={attr.id}
-                ref={index === 0 ? itemRef : null}
-                sx={{ p: 0.75 }}
-                onMouseEnter={() => {
-                  if (!isAttributeDisabled(attr) && onHover) {
-                    onHover(attr.id);
-                    setHoveredAttrValue(attr.value);
-                  }
+                ref={scrollRef}
+                onScroll={handleScrollImmediate}
+                sx={{
+                  display: "grid",
+                  gridAutoFlow: "column",
+                  gridTemplateRows: {
+                    xs: 'repeat(1, auto)',
+                    md: 'repeat(2, auto)',
+                  },
+                  gap: 1,
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  scrollBehavior: "smooth",
+                  scrollbarWidth: "none",
+                  "&::-webkit-scrollbar": { display: "none" },
                 }}
               >
-                <VariantButton
-                  attr={attr}
-                  isSelected={selectedValue === attr.id}
-                  isDisabled={isAttributeDisabled(attr)}
-                  onChange={onChange}
-                  variantId={variant.id}
-                  priceText={renderAttributePrice(attr)}
-                  getPreviewImage={getPreviewImage}
-                />
+                {variant.attributes.map((attr, index) => (
+                  <Box
+                    key={attr.id}
+                    ref={index === 0 ? itemRef : null}
+                    sx={{ p: 0.80 }}
+                    onMouseEnter={() => {
+                      if (!isAttributeDisabled(attr) && onHover) {
+                        onHover(attr.id);
+                        setHoveredAttrValue(attr.value);
+                      }
+                    }}
+                  >
+                    <VariantButton
+                      attr={attr}
+                      isSelected={selectedValue === attr.id}
+                      isDisabled={isAttributeDisabled(attr)}
+                      onChange={onChange}
+                      variantId={variant.id}
+                      priceText={renderAttributePrice(attr)}
+                      getPreviewImage={getPreviewImage}
+                    />
+                  </Box>
+                ))}
               </Box>
-            ))}
-          </Box>
-        </Box>
+            </Box>
 
-        {totalPages > 1 && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              mt: 2,
-              gap: 2,
-            }}
-          >
-            <IconButton
-              onClick={() => scrollToPage(currentPage - 1)}
-              disabled={currentPage === 0}
-              size="small"
-            >
-              <ChevronLeftIcon fontSize="small" />
-            </IconButton>
+            {totalPages > 1 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  mt: 2,
+                  gap: 2,
+                }}
+              >
+                <IconButton
+                  onClick={() => scrollToPage(currentPage - 1)}
+                  disabled={currentPage === 0}
+                  size="small"
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
 
-            <Typography
-              variant="body2"
-              sx={{ minWidth: "60px", textAlign: "center" }}
-            >
-              {currentPage + 1} / {totalPages}
-            </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ minWidth: "60px", textAlign: "center" }}
+                >
+                  {currentPage + 1} / {totalPages}
+                </Typography>
 
-            <IconButton
-              onClick={() => scrollToPage(currentPage + 1)}
-              disabled={currentPage >= totalPages - 1}
-              size="small"
+                <IconButton
+                  onClick={() => scrollToPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages - 1}
+                  size="small"
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
+          </>
+        ) : (
+          /* ===== TEXT MODE (NEW AMAZON STYLE) ===== */
+          <>
+            <Box
+              sx={{
+                position: "relative",
+                overflow: "hidden",
+                maxHeight: {
+                  xs: expanded ? "none" : "140px",
+                  md: expanded ? "none" : "150px"
+                }, // ~3 rows
+              }}
             >
-              <ChevronRightIcon fontSize="small" />
-            </IconButton>
-          </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                }}
+              >
+                {variant.attributes.map((attr) => (
+                  <Box
+                    key={attr.id}
+                    sx={{ p: 0.80 }}
+                    onMouseEnter={() => {
+                      if (!isAttributeDisabled(attr) && onHover) {
+                        onHover(attr.id);
+                        setHoveredAttrValue(attr.value);
+                      }
+                    }}
+                  >
+                    <VariantButton
+                      attr={attr}
+                      isSelected={selectedValue === attr.id}
+                      isDisabled={isAttributeDisabled(attr)}
+                      onChange={onChange}
+                      variantId={variant.id}
+                      priceText={renderAttributePrice(attr)}
+                      getPreviewImage={getPreviewImage}
+                    />
+                  </Box>
+                ))}
+
+              </Box>
+
+              {/* Fade overlay */}
+              {!expanded && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    pt: 3,
+                    display: "flex",
+                    justifyContent: "center",
+                    background:
+                      "linear-gradient(to bottom, rgb(255,255,255), rgb(255,255,255))",
+                  }}
+                >
+                  <Button
+                    onClick={() => setExpanded(true)}
+                    size="small"
+                    sx={{
+                      textTransform: "none",
+                      fontSize: "13px",
+                      color: "#323434",
+                      backgroundColor: "#fff",
+                      border: "grey"
+                    }}
+                  >
+                    See more
+                  </Button>
+                </Box>
+              )}
+            </Box>
+            {expanded && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  mt: 1,
+                }}
+              >
+                <Button
+                  onClick={() => setExpanded(false)}
+                  size="small"
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "13px",
+                    color: "#323434",
+                  }}
+                >
+                  See less
+                </Button>
+              </Box>
+            )}
+          </>
         )}
 
+        {/* Error */}
         {error && (
           <Typography color="error" sx={{ mt: 1, fontSize: "14px" }}>
             {error}
@@ -824,6 +929,7 @@ const VariantSelector = ({
       </Box>
     );
   };
+
 
   const renderAttributePriceForDropdown = (attribute) => {
     if (!attribute || variant.type !== "internal") return "";
@@ -1417,7 +1523,7 @@ const VariantButton = ({
     <Box
       sx={{
         flexShrink: 0,
-        width: "69px",
+        width: hasThumbnail ? "75px" : "auto",
         position: "relative"
       }}
     >
@@ -1432,34 +1538,28 @@ const VariantButton = ({
           onMouseLeave={() => !isDisabled && onHoverOut && onHoverOut()}
           disabled={isDisabled}
           sx={{
-            width: "69px",
-            height: "69px",
-            minWidth: "69px",
-            minHeight: "69px",
-            padding: 0,
-            border: isDisabled ? "1px solid #ccc" : "1px solid #D23F57",
-            borderRadius: "10px",
-            backgroundColor: isDisabled ? "#e6e6e6" : isSelected ? "#fff5f7" : "#fff",
+            flexShrink: 0,
             position: "relative",
+            width: hasThumbnail ? 75 : "auto",
+            minWidth: hasThumbnail ? 75 : "unset",
+            maxWidth: "100%",
+            height: hasThumbnail ? 75 : 36,
+            minHeight: hasThumbnail ? 75 : 36,
+            padding: hasThumbnail ? "6px" : "6px 12px",
+            borderRadius: "10px",
             overflow: "visible",
             display: "flex",
-            outline: isSelected ? "3px solid #D23F57" : "",
-            outlineOffset: 2,
             alignItems: "center",
             justifyContent: "center",
-            mt: 0,
+            border: isSelected ? "2px solid #D23F57" : "1px solid #ccc",
+            backgroundColor: isDisabled ? "#e6e6e6" : isSelected ? "#fff5f7" : "#fff",
+            cursor: isDisabled ? "not-allowed" : "pointer",
+            outline: isSelected ? "3px solid #D23F57" : "",
+            outlineOffset: 2,
             "&:hover:not(:disabled)": {
               borderColor: isSelected ? "#000" : "#d84f66ff",
               boxShadow: "0 0 0 3px rgba(0, 113, 133, 0.1)",
             },
-            width: hasThumbnail ? 69 : "auto",
-            minWidth: hasThumbnail ? 69 : "unset",
-            height: hasThumbnail ? 69 : 36,
-            padding: hasThumbnail ? "6px" : "6px 12px",
-            border: isSelected ? "2px solid #D23F57" : "1px solid #ccc",
-            backgroundColor: isSelected ? "#fff5f7" : "#fff",
-            cursor: isDisabled ? "not-allowed" : "pointer",
-            // opacity: isDisabled ? 0.5 : 1,
           }}
         >
           {attr.thumbnail ? (
@@ -1477,18 +1577,17 @@ const VariantButton = ({
           ) : (
             <Box
               sx={{
-                width: "100%",
-                height: "100%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                whiteSpace: "nowrap",     // ✅ prevents line break
+                overflow: "hidden",
+                textOverflow: "ellipsis", // optional safety
                 backgroundColor: isDisabled ? "#f0f0f0" : "#f8f9fa",
-                color: isDisabled ? "#999" : "#6c757d",
+                color: isDisabled ? "#858585" : "#222222",
                 fontSize: "12px",
                 fontWeight: isSelected ? 600 : 400,
-                textAlign: "center",
-                padding: "4px",
-                wordBreak: "break-word",
+                px: 1, // horizontal padding
               }}
             >
               {attr.value}
@@ -1501,14 +1600,14 @@ const VariantButton = ({
                 top: "-9px",
                 left: "50%",
                 transform: "translateX(-50%)",
-                backgroundColor: "#fff", // 👈 IMPORTANT (cuts the border behind)
+                backgroundColor: "#fff",
                 color: "#c32e2e",
                 fontSize: "9.5px",
                 fontWeight: "bold",
                 px: "1px",
                 py: "1px",
                 borderRadius: "4px",
-                zIndex: 50, // 👈 higher than button
+                zIndex: 50,
                 whiteSpace: "nowrap",
                 pointerEvents: "none",
               }}
