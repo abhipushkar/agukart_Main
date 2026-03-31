@@ -1353,23 +1353,17 @@ const MyproductDetails = ({ res }) => {
   const renderProductInfo = () => (
     <CardContent>
       {/* Store Link */}
-      <Typography
-        component="span"
-        onClick={() => {
-          const slug = myproduct?.vendor_details?.slug;
-          if (slug) {
-            window.open(`/store/${slug}`, "_blank");
-          }
-        }}
-        sx={{
+      <Link
+        href={`/store/${myproduct?.vendor_details?.slug}`}
+        style={{
           color: "#5454f5",
           fontSize: "15px",
           borderBottom: "2px dashed #5454f5",
-          cursor: "pointer",
+          textDecoration: "none",
         }}
       >
         Visit the {myproduct?.vendor_details?.shop_name}
-      </Typography>
+      </Link>
 
       {/* Product Title */}
       <Typography

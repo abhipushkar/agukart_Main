@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -48,7 +48,7 @@ const ProductCustomization = ({
 
       <Accordion
         expanded={isExpanded}
-        onChange={() => {setIsExpanded(!isExpanded);}}
+        onChange={() => { setIsExpanded(!isExpanded); }}
         sx={{
           border: "none",
           boxShadow: "none",
@@ -179,8 +179,8 @@ const DropdownCustomization = ({
   const [currentGuide, setCurrentGuide] = useState(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const hasGuide = customization?.guide && (customization.guide?.guide_file || customization.guide?.guide_name || customization.guide?.guide_description);
-  console.log(customization);
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -194,6 +194,12 @@ const DropdownCustomization = ({
     });
     setGuideOpen(true);
   };
+
+  useEffect(() => {
+    if (guideOpen) {
+      setZoom(1);
+    }
+  }, [guideOpen]);
 
   const renderGuideModal = () => (
     <Dialog
@@ -211,7 +217,7 @@ const DropdownCustomization = ({
       <DialogTitle
         sx={{
           m: 0,
-          p: 2,
+          py: 1,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -231,7 +237,7 @@ const DropdownCustomization = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3 }}>
+      <DialogContent dividers sx={{ p: 3, overflow: "hidden" }}>
         {currentGuide?.description && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="body1" component="div">
@@ -241,14 +247,28 @@ const DropdownCustomization = ({
         )}
 
         {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box sx={{ textAlign: "center", mb: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: zoom === 1 ? "center" : "flex-start",
+              height: "60vh",
+              overflow: zoom > 1 ? "auto" : "hidden", // 🔥 key fix
+              cursor: zoom > 1 ? "grab" : "default",
+            }}
+          >
             <img
               src={currentGuide.file}
               alt={currentGuide.name || "Guide Image"}
               style={{
-                maxWidth: "100%",
-                maxHeight: "60vh",
+                maxWidth: "100%",   // ✅ always constrained
+                maxHeight: "100%",  // ✅ always constrained
+                width: "auto",
+                height: "auto",
                 objectFit: "contain",
+                transform: `scale(${zoom})`,
+                transformOrigin: "center", // 🔥 important for scrolling
+                transition: "transform 0.3s ease",
                 borderRadius: "8px",
               }}
             />
@@ -280,7 +300,7 @@ const DropdownCustomization = ({
               rel="noopener noreferrer"
               sx={{ mt: 2 }}
             >
-              Download Guide Document
+              View Guide
             </Button>
           </Box>
         )}
@@ -292,11 +312,23 @@ const DropdownCustomization = ({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={() => setGuideOpen(false)} variant="contained">
-          Close
-        </Button>
-      </DialogActions>
+      {currentGuide?.file && currentGuide?.type === "image" && (
+        <DialogActions sx={{ p: 2 }}>
+          {/* Zoom controls */}
+
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button onClick={() => setZoom((z) => z + 0.5)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+              Zoom +
+            </Button>
+            <Button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+              Zoom -
+            </Button>
+            <Button onClick={() => setZoom(1)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+              Reset
+            </Button>
+          </Box>
+        </DialogActions>)
+      }
     </Dialog>
   );
 
@@ -370,7 +402,7 @@ const DropdownCustomization = ({
                   imageSrc = option.preview_image;
                 }
                 const showThumbnail = !imageSrc && option.thumbnail;
-                
+
                 if (!imageSrc && productMainImage) {
                   imageSrc = Array.isArray(productMainImage)
                     ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`

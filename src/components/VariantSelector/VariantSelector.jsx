@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   FormControl,
   Select,
@@ -19,6 +19,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import parse from "html-react-parser";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 
 // Debounce utility
 const debounce = (func, wait) => {
@@ -53,7 +55,7 @@ const VariantSelector = ({
   const itemRef = useRef(null);
   const pageWidthRef = useRef(0);
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
   const resizeObserverRef = useRef(null);
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -64,6 +66,25 @@ const VariantSelector = ({
   const [hoveredAttrValue, setHoveredAttrValue] = useState(null);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"), {
+    noSsr: true,
+  });
+
+  const columns = isMobile ? 3 : 5;
+  const rows = isMobile ? 1 : 2;
+
+  const ITEMS_PER_PAGE = columns * rows;
+  const pages = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < variant.attributes.length; i += ITEMS_PER_PAGE) {
+      result.push(variant.attributes.slice(i, i + ITEMS_PER_PAGE));
+    }
+    return result;
+  }, [variant.attributes, ITEMS_PER_PAGE]);
+  const totalPages = pages.length;
 
   // Check if variant has guide information
   const hasGuide =
@@ -99,8 +120,6 @@ const VariantSelector = ({
       // Calculate total pages
       const scrollWidth = scrollRef.current.scrollWidth;
       const total = Math.max(1, Math.ceil(scrollWidth / pageWidth));
-
-      setTotalPages(total);
 
       // Update current page based on current scroll position
       const scrollLeft = scrollRef.current.scrollLeft;
@@ -243,89 +262,123 @@ const VariantSelector = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [calculatePageMetrics]);
 
+  useEffect(() => {
+    if (guideOpen) {
+      setZoom(1);
+    }
+  }, [guideOpen]);
+
   // Scroll to page function
-  const scrollToPage = useCallback(
-    (page) => {
-      if (!scrollRef.current || !pageWidthRef.current) return;
+  // const scrollToPage = useCallback(
+  //   (page) => {
+  //     if (!scrollRef.current || !pageWidthRef.current) return;
 
-      const targetPage = Math.max(0, Math.min(page, totalPages - 1));
-      const scrollPosition = targetPage * pageWidthRef.current;
+  //     const targetPage = Math.max(0, Math.min(page, totalPages - 1));
+  //     const scrollPosition = targetPage * pageWidthRef.current;
 
-      scrollRef.current.scrollTo({
-        left: scrollPosition,
-        behavior: "smooth",
-      });
+  //     scrollRef.current.scrollTo({
+  //       left: scrollPosition,
+  //       behavior: "smooth",
+  //     });
 
-      // Update page immediately for better UX
-      setCurrentPage(targetPage);
-    },
-    [totalPages]
-  );
+  //     // Update page immediately for better UX
+  //     setCurrentPage(targetPage);
+  //   },
+  //   [totalPages]
+  // );
+  const scrollToPage = useCallback((page) => {
+    if (!scrollRef.current) return;
+
+    const container = scrollRef.current;
+    const pageWidth = scrollRef.current.offsetWidth;
+
+    const targetPage = Math.max(0, Math.min(page, totalPages - 1));
+
+    container.scrollTo({
+      left: targetPage * pageWidth,
+      behavior: "smooth",
+    });
+
+    // setCurrentPage(targetPage); no flicker
+  }, [totalPages]);
 
   // Handle scroll with proper debouncing and edge detection
-  const handleScroll = useCallback(
-    debounce(() => {
-      if (
-        !scrollRef.current ||
-        !pageWidthRef.current ||
-        pageWidthRef.current <= 0
-      )
-        return;
+  // const handleScroll = useCallback(
+  //   debounce(() => {
+  //     if (
+  //       !scrollRef.current ||
+  //       !pageWidthRef.current ||
+  //       pageWidthRef.current <= 0
+  //     )
+  //       return;
 
-      const scrollLeft = scrollRef.current.scrollLeft;
-      const scrollWidth = scrollRef.current.scrollWidth;
-      const clientWidth = scrollRef.current.clientWidth;
+  //     const scrollLeft = scrollRef.current.scrollLeft;
+  //     const scrollWidth = scrollRef.current.scrollWidth;
+  //     const clientWidth = scrollRef.current.clientWidth;
 
-      // Handle edge cases
-      if (scrollWidth <= clientWidth) {
-        setCurrentPage(0);
-        return;
-      }
+  //     // Handle edge cases
+  //     if (scrollWidth <= clientWidth) {
+  //       setCurrentPage(0);
+  //       return;
+  //     }
 
-      // Calculate current page with edge detection
-      const pageWidth = pageWidthRef.current;
-      const maxScroll = scrollWidth - clientWidth;
+  //     // Calculate current page with edge detection
+  //     const pageWidth = pageWidthRef.current;
+  //     const maxScroll = scrollWidth - clientWidth;
 
-      // Check if at the beginning or end
-      if (scrollLeft <= 0) {
-        setCurrentPage(0);
-        return;
-      }
+  //     // Check if at the beginning or end
+  //     if (scrollLeft <= 0) {
+  //       setCurrentPage(0);
+  //       return;
+  //     }
 
-      if (scrollLeft >= maxScroll - 5) {
-        // 5px tolerance for rounding errors
-        setCurrentPage(totalPages - 1);
-        return;
-      }
+  //     if (scrollLeft >= maxScroll - 5) {
+  //       // 5px tolerance for rounding errors
+  //       setCurrentPage(totalPages - 1);
+  //       return;
+  //     }
 
-      // Calculate current page with rounding
-      const calculatedPage = Math.round(scrollLeft / pageWidth);
-      const boundedPage = Math.max(0, Math.min(calculatedPage, totalPages - 1));
+  //     // Calculate current page with rounding
+  //     const calculatedPage = Math.round(scrollLeft / pageWidth);
+  //     const boundedPage = Math.max(0, Math.min(calculatedPage, totalPages - 1));
 
-      if (boundedPage !== currentPage) {
-        setCurrentPage(boundedPage);
-      }
-    }, 100),
-    [totalPages, currentPage]
-  );
+  //     if (boundedPage !== currentPage) {
+  //       setCurrentPage(boundedPage);
+  //     }
+  //   }, 100),
+  //   [totalPages, currentPage]
+  // );
 
   // Enhanced scroll handler that also fires immediately
+  // const handleScrollImmediate = useCallback(() => {
+  //   if (!scrollRef.current || !pageWidthRef.current) return;
+
+  //   const scrollLeft = scrollRef.current.scrollLeft;
+  //   const pageWidth = pageWidthRef.current;
+
+  //   if (pageWidth > 0) {
+  //     const calculatedPage = Math.round(scrollLeft / pageWidth);
+  //     if (calculatedPage !== currentPage) {
+  //       setCurrentPage(calculatedPage);
+  //     }
+  //   }
+
+  //   // Call the debounced handler
+  //   handleScroll();
+  // }, [currentPage, handleScroll]);
+
   const handleScrollImmediate = useCallback(() => {
-    if (!scrollRef.current || !pageWidthRef.current) return;
+    if (!scrollRef.current) return;
 
-    const scrollLeft = scrollRef.current.scrollLeft;
-    const pageWidth = pageWidthRef.current;
+    const container = scrollRef.current;
+    const pageWidth = container.clientWidth;
 
-    if (pageWidth > 0) {
-      const calculatedPage = Math.round(scrollLeft / pageWidth);
-      if (calculatedPage !== currentPage) {
-        setCurrentPage(calculatedPage);
-      }
+    const newPage = Math.round(container.scrollLeft / pageWidth);
+
+    if (newPage !== currentPage) {
+      setCurrentPage(newPage);
     }
-
-    // Call the debounced handler
-    handleScroll();
-  }, [currentPage, handleScroll]);
+  }, [currentPage]);
 
   const renderAttributePrice = (attribute) => {
     if (variant.type === "parent") {
@@ -590,7 +643,7 @@ const VariantSelector = ({
       <DialogTitle
         sx={{
           m: 0,
-          p: 2,
+          py: 1,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -610,7 +663,7 @@ const VariantSelector = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3 }}>
+      <DialogContent dividers sx={{ p: 3, overflow: "hidden" }}>
         {currentGuide?.description && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="body1" component="div">
@@ -620,14 +673,32 @@ const VariantSelector = ({
         )}
 
         {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box sx={{ textAlign: "center", mb: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: zoom === 1 ? "center" : "flex-start",
+              height: "60vh",
+              overflow: zoom > 1 ? "auto" : "hidden", // 🔥 key fix
+              cursor: zoom > 1 ? "grab" : "default",
+            }}
+          >
             <img
               src={currentGuide.file}
               alt={currentGuide.name || "Guide Image"}
+              // onWheel={(e) => {
+              //   e.preventDefault();
+              //   setZoom((z) => Math.max(1, z + (e.deltaY < 0 ? 0.2 : -0.2)));
+              // }}
               style={{
-                maxWidth: "100%",
-                maxHeight: "60vh",
+                maxWidth: "100%",   // ✅ always constrained
+                maxHeight: "100%",  // ✅ always constrained
+                width: "auto",
+                height: "auto",
                 objectFit: "contain",
+                transform: `scale(${zoom})`,
+                transformOrigin: "center", // 🔥 important for scrolling
+                transition: "transform 0.3s ease",
                 borderRadius: "8px",
               }}
             />
@@ -659,7 +730,7 @@ const VariantSelector = ({
               rel="noopener noreferrer"
               sx={{ mt: 2 }}
             >
-              Download Guide Document
+              View Guide
             </Button>
           </Box>
         )}
@@ -671,11 +742,23 @@ const VariantSelector = ({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={() => setGuideOpen(false)} variant="contained">
-          Close
-        </Button>
-      </DialogActions>
+      {currentGuide?.file && currentGuide?.type === "image" && (
+        <DialogActions sx={{ p: 2 }}>
+          {/* Zoom controls */}
+
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button onClick={() => setZoom((z) => z + 0.5)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+              Zoom +
+            </Button>
+            <Button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+              Zoom -
+            </Button>
+            <Button onClick={() => setZoom(1)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+              Reset
+            </Button>
+          </Box>
+        </DialogActions>)
+      }
     </Dialog>
   );
 
@@ -693,7 +776,7 @@ const VariantSelector = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            mb: 2,
+            mt: 2,
           }}
         >
           <Typography variant="h6" sx={{ fontSize: "17px", fontWeight: 600 }}>
@@ -740,51 +823,63 @@ const VariantSelector = ({
                 }
               }}
             >
+
               <Box
                 ref={scrollRef}
                 onScroll={handleScrollImmediate}
                 sx={{
-                  display: "grid",
-                  gridAutoFlow: "column",
-                  gridTemplateRows: {
-                    xs: 'repeat(1, auto)',
-                    md: 'repeat(2, auto)',
-                  },
-                  gap: 1,
+                  display: "flex", // ✅ Step 4 (parent slider)
                   overflowX: "auto",
                   overflowY: "hidden",
                   scrollBehavior: "smooth",
+                  scrollSnapType: "x mandatory",
                   scrollbarWidth: "none",
                   "&::-webkit-scrollbar": { display: "none" },
                 }}
               >
-                {variant.attributes.map((attr, index) => (
+                {pages.map((page, pageIndex) => (
                   <Box
-                    key={attr.id}
-                    ref={index === 0 ? itemRef : null}
-                    sx={{ p: 0.80 }}
-                    onMouseEnter={() => {
-                      if (!isAttributeDisabled(attr) && onHover) {
-                        onHover(attr.id);
-                        setHoveredAttrValue(attr.value);
-                      }
+                    key={pageIndex}
+                    sx={{
+                      display: "grid", // ✅ Step 3 (grid per page)
+                      gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                      gridTemplateRows: `repeat(${rows}, auto)`,
+                      // gap: 1,
+                      minWidth: "100%",
+                      flexShrink: 0,
+                      scrollSnapAlign: "start",
+                      p: 0.5,
                     }}
                   >
-                    <VariantButton
-                      attr={attr}
-                      isSelected={selectedValue === attr.id}
-                      isDisabled={isAttributeDisabled(attr)}
-                      onChange={onChange}
-                      variantId={variant.id}
-                      priceText={renderAttributePrice(attr)}
-                      getPreviewImage={getPreviewImage}
-                    />
+                    {page.map((attr) => (
+                      <Box
+                        key={attr.id}
+                        sx={{ p: 0.8 }}
+                        onMouseEnter={() => {
+                          if (!isAttributeDisabled(attr) && onHover) {
+                            onHover(attr.id);
+                            setHoveredAttrValue(attr.value);
+                          }
+                        }}
+                      >
+                        <VariantButton
+                          attr={attr}
+                          isSelected={selectedValue === attr.id}
+                          isDisabled={isAttributeDisabled(attr)}
+                          onChange={onChange}
+                          variantId={variant.id}
+                          priceText={renderAttributePrice(attr)}
+                          getPreviewImage={getPreviewImage}
+                        />
+                      </Box>
+                    ))}
                   </Box>
                 ))}
               </Box>
+
             </Box>
 
-            {totalPages > 1 && (
+            {totalPages > 1 && !isMobile && (
               <Box
                 sx={{
                   display: "flex",
@@ -1623,7 +1718,7 @@ const VariantButton = ({
           variant="body2"
           sx={{
             fontSize: "12px",
-            fontWeight: isSelected ? 600 : 400,
+            fontWeight: isDisabled ? 400 : 600,
             color: isDisabled ? "#999" : "inherit",
             lineHeight: 1.2,
             overflow: "hidden",
