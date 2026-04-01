@@ -49,6 +49,7 @@ const ShopView = () => {
   const [wishListProducts, setWishlistProducts] = useState([]);
 
   const [vendorDetail, setVendorDetail] = useState(null);
+  const [followed, setFollowed] = useState(false);
   console.log({ vendorDetail }, "eryeree");
   const [openPopup, SetOpenPopup] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -77,7 +78,7 @@ const ShopView = () => {
   const handleClosePopup = () => {
     SetOpenPopup(false);
   };
-  
+
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -86,7 +87,6 @@ const ShopView = () => {
   const parts = pathname.split("/store/");
 
   const router = useRouter();
-  const key = localStorage.getItem(TOKEN_NAME);
 
   const getVendorDetail = async () => {
     try {
@@ -113,6 +113,7 @@ const ShopView = () => {
         }));
         console.log({ members }, "dgfgfgfgf");
         setVendorDetail({ ...res.data.data, members, shop_photos });
+        setFollowed(res.data.data.followStatus);
       }
     } catch (error) {
       setLoading(false);
@@ -136,6 +137,7 @@ const ShopView = () => {
     }
   };
   const getWishListProducts = async () => {
+    const key = localStorage.getItem(TOKEN_NAME);
     if (!token || !key) {
       return;
     }
@@ -175,6 +177,7 @@ const ShopView = () => {
       });
       if (res.status === 200) {
         setIsWishlist((prev) => !prev);
+        setFollowed(prev => !prev);
       }
     } catch (error) {
       console.log(error);
@@ -323,51 +326,103 @@ const ShopView = () => {
         <>
           <Box>
             {vendorDetail?.shop_banner &&
-            vendorDetail.shop_banner.length > 0 ? (
+              vendorDetail.shop_banner.length > 0 ? (
               vendorDetail.shop_banner.length > 1 ? (
-                <Carousel slidesToShow={1} arrows={false} dots autoplay>
-                  {vendorDetail.shop_banner.map((item, ind) => (
-                    <Box
-                      key={ind}
-                      component="img"
-                      src={item.editedImage || item.image}
-                      alt=""
-                      sx={{
-                        width: "100%",
-                        objectFit: "cover",
-                        aspectRatio: "4",
-                        maxHeight: {
-                          xs: "100%",
-                          md: "100%",
-                        },
-                        mt: {
-                          xs: 2,
-                        },
-                      }}
-                    />
-                  ))}
+                <Carousel
+                  slidesToShow={1}
+                  arrows={false}
+                  dots
+                  autoplay
+                  dotStyles={{ mt: 0.5 }}
+                >
+                  {vendorDetail.shop_banner.map((item, ind) => {
+                    const imgSrc = item.editedImage || item.image;
+
+                    return (
+                      <Box
+                        key={ind}
+                        sx={{
+                          position: "relative",
+                          width: "100%",
+                          aspectRatio: "4", // keep your container ratio
+                          overflow: "hidden",
+                        }}
+                      >
+                        {/* Blurred background */}
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            inset: 0,
+                            backgroundImage: `url(${imgSrc})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                            filter: "blur(20px)",
+                            transform: "scale(1.1)",
+                          }}
+                        />
+
+                        {/* Foreground image */}
+                        <Box
+                          component="img"
+                          src={imgSrc}
+                          alt=""
+                          sx={{
+                            position: "relative",
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            zIndex: 1,
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
                 </Carousel>
               ) : (
                 <Box
-                  component="img"
-                  src={
-                    vendorDetail.shop_banner[0]?.editedImage ||
-                    vendorDetail.shop_banner[0]?.image
-                  }
-                  alt=""
                   sx={{
+                    position: "relative",
                     width: "100%",
-                    objectFit: "cover",
                     aspectRatio: "1 / 1",
                     maxHeight: {
                       xs: "200px",
                       md: "400px",
                     },
-                    mt: {
-                      xs: 2,
-                    },
+                    overflow: "hidden",
                   }}
-                />
+                >
+                  {/* Blurred background */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: `url(${vendorDetail.shop_banner[0]?.editedImage ||
+                        vendorDetail.shop_banner[0]?.image
+                        })`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      filter: "blur(20px)",
+                      transform: "scale(1.1)", // prevents blur edges from showing
+                    }}
+                  />
+
+                  {/* Foreground image */}
+                  <Box
+                    component="img"
+                    src={
+                      vendorDetail.shop_banner[0]?.editedImage ||
+                      vendorDetail.shop_banner[0]?.image
+                    }
+                    alt=""
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      zIndex: 1,
+                    }}
+                  />
+                </Box>
               )
             ) : (
               <Box
@@ -467,26 +522,6 @@ const ShopView = () => {
                       >
                         {vendorDetail?.shop_name}
                       </Typography>
-                      <Button
-                        onClick={() => setOpenModal(true)}
-                        sx={{
-                          zIndex: "99",
-                          background: "#fff",
-                          boxShadow: "0 0 3px #696969",
-                          borderRadius: "50%",
-                          height: "30px",
-                          width: "30px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          "&:hover": {
-                            background: "#fff",
-                            boxShadow: "0 0 4px #000",
-                          },
-                        }}
-                      >
-                        <IosShareIcon sx={{ width: "19px", height: "19px" }} />
-                      </Button>
                     </Box>
                     <Typography
                       sx={{
@@ -560,14 +595,37 @@ const ShopView = () => {
                           },
                         }}
                       >
-                        {vendorDetail?.followStatus ? (
-                          <FavoriteIcon sx={{ color: "red" }} />
+                        {followed ? (
+                          <FavoriteIcon sx={{ color: "red", marginRight: "6px" }} />
                         ) : (
                           <FavoriteBorderIcon sx={{ marginRight: "6px" }} />
                         )}
-                        {vendorDetail?.followStatus
-                          ? "Unfollow Shop"
-                          : "Follow Shop"}
+                        {followed
+                          ? "Following"
+                          : "Follow"}
+                      </Button>
+                      <Button
+                        onClick={() => setOpenModal(true)}
+                        sx={{
+                          zIndex: "99",
+                          background: "#fff",
+                          boxShadow: "0 0 3px #696969",
+                          borderRadius: "50%",
+                          height: "30px",
+                          width: "30px",
+                          display: {
+                            xs: "flex",
+                            md: "none",
+                          },
+                          alignItems: "center",
+                          justifyContent: "center",
+                          "&:hover": {
+                            background: "#fff",
+                            boxShadow: "0 0 4px #000",
+                          },
+                        }}
+                      >
+                        <IosShareIcon sx={{ width: "19px", height: "19px" }} />
                       </Button>
                     </Typography>
                   </Typography>
@@ -690,6 +748,8 @@ const ShopView = () => {
                 component="div"
                 mb={{ lg: "0", md: "0", xs: "12px" }}
                 textAlign={{ lg: "start", md: "start", xs: "center" }}
+                display={"flex"}
+                gap={2}
               >
                 <Button
                   onClick={toggelFollowShopHandler}
@@ -710,7 +770,30 @@ const ShopView = () => {
                   ) : (
                     <FavoriteBorderIcon sx={{ marginRight: "6px" }} />
                   )}
-                  {isWishlist ? "Unfollow Shop" : "Follow Shop"}
+                  {isWishlist ? "Following" : "Follow shop"}
+                </Button>
+                <Button
+                  onClick={() => setOpenModal(true)}
+                  sx={{
+                    zIndex: "99",
+                    background: "#fff",
+                    boxShadow: "0 0 3px #696969",
+                    borderRadius: "50%",
+                    height: "30px",
+                    width: "30px",
+                    display: {
+                      xs: "none",
+                      md: "flex",
+                    },
+                    alignItems: "center",
+                    justifyContent: "center",
+                    "&:hover": {
+                      background: "#fff",
+                      boxShadow: "0 0 4px #000",
+                    },
+                  }}
+                >
+                  <IosShareIcon sx={{ width: "19px", height: "19px" }} />
                 </Button>
               </Typography>
             </Box>

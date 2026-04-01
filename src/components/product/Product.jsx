@@ -33,7 +33,6 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const [wishlistIdArr, setWishlistIdArr] = useState([]);
   const [toggleWishlist, setToggleWishlist] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const key = localStorage.getItem(TOKEN_NAME);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -59,6 +58,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   }, [token, wishlistIdArr]);
 
   const getWishList = async () => {
+    const key = localStorage.getItem(TOKEN_NAME);
     if(!token || !key){
       return;
     }

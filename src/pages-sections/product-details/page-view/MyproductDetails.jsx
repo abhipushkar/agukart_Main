@@ -103,6 +103,8 @@ const MyproductDetails = ({ res }) => {
     handleTextChange,
     validateCustomization,
     checkInputMinValue,
+    isExpanded,
+    setIsExpanded
   } = useProductCustomization(myproduct);
 
   const viewProduct = async () => {
@@ -418,9 +420,10 @@ const MyproductDetails = ({ res }) => {
       });
     }
   };
-  const key = localStorage.getItem(TOKEN_NAME)
+
   const getWishList = async () => {
-    if(!token || !key){ return;}
+    const key = localStorage.getItem(TOKEN_NAME)
+    if (!token || !key) { return; }
     try {
       const res = await getAPIAuth("user/get-wishlist");
       if (res.status === 200) {
@@ -555,7 +558,7 @@ const MyproductDetails = ({ res }) => {
           hasDependentInternalVariants &&
           !allInternalSelected &&
           currentCombinationData.priceRange.min !==
-            currentCombinationData.priceRange.max;
+          currentCombinationData.priceRange.max;
       }
     }
 
@@ -777,17 +780,17 @@ const MyproductDetails = ({ res }) => {
       return "Sold Out";
     }
 
-    if (stockQty > 0 && stockQty < 8) {
+    if (stockQty > 0 && stockQty < 10) {
       return `Only ${stockQty} left!`;
     }
 
-    if (stockQty >= 8 && stockQty < 20) {
+    if (stockQty >= 10) {
       return "Only few left!";
     }
 
-    if (stockQty >= 20) {
-      return "20+ in stock";
-    }
+    // if (stockQty >= 20) {
+    //   return "20+ in stock";
+    // }
 
     return null;
   }, []);
@@ -808,6 +811,7 @@ const MyproductDetails = ({ res }) => {
           appearance: "error",
           autoDismiss: true,
         });
+        setIsExpanded(true);
         return;
       }
       if (checkInputMinValue()) {
@@ -1105,6 +1109,14 @@ const MyproductDetails = ({ res }) => {
 
   const handleBuyNow = async () => {
     await handleAddToCart();
+    const isCustomFilled = validateCustomization();
+    const isVariantFilled = validateVariants()
+    if (!isCustomFilled || !isVariantFilled) {
+      if (!isCustomFilled) {
+        setIsExpanded(true);
+      }
+      return;
+    }
     router.push("/cart");
   };
 
@@ -1220,6 +1232,7 @@ const MyproductDetails = ({ res }) => {
           filterVariantAttributes={filterVariantAttributes}
           isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
           calculateAttributeData={calculateAttributeData} // Pass this
+          productMainImage={res?.data?.image}
         />
       );
     });
@@ -1231,17 +1244,19 @@ const MyproductDetails = ({ res }) => {
     Object.values(selectedDropdowns).forEach((dropdown, index) => {
       if (dropdown.main_images) {
         // Handle multiple images (comma-separated)
-        const images = dropdown.main_images.filter((img) => img.trim() !== "");
+        const images = dropdown.main_images.filter((img) => img !== null && img.trim() !== "");
         images.forEach((img, imgIndex) => {
-          combined.push({
-            type: "customization",
-            id: `customization-${dropdown.value}-${index}-${imgIndex}`,
-            url: img.trim(),
-            customizationName: dropdown.value,
-            isVariantImage: false,
-            index: combined.length,
-            displayText: `Customization: ${dropdown.value}`,
-          });
+          if (img) {
+            combined.push({
+              type: "customization",
+              id: `customization-${dropdown.value}-${index}-${imgIndex}`,
+              url: img.trim(),
+              customizationName: dropdown.value,
+              isVariantImage: false,
+              index: combined.length,
+              displayText: `Customization: ${dropdown.value}`,
+            });
+          }
         });
       }
     });
@@ -1338,23 +1353,17 @@ const MyproductDetails = ({ res }) => {
   const renderProductInfo = () => (
     <CardContent>
       {/* Store Link */}
-      <Typography
-        component="span"
-        onClick={() => {
-          const slug = myproduct?.vendor_details?.slug;
-          if (slug) {
-            window.open(`/store/${slug}`, "_blank");
-          }
-        }}
-        sx={{
+      <Link
+        href={`/store/${myproduct?.vendor_details?.slug}`}
+        style={{
           color: "#5454f5",
           fontSize: "15px",
           borderBottom: "2px dashed #5454f5",
-          cursor: "pointer",
+          textDecoration: "none",
         }}
       >
         Visit the {myproduct?.vendor_details?.shop_name}
-      </Typography>
+      </Link>
 
       {/* Product Title */}
       <Typography
@@ -1429,6 +1438,9 @@ const MyproductDetails = ({ res }) => {
           currency={currency}
           onOptionHover={handleCustomizationOptionHover}
           onOptionHoverOut={handleCustomizationOptionHoverOut}
+          productMainImage={res?.data?.image}
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
         />
       )}
 
@@ -1450,11 +1462,11 @@ const MyproductDetails = ({ res }) => {
             onBuyNow={handleBuyNow}
             onWishlistToggle={handleWishlistToggle}
             isInWishlist={toggleWishlist}
-            disabled={
-              (myproduct?.isCombination && !isVariantSelected) ||
-              stock === 0 ||
-              !areAllInternalVariantsSelected()
-            }
+          // disabled={
+          //   (myproduct?.isCombination && !isVariantSelected) ||
+          //   stock === 0 ||
+          //   !areAllInternalVariantsSelected()
+          // }
           />
         </>
       )}
