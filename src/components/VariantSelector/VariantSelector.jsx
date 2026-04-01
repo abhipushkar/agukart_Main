@@ -67,7 +67,11 @@ const VariantSelector = ({
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
-
+  const hasSetInitialPageRef = useRef(false);
+  const textModeContentRef = useRef(null);
+  const [showTextModeExpandControls, setShowTextModeExpandControls] = useState(false);
+  const TEXT_MODE_COLLAPSED_HEIGHT_XS = 140;
+  const TEXT_MODE_COLLAPSED_HEIGHT_MD = 150;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"), {
     noSsr: true,
@@ -78,13 +82,55 @@ const VariantSelector = ({
 
   const ITEMS_PER_PAGE = columns * rows;
   const pages = useMemo(() => {
+    const hasThumbnail = (attr) => {
+      const thumbnail = attr?.thumbnail;
+      if (thumbnail === null || thumbnail === undefined) return false;
+      if (typeof thumbnail === "string") return thumbnail.trim() !== "";
+      return Boolean(thumbnail);
+    };
+
+    const orderedAttributes = [
+      ...variant.attributes.filter((attr) => hasThumbnail(attr)),
+      ...variant.attributes.filter((attr) => !hasThumbnail(attr)),
+    ];
+
     const result = [];
-    for (let i = 0; i < variant.attributes.length; i += ITEMS_PER_PAGE) {
-      result.push(variant.attributes.slice(i, i + ITEMS_PER_PAGE));
+    for (let i = 0; i < orderedAttributes.length; i += ITEMS_PER_PAGE) {
+      result.push(orderedAttributes.slice(i, i + ITEMS_PER_PAGE));
     }
     return result;
   }, [variant.attributes, ITEMS_PER_PAGE]);
   const totalPages = pages.length;
+
+  useEffect(() => {
+    if (hasSetInitialPageRef.current) return;
+    if (!pages.length) return;
+
+    const selectedPageIndex = pages.findIndex((page) =>
+      page.some(
+        (attr) => attr.id === selectedValue || attr.value === selectedValue
+      )
+    );
+
+    if (selectedPageIndex < 0) {
+      hasSetInitialPageRef.current = true;
+      return;
+    }
+
+    setCurrentPage(selectedPageIndex);
+
+    // Ensure the slider starts on the page containing the selected variant
+    requestAnimationFrame(() => {
+      if (!scrollRef.current) return;
+      const pageWidth = scrollRef.current.offsetWidth;
+      scrollRef.current.scrollTo({
+        left: selectedPageIndex * pageWidth,
+        behavior: "auto",
+      });
+    });
+
+    hasSetInitialPageRef.current = true;
+  }, [pages, selectedValue]);
 
   // Check if variant has guide information
   const hasGuide =
@@ -267,6 +313,35 @@ const VariantSelector = ({
       setZoom(1);
     }
   }, [guideOpen]);
+
+  useEffect(() => {
+    const measureTextModeOverflow = () => {
+      if (!textModeContentRef.current) return;
+      const contentHeight = textModeContentRef.current.scrollHeight || 0;
+      const shouldShowControls = contentHeight > TEXT_MODE_COLLAPSED_HEIGHT_XS;
+      setShowTextModeExpandControls(shouldShowControls);
+      if (!shouldShowControls) {
+        setExpanded(false);
+      }
+    };
+
+    measureTextModeOverflow();
+
+    let observer;
+    if (window.ResizeObserver && textModeContentRef.current) {
+      observer = new ResizeObserver(() => {
+        measureTextModeOverflow();
+      });
+      observer.observe(textModeContentRef.current);
+    }
+
+    window.addEventListener("resize", measureTextModeOverflow);
+
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener("resize", measureTextModeOverflow);
+    };
+  }, [variant.attributes, isMobile]);
 
   // Scroll to page function
   // const scrollToPage = useCallback(
@@ -764,7 +839,7 @@ const VariantSelector = ({
 
 
   const renderParentVariantGrid = () => {
-    const allHaveThumbnails = variant.attributes.every(
+    const anyHaveThumbnails = variant.attributes.some(
       (attr) => getPreviewImage(attr) || attr.thumbnail
     );
 
@@ -812,16 +887,10 @@ const VariantSelector = ({
         </Box>
 
         {/* ===== THUMBNAIL MODE (UNCHANGED) ===== */}
-        {allHaveThumbnails ? (
+        {anyHaveThumbnails ? (
           <>
             <Box
               sx={{ mb: 1, position: "relative" }}
-              onMouseLeave={() => {
-                if (onHoverOut) {
-                  onHoverOut();
-                  setHoveredAttrValue(null);
-                }
-              }}
             >
 
               <Box
@@ -861,6 +930,12 @@ const VariantSelector = ({
                             setHoveredAttrValue(attr.value);
                           }
                         }}
+                        onMouseLeave={() => {
+                          if (onHoverOut) {
+                            onHoverOut();
+                            setHoveredAttrValue(null);
+                          }
+                        }}
                       >
                         <VariantButton
                           attr={attr}
@@ -870,6 +945,7 @@ const VariantSelector = ({
                           variantId={variant.id}
                           priceText={renderAttributePrice(attr)}
                           getPreviewImage={getPreviewImage}
+                          anyHaveThumbnails={anyHaveThumbnails}
                         />
                       </Box>
                     ))}
@@ -921,13 +997,13 @@ const VariantSelector = ({
               sx={{
                 position: "relative",
                 overflow: "hidden",
-                maxHeight: {
-                  xs: expanded ? "none" : "140px",
-                  md: expanded ? "none" : "150px"
-                }, // ~3 rows
+                maxHeight: expanded || !showTextModeExpandControls
+                  ? "none"
+                  : isMobile ? `${TEXT_MODE_COLLAPSED_HEIGHT_XS}px` : `${TEXT_MODE_COLLAPSED_HEIGHT_MD}px`,
               }}
             >
               <Box
+                ref={textModeContentRef}
                 sx={{
                   display: "flex",
                   flexWrap: "wrap",
@@ -943,6 +1019,12 @@ const VariantSelector = ({
                         setHoveredAttrValue(attr.value);
                       }
                     }}
+                    onMouseLeave={() => {
+                      if (onHoverOut) {
+                        onHoverOut();
+                        setHoveredAttrValue(null);
+                      }
+                    }}
                   >
                     <VariantButton
                       attr={attr}
@@ -952,6 +1034,7 @@ const VariantSelector = ({
                       variantId={variant.id}
                       priceText={renderAttributePrice(attr)}
                       getPreviewImage={getPreviewImage}
+                      anyHaveThumbnails={anyHaveThumbnails}
                     />
                   </Box>
                 ))}
@@ -959,7 +1042,7 @@ const VariantSelector = ({
               </Box>
 
               {/* Fade overlay */}
-              {!expanded && (
+              {!expanded && showTextModeExpandControls && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -989,7 +1072,7 @@ const VariantSelector = ({
                 </Box>
               )}
             </Box>
-            {expanded && (
+            {expanded && showTextModeExpandControls && (
               <Box
                 sx={{
                   display: "flex",
@@ -1611,8 +1694,9 @@ const VariantButton = ({
   variantId,
   priceText,
   getPreviewImage,
+  anyHaveThumbnails
 }) => {
-  const hasThumbnail = Boolean(getPreviewImage(attr) || attr.thumbnail);
+  const hasThumbnail = anyHaveThumbnails;
 
   return (
     <Box
@@ -1675,7 +1759,7 @@ const VariantButton = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                whiteSpace: "nowrap",     // ✅ prevents line break
+                // whiteSpace: "nowrap",     // ✅ prevents line break
                 overflow: "hidden",
                 textOverflow: "ellipsis", // optional safety
                 backgroundColor: isDisabled ? "#f0f0f0" : "#f8f9fa",

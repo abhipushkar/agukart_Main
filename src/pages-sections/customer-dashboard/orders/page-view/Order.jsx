@@ -19,8 +19,6 @@ import { useToasts } from "react-toast-notifications";
 import Product from "./Product";
 import useAuth from "hooks/useAuth";
 import { postAPIAuth } from "utils/__api__/ApiServies";
-import { useMemo } from 'react';
-
 
 const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const router = useRouter();
@@ -33,7 +31,12 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const [itemRating, setItemRating] = useState(0);
 
   const { currency } = useCurrency();
-  const isoString = order.createdAt;
+  
+  // Get parentSale data (order level data)
+  const parentSale = order?.parentSale || order;
+  const items = order?.items || [];
+  
+  const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
 
   const handleClosePopup = () => {
@@ -41,15 +44,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     setVendorId("");
     SetOpenPopup(false);
   };
-
-  const groupedByShop = useMemo(() => {
-    return (order?.saleDetaildata || []).reduce((acc, product) => {
-      const shop = product?.vendorData?.shop_name || 'Unknown';
-      acc[shop] = acc[shop] || [];
-      acc[shop].push(product);
-      return acc;
-    }, {});
-  }, [order?.saleDetaildata]);
 
   const LightTooltip = styled(({ className, ...props }) => (
     <Tooltip {...props} classes={{ popper: className }} />
@@ -82,11 +76,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
 
   const submitReviewHandler = async (values) => {
     try {
-      // deliveryRating: deliveryRating || 0,
-      // itemRating: itemRating || 0,
-      // comments: "",
-      // recommend: false,
-
       const payload = {
         saleDetailId: reviewId,
         vendor_id: vendorId,
@@ -138,9 +127,10 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       console.log(error);
     }
   };
+  
   return (
     <>
-      <Box key={order._id}>
+      <Box key={order.sub_order_id || order._id}>
         <Box>
           <Grid
             container
@@ -186,7 +176,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       </Typography>
                       <Typography fontSize={15} fontWeight={500}>
                         {currency?.symbol}
-                        {(order.subtotal * currency?.rate).toFixed(2)}
+                        {(order.sub_total * currency?.rate).toFixed(2)}
                       </Typography>
                     </Typography>
                   </ListItem>
@@ -204,19 +194,19 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                               sx={{ textTransform: "capitalize" }}
                               fontWeight={600}
                             >
-                              {order.userName}
+                              {parentSale?.userName}
                             </Typography>
                             <Typography fontSize={"16px"}>
-                              {order.address_line1}
+                              {parentSale?.address_line1}
                             </Typography>
                             <Typography fontSize={"16px"}>
-                              {order.address_line2 ? order.address_line2 : ""}
+                              {parentSale?.address_line2 ? parentSale?.address_line2 : ""}
                             </Typography>
                             <Typography fontSize={"16px"}>
-                              {order.city} {order.state} {order.pincode}
+                              {parentSale?.city} {parentSale?.state} {parentSale?.pincode}
                             </Typography>
                             <Typography fontSize={"16px"}>
-                              {order.country}
+                              {parentSale?.country}
                             </Typography>
                           </Box>
                         }
@@ -231,19 +221,11 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                               textTransform: "capitalize",
                             }}
                           >
-                            {order.userName}
+                            {parentSale?.userName}
                           </Typography>
                           <ArrowDropDownIcon />
                         </Box>
                       </LightTooltip>
-
-                      {/* <Typography
-                                fontSize={15}
-                                fontWeight={500}
-                                sx={{ color: "#ad1414" }}
-                              >
-                                {order.userName}
-                              </Typography> */}
                     </Typography>
                   </ListItem>
                 </List>
@@ -267,7 +249,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                     fontWeight={500}
                     sx={{ textTransform: "uppercase" }}
                   >
-                    Order # {order.order_id}
+                    Order # {order.sub_order_id}
                   </Typography>
                   <Typography
                     component="div"
@@ -275,7 +257,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   >
                     <Typography
                       onClick={() =>
-                        router.push(`/order-details?order-id=${order.order_id}`)
+                        router.push(`/order-details?order-id=${order.order_id}&sub-order-id=${order.sub_order_id}`)
                       }
                       component="span"
                       fontSize={15}
@@ -298,23 +280,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       }}
                       component="div"
                     >
-                      {/* <span>invoice</span> */}
-
-                      {/* <FormControl fullWidth>
-                                  <InputLabel id="demo-simple-select-label">
-                                    invoice
-                                  </InputLabel>
-                                  <Select
-                                    labelId="demo-simple-select-label"
-                                    id="demo-simple-select"
-                                    label="invoice"
-                                  >
-                                    <MenuItem value={10}>
-                                      Printable order summary
-                                    </MenuItem>
-                                  </Select>
-                                </FormControl> */}
-
                       <LightTooltip
                         title={
                           <Box>
@@ -358,10 +323,11 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               {/* <Typography>Package was handed to resident</Typography> */}
             </Typography>
 
-            {Object.entries(groupedByShop).map(([shop, products]) => (
-              <Box key={shop}>
+            {/* Shop section - using items array */}
+            {items.length > 0 && (
+              <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <H4 sx={{color:'grey'}}>Shop name : {shop}</H4>
+                  <H4 sx={{color:'grey'}}>Shop name : { items[0]?.vendorData?.shop_name || 'Unknown'}</H4>
                   <Box
                     sx={{
                       flexGrow: 1,
@@ -372,7 +338,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   />
                 </Box>
 
-                {products.map(product => (
+                {items.map(product => (
                   <Product
                     key={product?._id}
                     baseUrl={baseUrl}
@@ -385,7 +351,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   />
                 ))}
               </Box>
-            ))}
+            )}
 
           </Box>
         </Box>
@@ -422,90 +388,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
           >
             <Typography variant="h5">Write a review</Typography>
           </Typography>
-          {/* <Box p={2}>
-            <Typography component="div" mb={1}>
-              <Typography fontWeight={600} fontSize={16}>
-                Delivery Rating Ask rating from customer in star pattern format
-              </Typography>
-              <Typography>
-                <Box>
-                  <Rating
-                    size="large"
-                    name="simple-controlled"
-                    value={deliveryRating}
-                    onChange={(event, newValue) => {
-                      setDeliveryRating(newValue);
-                    }}
-                  />
-                </Box>
-              </Typography>
-            </Typography>
-            <Typography component="div" mb={1}>
-              <Typography fontWeight={600} fontSize={16}>
-                Item Rating Ask rating from customer in star pattern format
-              </Typography>
-              <Typography>
-                <Box>
-                  <Rating
-                    size="large"
-                    name="simple-controlled"
-                    value={itemRating}
-                    onChange={(event, newValue) => {
-                      setItemRating(newValue);
-                    }}
-                  />
-                </Box>
-              </Typography>
-            </Typography>
-            <Typography component="div" mt={2}>
-              <Typography fontSize={18} fontWeight={500}>
-                Comments
-              </Typography>
-              <TextField multiline rows={4} fullWidth variant="outlined" />
-            </Typography>
-            <Typography component="div" mt={1}>
-              <FormControlLabel
-                required
-                control={<Checkbox />}
-                label="Yes i would recommend this product"
-                sx={{
-                  ".MuiTypography-root": {
-                    fontWeight: "bold",
-                  },
-                }}
-              />
-            </Typography>
-            <Typography mt={2} component="div" sx={{ display: "flex" }}>
-              <Button
-                sx={{
-                  fontSize: "17px",
-                  borderRadius: "4px",
-                  padding: "12px",
-                  background: "#e87100",
-                  color: "#fff",
-                  width: "100%",
-                  marginRight: "10px",
-                  "&:hover": { background: "#fb9331" },
-                }}
-              >
-                Not Now
-              </Button>
-              <Button
-                sx={{
-                  fontSize: "17px",
-                  borderRadius: "4px",
-                  padding: "12px",
-                  background: "#e87100",
-                  color: "#fff",
-                  width: "100%",
-                  marginLeft: "10px",
-                  "&:hover": { background: "#fb9331" },
-                }}
-              >
-                Submit Review
-              </Button>
-            </Typography>
-          </Box> */}
 
           <Formik
             initialValues={{

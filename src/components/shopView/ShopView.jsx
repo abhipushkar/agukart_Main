@@ -323,8 +323,14 @@ const ShopView = () => {
       {loading ? (
         <VendorProfileShimmer />
       ) : Object.values(vendorDetail || {}).length > 0 ? (
-        <>
-          <Box>
+        <Box sx={{overflowX:"hidden"}}>
+          <Box
+            sx={{
+              position: "relative",
+              top: vendorDetail?.shop_banner && vendorDetail.shop_banner.length > 1 ? -10
+                : vendorDetail?.shop_banner && vendorDetail.shop_banner.length === 1 ? +1 : -14 // to adjust space between navbar and banner
+            }}
+          >
             {vendorDetail?.shop_banner &&
               vendorDetail.shop_banner.length > 0 ? (
               vendorDetail.shop_banner.length > 1 ? (
@@ -334,6 +340,7 @@ const ShopView = () => {
                   dots
                   autoplay
                   dotStyles={{ mt: 0.5 }}
+                  spaceBetween={0}
                 >
                   {vendorDetail.shop_banner.map((item, ind) => {
                     const imgSrc = item.editedImage || item.image;
@@ -383,7 +390,6 @@ const ShopView = () => {
                   sx={{
                     position: "relative",
                     width: "100%",
-                    aspectRatio: "1 / 1",
                     maxHeight: {
                       xs: "200px",
                       md: "400px",
@@ -417,7 +423,8 @@ const ShopView = () => {
                     sx={{
                       position: "relative",
                       width: "100%",
-                      height: "100%",
+                      height: "auto",
+                      display: "block",
                       objectFit: "contain",
                       zIndex: 1,
                     }}
@@ -473,7 +480,11 @@ const ShopView = () => {
                     display: "flex",
                     width: {
                       xs: "100%", // mobile/tablet
-                      md: "497px", // desktop and up
+                      md: "full", // desktop and up
+                    },
+                    maxWidth: {
+                      xs: "100%", // mobile/tablet
+                      md: "800px", // desktop and up
                     },
                     flexDirection: {
                       xs: "column", // mobile/tablet
@@ -560,7 +571,10 @@ const ShopView = () => {
                       sx={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        justifyContent: {
+                          xs: "space-between",
+                          md: "flex-start",
+                        },
                       }}
                     >
                       <Box>
@@ -628,6 +642,55 @@ const ShopView = () => {
                         <IosShareIcon sx={{ width: "19px", height: "19px" }} />
                       </Button>
                     </Typography>
+                    <Box
+                      mt={1.5}
+                      sx={{
+                        display: {
+                          xs: "none",
+                          md: "flex",
+                        },
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                    >
+                      <Button
+                        onClick={toggelFollowShopHandler}
+                        sx={{
+                          background: "#fff",
+                          border: "1px solid #000",
+                          borderRadius: "30px",
+                          padding: "5px 18px",
+                          color: "#000",
+                        }}
+                        size="sm"
+                      >
+                        {isWishlist ? (
+                          <FavoriteIcon sx={{ color: "red" }} />
+                        ) : (
+                          <FavoriteBorderIcon sx={{ marginRight: "6px" }} />
+                        )}
+                        {isWishlist ? "Following" : "Follow"}
+                      </Button>
+                      <Button
+                        onClick={() => setOpenModal(true)}
+                        sx={{
+                          zIndex: "99",
+                          background: "#fff",
+                          boxShadow: "0 0 3px #696969",
+                          borderRadius: "50%",
+                          height: "30px",
+                          width: "30px",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          "&:hover": {
+                            background: "#fff",
+                            boxShadow: "0 0 4px #000",
+                          },
+                        }}
+                      >
+                        <IosShareIcon sx={{ width: "19px", height: "19px" }} />
+                      </Button>
+                    </Box>
                   </Typography>
                 </Box>
               </Box>
@@ -675,7 +738,7 @@ const ShopView = () => {
                   height: "100%",
                   width: {
                     xs: "100%", // mobile/tablet
-                    md: "200px", // desktop and up
+                    md: "10%", // desktop and up
                   },
                   display: {
                     xs: "block", // mobile: normal block layout
@@ -700,8 +763,8 @@ const ShopView = () => {
               >
                 <Typography component="div">
                   <img
-                    width={80}
-                    height={80}
+                    width={60}
+                    height={60}
                     alt="banner"
                     style={{
                       height: "80px",
@@ -715,24 +778,24 @@ const ShopView = () => {
                 <Typography width="100%" fontSize={16} fontWeight={600}>
                   {vendorDetail?.vendor_name}
                 </Typography>
-                <Typography mt={1}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      textDecoration: "none",
-                      fontSize: "15px",
-                      color: "#000",
-                      cursor: "pointer",
-                    }}
-                    onClick={handleClickPopup}
-                  >
-                    <MailOutlineIcon
-                      sx={{ fontSize: "17px", marginRight: "6px" }}
-                    />
+                <Box
+                  mt={1}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: {
+                      xs: "center",
+                      md: "flex-end",
+                    },
+                    cursor: "pointer",
+                  }}
+                  onClick={handleClickPopup}
+                >
+                  <MailOutlineIcon sx={{ fontSize: "17px", mr: "6px" }} />
+                  <Typography fontSize={15} color="#000">
                     Contact
-                  </Box>
-                </Typography>
+                  </Typography>
+                </Box>
               </Box>
             </Box>
             <Box
@@ -741,62 +804,70 @@ const ShopView = () => {
                 width: "100%",
                 display: { lg: "flex", md: "flex", xs: "block" },
                 alignItems: "center",
-                justifyContent: "space-between",
+                marginTop: {
+                  xs: 0,
+                  md: announcementShowMore ? "20px" : "-50px", //adjustment made to push tabs in same row as follow button but below See More 
+                },
+                marginLeft: {
+                  xs: 0,
+                  md: "24%",
+                },
+                gap: {
+                  xs: 0,
+                  md: 3,
+                  lg: 3,
+                },
               }}
             >
-              <Typography
-                component="div"
-                mb={{ lg: "0", md: "0", xs: "12px" }}
-                textAlign={{ lg: "start", md: "start", xs: "center" }}
-                display={"flex"}
-                gap={2}
-              >
-                <Button
-                  onClick={toggelFollowShopHandler}
-                  sx={{
-                    background: "#fff",
-                    border: "1px solid #000",
-                    borderRadius: "30px",
-                    padding: "5px 18px",
-                    color: "#000",
-                    display: {
-                      xs: "none",
-                      md: "flex",
-                    },
-                  }}
+              <Grid item lg={12} md={12} xs={12}>
+                <Grid
+                  container
+                  spacing={3}
+                  sx={{ margin: "0", width: "100%" }}
                 >
-                  {isWishlist ? (
-                    <FavoriteIcon sx={{ color: "red" }} />
-                  ) : (
-                    <FavoriteBorderIcon sx={{ marginRight: "6px" }} />
-                  )}
-                  {isWishlist ? "Following" : "Follow shop"}
-                </Button>
-                <Button
-                  onClick={() => setOpenModal(true)}
-                  sx={{
-                    zIndex: "99",
-                    background: "#fff",
-                    boxShadow: "0 0 3px #696969",
-                    borderRadius: "50%",
-                    height: "30px",
-                    width: "30px",
-                    display: {
-                      xs: "none",
-                      md: "flex",
-                    },
-                    alignItems: "center",
-                    justifyContent: "center",
-                    "&:hover": {
-                      background: "#fff",
-                      boxShadow: "0 0 4px #000",
-                    },
-                  }}
-                >
-                  <IosShareIcon sx={{ width: "19px", height: "19px" }} />
-                </Button>
-              </Typography>
+                  <Grid item xs={12} sx={{ padding: "0 !important" }}>
+                    <Box sx={{ width: "100%" }}>
+                      <FlexBox
+                        gap={{ xs: 0, md: 2 }}
+                        sx={{
+                          flexWrap: "wrap",   // 👈 important for mobile
+                          justifyContent: {
+                            xs: "space-between",
+                            sm: "space-around",
+                            md: "flex-start",
+                          },
+                        }}
+                      >
+                        <Typography onClick={() => scrollToSection("home")} sx={{ cursor: "pointer" }}>
+                          Home
+                        </Typography>
+                        <Typography onClick={() => scrollToSection("collection")} sx={{ cursor: "pointer" }}>
+                          Collection
+                        </Typography>
+                        <Typography onClick={() => scrollToSection("reviews")} sx={{ cursor: "pointer" }}>
+                          Reviews
+                        </Typography>
+                        <Typography onClick={() => scrollToSection("about")} sx={{ cursor: "pointer" }}>
+                          About
+                        </Typography>
+                        <Typography onClick={() => scrollToSection("shop-policies")} sx={{ cursor: "pointer" }}>
+                          Shop Policies
+                        </Typography>
+                      </FlexBox>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
             </Box>
+            <Box //divider
+              sx={{
+                flexGrow: 1,
+                height: '2px',
+                backgroundColor: '#cacaca',
+                position: "relative",
+                top: -10
+              }}
+            />
             <Box>
               <Grid
                 container
@@ -805,51 +876,6 @@ const ShopView = () => {
                 sx={{ margin: "0", width: "100%" }}
               >
                 <Grid container spacing={3}>
-                  <Grid item lg={12} md={12} xs={12}>
-                    <Grid
-                      container
-                      pb={3}
-                      spacing={3}
-                      sx={{ margin: "0", width: "100%" }}
-                    >
-                      <Grid item lg={8} md={8} xs={9}>
-                        <Box sx={{ maxWidth: { xs: 320, sm: 900 } }}>
-                          <FlexBox gap={2}>
-                            <Typography
-                              sx={{ cursor: "pointer" }}
-                              onClick={() => scrollToSection("home")}
-                            >
-                              Home
-                            </Typography>
-                            <Typography
-                              sx={{ cursor: "pointer" }}
-                              onClick={() => scrollToSection("collection")}
-                            >
-                              Collection
-                            </Typography>
-                            <Typography
-                              sx={{ cursor: "pointer" }}
-                              onClick={() => scrollToSection("reviews")}
-                            >
-                              Reviews
-                            </Typography>
-                            <Typography
-                              sx={{ cursor: "pointer" }}
-                              onClick={() => scrollToSection("about")}
-                            >
-                              About
-                            </Typography>
-                            <Typography
-                              sx={{ cursor: "pointer" }}
-                              onClick={() => scrollToSection("shop-policies")}
-                            >
-                              Shop Policies
-                            </Typography>
-                          </FlexBox>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </Grid>
 
                   {/* All Sections */}
                   <Grid item xs={12} id="home">
@@ -1086,7 +1112,7 @@ const ShopView = () => {
               </Box>
             </Modal>
           </div>
-        </>
+        </Box>
       ) : (
         <Box
           sx={{
