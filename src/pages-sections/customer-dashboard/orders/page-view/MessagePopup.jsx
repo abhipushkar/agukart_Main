@@ -31,6 +31,9 @@ import {
 import { db, storage } from "../../../../../src/firebase/Firebase";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import useChat from "hooks/useChat";
+import { where, limit } from "firebase/firestore";
+
+
 
 const MessagePopup = ({
   vendorName,
@@ -43,6 +46,9 @@ const MessagePopup = ({
   product_image,
   receiverid,
   orderId,
+  subOrderId,
+  subOrderProducts,
+  baseUrl
 }) => {
   const { usercredentials } = useMyProvider();
   const { currency } = useCurrency();
@@ -55,11 +61,19 @@ const MessagePopup = ({
   const receiverId = receiverid;
   const senderId = usercredentials?._id;
 
+  const chatQuery = query(
+    collection(db, "chatRooms"),
+    where("receiverId", "==", receiverId),
+    where("user", "==", senderId),
+    where("subOrderId", "==", subOrderId),
+    limit(1)
+  );
+
   const detectLink = (text) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, index) =>
       urlRegex.test(part) ? (
-        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue",textDecoration: "underline" }}>
+        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
           {part}
         </a>
       ) : (
@@ -69,7 +83,13 @@ const MessagePopup = ({
   };
 
   useEffect(() => {
-    const q = query(collection(db, "chatRooms"), orderBy("createdAt", "asc"));
+    const q = query(
+      collection(db, "chatRooms"),
+      where("receiverId", "==", receiverId),
+      where("user", "==", senderId),
+      where("subOrderId", "==", subOrderId),
+      limit(1)
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const newMessages = snapshot?.docs?.map((doc) => ({
@@ -81,8 +101,8 @@ const MessagePopup = ({
         return (
           doc?.receiverId === receiverId &&
           doc?.user === senderId &&
-          doc?.productId === productID &&
-          doc?.orderId === orderId
+          // doc?.productId === productID &&
+          doc?.subOrderId === subOrderId
         );
       });
       console.log("newMessagesnewMessages", matchingDocument);
@@ -106,7 +126,7 @@ const MessagePopup = ({
     });
 
     return () => unsubscribe();
-  }, [senderId, receiverId, productID]);
+  }, [senderId, receiverId, subOrderId]);
 
   const uploadImagesToFirebase = async () => {
     const uploadPromises = files.map(async (file) => {
@@ -120,29 +140,76 @@ const MessagePopup = ({
     return Promise.all(uploadPromises);
   };
 
+  const buildProductMessages = () => {
+    // SUBORDER FLOW
+    if (subOrderProducts && subOrderProducts.length > 0) {
+      const productMessages = subOrderProducts.map((p) => ({
+        senderType: "user",
+        text: "",
+        createdAt: new Date(),
+        messageSenderId: senderId,
+        isNotification: true,
+        imageUrls: [],
+        productId: p?.productData?._id || null,
+        productLink: `https://agukart.com/products/${p?.productData?._id}`,
+        productData: {
+          productTitle: p?.productData?.product_title || "",
+          price: p?.sub_total || 0,
+          imageUrl: p?.productData?.image?.[0]
+            ? `${baseUrl}${p.productData.image[0]}`
+            : "",
+        },
+        orderId: orderId,
+        subOrderId:subOrderId,
+      }));
+
+      // 🔥 append actual user message at LAST
+      productMessages.push({
+        senderType: "user",
+        text: input?.trim() || "Hi, I need help with this order",
+        createdAt: new Date(),
+        messageSenderId: senderId,
+        isNotification: false,
+        imageUrls: [],
+        orderId:orderId,
+        subOrderId: subOrderId
+      });
+
+      return productMessages;
+    }
+
+    // PRODUCT FLOW (unchanged)
+    return [
+      {
+        senderType: "user",
+        text: input?.trim() || "Hi",
+        createdAt: new Date(),
+        messageSenderId: senderId,
+        isNotification: false,
+        imageUrls: [],
+        productId: productID || null,
+        productData: {
+          productTitle: productData?.productData?.product_title || "",
+          price: productData?.sub_total || 0,
+          imageUrl: product_image || "",
+        },
+      },
+    ];
+  };
+
   const sendMessage = async () => {
     let imageUrls = [];
     if (input.trim() || files.length > 0) {
-      const querySnapshot = await getDocs(collection(db, "chatRooms"));
-      const documents = querySnapshot.docs.map((doc) => {
-        const docId = doc.id;
-        const docData = doc.data();
-        return {
-          id: docId,
-          data: docData,
+      const querySnapshot = await getDocs(chatQuery);
+      let matchingDocument = null;
+
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        matchingDocument = {
+          id: docSnap.id,
+          data: docSnap.data(),
         };
-      });
-
-      console.log("All documents: ", documents);
-
-      const matchingDocument = documents?.find((doc) => {
-        return (
-          doc.data.receiverId === receiverId &&
-          doc.data.user === senderId &&
-          doc?.data?.productId === productID &&
-          doc?.data?.orderId === orderId
-        );
-      });
+      }
       // Upload image if there is a file selected
       if (files.length > 0) {
         imageUrls = await uploadImagesToFirebase();
@@ -159,18 +226,44 @@ const MessagePopup = ({
           });
         }
         const existingText = matchingDocument.data.text || [];
-        const updatedText = [
-          ...existingText,
-          {
+        let newMessages = [];
+
+        // always push normal message if exists
+        if (input.trim() || imageUrls.length > 0 || productID) {
+          newMessages.push({
             senderType: "user",
             text: input,
             createdAt: new Date(),
             messageSenderId: senderId,
             isNotification: false,
             imageUrls: imageUrls,
+          });
+        }
+
+        // 🔥 KEY LOGIC: check if product already exists in chat
+        const alreadySent = productID
+          ? existingText.some((msg) => msg.productId === productID)
+          : false;
+
+        // if not sent before → send product card
+        if (productID && !alreadySent) {
+          newMessages.push({
+            senderType: "user",
+            text: "",
+            createdAt: new Date(),
+            messageSenderId: senderId,
+            isNotification: true,
+            imageUrls: [],
             productId: productID,
-          },
-        ];
+            productData: {
+              productTitle: productData?.productData?.product_title,
+              price: productData?.sub_total,
+              imageUrl: product_image,
+            },
+          });
+        }
+        if (newMessages.length === 0) return;
+        const updatedText = [...existingText, ...newMessages];
         await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
           text: updatedText,
           currentTime: new Date(),
@@ -179,28 +272,12 @@ const MessagePopup = ({
         console.log("Updated document with new message array.");
       } else {
         console.log("No matching document found.");
-        await addDoc(collection(db, "chatRooms"), {
-          text: [
-            {
-              senderType: "user",
-              text: input,
-              createdAt: new Date(),
-              messageSenderId: senderId,
-              isNotification: false,
-              imageUrls: imageUrls,
-              productId: productID,
-            },
-          ],
-          createdAt: new Date(),
-          user: senderId,
-          receiverId: receiverId,
-          isDeleted: false,
-          currentTime: new Date(),
-          userName: usercredentials?.name,
-          vendorName: vendorName || "",
-          shopName:shopName || "",
-          productId: productID,
-          productData: {
+        const productMessages = buildProductMessages();
+        console.log("FINAL CHAT PAYLOAD", productMessages);
+        const productId = productID ?? "";
+        let productdata = {};
+        if(productData){
+          productdata = {
             orderId: orderId,
             name: productData?.productData?.product_title,
             qty: productData?.qty,
@@ -211,8 +288,22 @@ const MessagePopup = ({
             variantAttributeData: productData?.variantAttributeData,
             customize: productData?.customize,
             customizationData: productData?.customizationData,
-          },
+          };
+        }
+        await addDoc(collection(db, "chatRooms"), {
+          text: productMessages,
+          createdAt: new Date(),
+          user: senderId,
+          receiverId: receiverId,
+          isDeleted: false,
+          currentTime: new Date(),
+          userName: usercredentials?.name,
+          vendorName: vendorName || "",
+          shopName: shopName || "",
+          productId: productId,
+          productData: productdata,
           orderId: orderId,
+          subOrderId: subOrderId
         });
       }
       setInput("");
@@ -395,12 +486,12 @@ const MessagePopup = ({
                                 sx={{
                                   background: msg.messageSenderId === senderId ? "#e9e9e9" : "#fff",
                                   boxShadow: "0 0 3px #000",
-                                  border: "2px solid black", 
+                                  border: "2px solid black",
                                   borderRadius: "6px",
                                   maxWidth: "340px",
                                   minWidth: "75px",
                                   textAlign: "center",
-                                  mb: 1, 
+                                  mb: 1,
                                 }}
                               >
                                 <img
@@ -422,7 +513,7 @@ const MessagePopup = ({
                               p={2}
                               component="div"
                               sx={{
-                                background: msg.messageSenderId === senderId ? "#e9e9e9" : "#fff",
+                                background: msg.messageSenderId === senderId ? "#cdcdcdbf" : "#fff",
                                 boxShadow: "0 0 3px #000",
                                 border: "1px solid #ccc", // Light gray border for text
                                 borderRadius: "6px",
@@ -430,12 +521,13 @@ const MessagePopup = ({
                                 minWidth: "75px",
                                 textAlign: "initial",
                                 mt: 1, // Spacing between images and text
+                                ml: msg.messageSenderId === senderId ? "auto" : undefined
                               }}
                             >
-                              <Typography sx={{ 
-                                  wordWrap: "break-word",
-                                  whiteSpace: "pre-line"
-                                }}>
+                              <Typography sx={{
+                                wordWrap: "break-word",
+                                whiteSpace: "pre-line"
+                              }}>
                                 {detectLink(msg.text || "")}
                               </Typography>
                               {msg?.productLink && (
@@ -478,7 +570,8 @@ const MessagePopup = ({
                               borderRadius: 2,
                               border: "1px solid #e0e0e0",
                               backgroundColor: "#f9f9f9",
-                              width: "100%",
+                              width: "80%",
+                              ml: msg.messageSenderId === senderId ? "auto" : undefined
                             }}
                           >
                             <img
@@ -509,9 +602,17 @@ const MessagePopup = ({
                                     fontWeight: 600,
                                     color: "#333",
                                     lineClamp: 2,
+                                    '&:hover': {
+                                      textDecorationLine:"underline"
+                                    },
+                                    cursor:"pointer"
+                                  }}
+                                  onClick={() => {
+                                    const url = `${msg.productLink}`
+                                    window.open(url, "_blank");
                                   }}
                                 >
-                                  {parse(msg?.productData?.productTitle || "")}
+                                  {parse(msg?.productData?.productTitle.slice(0,80) || "")}
                                 </Typography>
                                 <Typography
                                   sx={{ fontSize: 13, color: "gray" }}
@@ -522,7 +623,7 @@ const MessagePopup = ({
                                   ).toFixed(2)}
                                 </Typography>
                               </Box>
-                              <Box>
+                              {/* <Box>
                                 <Button
                                   variant="contained"
                                   size="small"
@@ -534,15 +635,15 @@ const MessagePopup = ({
                                     fontWeight: "bold",
                                     "&:hover": { background: "black" },
                                   }}
-                                  onClick={()=>{
-                                      const url = `${msg.productLink}`
-                                      window.open(url, "_blank");
-                                    }
+                                  onClick={() => {
+                                    const url = `${msg.productLink}`
+                                    window.open(url, "_blank");
+                                  }
                                   }
                                 >
                                   Buy It Now
                                 </Button>
-                              </Box>
+                              </Box> */}
                             </Box>
                           </Box>
                         )}
@@ -571,8 +672,8 @@ const MessagePopup = ({
                                 display: "flex",
                                 flexDirection: "column",
                                 textAlign: "left",
-                                marginBottom:"53px",
-                                gap:"7px"
+                                marginBottom: "53px",
+                                gap: "7px"
                               }}
                             >
                               <Box
@@ -605,10 +706,10 @@ const MessagePopup = ({
                                     fontWeight: "bold",
                                     "&:hover": { background: "black" },
                                   }}
-                                  onClick={()=>{
-                                      const url = `${msg.shopLink}`
-                                      window.open(url, "_blank");
-                                    }
+                                  onClick={() => {
+                                    const url = `${msg.shopLink}`
+                                    window.open(url, "_blank");
+                                  }
                                   }
                                 >
                                   Visit Now
@@ -618,7 +719,7 @@ const MessagePopup = ({
                           </Box>
                         )}
                       </div>
-                      {msg.messageSenderId === senderId && (
+                      {/* {msg.messageSenderId === senderId && (
                         <Typography component="span" ml={2}>
                           <img
                             src="https://i.etsystatic.com/icm/0ff82a/701770387/icm_150x150.701770387_gvl90sgooigcowk8wcw0.png?version=0"
@@ -632,7 +733,7 @@ const MessagePopup = ({
                             alt=""
                           />
                         </Typography>
-                      )}
+                      )} */}
                     </Box>
                   </ListItem>
                 );

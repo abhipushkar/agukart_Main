@@ -441,15 +441,27 @@ const ChatLayout = ({ children }) => {
                 ) : (
                   <Typography component="span">
                     <Checkbox
-                      checked={checkMessage.length === chats.length}
+                      checked={
+                        slug
+                          ? checkMessage.includes(slug)
+                          : checkMessage.length === chats.length
+                      }
                       onChange={() => {
-                        if (checkMessage.length !== chats.length) {
-                          const allCheckIds = chats.map((doc) => {
-                            return doc.id;
-                          });
-                          setCheckMessage(allCheckIds);
+                        if (slug) {
+                          if (checkMessage.includes(slug)) {
+                            setCheckMessage([]);
+                          } else {
+                            setCheckMessage([slug]);
+                          }
                         } else {
-                          setCheckMessage([]);
+                          if (checkMessage.length !== chats.length) {
+                            const allCheckIds = chats.map((doc) => {
+                              return doc.id;
+                            });
+                            setCheckMessage(allCheckIds);
+                          } else {
+                            setCheckMessage([]);
+                          }
                         }
                       }}
                     />

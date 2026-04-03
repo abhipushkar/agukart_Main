@@ -126,14 +126,16 @@ export default function OrdersPageView() {
               if (sale?.saleDetaildata?.length) {
                 sale.saleDetaildata.forEach((item) => {
                   const key = item.sub_order_id;
-
+                  const { saleDetaildata, ...safeSale } = sale;
                   if (!grouped[key]) {
                     grouped[key] = {
                       sub_order_id: key,
                       items: [],
-                      ...sale,
+                      ...safeSale,
                       order_id: sale.order_id,
                       sale_id: sale._id,
+                      vendor_id: item.vendor_id,
+                      vendorData: item.vendorData
                     };
                   }
 

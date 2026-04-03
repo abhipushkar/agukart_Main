@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -20,6 +20,10 @@ import {
 } from "@mui/material";
 import { ExpandMore, Close as CloseIcon } from "@mui/icons-material";
 import parse from "html-react-parser";
+import {
+  TransformWrapper,
+  TransformComponent,
+} from "react-zoom-pan-pinch";
 
 const ProductCustomization = ({
   customizationData,
@@ -185,6 +189,64 @@ const DropdownCustomization = ({
     setAnchorEl(event.currentTarget);
   };
 
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [zoom]);
+
+  const renderImageViewer = () => (
+    <Box sx={{ height: "60vh", width: "100%" }}>
+      <TransformWrapper
+        initialScale={1}
+        minScale={1}
+        maxScale={5}
+        wheel={{ step: 0.2 }}
+        doubleClick={{ disabled: false }}
+        pinch={{ step: 5 }}
+      >
+        {({ zoomIn, zoomOut, resetTransform }) => (
+          <>
+            {/* 🔥 Controls */}
+            <Box sx={{ position: "absolute", right: 16, top: 16, zIndex: 10 }}>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button onClick={zoomIn} variant="contained">+</Button>
+                <Button onClick={zoomOut} variant="contained">-</Button>
+                <Button onClick={resetTransform} variant="contained">Reset</Button>
+              </Box>
+            </Box>
+
+            {/* 🔥 Viewer */}
+            <TransformComponent
+              wrapperStyle={{
+                width: "100%",
+                height: "60vh",
+              }}
+              contentStyle={{
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <img
+                src={currentGuide.file}
+                alt="guide"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "auto",
+                }}
+              />
+            </TransformComponent>
+          </>
+        )}
+      </TransformWrapper>
+    </Box>
+  );
+
   const handleGuideClick = () => {
     setCurrentGuide({
       name: customization.guide?.guide_name,
@@ -246,34 +308,7 @@ const DropdownCustomization = ({
           </Box>
         )}
 
-        {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: zoom === 1 ? "center" : "flex-start",
-              height: "60vh",
-              overflow: zoom > 1 ? "auto" : "hidden", // 🔥 key fix
-              cursor: zoom > 1 ? "grab" : "default",
-            }}
-          >
-            <img
-              src={currentGuide.file}
-              alt={currentGuide.name || "Guide Image"}
-              style={{
-                maxWidth: "100%",   // ✅ always constrained
-                maxHeight: "100%",  // ✅ always constrained
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
-                transform: `scale(${zoom})`,
-                transformOrigin: "center", // 🔥 important for scrolling
-                transition: "transform 0.3s ease",
-                borderRadius: "8px",
-              }}
-            />
-          </Box>
-        )}
+        {currentGuide?.file && currentGuide?.type === "image" && renderImageViewer()}
 
         {currentGuide?.file && currentGuide?.type === "video" && (
           <Box sx={{ textAlign: "center", mb: 2 }}>

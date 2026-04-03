@@ -1,11 +1,8 @@
 import React, { useState } from "react";
-import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating } from "@mui/material";
-import { styled, alpha } from "@mui/material/styles";
+import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating, Stack } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import { H2, H3, H4, H6 } from "components/Typography";
 import { useCurrency } from "contexts/CurrencyContext";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage } from "formik";
@@ -19,6 +16,9 @@ import { useToasts } from "react-toast-notifications";
 import Product from "./Product";
 import useAuth from "hooks/useAuth";
 import { postAPIAuth } from "utils/__api__/ApiServies";
+import TrackingPopup from "./TrackingPopup";
+import Link from "next/link";
+import MessagePopup from "./MessagePopup";
 
 const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const router = useRouter();
@@ -29,13 +29,15 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const [openPopup, SetOpenPopup] = useState(false);
   const [deliveryRating, setDeliveryRating] = useState(0);
   const [itemRating, setItemRating] = useState(0);
+  const [openTracking, setOpenTracking] = useState(false);
+  const [openMessagePopup, setMessageOpenPopup] = useState(false);
 
   const { currency } = useCurrency();
-  
+
   // Get parentSale data (order level data)
   const parentSale = order?.parentSale || order;
   const items = order?.items || [];
-  
+
   const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
 
@@ -43,6 +45,11 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     setReviewId("");
     setVendorId("");
     SetOpenPopup(false);
+    setOpenTracking(false);
+  };
+
+  const handleMessageClosePopup = () => {
+    setMessageOpenPopup(false);
   };
 
   const LightTooltip = styled(({ className, ...props }) => (
@@ -56,11 +63,35 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     },
   }));
 
-  const formattedDate = date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  function getDateRange(filterOrders) {
+    const currentDate = new Date();
+    const pastDate = new Date();
+    pastDate.setMonth(currentDate.getMonth() - filterOrders);
+
+    return {
+      currentDate: formatDate(currentDate),
+      pastDate: formatDate(pastDate),
+    };
+  }
+
+  const formattedDate = (date) => {
+    if (!date) return "";
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate)) return "";
+    return parsedDate.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
 
   const validationSchema = Yup.object({
     deliveryRating: Yup.number()
@@ -93,23 +124,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       );
 
       if (res.status === 200) {
-        function getDateRange(filterOrders) {
-          const currentDate = new Date();
-          const pastDate = new Date();
-          pastDate.setMonth(currentDate.getMonth() - filterOrders);
 
-          const formatDate = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const day = String(date.getDate()).padStart(2, "0");
-            return `${year}-${month}-${day}`;
-          };
-
-          return {
-            currentDate: formatDate(currentDate),
-            pastDate: formatDate(pastDate),
-          };
-        }
 
         setReviewId("");
         setVendorId("");
@@ -127,111 +142,153 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       console.log(error);
     }
   };
-  
+
+  const deliveryStatus = (items?.[0]?.delivery_status || parentSale?.delivery_status) === "No tracking"
+    ? { tracking: false, status: "Shipped" } : { tracking: true, status: (items?.[0]?.delivery_status || parentSale?.delivery_status) };
+
+  const refundStatus = (items?.[0]?.refund_status || parentSale?.refund_status) === "none"
+    ? null : (items?.[0]?.refund_status || parentSale?.refund_status)
+
   return (
     <>
-      <Box key={order.sub_order_id || order._id}>
-        <Box>
+      <Box key={order.sub_order_id || order._id} mb={2}>
+        <TrackingPopup
+          open={openTracking}
+          onClose={handleClosePopup}
+          order={order}
+        />
+        <Box border={"1px solid"} borderRadius={{ xs: "10px", md: "12px" }} borderColor={"#e4e4e484"}>
           <Grid
             container
-            p={3}
+            p={1}
+            pb={2}
             spacing={2}
-            sx={{ background: "#f0f2f2", margin: "0", width: "100%" }}
+            sx={{
+              background: "#f0f2f2",
+              margin: "0",
+              width: "100%",
+              borderRadius: { xs: "10px 10px 0 0", md: "12px 12px 0 0" },
+            }}
           >
-            <Grid lg={7} md={6} xs={12} sx={{ paddingTop: "0" }}>
+            <Grid item lg={8} md={7} xs={12} sx={{ paddingTop: "0" }}>
               <Box>
-                <List
+                <Box
                   sx={{
                     display: "flex",
-                    alignItems: "center",
-                    padding: "0",
+                    alignItems: { xs: "stretch", md: "flex-start" },
+                    flexWrap: { xs: "wrap", md: "nowrap" },
+                    gap: { xs: 1.5, md: 2 },
+                    p: 0,
+                    m: 0,
                   }}
                 >
-                  <ListItem
+                  <Stack
+                    spacing={2}
                     sx={{
-                      width: "auto",
-                      padding: "0",
-                      marginRight: "50px",
+                      width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
+                      minWidth: 0,
+                      p: 0,
                     }}
                   >
-                    <Typography component="div">
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
                       <Typography fontSize={14} fontWeight={500}>
-                        Order placed
+                        Order placed {" "}{formattedDate(date)}
                       </Typography>
-                      <Typography fontSize={15} fontWeight={500}>
-                        {formattedDate}
-                      </Typography>
-                    </Typography>
-                  </ListItem>
-                  <ListItem
+                      {(items?.[0]?.shipped_date || parentSale?.shipped_date) && (<Typography fontSize={14} fontWeight={500}>
+                        Shipped  {" "}{formattedDate(items?.[0]?.shipped_date || parentSale?.shipped_date) || "—"}
+                      </Typography>)}
+                      {(items?.[0]?.delivered_date || parentSale?.delivered_date) && (<Typography fontSize={14} fontWeight={500}>
+                        Delivered {" "}{formattedDate(items?.[0]?.delivered_date || parentSale?.delivered_date) || "—"}
+                      </Typography>)}
+                    </Box>
+                  </Stack>
+                  <Stack
+                    spacing={1}
                     sx={{
-                      width: "auto",
-                      padding: "0",
-                      marginRight: "50px",
+                      width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
+                      minWidth: 0,
+                      p: 0,
                     }}
                   >
-                    <Typography component="div">
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                       <Typography fontSize={14} fontWeight={500}>
-                        Total
+                        <span>Status :</span> {deliveryStatus.status}
                       </Typography>
-                      <Typography fontSize={15} fontWeight={500}>
-                        {currency?.symbol}
-                        {(order.sub_total * currency?.rate).toFixed(2)}
-                      </Typography>
-                    </Typography>
-                  </ListItem>
-                  <ListItem sx={{ width: "auto", padding: "0" }}>
-                    <Typography component="div">
-                      <Typography fontSize={14} fontWeight={500}>
-                        Ship
-                      </Typography>
+                      {deliveryStatus.tracking ? (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            marginTop: "10px",
+                            bgcolor: "#404040",
+                            "&:hover": {
+                              bgcolor: "#515151",
+                            },
+                            borderRadius: "30px",
+                            border: "1px solid #000",
+                            width: { xs: "100%", sm: "auto", md: "auto" },
+                            maxWidth: { md: "150px" },
+                            color: "#eee",
 
-                      <LightTooltip
-                        title={
-                          <Box>
-                            <Typography
-                              fontSize={"16x"}
-                              sx={{ textTransform: "capitalize" }}
-                              fontWeight={600}
-                            >
-                              {parentSale?.userName}
-                            </Typography>
-                            <Typography fontSize={"16px"}>
-                              {parentSale?.address_line1}
-                            </Typography>
-                            <Typography fontSize={"16px"}>
-                              {parentSale?.address_line2 ? parentSale?.address_line2 : ""}
-                            </Typography>
-                            <Typography fontSize={"16px"}>
-                              {parentSale?.city} {parentSale?.state} {parentSale?.pincode}
-                            </Typography>
-                            <Typography fontSize={"16px"}>
-                              {parentSale?.country}
-                            </Typography>
-                          </Box>
-                        }
+                          }}
+                          onClick={() => setOpenTracking(true)}
+                        >
+                          Track package
+                        </Button>
+                      ) : (
+                        ""
+                      )}
+                    </Box>
+                  </Stack>
+                  <Stack
+                    spacing={1}
+                    sx={{
+                      width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
+                      minWidth: 0,
+                      p: 0,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                      <Typography fontSize={14} fontWeight={500}>
+                        Total (change!) {currency?.symbol}
+                        {(order.subtotal * currency?.rate).toFixed(2)}
+                        {refundStatus && (<span style={{ color: "red" }}>{refundStatus}</span>)}
+                      </Typography>
+                      <Typography fontSize={14} fontWeight={500}>
+                        Store name : <Link
+                          href={`/store/${items[0]?.vendorData?.slug}`}
+                          style={{
+                            color: "#3b66cb",
+                            fontSize: "15px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          {items[0]?.vendorData?.shop_name}
+                        </Link>
+                      </Typography>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setMessageOpenPopup(true);
+                        }}
+                        variant="contained"
+                        sx={{
+                          background: "#fff",
+                          borderRadius: "30px",
+                          border: "1px solid #252525bd",
+                          width: { xs: "100%", sm: "auto", md: "auto" },
+                          maxWidth: { md: "150px" },
+                          marginBottom: "12px",
+                        }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Typography
-                            fontSize={15}
-                            fontWeight={500}
-                            sx={{
-                              color: "#ad1414",
-                              cursor: "pointer",
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            {parentSale?.userName}
-                          </Typography>
-                          <ArrowDropDownIcon />
-                        </Box>
-                      </LightTooltip>
-                    </Typography>
-                  </ListItem>
-                </List>
+                        Message to Seller
+                      </Button>
+                    </Box>
+                  </Stack>
+                </Box>
               </Box>
             </Grid>
-            <Grid lg={5} md={6} xs={12} sx={{ paddingTop: "0" }}>
+            <Grid item lg={4} md={5} xs={12} sx={{ paddingTop: "0" }}>
               <Box
                 sx={{
                   display: "flex",
@@ -243,17 +300,65 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   },
                 }}
               >
-                <Typography component="div">
+                <Box display={"flex"} flexDirection={"column"} gap={1.5} width="100%">
                   <Typography
                     fontSize={14}
-                    fontWeight={500}
-                    sx={{ textTransform: "uppercase" }}
+                    fontWeight={600}
+                    sx={{ textTransform: "uppercase", wordBreak: "break-word" }}
                   >
                     Order # {order.sub_order_id}
                   </Typography>
+                  <Box>
+                    <LightTooltip
+                      title={
+                        <Box>
+                          <Typography
+                            fontSize={"16px"}
+                            sx={{ textTransform: "capitalize" }}
+                            fontWeight={600}
+                          >
+                            {parentSale?.userName}
+                          </Typography>
+                          <Typography fontSize={"16px"}>
+                            {parentSale?.address_line1}
+                          </Typography>
+                          <Typography fontSize={"16px"}>
+                            {parentSale?.address_line2 ? parentSale?.address_line2 : ""}
+                          </Typography>
+                          <Typography fontSize={"16px"}>
+                            {parentSale?.city} {parentSale?.state} {parentSale?.pincode}
+                          </Typography>
+                          <Typography fontSize={"16px"}>
+                            {parentSale?.country}
+                          </Typography>
+                        </Box>
+                      }
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                        <span>Ship to :</span>
+                        <Typography
+                          fontSize={15}
+                          fontWeight={500}
+                          sx={{
+                            color: "#ad1414",
+                            cursor: "pointer",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {" "}{parentSale?.userName}
+                        </Typography>
+                        <ArrowDropDownIcon />
+                      </Box>
+                    </LightTooltip>
+                  </Box>
                   <Typography
                     component="div"
-                    sx={{ display: "flex", alignItems: "center" }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      rowGap: 1,
+                    }}
                   >
                     <Typography
                       onClick={() =>
@@ -261,21 +366,21 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       }
                       component="span"
                       fontSize={15}
-                      pr={2}
+                      pr={{ xs: 0, sm: 2 }}
                       fontWeight={500}
                       sx={{
                         color: "#ad1414",
                         cursor: "pointer",
-                        borderRight: "2px solid #dad9d9",
+                        borderRight: { xs: "none", sm: "2px solid #dad9d9" },
                       }}
                     >
                       View order details
                     </Typography>
                     <Typography
                       sx={{
-                        marginLeft: "10px",
+                        marginLeft: { xs: "0px", sm: "10px" },
                         display: "flex",
-                        minWidth: 100,
+                        minWidth: { xs: "auto", sm: 100 },
                         alignItems: "center",
                       }}
                       component="div"
@@ -313,11 +418,11 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       </LightTooltip>
                     </Typography>
                   </Typography>
-                </Typography>
+                </Box>
               </Box>
             </Grid>
           </Grid>
-          <Box p={3} sx={{ background: "#fff" }}>
+          <Box p={{ xs: 2, sm: 2.5, md: 3 }} sx={{ background: "#fff", borderRadius: "0 0 12px 12px" }}>
             <Typography component="div" mb={2}>
               {/* <H2 fontWeight={600}>Delivered 5 july 2024</H2> */}
               {/* <Typography>Package was handed to resident</Typography> */}
@@ -326,7 +431,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
             {/* Shop section - using items array */}
             {items.length > 0 && (
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <H4 sx={{color:'grey'}}>Shop name : { items[0]?.vendorData?.shop_name || 'Unknown'}</H4>
                   <Box
                     sx={{
@@ -336,7 +441,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       ml: 2,
                     }}
                   />
-                </Box>
+                </Box> */}
 
                 {items.map(product => (
                   <Product
@@ -360,10 +465,14 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
         open={openPopup}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        onClose={handleClosePopup}
+        fullWidth
+        maxWidth="md"
         sx={{
           ".MuiPaper-root": {
+            width: { xs: "calc(100% - 24px)", sm: "700px" },
             maxWidth: "700px",
-            width: "700px",
+            margin: { xs: "12px", sm: "32px" },
           },
           ".MuiDialogContent-root": {
             overflowY: "scroll",
@@ -480,9 +589,18 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       style={{ color: "red" }}
                     />
                   </Typography>
-                  <Typography mt={2} component="div" sx={{ display: "flex" }}>
+                  <Typography
+                    mt={2}
+                    component="div"
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: { xs: 1, sm: 0 },
+                    }}
+                  >
                     <Button
                       type="button"
+                      onClick={handleClosePopup}
                       sx={{
                         fontSize: "17px",
                         borderRadius: "4px",
@@ -490,7 +608,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                         background: "#e87100",
                         color: "#fff",
                         width: "100%",
-                        marginRight: "10px",
+                        marginRight: { xs: "0px", sm: "10px" },
                         "&:hover": { background: "#fb9331" },
                       }}
                     >
@@ -505,7 +623,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                         background: "#e87100",
                         color: "#fff",
                         width: "100%",
-                        marginLeft: "10px",
+                        marginLeft: { xs: "0px", sm: "10px" },
                         "&:hover": { background: "#fb9331" },
                       }}
                     >
@@ -522,12 +640,28 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
           sx={{
             position: "absolute",
             top: { lg: "17px", md: "20px", xs: "10px" },
-            right: { lg: "30px", md: "30px", xs: "10px" },
+            right: { lg: "22px", md: "22px", xs: "6px" },
+            minWidth: "auto",
           }}
         >
           <CloseIcon />
         </Button>
       </Dialog>
+      <MessagePopup
+        vendorName={order.items[0]?.vendor_name}
+        shopName={order?.vendorData?.shop_name}
+        shopImage={`${shopBaseUrl}/${order?.vendorData?.shop_icon}`}
+        openPopup={openMessagePopup}
+        receiverid={order?.vendor_id}
+        baseUrl={baseUrl}
+        // product_image={baseUrl + order?.productData?.items[0].image[0]}
+        productID={null}
+        productData={null} // start chat at suborder level
+        orderId={order?.order_id}
+        handleClosePopup={handleMessageClosePopup}
+        subOrderId={order.sub_order_id}
+        subOrderProducts={order.items} //products list in suborder
+      />
     </>
   );
 };

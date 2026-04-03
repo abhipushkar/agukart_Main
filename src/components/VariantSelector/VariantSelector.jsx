@@ -692,6 +692,14 @@ const VariantSelector = ({
     return attribute.edit_preview_image || attribute.preview_image || "";
   };
 
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [zoom]);
+
   const handleGuideClick = () => {
     setCurrentGuide({
       name: variant.guide_name,
@@ -738,9 +746,9 @@ const VariantSelector = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3, overflow: "hidden" }}>
+      <DialogContent sx={{ p: 0, overflow: "visible" }}>
         {currentGuide?.description && (
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ p: 3, pb: 0 }}>
             <Typography variant="body1" component="div">
               {parse(currentGuide.description)}
             </Typography>
@@ -749,32 +757,18 @@ const VariantSelector = ({
 
         {currentGuide?.file && currentGuide?.type === "image" && (
           <Box
+            ref={containerRef}
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: zoom === 1 ? "center" : "flex-start",
               height: "60vh",
-              overflow: zoom > 1 ? "auto" : "hidden", // 🔥 key fix
-              cursor: zoom > 1 ? "grab" : "default",
+              overflow: "auto",
             }}
           >
             <img
               src={currentGuide.file}
-              alt={currentGuide.name || "Guide Image"}
-              // onWheel={(e) => {
-              //   e.preventDefault();
-              //   setZoom((z) => Math.max(1, z + (e.deltaY < 0 ? 0.2 : -0.2)));
-              // }}
               style={{
-                maxWidth: "100%",   // ✅ always constrained
-                maxHeight: "100%",  // ✅ always constrained
-                width: "auto",
+                width: `${zoom * 100}%`,
                 height: "auto",
-                objectFit: "contain",
-                transform: `scale(${zoom})`,
-                transformOrigin: "center", // 🔥 important for scrolling
-                transition: "transform 0.3s ease",
-                borderRadius: "8px",
+                display: "block",
               }}
             />
           </Box>
