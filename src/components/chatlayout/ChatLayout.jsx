@@ -221,7 +221,6 @@ const ChatLayout = ({ children }) => {
         border={"1px solid #b6b6b6"}
         width={"100%"}
         m={0}
-        mb={4}
         spacing={3}
       >
         <Grid lg={2} md={3} xs={12} borderRight={"1px solid #b6b6b6"}>

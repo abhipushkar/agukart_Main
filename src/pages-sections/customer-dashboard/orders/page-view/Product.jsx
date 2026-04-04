@@ -230,6 +230,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
         handleClosePopup={handleMessageClosePopup}
         subOrderId={product?.sub_order_id || order?.sub_order_id}
         baseUrl={baseUrl}
+        subOrderProducts={order?.items || []}
       />
     </>
   );

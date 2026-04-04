@@ -660,7 +660,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
         orderId={order?.order_id}
         handleClosePopup={handleMessageClosePopup}
         subOrderId={order.sub_order_id}
-        subOrderProducts={order.items} //products list in suborder
+        subOrderProducts={order.items || []} //products list in suborder
       />
     </>
   );

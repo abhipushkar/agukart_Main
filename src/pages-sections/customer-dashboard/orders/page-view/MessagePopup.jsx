@@ -32,7 +32,7 @@ import { db, storage } from "../../../../../src/firebase/Firebase";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import useChat from "hooks/useChat";
 import { where, limit } from "firebase/firestore";
-
+import { useRouter } from 'next/navigation';
 
 
 const MessagePopup = ({
@@ -60,6 +60,7 @@ const MessagePopup = ({
   const fileInputRef = useRef(null);
   const receiverId = receiverid;
   const senderId = usercredentials?._id;
+  const router = useRouter();
 
   const chatQuery = query(
     collection(db, "chatRooms"),
@@ -142,7 +143,7 @@ const MessagePopup = ({
 
   const buildProductMessages = () => {
     // SUBORDER FLOW
-    if (subOrderProducts && subOrderProducts.length > 0) {
+    if (subOrderProducts && subOrderProducts.length > 0 && !productID && !productData) {
       const productMessages = subOrderProducts.map((p) => ({
         senderType: "user",
         text: "",
@@ -160,7 +161,7 @@ const MessagePopup = ({
             : "",
         },
         orderId: orderId,
-        subOrderId:subOrderId,
+        subOrderId: subOrderId,
       }));
 
       // 🔥 append actual user message at LAST
@@ -171,7 +172,7 @@ const MessagePopup = ({
         messageSenderId: senderId,
         isNotification: false,
         imageUrls: [],
-        orderId:orderId,
+        orderId: orderId,
         subOrderId: subOrderId
       });
 
@@ -182,10 +183,10 @@ const MessagePopup = ({
     return [
       {
         senderType: "user",
-        text: input?.trim() || "Hi",
+        text: "",
         createdAt: new Date(),
         messageSenderId: senderId,
-        isNotification: false,
+        isNotification: true,
         imageUrls: [],
         productId: productID || null,
         productData: {
@@ -193,7 +194,19 @@ const MessagePopup = ({
           price: productData?.sub_total || 0,
           imageUrl: product_image || "",
         },
+        orderId: orderId,
+        subOrderId: subOrderId
       },
+      {
+        senderType: "user",
+        text: input?.trim() || "Hi, I need help with this order",
+        createdAt: new Date(),
+        messageSenderId: senderId,
+        isNotification: false,
+        imageUrls: [],
+        orderId: orderId,
+        subOrderId: subOrderId
+      }
     ];
   };
 
@@ -276,7 +289,7 @@ const MessagePopup = ({
         console.log("FINAL CHAT PAYLOAD", productMessages);
         const productId = productID ?? "";
         let productdata = {};
-        if(productData){
+        if (productData) {
           productdata = {
             orderId: orderId,
             name: productData?.productData?.product_title,
@@ -290,6 +303,18 @@ const MessagePopup = ({
             customizationData: productData?.customizationData,
           };
         }
+        const mappedProducts = (subOrderProducts || []).map((item) => ({
+          orderId: orderId,
+          name: item?.productData?.product_title,
+          qty: item?.qty,
+          sale_price: item?.sub_total,
+          product_image: baseUrl + item?.productData?.image?.[0], // adjust if needed
+          isCombination: item?.isCombination,
+          variantData: item?.variantData,
+          variantAttributeData: item?.variantAttributeData,
+          customize: item?.customize,
+          customizationData: item?.customizationData,
+        }));
         await addDoc(collection(db, "chatRooms"), {
           text: productMessages,
           createdAt: new Date(),
@@ -303,7 +328,8 @@ const MessagePopup = ({
           productId: productId,
           productData: productdata,
           orderId: orderId,
-          subOrderId: subOrderId
+          subOrderId: subOrderId,
+          products: mappedProducts
         });
       }
       setInput("");
@@ -331,6 +357,22 @@ const MessagePopup = ({
   const formatDate = (timestamp) => {
     const date = new Date(timestamp?.seconds * 1000);
     return date?.toLocaleDateString();
+  };
+
+  const getExistingChatId = async () => {
+    const q = query(
+      collection(db, "chatRooms"),
+      where("receiverId", "==", receiverId),
+      where("user", "==", senderId),
+      where("subOrderId", "==", subOrderId),
+      limit(1)
+    );
+
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs[0].id;
+    }
+    return null;
   };
 
   return (
@@ -395,7 +437,17 @@ const MessagePopup = ({
                 />
               </Typography>
               <Typography component="div" ml={1}>
-                <Typography variant="h6" fontWeight={500} fontSize={16}>
+                <Typography variant="h6" fontWeight={500} fontSize={16}
+                  onClick={async () => {
+                    const chatId = await getExistingChatId();
+                    if (chatId) {
+                      handleClosePopup();
+                      router.push(`/messages?slug=${chatId}`);
+                    } else {
+                      console.log("Chat not created yet");
+                      // optionally show toast/snackbar
+                    }
+                  }}>
                   {vendorName} ({shopName})
                 </Typography>
                 <Typography sx={{ color: "#000" }}>
@@ -603,16 +655,16 @@ const MessagePopup = ({
                                     color: "#333",
                                     lineClamp: 2,
                                     '&:hover': {
-                                      textDecorationLine:"underline"
+                                      textDecorationLine: "underline"
                                     },
-                                    cursor:"pointer"
+                                    cursor: "pointer"
                                   }}
                                   onClick={() => {
                                     const url = `${msg.productLink}`
                                     window.open(url, "_blank");
                                   }}
                                 >
-                                  {parse(msg?.productData?.productTitle.slice(0,80) || "")}
+                                  {parse(msg?.productData?.productTitle.slice(0, 80) || "")}
                                 </Typography>
                                 <Typography
                                   sx={{ fontSize: 13, color: "gray" }}

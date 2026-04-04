@@ -303,11 +303,11 @@ const ChatBox = () => {
         p={3}
         component="div"
         sx={{
-          overflowY: "scroll",
-          minHeight: "100%",
-          height: "300px",
+          overflowY: "auto",
+          flex: 1,
+          minHeight: 0,
+          maxHeight:"500px",
           display: "flex",
-          flex: "1 1 auto",
           flexDirection: "column-reverse",
         }}
       >
