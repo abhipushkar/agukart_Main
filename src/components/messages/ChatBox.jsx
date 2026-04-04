@@ -21,6 +21,7 @@ import {
   getDocs,
   updateDoc,
   doc,
+  getDoc
 } from "firebase/firestore";
 import WallpaperIcon from "@mui/icons-material/Wallpaper";
 import useMyProvider from "hooks/useMyProvider";
@@ -56,6 +57,11 @@ const ChatBox = () => {
   console.log({ role });
 
   const handleRemoveAllNotification = async (venderID) => {
+    if (!slug || !usercredentials?._id) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return;
+    }
+
     console.log("venderIDvenderID", venderID);
 
     // Fetch all documents from 'chatRooms' collection
@@ -124,10 +130,15 @@ const ChatBox = () => {
   };
 
   useEffect(() => {
+    if (!slug || !usercredentials?._id) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return;
+    }
+
     if (slug) {
       handleRemoveAllNotification(slug);
     }
-  }, [slug, messages]);
+  }, [slug, usercredentials?._id]);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -148,34 +159,25 @@ const ChatBox = () => {
   };
 
   useEffect(() => {
-    const q = query(
-      collection(db, role === "admin" ? "composeChat" : "chatRooms"),
-      orderBy("createdAt", "asc")
+    const chatRef = doc(
+      db,
+      role === "admin" ? "composeChat" : "chatRooms",
+      slug
     );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const newMessages = snapshot?.docs?.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+    const unsubscribe = onSnapshot(chatRef, async (snapshot) => {
+      if (!snapshot.exists()) return;
 
-      const matchingDocument = newMessages?.filter((doc) => {
-        console.log("newMessagesnewMessagesnewMessagesnewMessages", doc);
-        return doc?.id === slug;
-      });
-      console.log("newMessagesnewMessages", matchingDocument);
-      const vendor_detail = await getSingleVendorDetails(
-        matchingDocument[0]?.receiverId
-      );
+      const data = snapshot.data();
+
+      const vendor_detail = await getSingleVendorDetails(data?.receiverId);
       setSingleVendorDetails(vendor_detail);
-      matchingDocument.forEach((data) => {
-        console.log("qwwwwwwwwwwwwdata", data, senderId);
 
-        const filterMsg = data?.text?.filter((msg) => {
-          return msg?.permanentDeleteUser !== usercredentials?._id;
-        });
-        setMessages(filterMsg);
-      });
+      const filterMsg = data?.text?.filter(
+        (msg) => msg?.permanentDeleteUser !== usercredentials?._id
+      );
+
+      setMessages(filterMsg || []);
     });
 
     return () => unsubscribe();
@@ -199,25 +201,20 @@ const ChatBox = () => {
     let imageUrls = [];
 
     if (input.trim() || files.length > 0) {
-      const querySnapshot = await getDocs(collection(db, "chatRooms"));
-      const documents = querySnapshot.docs.map((doc) => {
-        const docId = doc.id;
-        const docData = doc.data();
+      const chatRef = doc(
+        db,
+        role === "admin" ? "composeChat" : "chatRooms",
+        slug
+      );
 
-        // console.log("Document ID: ", docId);
-        // console.log("Document Data: ", docData);
+      const chatSnap = await getDoc(chatRef);
 
-        return {
-          id: docId,
-          data: docData,
-        };
-      });
+      if (!chatSnap.exists()) return;
 
-      console.log("All documents: ", documents);
-
-      const matchingDocument = documents?.find((doc) => {
-        return doc?.id === slug;
-      });
+      const matchingDocument = {
+        id: chatSnap.id,
+        data: chatSnap.data(),
+      };
 
       console.log("matchingDocumentmatchingDocument", matchingDocument);
 
@@ -231,23 +228,24 @@ const ChatBox = () => {
         console.log("Matching document:", matchingDocument);
 
         const existingText = matchingDocument.data.text || [];
-        const lastText =
-          existingText.length > 0
-            ? existingText[existingText.length - 1]
-            : null;
         const updatedText = [
           ...existingText,
           {
             senderType: "user",
-            text: input,
+            text: input.trim(),
             imageUrls: imageUrls,
-            createdAt: new Date(),
+            createdAt: {
+              seconds: Math.floor(Date.now() / 1000),
+            },
             messageSenderId: senderId,
             isNotification: false,
-            productId: lastText?.productId,
           },
         ];
-        await updateDoc(doc(db, "chatRooms", matchingDocument?.id), {
+        await updateDoc(doc(
+          db,
+          role === "admin" ? "composeChat" : "chatRooms",
+          matchingDocument.id
+        ), {
           text: updatedText,
           currentTime: new Date(),
         });
@@ -282,7 +280,7 @@ const ChatBox = () => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, index) =>
       urlRegex.test(part) ? (
-        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue",textDecoration: "underline" }}>
+        <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
           {part}
         </a>
       ) : (
@@ -323,7 +321,7 @@ const ChatBox = () => {
 
             return (
               <ListItem
-                key={msg.id}
+                key={index}
                 sx={{
                   margin: "24px 0",
                   padding: "0",
@@ -382,12 +380,12 @@ const ChatBox = () => {
                             sx={{
                               background: msg.messageSenderId === senderId ? "#e9e9e9" : "#fff",
                               boxShadow: "0 0 3px #000",
-                              border: "2px solid black", 
+                              border: "2px solid black",
                               borderRadius: "6px",
                               maxWidth: "340px",
                               minWidth: "75px",
                               textAlign: "center",
-                              mb: 1, 
+                              mb: 1,
                             }}
                           >
                             <img
@@ -411,36 +409,36 @@ const ChatBox = () => {
                           sx={{
                             background: msg.messageSenderId === senderId ? "#e9e9e9" : "#fff",
                             boxShadow: "0 0 3px #000",
-                            border: "1px solid #ccc", 
+                            border: "1px solid #ccc",
                             borderRadius: "6px",
-                            maxWidth:"100%",
+                            maxWidth: "100%",
                             minWidth: "75px",
                             textAlign: "initial",
-                            mt: 1, 
+                            mt: 1,
                           }}
                         >
                           <Typography
-                            sx={{ 
+                            sx={{
                               wordWrap: "break-word",
                               whiteSpace: "pre-line"
                             }}
                           >
                             {detectLink(msg.text || "")}
                           </Typography>
-                            {msg?.productLink && (
-                              <Typography sx={{ wordWrap: "break-word", marginTop: "15px" }}>
-                                <a href={msg.productLink} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
-                                  {msg.productLink}
-                                </a>
-                              </Typography>
-                            )}
-                            {msg?.shopLink && (
-                              <Typography sx={{ wordWrap: "break-word", marginTop: "15px" }}>
-                                <a href={msg.shopLink} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
-                                  {msg.shopLink}
-                                </a>
-                              </Typography>
-                            )}
+                          {msg?.productLink && (
+                            <Typography sx={{ wordWrap: "break-word", marginTop: "15px" }}>
+                              <a href={msg.productLink} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
+                                {msg.productLink}
+                              </a>
+                            </Typography>
+                          )}
+                          {msg?.shopLink && (
+                            <Typography sx={{ wordWrap: "break-word", marginTop: "15px" }}>
+                              <a href={msg.shopLink} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>
+                                {msg.shopLink}
+                              </a>
+                            </Typography>
+                          )}
                         </Typography>
                       )}
                     </div>
@@ -520,10 +518,10 @@ const ChatBox = () => {
                                 fontWeight: "bold",
                                 "&:hover": { background: "black" },
                               }}
-                              onClick={()=>{
-                                  const url = `${msg.productLink}`
-                                  window.open(url, "_blank");
-                                }
+                              onClick={() => {
+                                const url = `${msg.productLink}`
+                                window.open(url, "_blank");
+                              }
                               }
                             >
                               Buy It Now
@@ -557,8 +555,8 @@ const ChatBox = () => {
                             display: "flex",
                             flexDirection: "column",
                             textAlign: "left",
-                            marginBottom:"53px",
-                            gap:"7px"
+                            marginBottom: "53px",
+                            gap: "7px"
                           }}
                         >
                           <Box
@@ -591,10 +589,10 @@ const ChatBox = () => {
                                 fontWeight: "bold",
                                 "&:hover": { background: "black" },
                               }}
-                              onClick={()=>{
-                                  const url = `${msg.shopLink}`
-                                  window.open(url, "_blank");
-                                }
+                              onClick={() => {
+                                const url = `${msg.shopLink}`
+                                window.open(url, "_blank");
+                              }
                               }
                             >
                               Visit Now

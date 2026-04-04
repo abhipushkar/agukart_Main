@@ -70,7 +70,7 @@ const ChatLayout = ({ children }) => {
   const [singleVendorDetails, setSingleVendorDetails] = useState({});
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [productData,setProductDate] = useState({});
+  const [productData, setProductDate] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [anchorEl2, setAnchorEl2] = useState(null);
@@ -140,26 +140,32 @@ const ChatLayout = ({ children }) => {
     setExpanded(isExpanded ? panel : null);
   };
 
-   useEffect(() => {
-    const q = query(
-      collection(db, role === "admin" ? "composeChat" : "chatRooms"),
-      orderBy("createdAt", "asc")
-    );
+  useEffect(() => {
+    if (!slug) {
+      setSingleVendorDetails({});
+      return;
+    }
 
-    const unsubscribe = onSnapshot(q, async(snapshot) => {
-      const newMessages = snapshot?.docs?.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const matchingDocument = newMessages?.filter((doc) => {
-        return doc?.id === slug;
-      });
-      const vendor_detail = await getSingleVendorDetails(matchingDocument[0]?.receiverId);
-      setSingleVendorDetails(vendor_detail);
+    const collectionName = role === "admin" ? "composeChat" : "chatRooms";
+    const chatRef = doc(db, collectionName, slug);
+
+    const unsubscribe = onSnapshot(chatRef, async (snapshot) => {
+      if (!snapshot.exists()) {
+        setSingleVendorDetails({});
+        return;
+      }
+
+      const chatData = snapshot.data();
+
+      if (!chatData?.receiverId) return;
+
+      const vendor_detail = await getSingleVendorDetails(chatData.receiverId);
+      setSingleVendorDetails(vendor_detail || {});
     });
 
     return () => unsubscribe();
-  }, [slug, usercredentials?._id, role]);
+  }, [slug, role]);
+
   return (
     <Box>
       <Box
@@ -222,9 +228,11 @@ const ChatLayout = ({ children }) => {
           <Box
             p={2}
             sx={{
-              height: "100%",
+              height: "100vh",
+              position: "sticky",
+              top: 0,
               background: "#f6f9fc",
-              display: { lg: "block", md: "block", xs: "none" },
+              overflowY: "auto",
             }}
           >
             <List>
@@ -234,7 +242,7 @@ const ChatLayout = ({ children }) => {
                 <Button
                   onClick={() => router.push("/messages/inbox")}
                   sx={{
-                    background: pathname === "/messages/inbox"? "#dedede" : "none",
+                    background: pathname === "/messages/inbox" ? "#dedede" : "none",
                     width: "100%",
                     justifyContent: "space-between",
                     transition: "all 500ms",
@@ -312,8 +320,8 @@ const ChatLayout = ({ children }) => {
                     justifyContent: "space-between",
                     transition: "all 500ms",
                     fontWeight: "500",
-                    background: pathname === "/messages"  ? "#dedede"
-                    : "none",
+                    background: pathname === "/messages" ? "#dedede"
+                      : "none",
                     border: "none",
                     borderRadius: "30px",
                     padding: "5px 16px",
@@ -363,7 +371,7 @@ const ChatLayout = ({ children }) => {
                     background:
                       pathname === "/messages/pin"
                         ? "#dedede"
-                        :"none",
+                        : "none",
                     border: "none",
                     borderRadius: "30px",
                     padding: "5px 16px",
@@ -428,7 +436,12 @@ const ChatLayout = ({ children }) => {
           <Box>
             <Box
               p={2}
-              sx={{ background: "#f6f9fc" }}
+              sx={{
+                background: "#f6f9fc",
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+              }}
               borderBottom={"1px solid #b6b6b6"}
             >
               <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -771,7 +784,7 @@ const ChatLayout = ({ children }) => {
                 </Typography>
               </Typography>
               {
-                Object.keys(productData).length > 0 &&  
+                Object.keys(productData).length > 0 &&
                 <Box mt={2}>
                   <Typography fontSize={16} fontWeight={600} pb={1}>
                     Item

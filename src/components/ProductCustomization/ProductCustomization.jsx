@@ -183,46 +183,41 @@ const DropdownCustomization = ({
   const [currentGuide, setCurrentGuide] = useState(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [scale, setScale] = useState(1);
+  const transformRef = useRef(null);
   const hasGuide = customization?.guide && (customization.guide?.guide_file || customization.guide?.guide_name || customization.guide?.guide_description);
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = 0;
-    }
-  }, [zoom]);
 
   const renderImageViewer = () => (
     <Box sx={{ height: "60vh", width: "100%" }}>
       <TransformWrapper
+        ref={transformRef}
         initialScale={1}
         minScale={1}
         maxScale={5}
         wheel={{ step: 0.2 }}
         doubleClick={{ disabled: false }}
         pinch={{ step: 5 }}
+        onPanningStart={() => setIsDragging(true)}
+        onPanningStop={() => setIsDragging(false)}
+        onZoomStop={(ref) => setScale(ref.state.scale)}
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
-            {/* 🔥 Controls */}
-            <Box sx={{ position: "absolute", right: 16, top: 16, zIndex: 10 }}>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Button onClick={zoomIn} variant="contained">+</Button>
-                <Button onClick={zoomOut} variant="contained">-</Button>
-                <Button onClick={resetTransform} variant="contained">Reset</Button>
-              </Box>
-            </Box>
 
             {/* 🔥 Viewer */}
             <TransformComponent
               wrapperStyle={{
                 width: "100%",
                 height: "60vh",
+                cursor:
+                  isDragging
+                    ? "grabbing"
+                    : "grab"
               }}
               contentStyle={{
                 width: "100%",
@@ -256,12 +251,6 @@ const DropdownCustomization = ({
     });
     setGuideOpen(true);
   };
-
-  useEffect(() => {
-    if (guideOpen) {
-      setZoom(1);
-    }
-  }, [guideOpen]);
 
   const renderGuideModal = () => (
     <Dialog
@@ -349,21 +338,35 @@ const DropdownCustomization = ({
 
       {currentGuide?.file && currentGuide?.type === "image" && (
         <DialogActions sx={{ p: 2 }}>
-          {/* Zoom controls */}
-
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button onClick={() => setZoom((z) => z + 0.5)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomIn()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom +
             </Button>
-            <Button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomOut()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom -
             </Button>
-            <Button onClick={() => setZoom(1)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.resetTransform()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Reset
             </Button>
+
           </Box>
-        </DialogActions>)
-      }
+        </DialogActions>
+      )}
     </Dialog>
   );
 

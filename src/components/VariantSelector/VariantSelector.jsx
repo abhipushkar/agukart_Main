@@ -21,6 +21,10 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import parse from "html-react-parser";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
+import {
+  TransformWrapper,
+  TransformComponent,
+} from "react-zoom-pan-pinch";
 
 // Debounce utility
 const debounce = (func, wait) => {
@@ -692,13 +696,6 @@ const VariantSelector = ({
     return attribute.edit_preview_image || attribute.preview_image || "";
   };
 
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = 0;
-    }
-  }, [zoom]);
 
   const handleGuideClick = () => {
     setCurrentGuide({
@@ -709,6 +706,10 @@ const VariantSelector = ({
     });
     setGuideOpen(true);
   };
+
+  const transformRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [scale, setScale] = useState(1);
 
   const renderGuideModal = () => (
     <Dialog
@@ -756,21 +757,51 @@ const VariantSelector = ({
         )}
 
         {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box
-            ref={containerRef}
-            sx={{
-              height: "60vh",
-              overflow: "auto",
-            }}
-          >
-            <img
-              src={currentGuide.file}
-              style={{
-                width: `${zoom * 100}%`,
-                height: "auto",
-                display: "block",
-              }}
-            />
+          <Box sx={{ height: "60vh", width: "100%" }}>
+            <TransformWrapper
+              ref={transformRef}
+              initialScale={1}
+              minScale={1}
+              maxScale={5}
+              wheel={{ step: 0.2 }}
+              doubleClick={{ disabled: false }}
+              pinch={{ step: 5 }}
+              onPanningStart={() => setIsDragging(true)}
+              onPanningStop={() => setIsDragging(false)}
+              onZoomStop={(ref) => setScale(ref.state.scale)}
+            >
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  {/* 🔥 Viewer */}
+                  <TransformComponent
+                    wrapperStyle={{
+                      width: "100%",
+                      height: "60vh",
+                      cursor:
+                        isDragging
+                          ? "grabbing"
+                          : "grab"
+                    }}
+                    contentStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <img
+                      src={currentGuide.file}
+                      alt="guide"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        objectFit: "contain",
+                        display: "block",
+                        margin: "auto",
+                      }}
+                    />
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
           </Box>
         )}
 
@@ -813,21 +844,35 @@ const VariantSelector = ({
 
       {currentGuide?.file && currentGuide?.type === "image" && (
         <DialogActions sx={{ p: 2 }}>
-          {/* Zoom controls */}
-
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button onClick={() => setZoom((z) => z + 0.5)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomIn()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom +
             </Button>
-            <Button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomOut()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom -
             </Button>
-            <Button onClick={() => setZoom(1)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.resetTransform()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Reset
             </Button>
+
           </Box>
-        </DialogActions>)
-      }
+        </DialogActions>
+      )}
     </Dialog>
   );
 
