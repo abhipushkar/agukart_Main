@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
 
 const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product }) => {
-  console.log({ order, product, shopBaseUrl }, "DFhrtfyhrthjrthrt");
+  console.log({ order, product, shopBaseUrl, baseUrl }, "DFhrtfyhrthjrthrt");
   const router = useRouter();
   const { addToast } = useToasts();
   const { currency } = useCurrency();
@@ -110,50 +110,45 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                 <span style={{ fontWeight: "600" }}>Qty :</span>
                 <span> {product.qty}</span>
               </Typography>
-              <Typography component="div" mt={1}>
+              <Box
+                mt={1}
+                display="flex"
+                width={{ xs: "100%", sm: "auto" }}
+                maxWidth={{ xs: "100%", sm: "none" }}
+                flexDirection={{ xs: "column", sm: "row", md: "row" }}
+                gap={2}
+              >
                 <Button
                   onClick={() =>
                     router.push(`/products/${product.product_id}`)
                   }
                   variant="contained"
+                  size="small"
                   sx={{
-                    background: "yellow",
+                    background: "#efe8bd",
                     borderRadius: "30px",
+                    width: { xs: "100%", sm: "130px" },
+                    minWidth: { xs: "100%", sm: "130px" },
+                    textTransform: "none",
                   }}
                 >
                   Buy it again
                 </Button>
-                {/* <Button
-                                      variant="contained"
-                                      sx={{
-                                        background: "#fff",
-                                        borderRadius: "30px",
-                                        border: "1px solid #000",
-                                        marginTop: {
-                                          lg: "0",
-                                          md: "0",
-                                          xs: "12px",
-                                        },
-                                        marginLeft: {
-                                          lg: "12px",
-                                          md: "12px",
-                                          xs: "0",
-                                        },
-                                      }}
-                                    >
-                                      view Your item
-                                    </Button> */}
                 <Button
                   onClick={handleMessageClickPopup}
                   variant="contained"
+                  size="small"
                   sx={{
-                    background: "yellow",
+                    background: "#efe8bd",
                     borderRadius: "30px",
+                    width: { xs: "100%", sm: "130px" },
+                    minWidth: { xs: "100%", sm: "130px" },
+                    textTransform: "none",
                   }}
                 >
                   Help with order
                 </Button>
-              </Typography>
+              </Box>
             </Typography>
           </Box>
         </Grid>
@@ -218,23 +213,6 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                     write a product review
                   </Button>
                 )}
-
-              {product.delivery_status !== "No tracking" ? (
-                <Button
-                  variant="contained"
-                  sx={{
-                    marginBottom: "16px",
-                    background: "#fff",
-                    borderRadius: "30px",
-                    border: "1px solid #000",
-                    width: "100%",
-                  }}
-                >
-                  Track package
-                </Button>
-              ) : (
-                ""
-              )}
             </Typography>
           </Box>
         </Grid>
@@ -250,6 +228,9 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
         product_image={baseUrl + product?.productData?.image[0]}
         orderId={order?.order_id}
         handleClosePopup={handleMessageClosePopup}
+        subOrderId={product?.sub_order_id || order?.sub_order_id}
+        baseUrl={baseUrl}
+        subOrderProducts={order?.items || []}
       />
     </>
   );

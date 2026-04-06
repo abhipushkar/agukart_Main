@@ -279,13 +279,16 @@ const ChatContextProvider = ({ children }) => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!usercredentials?._id) return;
       const newMessages = snapshot?.docs?.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
       const vendorIds = newMessages.map((chat) => chat.receiverId);
-      getVendorDetails(vendorIds);
+      if (vendorIds.length) {
+        getVendorDetails(vendorIds);
+      }
 
       let matchingDocument = newMessages?.filter((doc) => {
         return doc?.user === usercredentials?._id;
@@ -332,7 +335,7 @@ const ChatContextProvider = ({ children }) => {
         );
 
         const filteredData = isDeletefilterData?.filter((item) =>
-          item.text.some((msg) => msg.messageSenderId !== usercredentials?._id),
+          item?.text?.some((msg) => msg.messageSenderId !== usercredentials?._id),
         );
         setChats(filteredData);
         return;
@@ -348,7 +351,7 @@ const ChatContextProvider = ({ children }) => {
 
       if (pathname === "/messages/unread") {
         const filteredData = matchingDocument?.filter((item) =>
-          item.text.some(
+          item?.text?.some(
             (msg) =>
               msg.messageSenderId !== usercredentials?._id &&
               msg?.isNotification === false,
@@ -549,7 +552,10 @@ const ChatContextProvider = ({ children }) => {
       if (item?.vendorName?.includes(searchText)) {
         return true;
       }
-      return item?.text?.some((t) => t.text?.includes(searchText));
+      return item?.text?.some((t) =>
+        t?.text?.includes(searchText) ||
+        t?.productData?.productTitle?.includes(searchText)
+      )
     });
 
     setChats(filteredArr);

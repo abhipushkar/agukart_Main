@@ -25,7 +25,7 @@ const Carousel = forwardRef((props, ref) => {
     dots = false,
     arrows = true,
     slidesToShow = 5,
-    spaceBetween = 10,
+    spaceBetween = 5,
     dotStyles = {
       mt: 4,
     },

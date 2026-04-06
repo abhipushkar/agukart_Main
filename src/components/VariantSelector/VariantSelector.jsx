@@ -21,6 +21,10 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import parse from "html-react-parser";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
+import {
+  TransformWrapper,
+  TransformComponent,
+} from "react-zoom-pan-pinch";
 
 // Debounce utility
 const debounce = (func, wait) => {
@@ -67,7 +71,11 @@ const VariantSelector = ({
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [zoom, setZoom] = useState(1);
-
+  const hasSetInitialPageRef = useRef(false);
+  const textModeContentRef = useRef(null);
+  const [showTextModeExpandControls, setShowTextModeExpandControls] = useState(false);
+  const TEXT_MODE_COLLAPSED_HEIGHT_XS = 140;
+  const TEXT_MODE_COLLAPSED_HEIGHT_MD = 150;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"), {
     noSsr: true,
@@ -78,13 +86,55 @@ const VariantSelector = ({
 
   const ITEMS_PER_PAGE = columns * rows;
   const pages = useMemo(() => {
+    const hasThumbnail = (attr) => {
+      const thumbnail = attr?.thumbnail;
+      if (thumbnail === null || thumbnail === undefined) return false;
+      if (typeof thumbnail === "string") return thumbnail.trim() !== "";
+      return Boolean(thumbnail);
+    };
+
+    const orderedAttributes = [
+      ...variant.attributes.filter((attr) => hasThumbnail(attr)),
+      ...variant.attributes.filter((attr) => !hasThumbnail(attr)),
+    ];
+
     const result = [];
-    for (let i = 0; i < variant.attributes.length; i += ITEMS_PER_PAGE) {
-      result.push(variant.attributes.slice(i, i + ITEMS_PER_PAGE));
+    for (let i = 0; i < orderedAttributes.length; i += ITEMS_PER_PAGE) {
+      result.push(orderedAttributes.slice(i, i + ITEMS_PER_PAGE));
     }
     return result;
   }, [variant.attributes, ITEMS_PER_PAGE]);
   const totalPages = pages.length;
+
+  useEffect(() => {
+    if (hasSetInitialPageRef.current) return;
+    if (!pages.length) return;
+
+    const selectedPageIndex = pages.findIndex((page) =>
+      page.some(
+        (attr) => attr.id === selectedValue || attr.value === selectedValue
+      )
+    );
+
+    if (selectedPageIndex < 0) {
+      hasSetInitialPageRef.current = true;
+      return;
+    }
+
+    setCurrentPage(selectedPageIndex);
+
+    // Ensure the slider starts on the page containing the selected variant
+    requestAnimationFrame(() => {
+      if (!scrollRef.current) return;
+      const pageWidth = scrollRef.current.offsetWidth;
+      scrollRef.current.scrollTo({
+        left: selectedPageIndex * pageWidth,
+        behavior: "auto",
+      });
+    });
+
+    hasSetInitialPageRef.current = true;
+  }, [pages, selectedValue]);
 
   // Check if variant has guide information
   const hasGuide =
@@ -267,6 +317,35 @@ const VariantSelector = ({
       setZoom(1);
     }
   }, [guideOpen]);
+
+  useEffect(() => {
+    const measureTextModeOverflow = () => {
+      if (!textModeContentRef.current) return;
+      const contentHeight = textModeContentRef.current.scrollHeight || 0;
+      const shouldShowControls = contentHeight > TEXT_MODE_COLLAPSED_HEIGHT_XS;
+      setShowTextModeExpandControls(shouldShowControls);
+      if (!shouldShowControls) {
+        setExpanded(false);
+      }
+    };
+
+    measureTextModeOverflow();
+
+    let observer;
+    if (window.ResizeObserver && textModeContentRef.current) {
+      observer = new ResizeObserver(() => {
+        measureTextModeOverflow();
+      });
+      observer.observe(textModeContentRef.current);
+    }
+
+    window.addEventListener("resize", measureTextModeOverflow);
+
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener("resize", measureTextModeOverflow);
+    };
+  }, [variant.attributes, isMobile]);
 
   // Scroll to page function
   // const scrollToPage = useCallback(
@@ -617,6 +696,7 @@ const VariantSelector = ({
     return attribute.edit_preview_image || attribute.preview_image || "";
   };
 
+
   const handleGuideClick = () => {
     setCurrentGuide({
       name: variant.guide_name,
@@ -626,6 +706,10 @@ const VariantSelector = ({
     });
     setGuideOpen(true);
   };
+
+  const transformRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [scale, setScale] = useState(1);
 
   const renderGuideModal = () => (
     <Dialog
@@ -663,9 +747,9 @@ const VariantSelector = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3, overflow: "hidden" }}>
+      <DialogContent sx={{ p: 0, overflow: "visible" }}>
         {currentGuide?.description && (
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ p: 3, pb: 0 }}>
             <Typography variant="body1" component="div">
               {parse(currentGuide.description)}
             </Typography>
@@ -673,35 +757,51 @@ const VariantSelector = ({
         )}
 
         {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: zoom === 1 ? "center" : "flex-start",
-              height: "60vh",
-              overflow: zoom > 1 ? "auto" : "hidden", // 🔥 key fix
-              cursor: zoom > 1 ? "grab" : "default",
-            }}
-          >
-            <img
-              src={currentGuide.file}
-              alt={currentGuide.name || "Guide Image"}
-              // onWheel={(e) => {
-              //   e.preventDefault();
-              //   setZoom((z) => Math.max(1, z + (e.deltaY < 0 ? 0.2 : -0.2)));
-              // }}
-              style={{
-                maxWidth: "100%",   // ✅ always constrained
-                maxHeight: "100%",  // ✅ always constrained
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
-                transform: `scale(${zoom})`,
-                transformOrigin: "center", // 🔥 important for scrolling
-                transition: "transform 0.3s ease",
-                borderRadius: "8px",
-              }}
-            />
+          <Box sx={{ height: "60vh", width: "100%" }}>
+            <TransformWrapper
+              ref={transformRef}
+              initialScale={1}
+              minScale={1}
+              maxScale={5}
+              wheel={{ step: 0.2 }}
+              doubleClick={{ disabled: false }}
+              pinch={{ step: 5 }}
+              onPanningStart={() => setIsDragging(true)}
+              onPanningStop={() => setIsDragging(false)}
+              onZoomStop={(ref) => setScale(ref.state.scale)}
+            >
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  {/* 🔥 Viewer */}
+                  <TransformComponent
+                    wrapperStyle={{
+                      width: "100%",
+                      height: "60vh",
+                      cursor:
+                        isDragging
+                          ? "grabbing"
+                          : "grab"
+                    }}
+                    contentStyle={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <img
+                      src={currentGuide.file}
+                      alt="guide"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        objectFit: "contain",
+                        display: "block",
+                        margin: "auto",
+                      }}
+                    />
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
           </Box>
         )}
 
@@ -744,27 +844,41 @@ const VariantSelector = ({
 
       {currentGuide?.file && currentGuide?.type === "image" && (
         <DialogActions sx={{ p: 2 }}>
-          {/* Zoom controls */}
-
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button onClick={() => setZoom((z) => z + 0.5)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomIn()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom +
             </Button>
-            <Button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomOut()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom -
             </Button>
-            <Button onClick={() => setZoom(1)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.resetTransform()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Reset
             </Button>
+
           </Box>
-        </DialogActions>)
-      }
+        </DialogActions>
+      )}
     </Dialog>
   );
 
 
   const renderParentVariantGrid = () => {
-    const allHaveThumbnails = variant.attributes.every(
+    const anyHaveThumbnails = variant.attributes.some(
       (attr) => getPreviewImage(attr) || attr.thumbnail
     );
 
@@ -812,16 +926,10 @@ const VariantSelector = ({
         </Box>
 
         {/* ===== THUMBNAIL MODE (UNCHANGED) ===== */}
-        {allHaveThumbnails ? (
+        {anyHaveThumbnails ? (
           <>
             <Box
               sx={{ mb: 1, position: "relative" }}
-              onMouseLeave={() => {
-                if (onHoverOut) {
-                  onHoverOut();
-                  setHoveredAttrValue(null);
-                }
-              }}
             >
 
               <Box
@@ -861,6 +969,12 @@ const VariantSelector = ({
                             setHoveredAttrValue(attr.value);
                           }
                         }}
+                        onMouseLeave={() => {
+                          if (onHoverOut) {
+                            onHoverOut();
+                            setHoveredAttrValue(null);
+                          }
+                        }}
                       >
                         <VariantButton
                           attr={attr}
@@ -870,6 +984,7 @@ const VariantSelector = ({
                           variantId={variant.id}
                           priceText={renderAttributePrice(attr)}
                           getPreviewImage={getPreviewImage}
+                          anyHaveThumbnails={anyHaveThumbnails}
                         />
                       </Box>
                     ))}
@@ -921,13 +1036,13 @@ const VariantSelector = ({
               sx={{
                 position: "relative",
                 overflow: "hidden",
-                maxHeight: {
-                  xs: expanded ? "none" : "140px",
-                  md: expanded ? "none" : "150px"
-                }, // ~3 rows
+                maxHeight: expanded || !showTextModeExpandControls
+                  ? "none"
+                  : isMobile ? `${TEXT_MODE_COLLAPSED_HEIGHT_XS}px` : `${TEXT_MODE_COLLAPSED_HEIGHT_MD}px`,
               }}
             >
               <Box
+                ref={textModeContentRef}
                 sx={{
                   display: "flex",
                   flexWrap: "wrap",
@@ -943,6 +1058,12 @@ const VariantSelector = ({
                         setHoveredAttrValue(attr.value);
                       }
                     }}
+                    onMouseLeave={() => {
+                      if (onHoverOut) {
+                        onHoverOut();
+                        setHoveredAttrValue(null);
+                      }
+                    }}
                   >
                     <VariantButton
                       attr={attr}
@@ -952,6 +1073,7 @@ const VariantSelector = ({
                       variantId={variant.id}
                       priceText={renderAttributePrice(attr)}
                       getPreviewImage={getPreviewImage}
+                      anyHaveThumbnails={anyHaveThumbnails}
                     />
                   </Box>
                 ))}
@@ -959,7 +1081,7 @@ const VariantSelector = ({
               </Box>
 
               {/* Fade overlay */}
-              {!expanded && (
+              {!expanded && showTextModeExpandControls && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -989,7 +1111,7 @@ const VariantSelector = ({
                 </Box>
               )}
             </Box>
-            {expanded && (
+            {expanded && showTextModeExpandControls && (
               <Box
                 sx={{
                   display: "flex",
@@ -1611,8 +1733,9 @@ const VariantButton = ({
   variantId,
   priceText,
   getPreviewImage,
+  anyHaveThumbnails
 }) => {
-  const hasThumbnail = Boolean(getPreviewImage(attr) || attr.thumbnail);
+  const hasThumbnail = anyHaveThumbnails;
 
   return (
     <Box
@@ -1675,7 +1798,7 @@ const VariantButton = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                whiteSpace: "nowrap",     // ✅ prevents line break
+                // whiteSpace: "nowrap",     // ✅ prevents line break
                 overflow: "hidden",
                 textOverflow: "ellipsis", // optional safety
                 backgroundColor: isDisabled ? "#f0f0f0" : "#f8f9fa",

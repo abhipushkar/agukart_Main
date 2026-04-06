@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -20,6 +20,10 @@ import {
 } from "@mui/material";
 import { ExpandMore, Close as CloseIcon } from "@mui/icons-material";
 import parse from "html-react-parser";
+import {
+  TransformWrapper,
+  TransformComponent,
+} from "react-zoom-pan-pinch";
 
 const ProductCustomization = ({
   customizationData,
@@ -179,11 +183,64 @@ const DropdownCustomization = ({
   const [currentGuide, setCurrentGuide] = useState(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [scale, setScale] = useState(1);
+  const transformRef = useRef(null);
   const hasGuide = customization?.guide && (customization.guide?.guide_file || customization.guide?.guide_name || customization.guide?.guide_description);
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
+
+
+  const renderImageViewer = () => (
+    <Box sx={{ height: "60vh", width: "100%" }}>
+      <TransformWrapper
+        ref={transformRef}
+        initialScale={1}
+        minScale={1}
+        maxScale={5}
+        wheel={{ step: 0.2 }}
+        doubleClick={{ disabled: false }}
+        pinch={{ step: 5 }}
+        onPanningStart={() => setIsDragging(true)}
+        onPanningStop={() => setIsDragging(false)}
+        onZoomStop={(ref) => setScale(ref.state.scale)}
+      >
+        {({ zoomIn, zoomOut, resetTransform }) => (
+          <>
+
+            {/* 🔥 Viewer */}
+            <TransformComponent
+              wrapperStyle={{
+                width: "100%",
+                height: "60vh",
+                cursor:
+                  isDragging
+                    ? "grabbing"
+                    : "grab"
+              }}
+              contentStyle={{
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              <img
+                src={currentGuide.file}
+                alt="guide"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "auto",
+                }}
+              />
+            </TransformComponent>
+          </>
+        )}
+      </TransformWrapper>
+    </Box>
+  );
 
   const handleGuideClick = () => {
     setCurrentGuide({
@@ -194,12 +251,6 @@ const DropdownCustomization = ({
     });
     setGuideOpen(true);
   };
-
-  useEffect(() => {
-    if (guideOpen) {
-      setZoom(1);
-    }
-  }, [guideOpen]);
 
   const renderGuideModal = () => (
     <Dialog
@@ -246,34 +297,7 @@ const DropdownCustomization = ({
           </Box>
         )}
 
-        {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: zoom === 1 ? "center" : "flex-start",
-              height: "60vh",
-              overflow: zoom > 1 ? "auto" : "hidden", // 🔥 key fix
-              cursor: zoom > 1 ? "grab" : "default",
-            }}
-          >
-            <img
-              src={currentGuide.file}
-              alt={currentGuide.name || "Guide Image"}
-              style={{
-                maxWidth: "100%",   // ✅ always constrained
-                maxHeight: "100%",  // ✅ always constrained
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
-                transform: `scale(${zoom})`,
-                transformOrigin: "center", // 🔥 important for scrolling
-                transition: "transform 0.3s ease",
-                borderRadius: "8px",
-              }}
-            />
-          </Box>
-        )}
+        {currentGuide?.file && currentGuide?.type === "image" && renderImageViewer()}
 
         {currentGuide?.file && currentGuide?.type === "video" && (
           <Box sx={{ textAlign: "center", mb: 2 }}>
@@ -314,21 +338,35 @@ const DropdownCustomization = ({
 
       {currentGuide?.file && currentGuide?.type === "image" && (
         <DialogActions sx={{ p: 2 }}>
-          {/* Zoom controls */}
-
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button onClick={() => setZoom((z) => z + 0.5)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomIn()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom +
             </Button>
-            <Button onClick={() => setZoom((z) => Math.max(1, z - 0.5))} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.zoomOut()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Zoom -
             </Button>
-            <Button onClick={() => setZoom(1)} variant="outlined" sx={{ color: "GrayText", borderColor: "#d1d1d1" }}>
+
+            <Button
+              onClick={() => transformRef.current?.resetTransform()}
+              variant="outlined"
+              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
+            >
               Reset
             </Button>
+
           </Box>
-        </DialogActions>)
-      }
+        </DialogActions>
+      )}
     </Dialog>
   );
 

@@ -91,9 +91,10 @@ const SearchIconWrapper = styled("div")(({ theme }) => ({
 export default function OrdersPageView() {
   const { token } = useAuth();
   const [allOrders, setAllOrders] = useState([]);
+  const [subOrders, setSubOrders] = useState([]);
   console.log(allOrders, "--------------allorders");
   const [baseUrl, setBaseUrl] = useState("");
-  const [shopBaseUrl,setShopBaseUrl] = useState("");
+  const [shopBaseUrl, setShopBaseUrl] = useState("");
   const [filterOrders, setFilterOrders] = useState(3);
   const [totalCount, setTotalCount] = useState(0);
   const [showLoading, setShowLoading] = useState(true);
@@ -111,11 +112,46 @@ export default function OrdersPageView() {
         `user/orderList?startDate=${startDate}&endDate=${endDate}&offset=${offset}`,
         token
       );
-      console.log(res, "my res ponse is this");
+      // console.log(res, "my res ponse is this");
       if (res.status === 200) {
         setBaseUrl(res.data.base_url);
         setShopBaseUrl(res.data.shop_base_url);
         setAllOrders(res.data.sales);
+        if (res.data?.sales?.length) {
+          setSubOrders(() => {
+            const grouped = {};
+            const sales = res.data.sales;
+
+            sales.forEach((sale) => {
+              if (sale?.saleDetaildata?.length) {
+                sale.saleDetaildata.forEach((item) => {
+                  const key = item.sub_order_id;
+                  const { saleDetaildata, ...safeSale } = sale;
+                  if (!grouped[key]) {
+                    grouped[key] = {
+                      sub_order_id: key,
+                      items: [],
+                      ...safeSale,
+                      order_id: sale.order_id,
+                      sale_id: sale._id,
+                      vendor_id: item.vendor_id,
+                      vendorData: item.vendorData
+                    };
+                  }
+
+                  grouped[key].items.push(item);
+                });
+              }
+            });
+
+            const result = Object.values(grouped).sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+
+            console.log(result);
+            return result;
+          });
+        }
         setTotalCount(res.data.salesCount);
         let roundedNum = Math.ceil(res.data.salesCount / 10);
         setTotalPages(roundedNum);
@@ -166,87 +202,87 @@ export default function OrdersPageView() {
   };
 
   const OrderListShimmer = () => {
-  return (
-    <>
-      {[...Array(10)].map((_, index) => (
-        <Box key={index} mb={3}>
-          <Grid
-            container
-            p={3}
-            spacing={2}
-            sx={{ background: "#f0f2f2", margin: "0", width: "100%" }}
-          >
-            <Grid item lg={7} md={6} xs={12}>
-              <Box display="flex" alignItems="center" gap={5}>
-                <Box>
-                  <Typography fontSize={14} fontWeight={500}>
-                    Order placed
-                  </Typography>
-                  <Skeleton variant="text" width={100} height={20} />
+    return (
+      <>
+        {[...Array(10)].map((_, index) => (
+          <Box key={index} mb={3}>
+            <Grid
+              container
+              p={3}
+              spacing={2}
+              sx={{ background: "#f0f2f2", margin: "0", width: "100%" }}
+            >
+              <Grid item lg={7} md={6} xs={12}>
+                <Box display="flex" alignItems="center" gap={5}>
+                  <Box>
+                    <Typography fontSize={14} fontWeight={500}>
+                      Order placed
+                    </Typography>
+                    <Skeleton variant="text" width={100} height={20} />
+                  </Box>
+                  <Box>
+                    <Typography fontSize={14} fontWeight={500}>
+                      Total
+                    </Typography>
+                    <Skeleton variant="text" width={80} height={20} />
+                  </Box>
+                  <Box>
+                    <Typography fontSize={14} fontWeight={500}>
+                      Ship
+                    </Typography>
+                    <Skeleton variant="text" width={120} height={20} />
+                  </Box>
                 </Box>
-                <Box>
-                  <Typography fontSize={14} fontWeight={500}>
-                    Total
-                  </Typography>
-                  <Skeleton variant="text" width={80} height={20} />
-                </Box>
-                <Box>
-                  <Typography fontSize={14} fontWeight={500}>
-                    Ship
-                  </Typography>
-                  <Skeleton variant="text" width={120} height={20} />
-                </Box>
-              </Box>
-            </Grid>
+              </Grid>
 
-            <Grid item lg={5} md={6} xs={12}>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: {
-                    lg: "flex-end",
-                    md: "flex-end",
-                    xs: "flex-start",
-                  },
-                }}
-              >
-                <Skeleton variant="text" width={150} height={20} />
-                <Box display="flex" alignItems="center" gap={2} mt={1}>
-                  <Skeleton variant="rectangular" width={120} height={30} />
-                  <Skeleton variant="rectangular" width={100} height={30} />
+              <Grid item lg={5} md={6} xs={12}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: {
+                      lg: "flex-end",
+                      md: "flex-end",
+                      xs: "flex-start",
+                    },
+                  }}
+                >
+                  <Skeleton variant="text" width={150} height={20} />
+                  <Box display="flex" alignItems="center" gap={2} mt={1}>
+                    <Skeleton variant="rectangular" width={120} height={30} />
+                    <Skeleton variant="rectangular" width={100} height={30} />
+                  </Box>
                 </Box>
-              </Box>
+              </Grid>
             </Grid>
-          </Grid>
-          <Box p={3} sx={{ background: "#fff" }}>
-            {[...Array(2)].map((__, idx) => (
-              <Box
-                key={idx}
-                display="flex"
-                alignItems="center"
-                gap={2}
-                mb={2}
-              >
-                <Skeleton
-                  variant="rectangular"
-                  width={80}
-                  height={80}
-                  sx={{ borderRadius: "8px" }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Skeleton variant="text" width="60%" height={20} />
-                  <Skeleton variant="text" width="40%" height={20} />
-                  <Skeleton variant="text" width="30%" height={20} />
+            <Box p={3} sx={{ background: "#fff" }}>
+              {[...Array(2)].map((__, idx) => (
+                <Box
+                  key={idx}
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                  mb={2}
+                >
+                  <Skeleton
+                    variant="rectangular"
+                    width={80}
+                    height={80}
+                    sx={{ borderRadius: "8px" }}
+                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="60%" height={20} />
+                    <Skeleton variant="text" width="40%" height={20} />
+                    <Skeleton variant="text" width="30%" height={20} />
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              ))}
+            </Box>
           </Box>
-        </Box>
-      ))}
-    </>
-  );
-};
+        ))}
+      </>
+    );
+  };
 
 
   return (
@@ -363,7 +399,7 @@ export default function OrdersPageView() {
             </Grid>
           </Grid>
           {showLoading ? (
-           <OrderListShimmer/>
+            <OrderListShimmer />
           ) : allOrders.length === 0 ? (
             <Box
               sx={{
@@ -381,9 +417,9 @@ export default function OrdersPageView() {
               </Box>
             </Box>
           ) : (
-            allOrders.map((order) => {
+            subOrders.map((order) => {
               return (
-                <Order key= {order?._id} baseUrl={baseUrl} shopBaseUrl={shopBaseUrl} filterOrders = {filterOrders} getAllOrders= {getAllOrders} order={order}/>
+                <Order key={order?._id} baseUrl={baseUrl} shopBaseUrl={shopBaseUrl} filterOrders={filterOrders} getAllOrders={getAllOrders} order={order} />
               );
             })
           )}

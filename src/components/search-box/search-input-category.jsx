@@ -72,7 +72,7 @@ export default function SearchInputWithCategory() {
   const INPUT_PROPS = {
     sx: {
       border: 0,
-      height: 44,
+      height: { xs: 30, md: 36 },
       padding: 0,
       overflow: "hidden",
       backgroundColor: "grey.200",
@@ -98,11 +98,11 @@ export default function SearchInputWithCategory() {
         backgroundColor="#2b3445"
         height="100%"
         sx={{ cursor: "pointer" }}
-        onClick={()=>{
+        onClick={() => {
           router.push(`/search-product-list?q=${searchTerms}`);
         }}
       >
-        <Search sx={{ fontSize: 17, color: "#fff", cursor: "pointer" }} onClick={handleClick}/>
+        <Search sx={{ fontSize: 17, color: "#fff", cursor: "pointer" }} onClick={handleClick} />
       </Box>
     ),
   };
@@ -110,7 +110,7 @@ export default function SearchInputWithCategory() {
   useEffect(() => {
     if (searchTerms) {
       searchProduct();
-    }else{
+    } else {
       setProductList([])
     }
   }, [searchTerms]);
@@ -134,7 +134,7 @@ export default function SearchInputWithCategory() {
 
       {/* SHOW SEARCH RESULT LIST */}
       {productList.length > 0 ? (
-        <SearchResult productList={productList}/>
+        <SearchResult productList={productList} />
       ) : null}
     </Box>
   );
