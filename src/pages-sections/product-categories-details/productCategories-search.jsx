@@ -115,8 +115,9 @@ export default function ProductCategoriesSearchPageView() {
   console.log("asfhdsuifydsuisubcategoryMenus", subcategoryMenus);
   const [isLoading, setIsLoading] = useState(true);
   const parts = pathname.split("/");
-  const data = parts[parts.length - 1];
-  console.log("isLoadingisLoading", data);
+  // const slug = parts.indexOf("search")
+  const data = Array.isArray(slug) && slug.length>1 ? slug[slug.length-1]: parts[parts.length - 1];
+  console.log("isLoadingisLoading", data, parts, pathname, slug);
   // const newPathname = pathname.replace('/products-categories', '/products');
   const newPathname = slug.join("/");
 

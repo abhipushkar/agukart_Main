@@ -8,12 +8,12 @@ import { Wrapper } from "./styles";
 
 // =============================================================
 export default function CategoryListItem(props) {
-  const { title, subcategorySlug, _id } = props;
+  const { title, subcategorySlug, _id, originalSlug } = props;
   return (
     <Wrapper>
       <Link
         href={{
-          pathname: `/products-categories/search/${subcategorySlug}`,
+          pathname: `/products-categories/search/${originalSlug}`,
           query: { title: title, _id: _id },
         }}
       >

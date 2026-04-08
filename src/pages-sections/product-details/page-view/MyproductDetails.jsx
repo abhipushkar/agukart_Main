@@ -861,22 +861,40 @@ const MyproductDetails = ({ res }) => {
         );
 
         if (isInternalVariant) {
-          const attribute = myproduct?.variant_attribute_id?.find(
+          let attribute = myproduct?.variant_attribute_id?.find(
             (attr) => attr._id === attributeId
           );
 
-          if (attribute) {
-            const variant = myproduct?.variant_id?.find(
+          // 🔥 HANDLE CUSTOM VARIANT
+          if (!attribute) {
+            // fallback: custom variant
+            attribute = {
+              attribute_value: attributeId, // "groove"
+              variant: variantName, // "pattern"
+              isCustom: true,
+            };
+          }
+
+          let variant = null;
+
+          // 🔥 global variant
+          if (!attribute.isCustom) {
+            variant = myproduct?.variant_id?.find(
               (v) => v._id === attribute.variant
             );
-
-            if (variant) {
-              variantArray.push({
-                variantName: variant.variant_name,
-                attributeName: attribute.attribute_value,
-              });
-            }
           }
+
+          // 🔥 custom variant fallback
+          if (!variant) {
+            variant = {
+              variant_name: variantName,
+            };
+          }
+
+          variantArray.push({
+            variantName: variant.variant_name,
+            attributeName: attribute.attribute_value,
+          });
         }
       });
     }
@@ -988,23 +1006,40 @@ const MyproductDetails = ({ res }) => {
 
             if (isInternalVariant) {
               // Find the attribute details from variant_attribute_id
-              const attribute = myproduct?.variant_attribute_id?.find(
+              let attribute = myproduct?.variant_attribute_id?.find(
                 (attr) => attr._id === attributeId
               );
 
-              if (attribute) {
-                // Find the variant to get the variant_name (not the _id)
-                const variant = myproduct?.variant_id?.find(
+              // 🔥 HANDLE CUSTOM VARIANT
+              if (!attribute) {
+                // fallback: custom variant
+                attribute = {
+                  attribute_value: attributeId, // "groove"
+                  variant: variantName, // "pattern"
+                  isCustom: true,
+                };
+              }
+
+              let variant = null;
+
+              // 🔥 global variant
+              if (!attribute.isCustom) {
+                variant = myproduct?.variant_id?.find(
                   (v) => v._id === attribute.variant
                 );
-
-                if (variant) {
-                  internalVariants.push({
-                    variantName: variant.variant_name,
-                    attributeName: attribute.attribute_value,
-                  });
-                }
               }
+
+              // 🔥 custom variant fallback
+              if (!variant) {
+                variant = {
+                  variant_name: variantName,
+                };
+              }
+
+              internalVariants.push({
+                variantName: variant.variant_name,
+                attributeName: attribute.attribute_value,
+              });
             }
           }
         );

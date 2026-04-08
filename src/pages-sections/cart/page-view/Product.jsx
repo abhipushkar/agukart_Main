@@ -87,30 +87,48 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
     // Find matching combination for internal variants
     const findInternalCombination = useMemo(() => {
-        if (!product?.combinationData || product.combinationData.length === 0) return null;
+        if (!product?.combinationData?.length) return null;
         if (!hasInternalVariants) return null;
 
-        // Get all variant combinations from the variants array
-        const selectedVariantValues = product.variants.map(v => v.attributeName);
+        const selectedValues = product.variants.map(v =>
+            v.attributeName.trim().toLowerCase()
+        );
 
-        // Search through combinationData for a match
-        for (const combinationGroup of product.combinationData) {
-            for (const combination of combinationGroup.combinations || []) {
-                // Check if all selected variants match the combination
-                if (combination.combValues && Array.isArray(combination.combValues)) {
-                    const combValuesSet = new Set(combination.combValues.map(v => v.trim().toLowerCase()));
-                    const selectedValuesSet = new Set(selectedVariantValues.map(v => v.trim().toLowerCase()));
+        let pairMatch = null;
+        let singleMatch = null;
 
-                    // Check if sets are equal (order doesn't matter)
-                    if (combValuesSet.size === selectedValuesSet.size &&
-                        [...combValuesSet].every(value => selectedValuesSet.has(value))) {
-                        return combination;
+        for (const group of product.combinationData) {
+            for (const combo of group.combinations || []) {
+
+                if (!combo.combValues) continue;
+
+                const comboValues = combo.combValues.map(v =>
+                    v.trim().toLowerCase()
+                );
+
+                // ✅ CASE 1: TWO-VARIANT COMBO (PRIORITY)
+                if (comboValues.length === 2) {
+                    const match = comboValues.every(val =>
+                        selectedValues.includes(val)
+                    );
+
+                    if (match) {
+                        pairMatch = combo;
+                    }
+                }
+
+                // ✅ CASE 2: SINGLE VARIANT COMBO (FALLBACK)
+                if (comboValues.length === 1) {
+                    if (selectedValues.includes(comboValues[0])) {
+                        singleMatch = combo;
                     }
                 }
             }
         }
 
-        return null;
+        // 🔥 PRIORITY RETURN
+        return pairMatch || singleMatch || null;
+
     }, [product?.variants, product?.combinationData, hasInternalVariants]);
 
     // Get combinations based on selected variants
@@ -162,9 +180,27 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 if (internalCombination.isVisible === "false") {
                     return 0;
                 }
-                if (internalCombination.qty && +internalCombination.qty > 0) {
+
+                // 🔥 FIX START
+
+                // Case 1: qty NOT controlled → treat as available
+                if (
+                    internalCombination.qty === "" ||
+                    internalCombination.qty === null ||
+                    internalCombination.qty === undefined
+                ) {
+                    return 10; // or any safe default (UI limit already caps at 10)
+                }
+
+                // Case 2: qty controlled
+                if (+internalCombination.qty > 0) {
                     return +internalCombination.qty;
                 }
+
+                // Case 3: qty = 0 → sold out
+                return 0;
+
+                // 🔥 FIX END
             }
 
             return +product.stock || 0;
@@ -177,9 +213,27 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 if (internalCombination.isVisible === "false") {
                     return 0;
                 }
-                if (internalCombination.qty && +internalCombination.qty > 0) {
+
+                // 🔥 FIX START
+
+                // Case 1: qty NOT controlled → treat as available
+                if (
+                    internalCombination.qty === "" ||
+                    internalCombination.qty === null ||
+                    internalCombination.qty === undefined
+                ) {
+                    return 10; // or any safe default (UI limit already caps at 10)
+                }
+
+                // Case 2: qty controlled
+                if (+internalCombination.qty > 0) {
                     return +internalCombination.qty;
                 }
+
+                // Case 3: qty = 0 → sold out
+                return 0;
+
+                // 🔥 FIX END
             }
 
             return +product.stock || 0;

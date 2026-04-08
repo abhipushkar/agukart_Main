@@ -81,6 +81,8 @@ const VariantSelector = ({
     noSsr: true,
   });
 
+  console.log(variant);
+
   const columns = isMobile ? 3 : 5;
   const rows = isMobile ? 1 : 2;
 
@@ -1332,7 +1334,7 @@ const VariantSelector = ({
                       >
                         Select an option
                       </Box>
-                      <Button
+                      {variant.viewAllVisible && (<Button
                         onClick={handleViewAllClick}
                         size="small"
                         variant="text"
@@ -1344,7 +1346,7 @@ const VariantSelector = ({
                         }}
                       >
                         View All
-                      </Button>
+                      </Button>)}
                     </Box>
                   )}
 
@@ -1516,7 +1518,7 @@ const VariantSelector = ({
                     <>
                       {variant.attributes.map((attr) => {
                         const isDisabled = isAttributeDisabled(attr);
-                        const isVisible = isAttributeVisible(attr);
+                        const isVisible = isAttributeVisible(attr) || variant.isCustom === true;
                         const previewImage = getPreviewImage(attr);
                         const priceText = renderAttributePriceForDropdown(attr);
                         const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
