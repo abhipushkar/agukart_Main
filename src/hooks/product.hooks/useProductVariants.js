@@ -122,7 +122,7 @@ export const useProductVariants = (product) => {
                 images: attr.main_images || [],
                 thumbnail: attr.thumbnail || "",
                 preview_image: attr.preview_image || "",
-              })).filter(attr=>new Set(product.variant_attribute_id.map(a=>a._id)).has(attr.id)) || [],
+              })).filter(attr => new Set(product.variant_attribute_id.map(a => a._id)).has(attr.id)) || [],
           });
         });
       }
@@ -159,11 +159,46 @@ export const useProductVariants = (product) => {
     // Handle internal variants - ONLY show variants that are in product_variants
     if (product?.product_variants?.length > 0) {
       product.product_variants.forEach((variant) => {
+
         // Find corresponding variant info from variant_id array for guide data
         const guideData =
           variant?.guide && variant?.guide.length > 0
             ? variant?.guide[0]
             : null;
+
+        //check if variant is custom
+        const customVariant = product.variations_data.find(v => v.name === variant.variant_name && v.type === 'custom');
+        if (customVariant) {
+
+          const customVariantAttributes = variant.variant_attributes.map((attr) => {
+            return {
+              id: attr.attribute,
+              value: attr.attribute,
+              images: attr?.main_images || [],
+              thumbnail: attr?.thumbnail || "",
+              preview_image: attr?.preview_image || "",
+              edit_preview_image: attr?.edit_preview_image || "",
+              price: null,
+              quantity: null,
+              priceRange: null,
+              quantityRange: null,
+              isSoldOut: false,
+            };
+          });
+
+          allVariants.push({
+            type: "internal",
+            id: variant.variant_name,
+            name: variant.variant_name,
+            guide_name: guideData?.guide_name || "",
+            guide_file: guideData?.guide_file || "",
+            guide_type: guideData?.guide_type || "",
+            guide_description: guideData?.guide_description || "",
+            attributes: customVariantAttributes,
+            viewAllVisible: variant.viewAll === "true" ? true : false,
+            isCustom: true
+          });
+        }
 
         const variantInfo = product.variant_id?.find(
           (v) =>
@@ -241,9 +276,9 @@ export const useProductVariants = (product) => {
           ])
         );
         const orderedVariantAttributes = new Array(filteredAttributes.length);
-        filteredAttributes.forEach(item =>{
+        filteredAttributes.forEach(item => {
           const index = orderMap.get(item.value)
-          if(index!==undefined)
+          if (index !== undefined)
             orderedVariantAttributes[index] = item;
         });
         const cleanOrderedAttributes = orderedVariantAttributes.filter(Boolean);
@@ -257,6 +292,7 @@ export const useProductVariants = (product) => {
             guide_type: guideData?.guide_type || "",
             guide_description: guideData?.guide_description || "",
             attributes: cleanOrderedAttributes,
+            viewAllVisible: variant.viewAll === "true" ? true : false
           });
         } else {
           console.error(
@@ -337,45 +373,67 @@ export const useProductVariants = (product) => {
 
           // Handle value1 and name1
           if (combo.value1 && combo.name1) {
+            let attribute = null;
+
+            // 🔥 FIRST: try global variant (existing logic)
             const variant = product.variant_id?.find(
               (v) => v.variant_name === combo.name1,
             );
+
             if (variant) {
-              const attribute = product.variant_attribute_id?.find(
+              attribute = product.variant_attribute_id?.find(
                 (attr) =>
                   attr.variant === variant._id &&
                   attr.attribute_value === combo.value1,
               );
-              if (attribute) {
-                attributeIds.push(attribute._id);
-                attributes.push({
-                  id: attribute._id,
-                  variant: combo.name1,
-                  value: combo.value1,
-                });
-              }
+            }
+
+            // 🔥 SECOND: fallback for CUSTOM variant
+            if (!attribute) {
+              attribute = {
+                _id: combo.value1, // ⚠️ IMPORTANT: use value as ID
+                variant: combo.name1,
+                attribute_value: combo.value1,
+              };
+            }
+
+            if (attribute) {
+              attributeIds.push(attribute._id);
+              attributes.push({
+                id: attribute._id,
+                variant: combo.name1,
+                value: combo.value1,
+              });
             }
           }
 
           // Handle value2 and name2 (for 2-attribute combinations)
           if (combo.value2 && combo.name2) {
+            let attribute = null;
             const variant = product.variant_id?.find(
               (v) => v.variant_name === combo.name2,
             );
             if (variant) {
-              const attribute = product.variant_attribute_id?.find(
+              attribute = product.variant_attribute_id?.find(
                 (attr) =>
                   attr.variant === variant._id &&
                   attr.attribute_value === combo.value2,
               );
-              if (attribute) {
-                attributeIds.push(attribute._id);
-                attributes.push({
-                  id: attribute._id,
-                  variant: combo.name2,
-                  value: combo.value2,
-                });
-              }
+            }
+            if (!attribute) {
+              attribute = {
+                _id: combo.value2, // ⚠️ IMPORTANT: use value as ID
+                variant: combo.name2,
+                attribute_value: combo.value2,
+              };
+            }
+            if (attribute) {
+              attributeIds.push(attribute._id);
+              attributes.push({
+                id: attribute._id,
+                variant: combo.name2,
+                value: combo.value2,
+              });
             }
           }
 
@@ -388,7 +446,9 @@ export const useProductVariants = (product) => {
                 ? parseFloat(combo.price)
                 : null;
             const qty =
-              combo.qty && combo.qty !== "" ? parseInt(combo.qty, 10) : null;
+              combo.qty === "" || combo.qty === null || combo.qty === undefined
+                ? "NOT_CONTROLLED"
+                : parseInt(combo.qty, 10);
             const isVisible =
               combo.isVisible === true || combo.isVisible === "true";
 
@@ -419,7 +479,7 @@ export const useProductVariants = (product) => {
                 if (price !== null && !isNaN(price)) {
                   attrData.prices.add(price);
                 }
-                if (qty !== null && !isNaN(qty)) {
+                if (qty !== "NOT_CONTROLLED" && qty !== null && !isNaN(qty)) {
                   attrData.quantities.add(qty);
                 }
                 attrData.isVisible.add(isVisible); // Store visibility status for this combination
@@ -653,7 +713,11 @@ export const useProductVariants = (product) => {
 
           hasAnyVisibleCombo = true;
 
-          if (Number(combo.qty) > 0) {
+          // 🔥 IMPORTANT FIX
+          if (combo.qty === "" || combo.qty === null || combo.qty === undefined) {
+            // quantity not controlled → ALWAYS AVAILABLE
+            hasStock = true;
+          } else if (Number(combo.qty) > 0) {
             hasStock = true;
           }
         });
@@ -1341,7 +1405,7 @@ export const useProductVariants = (product) => {
 
           // Check if this combo matches all controlling quantity selections AND is visible
           const matches = quantitySelectionIds.every((id) => ids.includes(id));
-          if (matches && combo.qty !== null && combo.isVisible) {
+          if (matches && combo.qty !== "NOT_CONTROLLED" && combo.isVisible) {
             foundAnyVisible = true;
             if (combo.qty > 0) {
               minQuantity = Math.min(minQuantity, combo.qty);
@@ -1551,7 +1615,11 @@ export const useProductVariants = (product) => {
 
           hasAnyVisibleCombo = true;
 
-          if (Number(combo.qty) > 0) {
+          // 🔥 IMPORTANT FIX
+          if (combo.qty === "" || combo.qty === null || combo.qty === undefined) {
+            // quantity not controlled → ALWAYS AVAILABLE
+            hasStock = true;
+          } else if (Number(combo.qty) > 0) {
             hasStock = true;
           }
         });

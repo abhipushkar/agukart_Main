@@ -37,7 +37,7 @@ export default function CategoryList({ open, position = "absolute" }) {
   return (
     <StyledRoot open={open} position={position}>
       {categoryMenus?.map((item) => {
-        const { title, slug, _id } = item;
+        const { title, slug, _id, originalSlug } = item;
         // const MegaMenu = component === MegaMenu1.name ? MegaMenu1 : MegaMenu2;
         return (
           <CategoryListItem
@@ -46,6 +46,7 @@ export default function CategoryList({ open, position = "absolute" }) {
             key={title}
             title={title}
             subcategorySlug={slug}
+            originalSlug={originalSlug}
           />
         );
       })}

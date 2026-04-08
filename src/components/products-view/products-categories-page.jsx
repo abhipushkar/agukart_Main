@@ -36,7 +36,15 @@ export default function ProductsCategoriesPage({
     </Grid>
   );
 
-
+  console.log({products,
+  title,
+  childCategories,
+  SetProductIncreaseValue,
+  isproductIncreaseValue,
+  SetIsProductIncreaseValue,
+  subcategoryMenus,
+  isLoading,
+  productlength,}, "Categoties");
   const handleClick = () => {
     SetIsProductIncreaseValue(!isproductIncreaseValue);
     if (isproductIncreaseValue) {
