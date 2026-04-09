@@ -718,7 +718,7 @@ const DropdownCustomization = ({
           >
             <MenuItem value="" sx={{ display: "flex", justifyContent: "space-between" }}>
               <span>Select an option</span>
-              <Tooltip title="View all options" placement="right" arrow>
+              {customization.viewAll === 'true' && (<Tooltip title="View all options" placement="right" arrow>
                 <Button
                   onClick={() => setIsViewAllOpen(true)}
                   size="small"
@@ -732,7 +732,7 @@ const DropdownCustomization = ({
                 >
                   View All
                 </Button>
-              </Tooltip>
+              </Tooltip>)}
             </MenuItem>
             {customization.optionList
               .filter(
