@@ -429,23 +429,30 @@ const DropdownCustomization = ({
                 const isSelected = selectedValue?.optionName === option.optionName;
 
                 // Get image source
-                let imageSrc = null;
-                if (option.main_images && option.main_images.length > 0) {
-                  const validImage = option.main_images.find(img => img !== null);
-                  if (validImage) {
-                    imageSrc = validImage;
-                  }
-                }
-                if (!imageSrc && option.preview_image) {
-                  imageSrc = option.preview_image;
-                }
-                const showThumbnail = !imageSrc && option.thumbnail;
+                // 🔥 CLEAN IMAGES
+                const cleanImages = (option.main_images || []).filter(
+                  (img) =>
+                    img &&
+                    typeof img === "string" &&
+                    img.trim() !== "" &&
+                    img !== "null"
+                );
 
-                if (!imageSrc && productMainImage) {
+                // ✅ IMAGE RESOLUTION
+                let imageSrc = null;
+
+                if (cleanImages.length > 0) {
+                  imageSrc = cleanImages[0];
+                } else if (option.preview_image) {
+                  imageSrc = option.preview_image;
+                } else if (productMainImage) {
                   imageSrc = Array.isArray(productMainImage)
                     ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
                     : `https://api.agukart.com/uploads/product/${productMainImage}`;
                 }
+
+                // ✅ THUMBNAIL LOGIC
+                const showThumbnail = cleanImages.length === 0 && !option.preview_image && option.thumbnail;
 
                 return (
                   <Box
@@ -745,6 +752,8 @@ const DropdownCustomization = ({
                 <MenuItem
                   key={index}
                   value={option.optionName}
+                  onMouseEnter={() => handleOptionHover(option)}
+                  onMouseLeave={handleOptionHoverOut}
                   sx={{
                     py: 1.5,
                     px: 2,

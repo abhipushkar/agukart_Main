@@ -439,7 +439,7 @@ export default function LoginCartButtons({ toggleDialog, toggleSidenav }) {
         </IconButton>
       )}
       {
-        usercredentials?.designation_id != "4" &&   <Badge badgeContent={state?.cart?.reduce((total, cartItem) => total + cartItem?.products?.length, 0)} color="primary">
+        usercredentials?.designation_id != "4" &&   <Badge badgeContent={state?.cart?.reduce((total, cartItem) => total + cartItem?.products?.length, 0)} sx={{ mt: 0.3 }} color="primary">
         <IconButton onClick={toggleSidenav}>
           <ShoppingCartIcon sx={ICON_COLOR} />
         </IconButton>

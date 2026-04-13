@@ -92,7 +92,18 @@ const ProductImageGallery = ({
         // }
 
         if (hoveredImage?.type === "hover-preview") {
-            return hoveredImage.url;
+            // VALID IMAGE → show preview
+            if (hoveredImage.url) {
+                return hoveredImage.url;
+            }
+
+            // ❗ FALLBACK → product main image
+            if (media && media.length > 0) {
+                const firstMedia = media[0];
+                return firstMedia?.url || firstMedia;
+            }
+
+            return null;
         }
 
         const mediaItem = getCurrentMediaItem();
@@ -454,7 +465,7 @@ const ProductImageGallery = ({
                     )}
 
                     {/* Show hover indicator when hovered image is displayed */}
-                    {hoveredImage && (
+                    {hoveredImage?.type === "hover-preview" && hoveredImage?.url && (
                         <Box
                             sx={{
                                 position: "absolute",
