@@ -1380,20 +1380,27 @@ const VariantSelector = ({
                           if (!isVisible) return null;
 
                           // Get image source
-                          let imageSrc = null;
-                          if (attr.images && attr.images.length > 0) {
-                            imageSrc = attr.images[0];
-                          } else if (attr.preview_image) {
-                            imageSrc = attr.preview_image;
-                          } else if (productMainImage) {
-                            imageSrc = Array.isArray(productMainImage)
-                              ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
-                              : `https://api.agukart.com/uploads/product/${productMainImage}`;
-                          }
+                          // (ignore nulls, "", undefined)
+const cleanImages = (attr.images || []).filter(
+  (img) => img && typeof img === "string" && img.trim() !== ""
+);
+
+// FINAL IMAGE RESOLUTION (priority based)
+let imageSrc = null;
+
+if (cleanImages.length > 0) {
+  imageSrc = cleanImages[0]; // always valid now
+} else if (attr.preview_image) {
+  imageSrc = attr.preview_image;
+} else if (productMainImage) {
+  imageSrc = Array.isArray(productMainImage)
+    ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
+    : `https://api.agukart.com/uploads/product/${productMainImage}`;
+}
 
                           // Get thumbnail image
                           const thumbnailSrc = attr.thumbnail;
-                          const showThubnail = !(attr.images && attr.images.length > 0) && !attr.preview_image
+                          const showThubnail = cleanImages.length === 0 && !attr.preview_image;
                           return (
                             <Box
                               key={attr.id}
@@ -1518,7 +1525,7 @@ const VariantSelector = ({
                     <>
                       {variant.attributes.map((attr) => {
                         const isDisabled = isAttributeDisabled(attr);
-                        const isVisible = isAttributeVisible(attr) || variant.isCustom === true;
+                        const isVisible = isAttributeVisible(attr);
                         const previewImage = getPreviewImage(attr);
                         const priceText = renderAttributePriceForDropdown(attr);
                         const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);

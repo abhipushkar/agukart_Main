@@ -368,6 +368,7 @@ const MyproductDetails = ({ res }) => {
         optionName: option.optionName,
       });
     }
+    else setHoveredCustomizationImage(null)
   };
 
   const handleCustomizationOptionHoverOut = () => {
