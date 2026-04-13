@@ -1185,7 +1185,7 @@ const MyproductDetails = ({ res }) => {
         display: "flex",
         paddingLeft: { xs: "94px", md: 1 },
         paddingRight: { xs: "25px", md: 1 },
-        pt: 2,
+        pt: 0.2,
       }}
     >
       <Box

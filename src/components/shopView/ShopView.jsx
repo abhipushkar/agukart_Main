@@ -451,7 +451,7 @@ const ShopView = () => {
               />
             )}
           </Box>
-          <SectionCreator p={3} mb={0}>
+          <SectionCreator px={3} py={vendorDetail.shop_banner.length > 1 ? 0: 1} mb={0}>
             <Box
               container
               pb={3}
