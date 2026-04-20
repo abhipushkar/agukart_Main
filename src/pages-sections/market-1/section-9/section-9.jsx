@@ -35,7 +35,7 @@ export default function Section9() {
 
       <Grid container spacing={3}>
         {data?.map((item, ind) => <Grid item lg={2} md={3} sm={4} xs={6} key={ind}>
-            <Link href={`/products/search/${item.slug}`}>
+            <Link href={`/category/search/${item.slug}`}>
               <StyledCard elevation={1}>
                 <Image width={52} height={52} alt="fashion" src={item.image} />
                 <Paragraph fontWeight="600">{item.name}</Paragraph>

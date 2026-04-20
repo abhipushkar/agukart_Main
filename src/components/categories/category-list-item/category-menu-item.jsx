@@ -13,8 +13,7 @@ export default function CategoryListItem(props) {
     <Wrapper>
       <Link
         href={{
-          pathname: `/products-categories/search/${originalSlug}`,
-          query: { title: title, _id: _id },
+          pathname: `/category/${subcategorySlug}`,
         }}
       >
         <div className="category-dropdown-link">

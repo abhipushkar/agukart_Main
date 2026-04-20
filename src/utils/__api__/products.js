@@ -39,7 +39,7 @@ try {
 
 
 const searchProducts = cache(async (name, category) => {
-  const response = await axios.get("/api/products/search", {
+  const response = await axios.get("/api/category", {
     params: {
       name,
       category

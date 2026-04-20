@@ -149,12 +149,12 @@ export default function ProductSearchPageView() {
           <Box mt={3}>
             <Box textAlign="center" mt={4} mb={2}>
               <H5 fontWeight={400} color="primary.main">
-                {childCategories.map((cat, i) => (
+                {childCategories.length && (childCategories?.map((cat, i) => (
                   <Fragment key={cat._id}>
                     {i !== childCategories.length - 1 ? (
                       <>
                         <Link
-                          href={`/products-categories/search/${cat.slug}?title=${cat.title}&_id=${cat._id}`}
+                          href={`/category/${cat.slug}?title=${cat.title}&_id=${cat._id}`}
                           passHref
                         >
                           <Box
@@ -175,7 +175,7 @@ export default function ProductSearchPageView() {
                       <span>{cat.title}</span>
                     )}
                   </Fragment>
-                ))}
+                )))}
               </H5>
               <Typography variant="h4" fontWeight={700} mt={1}>
                 {childCategories?.[childCategories.length - 1]?.title}

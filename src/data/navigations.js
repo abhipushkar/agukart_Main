@@ -18,41 +18,41 @@ import Microphone from "icons/Microphone";
 export const categoryMenus = [{
   icon: Microphone,
   title: "Music",
-  href: "/products-categories/search/music"
+  href: "/category/music"
 }, {
   icon: MakeUp,
   title: "Health & Beauty",
-  href: "/products-categories/search/health&beauty"
+  href: "/category/health&beauty"
 }, {
   icon: Pets,
   title: "Pets",
-  href: "/products-categories/search/pets"
+  href: "/category/pets"
 }, {
   icon: TeddyBear,
   title: "Baby Toys",
-  href: "/products-categories/search/baby-toys"
+  href: "/category/baby-toys"
 }, {
   icon: Food,
   title: "Groceries",
-  href: "/products-categories/search/groceries"
+  href: "/category/groceries"
 }, {
   icon: Car,
   title: "Automotive",
-  href: "/products-categories/search/automotive"
+  href: "/category/automotive"
 },{
   icon: Microphone,
   title: "Music",
-  href: "/products-categories/search/music"
+  href: "/category/music"
 }, {
   icon: MakeUp,
   title: "Health & Beauty",
-  href: "/products-categories/search/health&beauty"
+  href: "/category/health&beauty"
 }, {
   icon: Pets,
   title: "Pets",
-  href: "/products-categories/search/pets"
+  href: "/category/pets"
 }, {
   icon: TeddyBear,
   title: "Baby Toys",
-  href: "/products-categories/search/baby-toys"
+  href: "/category/baby-toys"
 }];

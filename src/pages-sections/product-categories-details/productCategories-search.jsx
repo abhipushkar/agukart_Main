@@ -31,6 +31,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import CloseIcon from "@mui/icons-material/Close";
 
 import Select from "@mui/material/Select";
+import { Fragment } from "react";
+import Link from "next/link";
 
 // MUI ICON COMPONENTS
 
@@ -60,6 +62,7 @@ import { getAPI, getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import { CircularProgress, Pagination, Skeleton } from "@mui/material";
 import Product from "components/product/Product";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
+import { categories } from "components/search-box/categories";
 // TYPE
 
 const SORT_OPTIONS = [
@@ -89,8 +92,8 @@ const initialFilters = {
 };
 export default function ProductCategoriesSearchPageView() {
   const searchPrams = useSearchParams();
-  const _id = searchPrams.get("_id");
-  const title = searchPrams.get("title");
+  const [title, setTitle] = useState("");
+  const [id, setId] = useState("");
   let queryPage = searchPrams.get("page");
   queryPage = queryPage ? parseInt(queryPage) : "";
 
@@ -116,8 +119,8 @@ export default function ProductCategoriesSearchPageView() {
   const [isLoading, setIsLoading] = useState(true);
   const parts = pathname.split("/");
   // const slug = parts.indexOf("search")
-  const data = Array.isArray(slug) && slug.length>1 ? slug[slug.length-1]: parts[parts.length - 1];
-  console.log("isLoadingisLoading", data, parts, pathname, slug);
+  const data = pathname.replace('/category/', '');
+  console.log("isLoadingisLoading", { data: pathname.replace('/category/', '') });
   // const newPathname = pathname.replace('/products-categories', '/products');
   const newPathname = slug.join("/");
 
@@ -129,11 +132,13 @@ export default function ProductCategoriesSearchPageView() {
       setIsLoading(true);
       const res = await getAPI(`get-category?slug=${data}`, token);
       console.log("res?.data?.category", res);
-      if (!res?.data?.category?.length) {
-        // router.push(`/products/search/${data}`);
-        router.push(`/products/search/${data}/id=${_id}`);
-      }
+      // if (!res?.data?.category?.length) {
+      //   // router.push(`/products/search/${data}`);
+      //   router.push(`/category/search/${data}/id=${id}`);
+      // }
       setSubCategoryMenus(res?.data?.category);
+      setTitle(res?.data?.current?.title);
+      setId(res?.data?.current?._id);
     } catch (error) {
       console.log("errro", error);
     } finally {
@@ -171,7 +176,7 @@ export default function ProductCategoriesSearchPageView() {
     try {
       setLoading(true);
       const res = await getAPI(
-        `get-product?categoryId=${_id}&page=${page}&limit=64&sortBy=${sortBy}`
+        `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
       );
       console.log("hhdhdh", res);
       if (res.status === 200) {
@@ -206,8 +211,10 @@ export default function ProductCategoriesSearchPageView() {
   };
 
   useEffect(() => {
-    productSearchById();
-  }, [page, sortBy]);
+    if (id.length) {
+      productSearchById();
+    }
+  }, [id, page, sortBy]);
   useEffect(() => {
     getParentCategory();
   }, []);
@@ -225,23 +232,61 @@ export default function ProductCategoriesSearchPageView() {
       <Box sx={{ pb: 4 }}>
         {/* Products Categories Page */}
         <Box sx={{ mt: 5, px: { xs: 2, sm: 0 } }}>
-          <Grid container>
-            <Grid item xs={12}>
-              <ProductsCategoriesPage
-                childCategories={childCategories}
-                title={title}
-                products={PRODUCTS_CATE}
-                SetProductIncreaseValue={SetProductIncreaseValue}
-                isproductIncreaseValue={isproductIncreaseValue}
-                SetIsProductIncreaseValue={SetIsProductIncreaseValue}
-                subcategoryMenus={subcategoryMenus}
-                isLoading={isLoading}
-                productlength={subcategoryMenus?.length}
-              />
+          {subcategoryMenus?.length ? (
+            <Grid container>
+              <Grid item xs={12}>
+                <ProductsCategoriesPage
+                  childCategories={childCategories}
+                  title={title}
+                  products={PRODUCTS_CATE}
+                  SetProductIncreaseValue={SetProductIncreaseValue}
+                  isproductIncreaseValue={isproductIncreaseValue}
+                  SetIsProductIncreaseValue={SetIsProductIncreaseValue}
+                  subcategoryMenus={subcategoryMenus}
+                  isLoading={isLoading}
+                  productlength={subcategoryMenus?.length}
+                />
+              </Grid>
             </Grid>
-          </Grid>
+          ) : (
+            
+            <Box textAlign="center" mt={4} mb={2}>
+              <H5 fontWeight={400} color="primary.main">
+                {childCategories.length && (childCategories?.map((cat, i) => (
+                  <Fragment key={cat._id}>
+                    {i !== childCategories.length - 1 ? (
+                      <>
+                        <Link
+                          href={`/category/${cat.fullSlug}`}
+                          passHref
+                        >
+                          <Box
+                            component="a"
+                            sx={{
+                              cursor: "pointer",
+                              color: "primary.main",
+                              textDecoration: "none",
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                          >
+                            {cat.title}
+                          </Box>
+                        </Link>
+                        <span> / </span>
+                      </>
+                    ) : (
+                      <span>{cat.title}</span>
+                    )}
+                  </Fragment>
+                )))}
+              </H5>
+              <Typography variant="h4" fontWeight={700} mt={1}>
+                {childCategories?.[childCategories.length - 1]?.title}
+              </Typography>
+            </Box>
+          )
+          }
         </Box>
-
         {/* Sort + Filter Row */}
         <Box sx={{
           mb: 3,
@@ -315,7 +360,7 @@ export default function ProductCategoriesSearchPageView() {
               {productList?.length > 0 ? (
                 <Grid container spacing={2}>
                   {productList?.map((product) => (
-                    <Grid key={product._id} item xs={6} sm={4} md={3}>
+                    <Grid key={product.id} item xs={6} sm={4} md={3}>
                       <Product
                         product={product}
                         imageBaseUrl={imageBaseUrl}
