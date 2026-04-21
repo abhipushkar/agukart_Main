@@ -15,7 +15,7 @@ export default function SearchResult({
   return <SearchResultCard elevation={2}>
       {
         productList.map(item => 
-          <Link href={item.source == "category"?`/category/${item.slug}?title=${item.title}&_id=${item._id}`:`/product?slug=${item.slug}&title=${item.title}&id=${item._id}`}>
+          <Link href={item.source == "category"?`/category/${item.slug}`:`/product?slug=${item.slug}&title=${item.title}&id=${item._id}`}>
             <MenuItem key={item._id}>{   item.title.replace(/<[^>]*>/g, "")  }</MenuItem>
           </Link>
         )

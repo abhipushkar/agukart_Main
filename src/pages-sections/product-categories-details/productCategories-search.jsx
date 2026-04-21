@@ -90,14 +90,15 @@ const initialFilters = {
   sales: [],
   price: [0, 300],
 };
-export default function ProductCategoriesSearchPageView() {
+export default function ProductCategoriesSearchPageView({
+  slug,
+  initialCategory,
+  initialProducts,
+  initialBreadcrumb }) {
   const searchPrams = useSearchParams();
-  const [title, setTitle] = useState("");
-  const [id, setId] = useState("");
   let queryPage = searchPrams.get("page");
   queryPage = queryPage ? parseInt(queryPage) : "";
 
-  const { slug } = useParams();
   const pathname = usePathname();
 
   const router = useRouter();
@@ -105,50 +106,52 @@ export default function ProductCategoriesSearchPageView() {
   const [sortBy, setSortBy] = useState("relevance");
   const [productIncreaseValue, SetProductIncreaseValue] = useState(6);
   const [isproductIncreaseValue, SetIsProductIncreaseValue] = useState(true);
-  const [productList, setProductList] = useState([]);
-  const [imageBaseUrl, setImageBaseUrl] = useState("");
-  const [videoBaseUrl, setVideoBaseUrl] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     ...initialFilters,
   });
+
+  const [title, setTitle] = useState(initialCategory?.current?.title || "");
+  const [id, setId] = useState(initialCategory?.current?._id || "");
+  const [productList, setProductList] = useState(initialProducts?.data || []);
+  const [subcategoryMenus, setSubCategoryMenus] = useState(initialCategory?.category || []);
+  const [childCategories, setChildCategories] = useState(initialBreadcrumb?.data || []);
+
   const { token } = useAuth();
-  const [subcategoryMenus, setSubCategoryMenus] = useState([]);
-  const [childCategories, setChildCategories] = useState([]);
   console.log("asfhdsuifydsuisubcategoryMenus", subcategoryMenus);
-  const [isLoading, setIsLoading] = useState(true);
-  const parts = pathname.split("/");
-  // const slug = parts.indexOf("search")
-  const data = pathname.replace('/category/', '');
-  console.log("isLoadingisLoading", { data: pathname.replace('/category/', '') });
-  // const newPathname = pathname.replace('/products-categories', '/products');
-  const newPathname = slug.join("/");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // const slug = pathname.replace('/category/', ''); // full slug from browser URL
+  console.log({ slug, initialCategory, initialProducts, initialBreadcrumb, msg: "here is slug" });
 
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
 
-  const getCategoriesData = async () => {
-    try {
-      setIsLoading(true);
-      const res = await getAPI(`get-category?slug=${data}`, token);
-      console.log("res?.data?.category", res);
-      // if (!res?.data?.category?.length) {
-      //   // router.push(`/products/search/${data}`);
-      //   router.push(`/category/search/${data}/id=${id}`);
-      // }
-      setSubCategoryMenus(res?.data?.category);
-      setTitle(res?.data?.current?.title);
-      setId(res?.data?.current?._id);
-    } catch (error) {
-      console.log("errro", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const imageBaseUrl = initialProducts?.base_url;
+  const videoBaseUrl = initialProducts?.video_base_url;
 
-  useEffect(() => {
-    getCategoriesData();
-  }, [pathname]);
+  // const getCategoriesData = async () => {
+  //   if (initialData) return;
+  //   try {
+  //     setIsLoading(true);
+  //     const res = await getAPI(`get-category?slug=${slug}`, token);
+  //     console.log("res?.data?.category", res);
+  //     setSubCategoryMenus(res?.data?.category);
+  //     setTitle(res?.data?.current?.title);
+  //     setId(res?.data?.current?._id);
+  //   } catch (error) {
+  //     console.log("errro", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (slug) {
+  //     getCategoriesData();
+  //   }
+  // }, [slug]);
+
   const downMd = useMediaQuery((theme) => theme.breakpoints.down("md"));
 
   const handleChangeFilters = (key, values) => {
@@ -175,14 +178,13 @@ export default function ProductCategoriesSearchPageView() {
   const productSearchById = async () => {
     try {
       setLoading(true);
+
       const res = await getAPI(
         `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
       );
-      console.log("hhdhdh", res);
+
       if (res.status === 200) {
         setProductList(res.data.data);
-        setImageBaseUrl(res.data.base_url);
-        setVideoBaseUrl(res.data.video_base_url);
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {
@@ -199,25 +201,31 @@ export default function ProductCategoriesSearchPageView() {
     setOpen(newOpen);
   };
 
-  const getParentCategory = async () => {
-    try {
-      const res = await getAPI(`get-category-by-slug/${data}`);
-      if (res.status === 200) {
-        setChildCategories(res.data.data);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   useEffect(() => {
-    if (id.length) {
+    if (id) {
       productSearchById();
     }
-  }, [id, page, sortBy]);
-  useEffect(() => {
-    getParentCategory();
-  }, []);
+  }, [page, sortBy]);
+
+
+  // const getParentCategory = async () => {
+  //   try {
+  //     const res = await getAPI(`get-category-by-slug/${slug}`);
+  //     if (res.status === 200) {
+  //       setChildCategories(res.data.data);
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+
+  // useEffect(() => {
+  //   if (slug) {
+  //     getParentCategory();
+  //   }
+  // }, [slug]);
+
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -249,7 +257,7 @@ export default function ProductCategoriesSearchPageView() {
               </Grid>
             </Grid>
           ) : (
-            
+
             <Box textAlign="center" mt={4} mb={2}>
               <H5 fontWeight={400} color="primary.main">
                 {childCategories.length && (childCategories?.map((cat, i) => (
