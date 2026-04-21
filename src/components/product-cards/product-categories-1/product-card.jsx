@@ -56,7 +56,7 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
   
   return (
     <div>
-      <Link href={exist?`${originalSlug}?${queryString}`:`/products/search/${newPathname}/${originalSlug}/id=${_id}?slug=${originalSlug}`} passHref>
+      <Link href={`/category/${slug}`} passHref>
       <Box sx={{ cursor: "pointer" }} component="a">
         <FlexBox position="relative" borderRadius={3} mb={2}>
           <LazyImage
@@ -82,7 +82,7 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
       </Link>
 
       <FlexBetween justifyContent="center" alignItems="flex-end">
-        <Link href={exist?`${originalSlug}?${queryString}`:`/products/search/${newPathname}/${originalSlug}/id=${_id}?slug=${originalSlug}`}  passHref>
+        <Link href={`/category/${slug}`}  passHref>
           <H6
             component="a"
             fontWeight={700}

@@ -31,6 +31,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import CloseIcon from "@mui/icons-material/Close";
 
 import Select from "@mui/material/Select";
+import { Fragment } from "react";
+import Link from "next/link";
 
 // MUI ICON COMPONENTS
 
@@ -60,6 +62,7 @@ import { getAPI, getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import { CircularProgress, Pagination, Skeleton } from "@mui/material";
 import Product from "components/product/Product";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
+import { categories } from "components/search-box/categories";
 // TYPE
 
 const SORT_OPTIONS = [
@@ -87,14 +90,15 @@ const initialFilters = {
   sales: [],
   price: [0, 300],
 };
-export default function ProductCategoriesSearchPageView() {
+export default function ProductCategoriesSearchPageView({
+  slug,
+  initialCategory,
+  initialProducts,
+  initialBreadcrumb }) {
   const searchPrams = useSearchParams();
-  const _id = searchPrams.get("_id");
-  const title = searchPrams.get("title");
   let queryPage = searchPrams.get("page");
   queryPage = queryPage ? parseInt(queryPage) : "";
 
-  const { slug } = useParams();
   const pathname = usePathname();
 
   const router = useRouter();
@@ -102,48 +106,52 @@ export default function ProductCategoriesSearchPageView() {
   const [sortBy, setSortBy] = useState("relevance");
   const [productIncreaseValue, SetProductIncreaseValue] = useState(6);
   const [isproductIncreaseValue, SetIsProductIncreaseValue] = useState(true);
-  const [productList, setProductList] = useState([]);
-  const [imageBaseUrl, setImageBaseUrl] = useState("");
-  const [videoBaseUrl, setVideoBaseUrl] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     ...initialFilters,
   });
+
+  const [title, setTitle] = useState(initialCategory?.current?.title || "");
+  const [id, setId] = useState(initialCategory?.current?._id || "");
+  const [productList, setProductList] = useState(initialProducts?.data || []);
+  const [subcategoryMenus, setSubCategoryMenus] = useState(initialCategory?.category || []);
+  const [childCategories, setChildCategories] = useState(initialBreadcrumb?.data || []);
+
   const { token } = useAuth();
-  const [subcategoryMenus, setSubCategoryMenus] = useState([]);
-  const [childCategories, setChildCategories] = useState([]);
   console.log("asfhdsuifydsuisubcategoryMenus", subcategoryMenus);
-  const [isLoading, setIsLoading] = useState(true);
-  const parts = pathname.split("/");
-  // const slug = parts.indexOf("search")
-  const data = Array.isArray(slug) && slug.length>1 ? slug[slug.length-1]: parts[parts.length - 1];
-  console.log("isLoadingisLoading", data, parts, pathname, slug);
-  // const newPathname = pathname.replace('/products-categories', '/products');
-  const newPathname = slug.join("/");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // const slug = pathname.replace('/category/', ''); // full slug from browser URL
+  console.log({ slug, initialCategory, initialProducts, initialBreadcrumb, msg: "here is slug" });
 
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
 
-  const getCategoriesData = async () => {
-    try {
-      setIsLoading(true);
-      const res = await getAPI(`get-category?slug=${data}`, token);
-      console.log("res?.data?.category", res);
-      if (!res?.data?.category?.length) {
-        // router.push(`/products/search/${data}`);
-        router.push(`/products/search/${data}/id=${_id}`);
-      }
-      setSubCategoryMenus(res?.data?.category);
-    } catch (error) {
-      console.log("errro", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const imageBaseUrl = initialProducts?.base_url;
+  const videoBaseUrl = initialProducts?.video_base_url;
 
-  useEffect(() => {
-    getCategoriesData();
-  }, [pathname]);
+  // const getCategoriesData = async () => {
+  //   if (initialData) return;
+  //   try {
+  //     setIsLoading(true);
+  //     const res = await getAPI(`get-category?slug=${slug}`, token);
+  //     console.log("res?.data?.category", res);
+  //     setSubCategoryMenus(res?.data?.category);
+  //     setTitle(res?.data?.current?.title);
+  //     setId(res?.data?.current?._id);
+  //   } catch (error) {
+  //     console.log("errro", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (slug) {
+  //     getCategoriesData();
+  //   }
+  // }, [slug]);
+
   const downMd = useMediaQuery((theme) => theme.breakpoints.down("md"));
 
   const handleChangeFilters = (key, values) => {
@@ -170,14 +178,13 @@ export default function ProductCategoriesSearchPageView() {
   const productSearchById = async () => {
     try {
       setLoading(true);
+
       const res = await getAPI(
-        `get-product?categoryId=${_id}&page=${page}&limit=64&sortBy=${sortBy}`
+        `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
       );
-      console.log("hhdhdh", res);
+
       if (res.status === 200) {
         setProductList(res.data.data);
-        setImageBaseUrl(res.data.base_url);
-        setVideoBaseUrl(res.data.video_base_url);
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {
@@ -194,23 +201,31 @@ export default function ProductCategoriesSearchPageView() {
     setOpen(newOpen);
   };
 
-  const getParentCategory = async () => {
-    try {
-      const res = await getAPI(`get-category-by-slug/${data}`);
-      if (res.status === 200) {
-        setChildCategories(res.data.data);
-      }
-    } catch (error) {
-      console.log(error);
+  useEffect(() => {
+    if (id) {
+      productSearchById();
     }
-  };
-
-  useEffect(() => {
-    productSearchById();
   }, [page, sortBy]);
-  useEffect(() => {
-    getParentCategory();
-  }, []);
+
+
+  // const getParentCategory = async () => {
+  //   try {
+  //     const res = await getAPI(`get-category-by-slug/${slug}`);
+  //     if (res.status === 200) {
+  //       setChildCategories(res.data.data);
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+
+  // useEffect(() => {
+  //   if (slug) {
+  //     getParentCategory();
+  //   }
+  // }, [slug]);
+
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -225,23 +240,61 @@ export default function ProductCategoriesSearchPageView() {
       <Box sx={{ pb: 4 }}>
         {/* Products Categories Page */}
         <Box sx={{ mt: 5, px: { xs: 2, sm: 0 } }}>
-          <Grid container>
-            <Grid item xs={12}>
-              <ProductsCategoriesPage
-                childCategories={childCategories}
-                title={title}
-                products={PRODUCTS_CATE}
-                SetProductIncreaseValue={SetProductIncreaseValue}
-                isproductIncreaseValue={isproductIncreaseValue}
-                SetIsProductIncreaseValue={SetIsProductIncreaseValue}
-                subcategoryMenus={subcategoryMenus}
-                isLoading={isLoading}
-                productlength={subcategoryMenus?.length}
-              />
+          {subcategoryMenus?.length ? (
+            <Grid container>
+              <Grid item xs={12}>
+                <ProductsCategoriesPage
+                  childCategories={childCategories}
+                  title={title}
+                  products={PRODUCTS_CATE}
+                  SetProductIncreaseValue={SetProductIncreaseValue}
+                  isproductIncreaseValue={isproductIncreaseValue}
+                  SetIsProductIncreaseValue={SetIsProductIncreaseValue}
+                  subcategoryMenus={subcategoryMenus}
+                  isLoading={isLoading}
+                  productlength={subcategoryMenus?.length}
+                />
+              </Grid>
             </Grid>
-          </Grid>
-        </Box>
+          ) : (
 
+            <Box textAlign="center" mt={4} mb={2}>
+              <H5 fontWeight={400} color="primary.main">
+                {childCategories.length && (childCategories?.map((cat, i) => (
+                  <Fragment key={cat._id}>
+                    {i !== childCategories.length - 1 ? (
+                      <>
+                        <Link
+                          href={`/category/${cat.fullSlug}`}
+                          passHref
+                        >
+                          <Box
+                            component="a"
+                            sx={{
+                              cursor: "pointer",
+                              color: "primary.main",
+                              textDecoration: "none",
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                          >
+                            {cat.title}
+                          </Box>
+                        </Link>
+                        <span> / </span>
+                      </>
+                    ) : (
+                      <span>{cat.title}</span>
+                    )}
+                  </Fragment>
+                )))}
+              </H5>
+              <Typography variant="h4" fontWeight={700} mt={1}>
+                {childCategories?.[childCategories.length - 1]?.title}
+              </Typography>
+            </Box>
+          )
+          }
+        </Box>
         {/* Sort + Filter Row */}
         <Box sx={{
           mb: 3,
@@ -315,7 +368,7 @@ export default function ProductCategoriesSearchPageView() {
               {productList?.length > 0 ? (
                 <Grid container spacing={2}>
                   {productList?.map((product) => (
-                    <Grid key={product._id} item xs={6} sm={4} md={3}>
+                    <Grid key={product.id} item xs={6} sm={4} md={3}>
                       <Product
                         product={product}
                         imageBaseUrl={imageBaseUrl}

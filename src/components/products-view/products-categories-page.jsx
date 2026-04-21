@@ -66,7 +66,7 @@ export default function ProductsCategoriesPage({
                     <span
                       onClick={() =>
                         router.push(
-                          `/products-categories/search/${cat.slug}?title=${cat.title}&_id=${cat._id}`
+                          `/category/${cat.fullSlug}`
                         )
                       }
                       style={{ cursor: "pointer", color: "#007aff" }}

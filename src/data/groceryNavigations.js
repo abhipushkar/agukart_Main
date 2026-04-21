@@ -1,65 +1,65 @@
 const groceryNavigations = [{
   icon: "Carrot",
   title: "Vegetables",
-  href: "/products/search/vegetables"
+  href: "/category/vegetables"
 }, {
   icon: "Apple",
   title: "Fruits & Vegetables",
-  href: "/products/search/Fruits & Vegetables",
+  href: "/category/Fruits & Vegetables",
   child: [{
     title: "Fresh Frutes",
-    href: "/products/search/Fresh Frutes",
+    href: "/category/Fresh Frutes",
     child: [{
       title: "Pears, apples, quinces",
-      href: "/products/search/Pears, apples, quinces"
+      href: "/category/Pears, apples, quinces"
     }, {
       title: "Peaches, plums, apricots",
-      href: "/products/search/Peaches, plums, apricots"
+      href: "/category/Peaches, plums, apricots"
     }, {
       title: "Grapes",
-      href: "/products/search/Grapes"
+      href: "/category/Grapes"
     }]
   }, {
     title: "Fresh Vegetables",
-    href: "/products/search/Fresh Vegetables",
+    href: "/category/Fresh Vegetables",
     child: [{
       title: "Onion",
-      href: "/products/search/Onion"
+      href: "/category/Onion"
     }, {
       title: "Potato",
-      href: "/products/search/Potato"
+      href: "/category/Potato"
     }, {
       title: "Vegetable Pack",
-      href: "/products/search/Vegetable Pack"
+      href: "/category/Vegetable Pack"
     }]
   }]
 }, {
   icon: "Milk",
   title: "Dariry & Eggs",
-  href: "/products/search/Dariry & Eggs"
+  href: "/category/Dariry & Eggs"
 }, {
   icon: "Breakfast",
   title: "Breakfast",
-  href: "/products/search/Breakfast"
+  href: "/category/Breakfast"
 }, {
   icon: "Yogurt",
   title: "Frozen",
-  href: "/products/search/Frozen"
+  href: "/category/Frozen"
 }, {
   icon: "Honey",
   title: "Organic",
-  href: "/products/search/Organic"
+  href: "/category/Organic"
 }, {
   icon: "Beer",
   title: "Canned Food",
-  href: "/products/search/Canned Food"
+  href: "/category/Canned Food"
 }, {
   icon: "Snack",
   title: "Coffee & Snacks",
-  href: "/products/search/Coffee & Snacks"
+  href: "/category/Coffee & Snacks"
 }, {
   icon: "Bottle",
   title: "Sauces & Jems",
-  href: "/products/search/Sauces & Jems"
+  href: "/category/Sauces & Jems"
 }];
 export default groceryNavigations;

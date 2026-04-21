@@ -173,7 +173,7 @@ export default function MobileMenu() {
                     <Button
                       onClick={() => {
                         router.push(
-                          `/products-categories/search/${cat?.slug}?title=${cat?.title}&_id=${cat?._id}`,
+                          `/category/${cat?.slug}`,
                         );
                         setOpenDrawer(false);
                       }}

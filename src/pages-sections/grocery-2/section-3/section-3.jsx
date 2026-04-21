@@ -29,7 +29,7 @@ export default function Section3({
         description,
         slug
       }) => <Grid item lg={4} xs={6} key={id}>
-            <Link href={`/products/search/${slug}`}>
+            <Link href={`/category/search/${slug}`}>
               <StyledCard>
                 <Image width={46} height={46} alt={name} src={image} />
 

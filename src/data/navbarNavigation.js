@@ -122,7 +122,7 @@ const megaMenus = [[{
   title: "Shop",
   child: [{
     title: "Search product",
-    url: "/products/search/mobile phone"
+    url: "/category/mobile phone"
   }, {
     title: "Single product",
     url: "/products/lord-2019"
@@ -273,7 +273,7 @@ const navbarNavigation = [{
 //     title: "Shop",
 //     child: [{
 //       title: "Search product",
-//       url: "/products/search/mobile phone"
+//       url: "/category/mobile phone"
 //     }, {
 //       title: "Single product",
 //       url: "/products/lord-2019"
