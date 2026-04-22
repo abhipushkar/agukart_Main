@@ -38,16 +38,9 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
 
   console.log({ product, subcategoryMenus }, "prudcttttttttttttttttt");
 
-  const { title, image, slug, exist, _id, originalSlug } = product || {};
+  const { title, image, slug, exist, _id, originalSlug, image_alt } = product || {};
 
-  console.log("subcategoryMenussubcategoryMenus", { title, _id });
-
-  const queryParams = {
-    title: title,
-    _id: _id,
-  };
-
-  const queryString = new URLSearchParams(queryParams).toString();
+  console.log("subcategoryMenussubcategoryMenus", { title, _id, image_alt });
 
   const data = useParams();
   const router = useRouter();
@@ -60,7 +53,7 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
       <Box sx={{ cursor: "pointer" }} component="a">
         <FlexBox position="relative" borderRadius={3} mb={2}>
           <LazyImage
-            alt={title}
+            alt={image_alt || title}
             width={380}
             height={379}
             src={image}

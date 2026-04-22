@@ -95,15 +95,15 @@ export default function ProductCategoriesSearchPageView({
   initialCategory,
   initialProducts,
   initialBreadcrumb }) {
-  const searchPrams = useSearchParams();
-  let queryPage = searchPrams.get("page");
+  const searchParams = useSearchParams();
+  let queryPage = searchParams.get("page");
   queryPage = queryPage ? parseInt(queryPage) : "";
 
   const pathname = usePathname();
 
   const router = useRouter();
   const [view, setView] = useState("grid");
-  const [sortBy, setSortBy] = useState("relevance");
+  const sortBy = searchParams.get("sort") || "relevance";
   const [productIncreaseValue, SetProductIncreaseValue] = useState(6);
   const [isproductIncreaseValue, SetIsProductIncreaseValue] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -125,7 +125,7 @@ export default function ProductCategoriesSearchPageView({
   console.log({ slug, initialCategory, initialProducts, initialBreadcrumb, msg: "here is slug" });
 
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(queryPage || 1);
+  const page = Number(searchParams.get("page") || 1);
 
   const imageBaseUrl = initialProducts?.base_url;
   const videoBaseUrl = initialProducts?.video_base_url;
@@ -161,7 +161,21 @@ export default function ProductCategoriesSearchPageView({
     }));
   };
 
-  const handleChangeSortBy = useCallback((v) => setSortBy(v), []);
+  const handleChangeSortBy = (value) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (value) {
+      params.set("sort", value);
+    } else {
+      params.delete("sort");
+    }
+
+    // ✅ ALWAYS reset page to 1 explicitly
+    params.delete("page");
+
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   const toggleView = useCallback((v) => () => setView(v), []);
   const PRODUCTS = productDatabase.slice(95, 104).map((pro) => ({
     ...pro,
@@ -178,7 +192,7 @@ export default function ProductCategoriesSearchPageView({
   const productSearchById = async () => {
     try {
       setLoading(true);
-
+      console.log("product api called here", page);
       const res = await getAPI(
         `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
       );
@@ -205,7 +219,7 @@ export default function ProductCategoriesSearchPageView({
     if (id) {
       productSearchById();
     }
-  }, [page, sortBy]);
+  }, [searchParams]);
 
 
   // const getParentCategory = async () => {
@@ -228,10 +242,10 @@ export default function ProductCategoriesSearchPageView({
 
 
   const handlePageChange = (event, value) => {
-    setPage(value);
-    const currentParams = new URLSearchParams(window.location.search);
-    currentParams.set("page", value);
-    router.push(`${window.location.pathname}?${currentParams.toString()}`);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", value.toString());
+
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   return (
