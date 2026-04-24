@@ -41,10 +41,8 @@ import ViewList from "@mui/icons-material/ViewList";
 import FilterList from "@mui/icons-material/FilterList";
 // Local CUSTOM COMPONENT
 
-import productCategoriesFilterCard from "./productCategories-filter-card";
 // GLOBAL CUSTOM COMPONENTS
 
-import Sidenav from "components/side-nav";
 import { H1, H2, H3, H4, H5, Paragraph } from "components/Typography";
 import { FlexBetween, FlexBox } from "components/flex-box";
 import ProductsListView from "components/products-view/products-list-view";
@@ -90,7 +88,7 @@ const initialFilters = {
   sales: [],
   price: [0, 300],
 };
-export default function ProductCategoriesSearchPageView({
+export default function AllCategoriesSearchPageView({
   slug,
   initialCategory,
   initialProducts,
@@ -118,39 +116,16 @@ export default function ProductCategoriesSearchPageView({
   const [childCategories, setChildCategories] = useState(initialBreadcrumb?.data || []);
 
   const { token } = useAuth();
-  console.log("asfhdsuifydsuisubcategoryMenus", subcategoryMenus);
   const [isLoading, setIsLoading] = useState(false);
 
   // const slug = pathname.replace('/category/', ''); // full slug from browser URL
-  console.log({ slug, initialCategory, initialProducts, initialBreadcrumb, msg: "here is slug" });
+  console.log({ initialCategory, initialProducts}, "initialCategory....");
 
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(initialProducts.pagination.totalPages || 1);
   const page = Number(searchParams.get("page") || 1);
 
   const imageBaseUrl = initialProducts?.base_url;
   const videoBaseUrl = initialProducts?.video_base_url;
-
-  // const getCategoriesData = async () => {
-  //   if (initialData) return;
-  //   try {
-  //     setIsLoading(true);
-  //     const res = await getAPI(`get-category?slug=${slug}`, token);
-  //     console.log("res?.data?.category", res);
-  //     setSubCategoryMenus(res?.data?.category);
-  //     setTitle(res?.data?.current?.title);
-  //     setId(res?.data?.current?._id);
-  //   } catch (error) {
-  //     console.log("errro", error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (slug) {
-  //     getCategoriesData();
-  //   }
-  // }, [slug]);
 
   const downMd = useMediaQuery((theme) => theme.breakpoints.down("md"));
 
@@ -189,13 +164,13 @@ export default function ProductCategoriesSearchPageView({
     }));
   // console.log("PRODUCTS_CATEPRODUCTS_CATE" , PRODUCTS_CATE);
 
-  const productSearchById = async () => {
+  const allCategoryProductSearch = async () => {
     try {
       setLoading(true);
-      console.log("product api called here", page);
       const res = await getAPI(
-        `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
+        `get-product?page=${page}&limit=64&sortBy=${sortBy}`
       );
+      console.log("product api called here", page, res.data);
 
       if (res.status === 200) {
         setProductList(res.data.data);
@@ -216,9 +191,7 @@ export default function ProductCategoriesSearchPageView({
   };
 
   useEffect(() => {
-    if (id) {
-      productSearchById();
-    }
+      allCategoryProductSearch();
   }, [searchParams]);
 
 
@@ -259,7 +232,7 @@ export default function ProductCategoriesSearchPageView({
               <Grid item xs={12}>
                 <ProductsCategoriesPage
                   childCategories={childCategories}
-                  title={title}
+                  title={"All Categories"}
                   products={PRODUCTS_CATE}
                   SetProductIncreaseValue={SetProductIncreaseValue}
                   isproductIncreaseValue={isproductIncreaseValue}
@@ -278,16 +251,11 @@ export default function ProductCategoriesSearchPageView({
                   <Fragment key={cat._id}>
                     {i !== childCategories.length - 1 ? (
                       <>
-                        <Link
-                          href={`/category/${cat.fullSlug}`}
-                          passHref
-                        >
+                        <Link href={`/category/${cat.fullSlug}`} style={{ textDecoration: "none" }}>
                           <Box
-                            component="a"
                             sx={{
                               cursor: "pointer",
                               color: "primary.main",
-                              textDecoration: "none",
                               "&:hover": { textDecoration: "underline" },
                             }}
                           >

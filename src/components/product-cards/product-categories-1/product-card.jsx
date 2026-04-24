@@ -36,56 +36,54 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
   // const {setproductsLastSlugId} = useMyProvider();
   const { setProducts } = useMyProvider();
 
-  console.log({ product, subcategoryMenus }, "prudcttttttttttttttttt");
+  // console.log({ product, subcategoryMenus }, "prudcttttttttttttttttt");
 
   const { title, image, slug, exist, _id, originalSlug, image_alt } = product || {};
 
-  console.log("subcategoryMenussubcategoryMenus", { title, _id, image_alt });
+  // console.log("subcategoryMenussubcategoryMenus", { title, _id, image_alt });
 
   const data = useParams();
-  const router = useRouter();
-  const newPathname = data.slug.join("/");
-  console.log("newPathname", product);
-  
+  // const router = useRouter();
+  // const newPathname = data.slug.join("/");
+  // console.log("newPathname", product);
+
   return (
     <div>
-      <Link href={`/category/${slug}`} passHref>
-      <Box sx={{ cursor: "pointer" }} component="a">
-        <FlexBox position="relative" borderRadius={3} mb={2}>
-          <LazyImage
-            alt={image_alt || title}
-            width={380}
-            height={379}
-            src={image}
-            sx={{
-              aspectRatio: "2/3",
-              height: "100%",
-              width: "100%",
-              objectFit: "cover",
-              borderRadius: "6px",
-              transition: "0.3s",
-              "&:hover": {
-                boxShadow: 6,
-                transform: "scale(1.05)",
-              },
-            }}
-          />
-        </FlexBox>
-      </Box>
+      <Link href={`/category/${slug}`} style={{ display: "block" }}>
+        <Box sx={{ cursor: "pointer" }}>
+          <FlexBox position="relative" borderRadius={3} mb={2}>
+            <LazyImage
+              alt={image_alt || title}
+              width={380}
+              height={379}
+              src={image}
+              sx={{
+                aspectRatio: "2/3",
+                height: "100%",
+                width: "100%",
+                objectFit: "cover",
+                borderRadius: "6px",
+                transition: "0.3s",
+                "&:hover": {
+                  boxShadow: 6,
+                  transform: "scale(1.05)",
+                },
+              }}
+            />
+          </FlexBox>
+        </Box>
       </Link>
 
       <FlexBetween justifyContent="center" alignItems="flex-end">
-        <Link href={`/category/${slug}`}  passHref>
+        <Link href={`/category/${slug}`} style={{ textDecoration: "none" }}>
           <H6
-            component="a"
             fontWeight={700}
             mb={1}
             sx={{
               cursor: "pointer",
-              textDecoration: "none",
-              color: "inherit",      
+              color: "inherit",
               "&:hover": {
-                textDecoration: "underline", 
+                textDecoration: "underline",
               },
             }}
           >

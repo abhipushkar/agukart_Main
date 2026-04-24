@@ -55,6 +55,18 @@ const HtmlRenderer = ({ html }) => {
           height: "auto",
           display: "block",
         },
+        "& ul, & ol": { paddingLeft: "20px", marginBottom: "10px" },
+        "& li": { marginBottom: "6px" },
+        "& p": { marginBottom: "10px" },
+        "& h1, & h2, & h3": {
+          marginTop: "15px",
+          marginBottom: "8px",
+          fontWeight: 600,
+        },
+        "& a": {
+          color: "#1976d2",
+          textDecoration: "underline",
+        },
       }}
     >
       {parse(html || "", options)}
