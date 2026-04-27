@@ -84,7 +84,7 @@ const section14 = () => {
                   }}
                 >
                   <Link
-                    href={`/product?slug=${gift.slug}&id=${gift._id}&title=${gift.title}`}
+                    href={`/${gift.slug}?id=${gift._id}&title=${gift.title}`}
                   >
                     <Box sx={{ borderRadius: "8px 8px 0px 0px" }}>
                       <LazyImage
@@ -127,7 +127,7 @@ const section14 = () => {
                 }}
               >
                 <Link
-                  href={`/product?slug=${gift.slug}&id=${gift._id}&title=${gift.title}`}
+                  href={`/${gift.slug}?id=${gift._id}&title=${gift.title}`}
                 >
                   <HoverBox sx={{ borderRadius: "8px 8px 0px 0px" }}>
                     <LazyImage

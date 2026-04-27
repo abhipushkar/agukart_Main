@@ -274,7 +274,7 @@ export default function ProductCategoriesSearchPageView({
 
             <Box textAlign="center" mt={4} mb={2}>
               <H5 fontWeight={400} color="primary.main">
-                {childCategories.length && (childCategories?.map((cat, i) => (
+                {childCategories.length > 0 && (childCategories?.map((cat, i) => (
                   <Fragment key={cat._id}>
                     {i !== childCategories.length - 1 ? (
                       <>

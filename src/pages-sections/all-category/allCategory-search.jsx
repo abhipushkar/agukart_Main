@@ -1,37 +1,67 @@
 "use client";
-import { Fragment, useCallback, useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import Container from "@mui/material/Container";
+import IconButton from "@mui/material/IconButton";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import Button from "@mui/material/Button";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Typography from "@mui/material/Typography";
 import Drawer from "@mui/material/Drawer";
-import CloseIcon from "@mui/icons-material/Close";
+import List from "@mui/material/List";
+import Divider from "@mui/material/Divider";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import InboxIcon from "@mui/icons-material/MoveToInbox";
+import MailIcon from "@mui/icons-material/Mail";
 import { SectionCreator } from "components/section-header";
+import Checkbox from "@mui/material/Checkbox";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 import FormGroup from "@mui/material/FormGroup";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
+import CloseIcon from "@mui/icons-material/Close";
+
 import Select from "@mui/material/Select";
-import { H1, H5, Paragraph } from "components/Typography";
-import { FlexBetween, FlexBox } from "components/flex-box";
-import { getAPIAuth } from "utils/__api__/ApiServies";
-import useAuth from "hooks/useAuth";
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
-import { CircularProgress, Pagination } from "@mui/material";
-import Product from "components/product/Product";
+import { Fragment } from "react";
 import Link from "next/link";
+
+// MUI ICON COMPONENTS
+
+import Apps from "@mui/icons-material/Apps";
+import ViewList from "@mui/icons-material/ViewList";
+import FilterList from "@mui/icons-material/FilterList";
+// Local CUSTOM COMPONENT
+
+// GLOBAL CUSTOM COMPONENTS
+
+import { H1, H2, H3, H4, H5, Paragraph } from "components/Typography";
+import { FlexBetween, FlexBox } from "components/flex-box";
+import ProductsListView from "components/products-view/products-list-view";
+// PRODUCT DATA
+
+import productDatabase from "data/product-database";
+import productCategories from "data/products-categories";
+import ProductsCategoriesPage from "components/products-view/products-categories-page";
+import useMyProvider from "hooks/useMyProvider";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+import useAuth from "hooks/useAuth";
+import { getAPI, getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
+import { CircularProgress, Pagination, Skeleton } from "@mui/material";
+import Product from "components/product/Product";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
+import { categories } from "components/search-box/categories";
+// TYPE
 
 const SORT_OPTIONS = [
   {
@@ -58,111 +88,174 @@ const initialFilters = {
   sales: [],
   price: [0, 300],
 };
-export default function ProductSearchPageView() {
-  const router = useRouter();
-  const { token } = useAuth();
-  console.log("ssssstoken", token);
-  const param = useParams();
-  console.log("param", param);
-  const pathname = usePathname();
-  const [sortBy, setSortBy] = useState("relevance");
-  const [ProductsMenus, setProductsMenus] = useState([]);
-  const parts = pathname.split("-");
-  const data = parts[parts.length - 2];
-  const searchPrams = useSearchParams();
-  let queryPage = searchPrams.get("page");
+export default function AllCategoriesSearchPageView({
+  slug,
+  initialCategory,
+  initialProducts,
+  initialBreadcrumb }) {
+  const searchParams = useSearchParams();
+  let queryPage = searchParams.get("page");
   queryPage = queryPage ? parseInt(queryPage) : "";
-  const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(queryPage || 1);
-  const [imageBaseUrl, setImageBaseUrl] = useState("");
-  const [videoBaseUrl, setVideoBaseUrl] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  console.log("aaaaaaaaaadataaaa", data);
+  const pathname = usePathname();
 
-  const catId = pathname.split("id=");
+  const router = useRouter();
+  const [view, setView] = useState("grid");
+  const sortBy = searchParams.get("sort") || "relevance";
+  const [productIncreaseValue, SetProductIncreaseValue] = useState(6);
+  const [isproductIncreaseValue, SetIsProductIncreaseValue] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({
+    ...initialFilters,
+  });
 
-  console.log({ catId });
+  const [title, setTitle] = useState(initialCategory?.current?.title || "");
+  const [id, setId] = useState(initialCategory?.current?._id || "");
+  const [productList, setProductList] = useState(initialProducts?.data || []);
+  const [subcategoryMenus, setSubCategoryMenus] = useState(initialCategory?.category || []);
+  const [childCategories, setChildCategories] = useState(initialBreadcrumb?.data || []);
 
-  const [childCategories, setChildCategories] = useState([]);
-  const params = useSearchParams();
-  const slug = params.get("slug");
+  const { token } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const getChildCategories = async () => {
-    try {
-      const res = await getAPIAuth(`get-category-by-slug/${slug}`);
-      if (res.status === 200) {
-        setChildCategories(res.data.data);
-      }
-    } catch (error) {
-      console.log(error);
-    }
+  // const slug = pathname.replace('/category/', ''); // full slug from browser URL
+  console.log({ initialCategory, initialProducts}, "initialCategory....");
+
+  const [totalPages, setTotalPages] = useState(initialProducts.pagination.totalPages || 1);
+  const page = Number(searchParams.get("page") || 1);
+
+  const imageBaseUrl = initialProducts?.base_url;
+  const videoBaseUrl = initialProducts?.video_base_url;
+
+  const downMd = useMediaQuery((theme) => theme.breakpoints.down("md"));
+
+  const handleChangeFilters = (key, values) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: values,
+    }));
   };
 
-  useEffect(() => {
-    getChildCategories();
-  }, [slug]);
+  const handleChangeSortBy = (value) => {
+    const params = new URLSearchParams(searchParams.toString());
 
-  const handleChangeSortBy = useCallback((v) => setSortBy(v), []);
+    if (value) {
+      params.set("sort", value);
+    } else {
+      params.delete("sort");
+    }
 
-  const getProductsData = async () => {
+    // ✅ ALWAYS reset page to 1 explicitly
+    params.delete("page");
+
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const toggleView = useCallback((v) => () => setView(v), []);
+  const PRODUCTS = productDatabase.slice(95, 104).map((pro) => ({
+    ...pro,
+    discount: 25,
+  }));
+  const PRODUCTS_CATE = subcategoryMenus
+    ?.slice(0, productIncreaseValue)
+    .map((pro) => ({
+      ...pro,
+      discount: 25,
+    }));
+  // console.log("PRODUCTS_CATEPRODUCTS_CATE" , PRODUCTS_CATE);
+
+  const allCategoryProductSearch = async () => {
     try {
-      const res = await getAPIAuth(
-        `get-product?categoryId=${catId[1]}&page=${page}&limit=64&sortBy=${sortBy}`,
-        token
+      setLoading(true);
+      const res = await getAPI(
+        `get-product?page=${page}&limit=64&sortBy=${sortBy}`
       );
-      console.log("getprofileres", res);
-      if (res.status == 200) {
-        const myData = res?.data.data.map((item) => {
-          return { base_url: res.data.base_url, ...item };
-        });
-        setProductsMenus(myData);
-        setImageBaseUrl(res.data.base_url);
-        setVideoBaseUrl(res.data.video_base_url);
+      console.log("product api called here", page, res.data);
+
+      if (res.status === 200) {
+        setProductList(res.data.data);
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {
-      console.log("errro", error);
+      console.log(error);
     } finally {
       setLoading(false);
     }
   };
+
+  // filter Sidebar
   const [open, setOpen] = useState(false);
+
   const toggleDrawer = (newOpen) => {
     setOpen(newOpen);
   };
+
   useEffect(() => {
-    getProductsData();
-  }, [token, pathname, sortBy, page]);
+      allCategoryProductSearch();
+  }, [searchParams]);
+
+
+  // const getParentCategory = async () => {
+  //   try {
+  //     const res = await getAPI(`get-category-by-slug/${slug}`);
+  //     if (res.status === 200) {
+  //       setChildCategories(res.data.data);
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+
+  // useEffect(() => {
+  //   if (slug) {
+  //     getParentCategory();
+  //   }
+  // }, [slug]);
+
 
   const handlePageChange = (event, value) => {
-    setPage(value);
-    const currentParams = new URLSearchParams(window.location.search);
-    currentParams.set("page", value);
-    router.push(`${window.location.pathname}?${currentParams.toString()}`);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", value.toString());
+
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   return (
-    <div className="bg-white  pb-4">
-      <Container sx={{ px: 2, pb: 4 }}>
-        <Container maxWidth="xl">
-          <Box mt={3}>
+    <Container sx={{ bgcolor: "background.paper", pb: 4 }}>
+      {/* Main Content */}
+      <Box sx={{ pb: 4 }}>
+        {/* Products Categories Page */}
+        <Box sx={{ mt: 5, px: { xs: 2, sm: 0 } }}>
+          {subcategoryMenus?.length ? (
+            <Grid container>
+              <Grid item xs={12}>
+                <ProductsCategoriesPage
+                  childCategories={childCategories}
+                  title={"All Categories"}
+                  products={PRODUCTS_CATE}
+                  SetProductIncreaseValue={SetProductIncreaseValue}
+                  isproductIncreaseValue={isproductIncreaseValue}
+                  SetIsProductIncreaseValue={SetIsProductIncreaseValue}
+                  subcategoryMenus={subcategoryMenus}
+                  isLoading={isLoading}
+                  productlength={subcategoryMenus?.length}
+                />
+              </Grid>
+            </Grid>
+          ) : (
+
             <Box textAlign="center" mt={4} mb={2}>
               <H5 fontWeight={400} color="primary.main">
-                {childCategories.length && (childCategories?.map((cat, i) => (
+                {childCategories.length > 0 && (childCategories?.map((cat, i) => (
                   <Fragment key={cat._id}>
                     {i !== childCategories.length - 1 ? (
                       <>
-                        <Link
-                          href={`/category/${cat.slug}`}
-                          passHref
-                        >
+                        <Link href={`/category/${cat.fullSlug}`} style={{ textDecoration: "none" }}>
                           <Box
-                            component="a"
                             sx={{
                               cursor: "pointer",
                               color: "primary.main",
-                              textDecoration: "none",
                               "&:hover": { textDecoration: "underline" },
                             }}
                           >
@@ -181,120 +274,136 @@ export default function ProductSearchPageView() {
                 {childCategories?.[childCategories.length - 1]?.title}
               </Typography>
             </Box>
-            <FlexBetween flexWrap="wrap" gap={2} mb={3}>
-              <Box flex="1 1 0">
-                {/* <Button
-                  onClick={() => toggleDrawer(true)}
-                  variant="text"
+          )
+          }
+        </Box>
+        {/* Sort + Filter Row */}
+        <Box sx={{
+          mb: 3,
+          px: { xs: 2, sm: 0 },
+
+          mx: "auto"
+        }}>
+          <FlexBetween
+            flexWrap="wrap"
+            alignItems="center"
+            gap={2}
+          >
+            <Box flex="1 1 0">
+              {/* Filter button can be added here if needed */}
+            </Box>
+            <Box>
+              <FlexBox
+                alignItems="center"
+                sx={{
+                  border: "1px solid #ccc",
+                  borderRadius: "30px",
+                  px: 2,
+                  py: 0.5,
+                  transition: "0.3s",
+                  "&:hover": {
+                    boxShadow: "0 0 5px rgba(0,0,0,0.2)",
+                  },
+                }}
+                gap={1}
+              >
+                <Paragraph color="grey.600">Sort by:</Paragraph>
+                <TextField
+                  select
+                  size="small"
+                  value={sortBy}
+                  variant="outlined"
+                  onChange={(e) => handleChangeSortBy(e.target.value)}
                   sx={{
-                    background: "#fff",
-                    border: "1px solid gray",
-                    borderRadius: "30px",
-                    padding: "4px 16px",
-                    transition: "all 500ms",
-                    "&:hover": { boxShadow: "0 0 3px #000" },
+                    minWidth: 120,
+                    "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                    "& .MuiSelect-select": { pl: 0 },
                   }}
                 >
-                  <Typography display="flex" alignItems="center">
-                    <svg height="20px" width="20px" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm6 6a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Z"
+                  {SORT_OPTIONS.map((item) => (
+                    <MenuItem key={item.value} value={item.value}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </FlexBox>
+            </Box>
+          </FlexBetween>
+        </Box>
+
+        {/* Products Grid */}
+        <Box sx={{
+          px: { xs: 2, sm: 0 },
+
+          mx: "auto"
+        }}>
+          {loading ? (
+            <Grid container spacing={2}>
+              {[...Array(12)].map((_, index) => (
+                <Grid key={index} item xs={6} sm={4} md={3}>
+                  <ProductCardShimmer />
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <>
+              {productList?.length > 0 ? (
+                <Grid container spacing={2}>
+                  {productList?.map((product) => (
+                    <Grid key={product.id} item xs={6} sm={4} md={3}>
+                      <Product
+                        product={product}
+                        imageBaseUrl={imageBaseUrl}
+                        videoBaseUrl={videoBaseUrl}
                       />
-                    </svg>
-                    <Typography component="span" ml={1}>All Filter</Typography>
-                  </Typography>
-                </Button> */}
-              </Box>
-              <Box>
-                <FlexBox
-                  alignItems="center"
-                  sx={{
-                    border: "1px solid gray",
-                    borderRadius: "30px",
-                    px: 2,
-                    py: 0.5,
-                    "&:hover": { boxShadow: "0 0 3px #000" },
-                  }}
-                  gap={1}
-                >
-                  <Paragraph color="grey.600">Sort by:</Paragraph>
-                  <TextField
-                    select
-                    size="small"
-                    value={sortBy}
-                    onChange={(e) => handleChangeSortBy(e.target.value)}
-                    sx={{
-                      minWidth: 120,
-                      ".MuiOutlinedInput-notchedOutline": { border: "none" },
-                      ".MuiSelect-select": { pl: 0 },
-                    }}
-                  >
-                    {SORT_OPTIONS.map((item) => (
-                      <MenuItem key={item.value} value={item.value}>
-                        {item.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </FlexBox>
-              </Box>
-            </FlexBetween>
-            {loading ? (
-              <Container sx={{ padding: "30px 16px" }}>
-                <Grid container spacing={3}>
-                  {[...Array(64)].map((_, index) => (
-                    <Grid key={index} item xs={6} md={4} lg={3}>
-                      <ProductCardShimmer />
                     </Grid>
                   ))}
                 </Grid>
-              </Container>
-            ) : (
-              <Container sx={{ padding: "30px 16px" }}>
-                <Grid container spacing={3}>
-                  {ProductsMenus?.length > 0 ? (
-                    ProductsMenus.map((item) => (
-                      <Grid item lg={3} md={4} xs={6} key={item.id}>
-                        <Product
-                          product={item}
-                          imageBaseUrl={imageBaseUrl}
-                          videoBaseUrl={videoBaseUrl}
-                        />
-                      </Grid>
-                    ))
-                  ) : (
-                    <Grid item xs={12}>
-                      <Box
-                        sx={{
-                          textAlign: "center",
-                          fontSize: "20px",
-                          textTransform: "uppercase",
-                          fontWeight: 900,
-                          padding: "40px 0",
-                          width: "100%",
-                        }}
-                      >
-                        Products Not Found
-                      </Box>
-                    </Grid>
-                  )}
-                </Grid>
-              </Container>
-            )}
-          </Box>
-          {ProductsMenus?.length > 0 && (
-            <Box mt={5} display="flex" justifyContent="center">
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                variant="outlined"
-                shape="rounded"
-              />
-            </Box>
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                    textAlign: "center",
+                    fontSize: "20px",
+                    textTransform: "uppercase",
+                    fontWeight: 900,
+                    py: 8,
+                  }}
+                >
+                  Products Not Found
+                </Box>
+              )}
+            </>
           )}
-        </Container>
-      </Container>
+        </Box>
+
+        {/* Pagination */}
+        {productList?.length > 0 && (
+          <Box
+            sx={{
+              mt: 4,
+              display: "flex",
+              justifyContent: "center",
+              px: { xs: 2, sm: 0 },
+
+              mx: "auto"
+            }}
+          >
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              variant="outlined"
+              shape="rounded"
+            />
+          </Box>
+        )}
+      </Box>
+
+      {/* Filter Drawer */}
       <Drawer open={open} onClose={() => toggleDrawer(false)}>
         <Box sx={{ width: 400, position: "relative" }} role="presentation">
           <Typography
@@ -533,6 +642,6 @@ export default function ProductSearchPageView() {
           </SectionCreator>
         </Box>
       </Drawer>
-    </div>
+    </Container>
   );
 }
