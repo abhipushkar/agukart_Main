@@ -1206,7 +1206,7 @@ const MyproductDetails = ({ res }) => {
           {myproduct?.categories?.map((item) => (
             <Link
               key={item._id}
-              href={`/category/${item.slug}?title=${item.title}&_id=${item._id}`}
+              href={`/category/${item.slug}`}
               color="inherit"
             >
               {item?.title}

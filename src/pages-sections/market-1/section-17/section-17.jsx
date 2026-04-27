@@ -135,7 +135,7 @@ const section17 = () => {
                 {dealData.box1_category.map((cat) => (
                   <Grid key={cat._id} item xs={6}>
                     <Link
-                      href={`/product?slug=${cat.slug}&id=${cat._id}&title=${cat.title}`}
+                      href={`/${cat.slug}`}
                       style={{ textDecoration: "none", color: "inherit" }}
                     >
                       <Box sx={{
@@ -227,7 +227,7 @@ const section17 = () => {
               {dealData.box2_category.map((cat) => (
                 <Link
                   key={cat._id}
-                  href={`/product?slug=${cat.slug}&id=${cat._id}&title=${cat.title}`}
+                  href={`/${cat.slug}`}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
                   <Box sx={{
@@ -312,7 +312,7 @@ const section17 = () => {
                 {dealData.box3_category.map((cat) => (
                   <Grid key={cat._id} item xs={6}>
                     <Link
-                      href={`/product?slug=${cat.slug}&id=${cat._id}&title=${cat.title}`}
+                      href={`/${cat.slug}`}
                       style={{ textDecoration: "none", color: "inherit" }}
                     >
                       <Box sx={{
@@ -404,7 +404,7 @@ const section17 = () => {
               {/* Large Top Item */}
               {dealData.box4_category[0] && (
                 <Link
-                  href={`/product?slug=${dealData.box4_category[0]?.slug}&id=${dealData.box4_category[0]?._id}&title=${dealData.box4_category[0]?.title}`}
+                  href={`/${dealData.box4_category[0]?.slug}`}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
                   <Box sx={{
@@ -459,7 +459,7 @@ const section17 = () => {
                 {dealData.box4_category.slice(1, 4).map((cat) => (
                   <Grid key={cat._id} item xs={4}>
                     <Link
-                      href={`/product?slug=${cat.slug}&id=${cat._id}&title=${cat.title}`}
+                      href={`/${cat.slug}`}
                       style={{ textDecoration: "none", color: "inherit" }}
                     >
                       <Box sx={{

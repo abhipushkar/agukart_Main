@@ -1,8 +1,8 @@
-import { permanentRedirect, notFound } from "next/navigation";
-import ProductCategoriesSearchPageView from "pages-sections/product-categories-details/productCategories-search";
+import React from 'react'
+import ProductSlug from 'components/product-slug/ProductSlug';
+import { permanentRedirect, notFound } from 'next/navigation';
 import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
 import { Box, Typography, Chip } from "@mui/material";
-
 
 const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
 
   // 🔥 2. FETCH CATEGORY SEO DATA
   const categoryRes = await fetch(
-    `${baseURL}/get-category?slug=${slugPath}`,
+    `${baseURL}/get-admin-category-by-slug/${slugPath}`,
     { cache: "no-store" }
   );
 
@@ -33,10 +33,10 @@ export async function generateMetadata({ params }) {
     description: current.meta_description || "",
     keywords: Array.from(
       new Set([
-        ...(current.meta_keywords
-          ? current.meta_keywords.split(",").map(k => k.trim())
+        ...(current.meta_keyword
+          ? current.meta_keyword.split(",").map(k => k.trim())
           : []),
-        ...(current.search_terms || [])
+        ...(current.search_term || [])
       ])
     ),
     openGraph: {
@@ -51,66 +51,70 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function ProductSearch({ params }) {
+
+const page = async ({ params }) => {
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
-  console.log({ slugArray, slugPath, params })
 
-  // 1. CHECK REDIRECT FIRST
   const resolveRes = await fetch(
     `${baseURL}/${slugPath}`,
     { cache: "no-store" }
   );
 
-  // console.log(resolveRes);
-
   if (resolveRes.ok) {
     const resolveData = await resolveRes.json();
 
     if (resolveData.redirect && resolveData.newSlug) {
-      permanentRedirect(`/category/${resolveData.newSlug}`);
+      permanentRedirect(`/${resolveData.newSlug}`);
     }
   }
 
-  // 2. THEN FETCH CATEGORY
-  const categoryRes = await fetch(
-    `${baseURL}/get-category?slug=${slugPath}`,
+  // 🔥 2. BREADCRUMB + CURRENT
+  const breadcrumbRes = await fetch(
+    `${baseURL}/get-admin-category-by-slug/${slugPath}`,
     { cache: "no-store" }
   );
 
-  if (!categoryRes.ok) {
-    return notFound();
-  }
 
-  const categoryData = await categoryRes.json();
+  if (!breadcrumbRes.ok) return notFound();
 
+  const breadcrumbData = await breadcrumbRes.json();
+  const current = breadcrumbData?.current;
+  const id = current?._id;
 
+  // 🔥 3. CHILD CATEGORIES
+  const childRes = await fetch(`${baseURL}/getAdminSubcategory`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+    cache: "no-store",
+  });
+
+  const childData = childRes.ok ? await childRes.json() : { data: [] };
+
+  // 🔥 4. PRODUCTS (SSR now)
   const productRes = await fetch(
-    `${baseURL}/get-product?categoryId=${categoryData?.current?._id}&page=1&limit=64`,
+    `${baseURL}/getProductBySlug/${slugPath}?page=1&limit=64`,
     { cache: "no-store" }
   );
+
 
   const productData = productRes.ok ? await productRes.json() : null;
+  const title = breadcrumbData?.current?.title;
+  const description = breadcrumbData?.current?.description || "";
+  const searchTerms = breadcrumbData?.current?.search_term || [];
 
-  const breadcrumbRes = await fetch(
-    `${baseURL}/get-category-by-slug/${slugPath}`,
-    { cache: "no-store" }
-  );
 
-  const breadcrumbData = breadcrumbRes.ok ? await breadcrumbRes.json() : null;
-  const title = categoryData?.current?.title || (slugArray.length ? slugArray[slugArray.length - 1] : "Category");
-  const description = categoryData?.current?.description || "";
-  const searchTerms = categoryData?.current?.search_terms || [];
-
-  // 🔥 3. PASS DATA / SLUG TO CLIENT COMPONENT
   return (
     <>
-      <ProductCategoriesSearchPageView
+      <ProductSlug
         slug={slugPath}
-        initialCategory={categoryData}
+        current={current}
+        breadcrumbs={breadcrumbData?.data || []}
+        children={childData?.data || []}
         initialProducts={productData}
-        initialBreadcrumb={breadcrumbData}
       />
+
 
       {/* Description */}
       {description.length > 0 && (<Box p={3}>
@@ -164,5 +168,7 @@ export default async function ProductSearch({ params }) {
       </Box>)}
 
     </>
-  );
+  )
 }
+
+export default page

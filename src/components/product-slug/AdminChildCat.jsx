@@ -7,14 +7,14 @@ import React from "react";
 import { white } from "theme/theme-colors";
 
 const AdminChildCat = ({ cat }) => {
-  const { slug, _id, title, image } = cat || {};
+  const { slug, _id, title, image, fullSlug } = cat || {};
 
-  const url = `/product?slug=${slug}&id=${_id}&title=${title}`;
+  const url = `/${fullSlug}`;
 
   return (
     <Box sx={{ cursor: "pointer", }}>
       <Link href={url} passHref>
-        <Box component="a">
+        <Box>
           <Box position="relative" borderRadius={3} mb={2} sx={{ height: "210px" }}>
             <LazyImage
               alt={title || "Category"}
@@ -41,7 +41,6 @@ const AdminChildCat = ({ cat }) => {
       <FlexBetween justifyContent="center" alignItems="flex-end">
         <Link href={url} passHref>
           <H6
-            component="a"
             fontWeight={700}
             mb={1}
             sx={{

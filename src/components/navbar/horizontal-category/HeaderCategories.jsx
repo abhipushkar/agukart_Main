@@ -32,7 +32,7 @@ const HeaderCategories = () => {
     } else if (cat === "gift-card-category") {
       router.push("/gift-card-category");
     } else {
-      router.push(`/product?slug=${cat.slug}&title=${cat.title}&id=${cat._id}`);
+      router.push(`/${cat.slug}`);
     }
   };
   return (

@@ -154,7 +154,7 @@ export default function ProductSearchPageView() {
                     {i !== childCategories.length - 1 ? (
                       <>
                         <Link
-                          href={`/category/${cat.slug}?title=${cat.title}&_id=${cat._id}`}
+                          href={`/category/${cat.slug}`}
                           passHref
                         >
                           <Box
