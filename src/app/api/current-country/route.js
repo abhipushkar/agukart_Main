@@ -6,7 +6,7 @@ export async function GET(request) {
             request.ip ||
             '127.0.0.1';
 
-        console.log("Real IP Address: ", ip, request, request.headers);
+        // console.log("Real IP Address: ", ip, request, request.headers);
 
         let countryData = {};
         try {
@@ -31,7 +31,7 @@ export async function GET(request) {
         const userCountry = countryData?.data?.country;
         const userCountryCode = countryData?.data?.country_code;
 
-        console.log({ userCountry, userCountryCode });
+        // console.log({ userCountry, userCountryCode });
 
         // Return the country information
         return NextResponse.json({

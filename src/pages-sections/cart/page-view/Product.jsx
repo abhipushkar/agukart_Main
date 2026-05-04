@@ -469,7 +469,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
     // Handle edit product to select variants
     const handleEditProduct = () => {
-        router.push(`/products/${product?.product_id}`);
+        router.push(`/product/${product?.slug}/${product?.product_code}`);
     };
 
     useEffect(() => {
@@ -671,7 +671,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                     lineHeight={1.7}
                                 >
                                     <Link
-                                        href={`/products/${product?.product_id}`}
+                                        href={`/product/${product?.product_id}`}
                                         component={NextLink}
                                     >
                                         {parse(product?.product_name)}

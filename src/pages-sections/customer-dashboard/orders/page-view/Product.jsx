@@ -120,7 +120,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
               >
                 <Button
                   onClick={() =>
-                    router.push(`/products/${product.product_id}`)
+                    router.push(product.productData.product_code?`/product/${product.product_id}`:`/products/${product.product_id}`) //old order fallback
                   }
                   variant="contained"
                   size="small"

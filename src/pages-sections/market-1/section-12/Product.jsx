@@ -49,7 +49,7 @@ const Product = ({ product }) => {
             },
           }}
         >
-          <Link href={`/products/${product._id}`}>
+          <Link href={`/product/${product.slug}/${product.product_code}`}>
             <Box borderRadius={2} mb={1}>
               <LazyImage
                 width={100}

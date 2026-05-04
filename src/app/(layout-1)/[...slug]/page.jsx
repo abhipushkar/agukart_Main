@@ -8,7 +8,6 @@ const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
 
 export async function generateMetadata({ params }) {
-  const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
@@ -46,7 +45,7 @@ export async function generateMetadata({ params }) {
     },
 
     alternates: {
-      canonical: `${baseURL}/category/${slugPath}`,
+      canonical: `${baseURL}/${slugPath}`,
     },
   };
 }

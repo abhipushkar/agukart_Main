@@ -48,6 +48,7 @@ const ProductSlug = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  console.log({initialProducts });
 
   // ✅ URL STATE (same as category page)
   const sortBy = searchParams.get("sort") || "relevance";

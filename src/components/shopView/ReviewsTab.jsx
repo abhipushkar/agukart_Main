@@ -238,7 +238,8 @@ const ReviewsTab = ({ vendor_id }) => {
                         cusor: "pointer",
                       }}
                       onClick={() => {
-                        const url = `/products/${item?.productdata?._id}`
+                        console.log(item.productdata);
+                        const url = `/product/${item?.productdata?.slug}/${item?.productdata?.product_code}`;
                         window.open(url, "_blank");
                       }}
                     >
