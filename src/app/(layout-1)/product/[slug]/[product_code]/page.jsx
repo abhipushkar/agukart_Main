@@ -1,7 +1,8 @@
 import MyproductDetails from "pages-sections/product-details/page-view/MyproductDetails";
 import SimilarProducts from "pages-sections/product-details/page-view/SimilarProducts/SimilarProducts";
 import ShopProducts from "pages-sections/product-details/page-view/ShopProducts/ShopProducts";
-import { redirect } from "next/navigation";
+import { redirect, notFound  } from "next/navigation";
+
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -53,7 +54,7 @@ export default async function ProductDetails({ params }) {
     );
 
     if (!res.ok) {
-        throw new Error("Failed to fetch product");
+        return notFound();
     }
 
     const data = await res.json();
