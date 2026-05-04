@@ -1592,8 +1592,8 @@ const MyproductDetails = ({ res }) => {
       <ProductTabs product={myproduct} />
 
       {/* Related Products */}
-      <SimilarProducts product_id={pathname.productId} />
-      <ShopProducts product_id={pathname.productId} />
+      {/* <SimilarProducts product_id={pathname.productId || myproduct?._id} /> */}
+      {/* <ShopProducts product_id={pathname.productId || myproduct?._id} /> */}
 
       {/* Modals */}
       {/* Message Popup */}

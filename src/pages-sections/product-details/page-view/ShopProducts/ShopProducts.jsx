@@ -1,3 +1,4 @@
+"use client";
 import { Box, Container, Grid, Typography } from "@mui/material";
 import { SectionCreator } from "components/section-header";
 import React, { useEffect, useState } from "react";
@@ -6,11 +7,11 @@ import Product from "components/product/Product";
 import { getAPI } from "utils/__api__/ApiServies";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
 
-const ShopProducts = ({ product_id }) => {
-  const [shopProducts, setShopProducts] = useState([]);
-  const [imageBaseUrl, setImageBaseUrl] = useState("");
-  const [videoBaseUrl, setVideoBaseUrl] = useState("");
-  const [loading, setLoading] = useState(true);
+const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
+//   const [shopProducts, setShopProducts] = useState([]);
+//   const [imageBaseUrl, setImageBaseUrl] = useState("");
+//   const [videoBaseUrl, setVideoBaseUrl] = useState("");
+//   const [loading, setLoading] = useState(true);
 
   const chunkArray = (arr, size) => {
     const result = [];
@@ -31,54 +32,37 @@ const ShopProducts = ({ product_id }) => {
     arrows: true,
   };
 
-  const getShopProducts = async () => {
-    try {
-      setLoading(true);
-      const res = await getAPI(
-        `get-similar-vendor-product?productId=${product_id}`
-      );
-      if (res.status === 200) {
-        setLoading(false);
-        setShopProducts(res?.data?.data);
-        setImageBaseUrl(res?.data?.image_url);
-        setVideoBaseUrl(res?.data?.video_url);
-      }
-    } catch (error) {
-      setLoading(false);
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const getShopProducts = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await getAPI(
+  //       `get-similar-vendor-product?productId=${product_id}`
+  //     );
+  //     if (res.status === 200) {
+  //       setLoading(false);
+  //       setShopProducts(res?.data?.data);
+  //       setImageBaseUrl(res?.data?.image_url);
+  //       setVideoBaseUrl(res?.data?.video_url);
+  //     }
+  //   } catch (error) {
+  //     setLoading(false);
+  //     console.log(error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    if (product_id) {
-      getShopProducts();
-    }
-  }, [product_id]);
+  // useEffect(() => {
+  //   if (product_id) {
+  //     getShopProducts();
+  //   }
+  // }, [product_id]);
 
   return (
     <SectionCreator title="More Shop Products">
       <Container sx={{ padding: "30px 16px" }}>
         {
-          loading ? (
-            <Box px={2}>
-              <Grid container spacing={4}>
-                {[...Array(6)].map((_, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                    <ProductCardShimmer />
-                  </Grid>
-                ))}
-              </Grid>
-              <Grid container spacing={4} mt={1}>
-                {[...Array(6)].map((_, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={2} key={index + 6}>
-                    <ProductCardShimmer />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          ):(
+          (
             shopProducts?.length > 0 ? (
               shopProducts.length >= 12 ? (
                 <Typography

@@ -65,7 +65,7 @@ const section16 = ({ becauseViewed, getBecauseOfView }) => {
                 <Grid key={product._id} item xs={12} md={4} lg={2.4}>
                   <Box key={product._id}>
                     <Box mb={2}>
-                      <Link href={`/products/${product._id}`}>
+                      <Link href={`/product/${product.slug}/${product.product_code}`}>
                         <BazaarCard
                           sx={{
                             background: "none",
@@ -124,7 +124,7 @@ const section16 = ({ becauseViewed, getBecauseOfView }) => {
               return (
                 <Box key={product._id}>
                   <Box mb={2}>
-                    <Link href={`/products/${product._id}`}>
+                    <Link href={`/product/${product.slug}/${product.product_code}`}>
                       <BazaarCard
                         sx={{
                           background: "none",

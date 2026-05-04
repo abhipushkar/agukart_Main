@@ -1,3 +1,4 @@
+"use client";
 import { Box, Grid, Rating, Typography, Button } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -266,7 +267,7 @@ useEffect(() => {
 
   return (
     <Link
-      href={`/products/${product._id}`}
+      href={`/product/${product.slug}/${product.product_code}`}
       style={{ textDecoration: "none", color: "inherit" }}
     >
       <Box

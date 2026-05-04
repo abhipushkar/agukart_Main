@@ -190,7 +190,7 @@ const ProductWithoutVideo = ({ product }) => {
 
   return (
     <Link
-      href={`/products/${product._id}`}
+      href={`/product/${product.slug}/${product.product_code}`}
       style={{ textDecoration: "none", color: "inherit" }}
     >
       <Box
