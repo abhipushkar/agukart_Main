@@ -58,7 +58,28 @@ console.log(error,"here is my eroooooooyty")
     throw error;
   }
 };
-
+export const postAPIAuthFormData = async (url, params, tokenInit, addToast) => {
+  const bURL = baseURL;
+  const token = localStorage.getItem(TOKEN_NAME);
+  try {
+    const response = await axios.post(`${bURL}/${url}`, params, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${tokenInit ? tokenInit : token}`,
+      },
+    });
+    return response;
+  } catch (error) {
+    if (addToast) {
+      addToast(error?.response?.data?.message, {
+        appearance: "error",
+        autoDismiss: true,
+      });
+    }
+    console.log("error=>", error);
+    throw error;
+  }
+};
 export const postAPI = async (url, params) => {
   const bURL = baseURL;
   try {

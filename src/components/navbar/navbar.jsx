@@ -19,11 +19,11 @@ export default function Navbar({
   return (
     <div>
       <NavBarWrapper
-        hoverEffect={false}
-        elevation={elevation}
-        border={border}
-        justifyContent={"start"}
-      >
+  hoverEffect={false}
+  elevation={elevation}
+  border={border}
+  sx={{ justifyContent: "flex-start" }}
+>
         {hideCategories ? (
           <InnerContainer
             sx={{

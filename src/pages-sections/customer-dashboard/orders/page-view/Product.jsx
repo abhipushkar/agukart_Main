@@ -6,7 +6,7 @@ import MessagePopup from "./MessagePopup";
 import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
 
-const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product }) => {
+const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product, setReviewProduct }) => {
   console.log({ order, product, shopBaseUrl, baseUrl }, "DFhrtfyhrthjrthrt");
   const router = useRouter();
   const { addToast } = useToasts();
@@ -190,17 +190,21 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                 product.delivery_status == "Delivered" && (
                   <Button
                     onClick={() => {
-                      if (product.ratingStatus) {
-                        addToast("Product review have already given", {
-                          appearance: "error",
-                          autoDismiss: true,
-                        });
-                        return;
-                      }
-                      setReviewId(product?._id);
-                      setVendorId(product?.vendor_id);
-                      handleClickPopup();
-                    }}
+  if (product.ratingStatus) {
+    addToast("Product review have already given", {
+      appearance: "error",
+      autoDismiss: true,
+    });
+    return;
+  }
+  setReviewId(product?._id);
+  setVendorId(product?.vendor_id);
+  setReviewProduct({                                    // 👈 ADD
+    image: product?.productData?.image,                // 👈 ADD
+    product_name: product?.productData?.product_title  // 👈 ADD
+  });                                                   // 👈 ADD
+  handleClickPopup();
+}}
                     variant="contained"
                     sx={{
                       background: "#fff",
