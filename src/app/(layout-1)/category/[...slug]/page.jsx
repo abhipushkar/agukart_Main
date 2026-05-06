@@ -1,4 +1,4 @@
-import { permanentRedirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import ProductCategoriesSearchPageView from "pages-sections/product-categories-details/productCategories-search";
 import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
 import { Box, Typography, Chip } from "@mui/material";
@@ -54,23 +54,6 @@ export async function generateMetadata({ params }) {
 export default async function ProductSearch({ params }) {
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
-  console.log({ slugArray, slugPath, params })
-
-  // 1. CHECK REDIRECT FIRST
-  const resolveRes = await fetch(
-    `${baseURL}/${slugPath}`,
-    { cache: "no-store" }
-  );
-
-  // console.log(resolveRes);
-
-  if (resolveRes.ok) {
-    const resolveData = await resolveRes.json();
-
-    if (resolveData.redirect && resolveData.newSlug) {
-      permanentRedirect(`/category/${resolveData.newSlug}`);
-    }
-  }
 
   // 2. THEN FETCH CATEGORY
   const categoryRes = await fetch(
