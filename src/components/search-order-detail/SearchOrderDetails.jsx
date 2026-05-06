@@ -359,7 +359,7 @@ const SearchOrderDetails = () => {
                           >
                             {" "}
                             <Link
-                              href={`/products/${order.saleDetaildata[0].product_id}`}
+                              href={order.saleDetaildata[0].productData.product_code?`/product/${order.saleDetaildata[0].productData.slug}/${order.saleDetaildata[0].productData.product_code}`:`/products/${order.saleDetaildata[0].product_id}`} //old order fallback
                               style={{
                                 fontWeight: "500",
                                 color: "#0a8369",

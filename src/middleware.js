@@ -2,27 +2,27 @@ import { NextResponse } from "next/server";
 
 export async function middleware(request) {
   const ip = (request.headers.get('x-forwarded-for')?.split(',')[0].trim()) || request.ip || '127.0.0.1';
-  console.log("Real IP Address: ", ip); 
+  // console.log("Real IP Address: ", ip); 
   let data = {};
   try{
     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/get-country-by-ip?ip=${ip}`);
     data = await res.json();
-    console.log("location data", data);
+    // console.log("location data", data);
   }catch(error){
     console.error("Failed to fetch location data for IP", ip);
     return NextResponse.next();
   }
 
   const userCountry = data?.data?.country;
-  console.log({userCountry})
+  // console.log({userCountry})
   let blockedCountries = [];
 
   try{
     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/get-blocked-country`);
     data = await res.json();
-    console.log("blocked country", data); 
+    // console.log("blocked country", data); 
     blockedCountries = data?.result?.map((country) => country.name);
-    console.log({blockedCountries})
+    // console.log({blockedCountries})
   }catch(error){
     console.error("Failed to fetch blocked country data");
     return NextResponse.next();

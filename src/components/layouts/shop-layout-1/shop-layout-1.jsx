@@ -27,7 +27,7 @@ export default function ShopLayout1({
   const pathname = usePathname();
   // Check if the current path is '/blocked'
   const isBlockedPage = pathname === '/blocked';
-  console.log({isBlockedPage})
+  // console.log({isBlockedPage})
   // console.log("SSSSSSSSSSSSSSSSSSSSSSSSSSSS")
   return <Fragment>
     {

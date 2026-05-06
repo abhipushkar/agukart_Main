@@ -360,7 +360,7 @@ export default function OrderConfirmationPageView() {
                               color: "primary.main",
                             },
                           }}
-                          onClick={() => router.push(`/products/${product?.productData?._id}`)}
+                          onClick={() => router.push(product?.productData?.product_code?`/product/${product?.productData?.slug}/${product?.productData?.product_code}`:`/products/${product?.productData?._id}`)} //old order fallback
                         >
                           {product?.productData?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
                         </Typography>

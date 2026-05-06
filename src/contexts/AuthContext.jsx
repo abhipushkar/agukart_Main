@@ -44,7 +44,7 @@ const AuthContextProvider = ({ children }) => {
     localStorage.removeItem(PLACE_ORDER_VALIDATION);
   }, [pathName]);
 
-  console.log({ placeOrderValidate });
+  // console.log({ placeOrderValidate });
   return (
     <AuthContext.Provider
       value={{ token, setToken, placeOrderValidate, setPlaceOrderValidate }}

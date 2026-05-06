@@ -142,7 +142,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         </Button>
       </FlexBox>
 
-      <Link href={`/products/${item.product_id}`}>
+      <Link href={`/product/${item.slug}/${item.product_code}`}>
         <Avatar
           alt={item.product_name}
           src={item.firstImage}
@@ -160,7 +160,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         whiteSpace="nowrap"
         overflow="hidden"
       >
-        <Link href={`/products/${item.product_id}`}>
+        <Link href={`/product/${item?.slug}/${item?.product_code}`}>
           <H6 ellipsis className="title">
             {item?.name?.replace(/<[^>]*>/g, "")}
           </H6>

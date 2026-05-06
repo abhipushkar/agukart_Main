@@ -470,7 +470,7 @@ const OrderDetails = () => {
                         >
                           {" "}
                           <Link
-                            href={`/products/${product?.product_id}`}
+                            href={product.productData.product_code? `/product/${product?.productData.slug}/${product?.productData.product_code}`:`/products/${product?.product_id}`} //old order fallback
                             style={{
                               fontWeight: "500",
                               color: "#0a8369",

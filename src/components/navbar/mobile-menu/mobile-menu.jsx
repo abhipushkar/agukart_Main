@@ -36,7 +36,7 @@ export default function MobileMenu() {
     } else if (cat === "gift-card-category") {
       router.push("/gift-card-category");
     } else {
-      router.push(`/${cat.slug}`);
+      router.push(`/${cat.fullSlug}`);
     }
     setOpenDrawer(false);
   };

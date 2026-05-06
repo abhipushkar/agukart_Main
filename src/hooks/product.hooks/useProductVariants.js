@@ -326,6 +326,8 @@ export const useProductVariants = (product) => {
           combination_ids: combinationIds,
           sku_first_image: combo.sku_first_image || null,
           sold_out: combo.sold_out || false,
+          product_code: combo.product_code || "",
+          slug: combo.slug || "",
         });
       }
     });
@@ -1469,7 +1471,7 @@ export const useProductVariants = (product) => {
       targetCombination.sku_product_id !== product._id &&
       !targetCombination.sold_out
     ) {
-      router.push(`/products/${targetCombination.sku_product_id}`);
+      router.push(`/product/${targetCombination.slug}/${targetCombination.product_code}`);
     }
   }, [selectedVariants, product, router, extractParentCombinations]);
 

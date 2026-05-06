@@ -1,16 +1,17 @@
+"use client";
 import { Box, Container, Grid, Typography } from "@mui/material";
 import Product from "components/product/Product";
 import { SectionCreator } from "components/section-header";
-import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
-import React, { useEffect, useState } from "react";
+// import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
+// import React, { useEffect, useState } from "react";
 import Slider from "react-slick";
-import { getAPI } from "utils/__api__/ApiServies";
+// import { getAPI } from "utils/__api__/ApiServies";
 
-const SimilarProducts = ({ product_id }) => {
-  const [similarProducts, setSimilarProducts] = useState([]);
-  const [imageBaseUrl, setImageBaseUrl] = useState("");
-  const [videoBaseUrl, setVideoBaseUrl] = useState("");
-  const [loading, setLoading] = useState(true);
+const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
+  // const [similarProducts, setSimilarProducts] = useState([]);
+  // const [imageBaseUrl, setImageBaseUrl] = useState("");
+  // const [videoBaseUrl, setVideoBaseUrl] = useState("");
+  // const [loading, setLoading] = useState(true);
 
   const chunkArray = (arr, size) => {
     const result = [];
@@ -31,51 +32,34 @@ const SimilarProducts = ({ product_id }) => {
     arrows: true,
   };
 
-  const getSimilarProducts = async () => {
-    try {
-      setLoading(true);
-      const res = await getAPI(`get-similar-product?productId=${product_id}`);
-      if (res.status === 200) {
-        setLoading(false);
-        setSimilarProducts(res?.data?.data);
-        setImageBaseUrl(res?.data?.image_url);
-        setVideoBaseUrl(res?.data?.video_url);
-      }
-    } catch (error) {
-      setLoading(false);
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const getSimilarProducts = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await getAPI(`get-similar-product?productId=${product_id}`);
+  //     if (res.status === 200) {
+  //       setLoading(false);
+  //       setSimilarProducts(res?.data?.data);
+  //       setImageBaseUrl(res?.data?.image_url);
+  //       setVideoBaseUrl(res?.data?.video_url);
+  //     }
+  //   } catch (error) {
+  //     setLoading(false);
+  //     console.log(error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    if (product_id) {
-      getSimilarProducts();
-    }
-  }, [product_id]);
+  // useEffect(() => {
+  //   if (product_id) {
+  //     getSimilarProducts();
+  //   }
+  // }, [product_id]);
 
   return (
     <SectionCreator title="Similar Products From Agukart">
       <Container sx={{ padding: "30px 16px" }}>
-        {loading ? (
-          <Box px={2}>
-            <Grid container spacing={4}>
-              {[...Array(6)].map((_, index) => (
-                <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                  <ProductCardShimmer />
-                </Grid>
-              ))}
-            </Grid>
-            <Grid container spacing={4} mt={1}>
-              {[...Array(6)].map((_, index) => (
-                <Grid item xs={12} sm={6} md={4} lg={2} key={index + 6}>
-                  <ProductCardShimmer />
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        ) : similarProducts?.length > 0 ? (
+        {similarProducts?.length > 0 ? (
           similarProducts.length >= 12 ? (
             <Typography
               component="div"
