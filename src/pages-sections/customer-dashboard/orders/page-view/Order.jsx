@@ -44,6 +44,60 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const { currency } = useCurrency();
   const parentSale = order?.parentSale || order;
   const items = order?.items || [];
+  const dummyReviews = {
+  0: {
+    rating: 5,
+
+    review:
+      "I'm very happy with my purchase. It's well made & a great design. Quick shipping. I'd definitely purchase from them again.",
+
+    images: [
+      "/images/review1.jpg",
+      "/images/review2.jpg",
+      "/images/review3.jpg",
+      "/images/review4.jpg",
+    ],
+
+    flagged: true,
+
+    hidden: false,
+
+    locked: false,
+
+    buyerNote:
+      "Seller has acknowledged your review and will contact you shortly.",
+
+    reply: {
+      seller: "SilverCraft",
+      date: "Nov 24, 2023",
+      message:
+        "Thank you Pam, so happy you liked it.",
+    },
+  },
+
+  1: {
+    rating: 5,
+
+    review:
+      "Amazing quality and beautiful finishing. Delivery was quick and packaging was premium.",
+
+    images: [
+      "/images/review1.jpg",
+      "/images/review2.jpg",
+    ],
+
+    flagged: false,
+
+    hidden: true,
+
+    locked: true,
+
+    buyerNote:
+      "This review has been reviewed by support team.",
+
+    reply: null,
+  },
+};
   const [reviewProduct, setReviewProduct] = useState(null);
   const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
@@ -457,19 +511,427 @@ const handleFollow = async () => {
                     }}
                   />
                 </Box> */}
-                {items.map(product => (
-                  <Product
-                    key={product?._id}
-                    baseUrl={baseUrl}
-                    shopBaseUrl={shopBaseUrl}
-                    SetOpenPopup={SetOpenPopup}
-                    setReviewId={setReviewId}
-                    setVendorId={setVendorId}
-                    setReviewProduct={setReviewProduct}
-                    order={order}
-                    product={product}
-                  />
-                ))}
+                {items.map((product, index) => {
+  const review = dummyReviews[index];
+
+  if (review.hidden) {
+  return (
+    <Box
+      key={product?._id}
+      sx={{
+        display: "flex",
+        justifyContent: "flex-end",
+        py: 3,
+        borderBottom:
+          index !== items.length - 1
+            ? "1px solid #ececec"
+            : "none",
+      }}
+    >
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: 520,
+          bgcolor: "#f8f7f3",
+          border: "1px solid #ece8dc",
+          borderRadius: 2,
+          p: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              bgcolor: "#f1641e",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              flexShrink: 0,
+            }}
+          >
+            Etsy
+          </Box>
+
+          <Typography
+            sx={{
+              color: "#666",
+              fontSize: 14,
+            }}
+          >
+            This review has been hidden by admin.
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+  return (
+    <Box
+      key={product?._id}
+      sx={{
+        display: "flex",
+        gap: 3,
+        py: 3,
+        borderBottom:
+          index !== items.length - 1
+            ? "1px solid #ececec"
+            : "none",
+        flexDirection: {
+          xs: "column",
+          md: "row",
+        },
+      }}
+    >
+      {/* LEFT PRODUCT */}
+      <Box
+        sx={{
+          width: {
+            xs: "100%",
+            md: "45%",
+          },
+          display: "flex",
+          gap: 2,
+        }}
+      >
+        {/* IMAGE */}
+        <Box
+          sx={{
+            width: 95,
+            height: 95,
+            borderRadius: 2,
+            overflow: "hidden",
+            border: "1px solid #e5e5e5",
+            bgcolor: "#fafafa",
+            flexShrink: 0,
+          }}
+        >
+          <img
+            src={
+              product?.image?.[0]
+                ? `${baseUrl}/${product.image[0]}`
+                : ""
+            }
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </Box>
+
+        {/* PRODUCT INFO */}
+        <Box>
+          <Typography
+            sx={{
+              fontSize: 18,
+              fontWeight: 500,
+              lineHeight: 1.5,
+              color: "#2b2b2b",
+            }}
+          >
+            {product?.product_name?.replace(
+              /<\/?[^>]+(>|$)/g,
+              ""
+            )}
+          </Typography>
+
+          <Typography
+            sx={{
+              mt: 1,
+              color: "#777",
+              fontSize: 15,
+            }}
+          >
+            Materials: Sterling silver
+          </Typography>
+
+          <Typography
+            sx={{
+              color: "#777",
+              fontSize: 15,
+            }}
+          >
+            Ring Size (US size): 10
+          </Typography>
+
+          <Typography
+            sx={{
+              color: "#444",
+              fontSize: 15,
+              mt: 0.3,
+            }}
+          >
+            Qty : {product?.quantity}
+          </Typography>
+
+          {/* BUTTONS */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              mt: 2,
+              flexWrap: "wrap",
+            }}
+          >
+            <Button
+              sx={{
+                bgcolor: "#f7efcf",
+                color: "#222",
+                borderRadius: "30px",
+                px: 2,
+                textTransform: "none",
+                fontSize: 14,
+                "&:hover": {
+                  bgcolor: "#f1e4b2",
+                },
+              }}
+            >
+              Buy it Again
+            </Button>
+
+            <Button
+              sx={{
+                bgcolor: "#f7efcf",
+                color: "#222",
+                borderRadius: "30px",
+                px: 2,
+                textTransform: "none",
+                fontSize: 14,
+                "&:hover": {
+                  bgcolor: "#f1e4b2",
+                },
+              }}
+            >
+              Help With Item
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* RIGHT REVIEW */}
+      <Box
+        sx={{
+          flex: 1,
+          bgcolor: "#f8f7f3",
+          borderRadius: 2,
+          p: 2,
+          border: "1px solid #ece8dc",
+        }}
+      >
+        {/* TOP */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 1,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Typography
+              fontWeight={600}
+              fontSize={15}
+            >
+              Your Review
+            </Typography>
+
+            <Typography
+              sx={{
+                color: "#000",
+                letterSpacing: 1,
+                fontSize: 16,
+              }}
+            >
+              {"★".repeat(review.rating)}
+            </Typography>
+          </Box>
+
+          {/* FLAG */}
+          {review.flagged && !review.hidden && (
+            <Typography
+              sx={{
+                color: "#666",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              
+            </Typography>
+          )}
+        </Box>
+
+        {/* REVIEW IMAGES */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+            mb: 2,
+          }}
+        >
+          {review.images.map((img, imgIndex) => (
+            <Box
+              key={imgIndex}
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: 1,
+                overflow: "hidden",
+                border: "1px solid #ddd",
+                bgcolor: "#fff",
+              }}
+            >
+              <img
+                src={img}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        {/* REVIEW TEXT */}
+        <Typography
+          sx={{
+            color: "#4d4d4d",
+            fontSize: 14,
+            lineHeight: 1.6,
+          }}
+        >
+          {review.review}
+        </Typography>
+
+        {/* EDIT */}
+        <Typography
+  sx={{
+    mt: 1.5,
+    color: review.locked ? "#b5b5b5" : "#666",
+    fontSize: 13,
+    textDecoration: "underline",
+    cursor: review.locked ? "not-allowed" : "pointer",
+    width: "fit-content",
+    opacity: review.locked ? 0.6 : 1,
+    pointerEvents: review.locked ? "none" : "auto",
+  }}
+>
+  Edit review
+</Typography>
+
+        {/* SELLER REPLY */}
+        {review.reply && (
+          <Box
+            sx={{
+              mt: 2,
+              bgcolor: "#fff",
+              border: "1px solid #ececec",
+              borderRadius: 2,
+              p: 2,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1.5,
+              }}
+            >
+              {/* AVATAR */}
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: "50%",
+                  bgcolor: "#f1641e",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  flexShrink: 0,
+                }}
+              >
+                Etsy
+              </Box>
+
+              <Box>
+                <Typography
+                  fontWeight={600}
+                  fontSize={14}
+                >
+                  {review.reply.seller}
+
+                  <Typography
+                    component="span"
+                    sx={{
+                      color: "#666",
+                      fontWeight: 400,
+                      ml: 1,
+                    }}
+                  >
+                    responded on Nov 24, 2023
+                  </Typography>
+                </Typography>
+
+                <Typography
+                  sx={{
+                    mt: 1,
+                    color: "#555",
+                    fontSize: 14,
+                  }}
+                >
+                  {review.reply.message}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+        {review.buyerNote && (
+  <Box
+    sx={{
+      mt: 2,
+      bgcolor: "#fff8e1",
+      border: "1px solid #f1d58a",
+      borderRadius: 2,
+      p: 2,
+    }}
+  >
+    <Typography
+      sx={{
+        fontSize: 13,
+        color: "#8a6d1d",
+        lineHeight: 1.6,
+      }}
+    >
+      <strong>Note to Buyer:</strong>{" "}
+      {review.buyerNote}
+    </Typography>
+  </Box>
+)}
+      </Box>
+    </Box>
+  );
+})}
               </Box>
             )}
           </Box>

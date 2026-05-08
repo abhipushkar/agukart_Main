@@ -244,6 +244,14 @@ const ReviewCard = ({ review }) => (
                     </span>
                 </Typography>
 
+                {review.recommended && (
+    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
+        <Typography fontSize={13} sx={{ color: '#2e7d32', fontWeight: 500 }}>
+            ✓ Recommends this item
+        </Typography>
+    </Box>
+)}
+
                 {/* Photos */}
                 {review.photos?.length > 0 && (
                     <Box
@@ -438,8 +446,14 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
     const avgRating = currentReviews.length > 0
         ? (currentReviews.reduce((s, r) => s + r.item_rating, 0) / currentReviews.length).toFixed(1)
         : 0;
+const scrollToReviews = () => {
+        const el = document.getElementById('reviews');
+        if (!el) return;
+        const top = el.getBoundingClientRect().top + window.scrollY - 49;
+        window.scrollTo({ top, behavior: 'smooth' });
+    };
+    const handleTabChange = (_, newVal) => { setActiveTab(newVal); setPage(1); scrollToReviews(); };
 
-    const handleTabChange = (_, newVal) => { setActiveTab(newVal); setPage(1); };
 
     return (
         <Box>
@@ -489,6 +503,14 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
                 {paginatedReviews.map(review => (
                     <ReviewCard key={review._id} review={review} />
                 ))}
+
+                {paginatedReviews.length === 0 && (
+        <Box sx={{ py: 6, textAlign: 'center', color: '#888' }}>
+            <Typography fontSize={15}>
+                No reviews yet for this {activeTab === 0 ? 'shop' : 'item'}.
+            </Typography>
+        </Box>
+    )}
             </Box>
 
             {/* Pagination */}
@@ -497,7 +519,10 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
                     <Pagination
                         count={totalPages}
                         page={page}
-                        onChange={(_, val) => setPage(val)}
+                       onChange={(_, val) => {
+    setPage(val);
+    scrollToReviews();
+}}
                         shape="rounded"
                         sx={{
                             '& .MuiPaginationItem-root': { fontSize: 14, color: '#333', border: '1px solid transparent' },
@@ -518,6 +543,12 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductTabs = ({ product }) => {
     const [activeTab, setActiveTab] = React.useState('description');
+     const scrollToSection = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const top = el.getBoundingClientRect().top + window.scrollY - 49;
+        window.scrollTo({ top, behavior: 'smooth' });
+    };
 
     React.useEffect(() => {
         const sections = [
@@ -536,11 +567,14 @@ const ProductTabs = ({ product }) => {
     }, []);
 
     const tabStyle = (tabName) => ({
-        cursor: 'pointer', fontWeight: 400, fontSize: '15px',
-        color: activeTab === tabName ? '#d32f2f' : '#222',
-        borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
-        pb: '12px', transition: 'color 0.2s', flexShrink: 0,
-    });
+    cursor: 'pointer', fontWeight: 400, fontSize: '15px',
+    color: activeTab === tabName ? '#d32f2f' : '#222',
+    borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
+    pb: '12px', transition: 'color 0.2s, border-bottom 0.2s', flexShrink: 0,
+    '&:hover': {                          // ✅ ADD KARO
+        color: '#d32f2f',
+    },
+});
 
     return (
         <Box py={2} sx={{ padding: '0 0', m: 'auto', maxWidth: '1550px' }}>
@@ -553,6 +587,8 @@ const ProductTabs = ({ product }) => {
         display: 'flex',
         alignItems: 'center',
         gap: '40px',
+        pt: '20px',        // ✅ ADD KARO
+        pb: '0px',         // ✅ ADD KARO (borderBottom ke saath pb tabStyle mein hai)
 
         pl: { xs: '25px', md: '100px' },
         pr: { xs: '10px', md: '40px' },
@@ -583,7 +619,7 @@ const ProductTabs = ({ product }) => {
                                 <Typography
                                     key={tab.id}
                                     sx={tabStyle(tab.id)}
-                                    onClick={() => document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth' })}
+onClick={() => scrollToSection(tab.id)}
                                 >
                                     {tab.label}
                                 </Typography>
