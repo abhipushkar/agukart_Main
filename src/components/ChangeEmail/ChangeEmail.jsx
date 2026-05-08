@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { H3, H4, H6, Small } from "components/Typography";
 import Grid from "@mui/material/Grid";
@@ -13,7 +12,6 @@ import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-
 import {
   CardContent,
   CardMedia,
@@ -27,12 +25,10 @@ import {
 } from "@mui/material";
 import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import { useFormik } from "formik";
-
 import * as Yup from "yup";
 import { token } from "stylis";
 import useAuth from "hooks/useAuth";
 import { useToasts } from "react-toast-notifications";
-
 const validationSchema = Yup.object({
   New_email: Yup.string()
     .email("Enter a valid email")
@@ -47,7 +43,6 @@ const validationSchema = Yup.object({
       "Password must contain at least one lowercase letter, one uppercase letter, one number, one special character, and be at least 8 characters long"
     ),
 });
-
 const ChangeEmail = () => {
   const { token } = useAuth();
   const { addToast } = useToasts();
@@ -58,16 +53,13 @@ const ChangeEmail = () => {
     useState(false);
   const [resendConfirmationLoading, setResendConfirmationLoading] =
     useState(false);
-
   const searchParams = useSearchParams();
   const varifyToken = searchParams.get("token");
-
   const router = useRouter();
   const getEmailInfo = async () => {
     try {
       setLoading(true);
       const res = await getAPIAuth("user/get-email");
-
       if (res.status === 200) {
         setEmailInfo(res.data.data);
       }
@@ -78,11 +70,9 @@ const ChangeEmail = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     getEmailInfo();
   }, []);
-
   const submitNewEmail = async (values, resetForm) => {
     try {
       const res = await postAPIAuth(
@@ -95,7 +85,6 @@ const ChangeEmail = () => {
         token,
         addToast
       );
-
       if (res.status === 200) {
         addToast("Varification link send to Your Email", {
           appearance: "success",
@@ -108,7 +97,6 @@ const ChangeEmail = () => {
       console.log(error);
     }
   };
-
   const sendConfirmationEmail = async () => {
     try {
       setResendConfirmationLoading(true);
@@ -120,7 +108,6 @@ const ChangeEmail = () => {
         token,
         addToast
       );
-
       if (res.status === 200) {
         addToast("Varification link send to Your Email", {
           appearance: "success",
@@ -135,7 +122,6 @@ const ChangeEmail = () => {
       setResendConfirmationLoading(false);
     }
   };
-
   const formik = useFormik({
     initialValues: {
       New_email: "",
@@ -147,7 +133,6 @@ const ChangeEmail = () => {
       submitNewEmail(values, resetForm);
     },
   });
-
   const varifyEmail = async () => {
     try {
       const res = await postAPIAuth(
@@ -169,7 +154,6 @@ const ChangeEmail = () => {
       console.log(error);
     }
   };
-
   const cancelVarification = async () => {
     try {
       setCancelConfirmationLoading(true);
@@ -196,17 +180,14 @@ const ChangeEmail = () => {
       setCancelConfirmationLoading(false);
     }
   };
-
   useEffect(() => {
     getEmailInfo();
   }, [varifyToken]);
-
   useEffect(() => {
     if (varifyToken) {
       varifyEmail();
     }
   }, []);
-
   return (
     <>
       <Container py={5}>
@@ -230,7 +211,6 @@ const ChangeEmail = () => {
                     {emailInfo && emailInfo.status}
                   </Typography>
                 </Typography>
-
                 {emailInfo && emailInfo.status === "Pending" && (
                   <Typography component="div" mt={1}>
                     <Button
@@ -250,7 +230,6 @@ const ChangeEmail = () => {
                     >
                       Resend confirmation email
                     </Button>
-
                     {emailInfo.showCancelButton && (
                       <Button
                         disabled={cancelConfirmationLoading ? true : false}
@@ -300,7 +279,6 @@ const ChangeEmail = () => {
                               }
                             />
                           </FormControl>
-
                           <FormControl fullWidth sx={{ marginBottom: "15px" }}>
                             <TextField
                               fullWidth
@@ -319,7 +297,6 @@ const ChangeEmail = () => {
                               }
                             />
                           </FormControl>
-
                           <FormControl fullWidth sx={{ marginBottom: "15px" }}>
                             <TextField
                               fullWidth
@@ -339,7 +316,6 @@ const ChangeEmail = () => {
                               }
                             />
                           </FormControl>
-
                           <Box  sx ={{display:'flex' ,gap:"5px"}} >
                           <Typography    component="div" pb={1}>
                               <Button
@@ -365,7 +341,6 @@ const ChangeEmail = () => {
                                 )}
                               </Button>
                             </Typography>
-
                             <Typography    component="div" pb={1}>
                               <Button
                                 disabled={loading ? true : false}
@@ -389,7 +364,6 @@ const ChangeEmail = () => {
                             </Typography>
                           </Box>
                         </form>
-
                         <Typography>
                           Your emila address will not change until you Confirm
                           it via email.
@@ -406,5 +380,4 @@ const ChangeEmail = () => {
     </>
   );
 };
-
 export default ChangeEmail;

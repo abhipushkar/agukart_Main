@@ -17,19 +17,15 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-
 const TrackingPopup = ({ open, onClose, order }) => {
     const [trackingHistory, setTrackingHistory] = useState([]);
     const [selectedShipment, setSelectedShipment] = useState(null);
-
     // Get shipments from the first item in the order
     const shipments = order?.items?.[0]?.shipments || [];
-
     // Sort shipments by shipped_date (newest first)
     const sortedShipments = [...shipments].sort((a, b) =>
         new Date(b.shipped_date) - new Date(a.shipped_date)
     );
-
     useEffect(() => {
         if (sortedShipments.length > 0) {
             setSelectedShipment(sortedShipments[0]);
@@ -37,7 +33,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
             generateMockTrackingHistory(sortedShipments[0]);
         }
     }, [order]);
-
     const generateMockTrackingHistory = (shipment) => {
         // This should be replaced with actual tracking history from your API
         const mockHistory = [
@@ -74,7 +69,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
         ];
         setTrackingHistory(mockHistory);
     };
-
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString("en-GB", {
@@ -83,7 +77,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
             year: "numeric"
         });
     };
-
     const formatDateTime = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString("en-GB", {
@@ -94,7 +87,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
             minute: '2-digit'
         });
     };
-
     const handleTrackClick = (trackingNumber) => {
         // Open tracking URL if available
         if (selectedShipment?.service?.tracking_url) {
@@ -104,16 +96,12 @@ const TrackingPopup = ({ open, onClose, order }) => {
             window.open(`https://track.shipping.com/${trackingNumber}`, '_blank');
         }
     };
-
     const getLatestShipment = () => {
         return sortedShipments[0];
     };
-
     const latestShipment = getLatestShipment();
-    
     const deliveryStatus = (order.items?.[0]?.delivery_status || order?.delivery_status) === "No tracking"
         ? { tracking: false, status: "Shipped" } : { tracking: true, status: (order.items?.[0]?.delivery_status || order?.delivery_status) };
-
     return (
         <Dialog
             open={open}
@@ -145,7 +133,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-
             <DialogContent sx={{ p: 3, overflowY: 'auto' }}>
                 <Typography fontSize={18} pt={2}>
                     Order Status: <strong>{deliveryStatus.status}</strong>
@@ -192,7 +179,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
                                                 </Typography>
                                             </Box>)}
                                         </Stack>
-
                                         <Stack spacing={1}>
                                             <Box sx={{ display: 'flex', gap: 2 }}>
                                                 <Typography variant="body2" color="text.secondary">
@@ -211,7 +197,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
                                                 </Typography>
                                             </Box>
                                         </Stack>
-
                                         <Button
                                             size="small"
                                             startIcon={<OpenInNewIcon />}
@@ -252,7 +237,6 @@ const TrackingPopup = ({ open, onClose, order }) => {
                     </Box>
                 )}
             </DialogContent>
-
             <DialogActions sx={{
                 p: 2,
                 borderTop: 1,
@@ -266,5 +250,4 @@ const TrackingPopup = ({ open, onClose, order }) => {
         </Dialog>
     );
 };
-
 export default TrackingPopup;

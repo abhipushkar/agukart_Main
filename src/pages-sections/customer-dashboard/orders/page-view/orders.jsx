@@ -1,5 +1,4 @@
 "use client";
-
 import { Fragment, useEffect, useState } from "react";
 import ShoppingBag from "@mui/icons-material/ShoppingBag";
 import { SectionCreator } from "components/section-header";
@@ -31,14 +30,12 @@ import { useToasts } from "react-toast-notifications";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import Order from "./Order";
 // CUSTOM DATA MODEL
-
 const invoices = [
   {
     value: "Invoice",
     label: "Invoice",
   },
 ];
-
 const orderplace = [
   {
     value: -1,
@@ -61,7 +58,6 @@ const orderplace = [
     label: "1 month",
   },
 ];
-
 const Search = styled("span")(({ theme }) => ({
   position: "relative",
   borderRadius: "4px 0px 0 4px",
@@ -74,7 +70,6 @@ const Search = styled("span")(({ theme }) => ({
     width: "auto",
   },
 }));
-
 const SearchIconWrapper = styled("div")(({ theme }) => ({
   padding: theme.spacing(0, 1),
   height: "100%",
@@ -86,7 +81,6 @@ const SearchIconWrapper = styled("div")(({ theme }) => ({
   left: "0",
   top: "1px",
 }));
-
 // ====================================================
 export default function OrdersPageView() {
   const { token } = useAuth();
@@ -101,9 +95,7 @@ export default function OrdersPageView() {
   const [searchTerms, setSearchTerms] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const router = useRouter();
-
   const getAllOrders = async (startDate, endDate) => {
     try {
       setShowLoading(true);
@@ -121,7 +113,6 @@ export default function OrdersPageView() {
           setSubOrders(() => {
             const grouped = {};
             const sales = res.data.sales;
-
             sales.forEach((sale) => {
               if (sale?.saleDetaildata?.length) {
                 sale.saleDetaildata.forEach((item) => {
@@ -138,16 +129,13 @@ export default function OrdersPageView() {
                       vendorData: item.vendorData
                     };
                   }
-
                   grouped[key].items.push(item);
                 });
               }
             });
-
             const result = Object.values(grouped).sort(
               (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
             );
-
             console.log(result);
             return result;
           });
@@ -164,7 +152,6 @@ export default function OrdersPageView() {
       setShowLoading(false);
     }
   };
-
   useEffect(() => {
     function getDateRange(filterOrders) {
       const currentDate = new Date();
@@ -176,31 +163,24 @@ export default function OrdersPageView() {
       } else {
         pastDate.setMonth(currentDate.getMonth() - filterOrders);
       }
-
       const formatDate = (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const day = String(date.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       };
-
       return {
         currentDate: formatDate(currentDate),
         pastDate: formatDate(pastDate),
       };
     }
-
     const dateRange = getDateRange(filterOrders);
-
     console.log({ dateRange });
-
     getAllOrders(dateRange.pastDate, dateRange.currentDate);
   }, [filterOrders, page]);
-
   const handlePageChange = (event, value) => {
     setPage(value);
   };
-
   const OrderListShimmer = () => {
     return (
       <>
@@ -234,7 +214,6 @@ export default function OrdersPageView() {
                   </Box>
                 </Box>
               </Grid>
-
               <Grid item lg={5} md={6} xs={12}>
                 <Box
                   sx={{
@@ -283,13 +262,10 @@ export default function OrdersPageView() {
       </>
     );
   };
-
-
   return (
     <Fragment>
       {/* TITLE HEADER AREA */}
       <DashboardHeader Icon={ShoppingBag} title="My Orders" />
-
       <SectionCreator py={3}>
         <Grid>
           <H3
@@ -423,7 +399,6 @@ export default function OrdersPageView() {
               );
             })
           )}
-
           {/* {allOrders.length > 0 ? (
             <Box sx={{ borderTop: "1px solid #dfdfdf" }} p={3}>
               <Typography component="div">
@@ -441,10 +416,8 @@ export default function OrdersPageView() {
           )} */}
         </Grid>
       </SectionCreator>
-
       {/* ORDER LIST AREA */}
       {/* {orders.map(order => <OrderRow order={order} key={order.id} />)} */}
-
       {/* ORDERS PAGINATION */}
       {allOrders.length > 0 ? (
         <Pagination count={totalPages} onChange={handlePageChange} />

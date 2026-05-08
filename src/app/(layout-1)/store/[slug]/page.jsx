@@ -11,9 +11,7 @@ export const metadata = {
   ],
   keywords: ["e-commerce", "e-commerce template", "next.js", "react"],
 };
-
 const page = () => {
   return <ShopView />;
 };
-
 export default page;

@@ -1,19 +1,13 @@
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Container from "@mui/material/Container";
-// LOCAL CUSTOM COMPONENT
-
 import LogoSection from "./components/logo";
 import AboutLinks from "./components/about-links";
 import SocialLinks from "./components/social-links";
 import CustomerCareLinks from "./components/customer-care-links";
 import Typography from '@mui/material/Typography';
 import { H2, H4, H6 } from "components/Typography";
-// GLOBAL CUSTOM COMPONENTS
-
 import { Paragraph } from "components/Typography";
-// STYLED COMPONENTS
-
 import { Heading } from "./styles";
 import Link from "next/link";
 export default function Footer1() {
@@ -28,7 +22,6 @@ export default function Footer1() {
           </svg>
           <Typography level="body-lg" component="span" sx={{ color: '#fff', marginLeft: '8px', borderBottom: '2px dashed #fff' }}>Agukart is powered by 100% renewable electricity.</Typography>
         </Typography>
-
       </Box>
       <Box component="footer" bgcolor="#2638c0">
         <Box component={Container} color="white" overflow="hidden" pt={0}>
@@ -38,12 +31,9 @@ export default function Footer1() {
                 <LogoSection />
               </Box>
             </Grid>
-
             {
               /* ABOUT US LINKS */
             }
-
-
             <Grid item lg={2} md={6} sm={6} xs={6} my={{
               sm: 0,
               md: 4,
@@ -65,7 +55,6 @@ export default function Footer1() {
               <Link href="/wholesale" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Wholesale</Link>
               <Link href="/affiliate" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Became an affiliate</Link>
             </Grid>
-
             {
               /* ABOUT US LINKS */
             }
@@ -80,11 +69,9 @@ export default function Footer1() {
               <Link href="/contact-shop" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Contact A Shop</Link>
               <Link href="/profile" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Your Account</Link>
             </Grid>
-
             {
               /* CUSTOMER CARE LINKS */
             }
-
             <Grid item lg={2} md={6} sm={6} xs={6} my={{
               sm: 0,
               md: 4,
@@ -106,19 +93,15 @@ export default function Footer1() {
                 /* CONTACT INFORMATION */
               }
               <Heading>Contact With Us</Heading>
-
               {/* <Paragraph py={0.6} color="grey.500">
                 70 Washington Square South, New York, NY 10012, United States
               </Paragraph>
-
               <Paragraph py={0.6} color="grey.500">
                 Email: uilib.help@gmail.com
               </Paragraph>
-
               <Paragraph py={0.6} mb={2} color="grey.500">
                 Phone: +1 1123 456 780
               </Paragraph> */}
-
               {
                 /* SOCIAL LINKS WITH ICON */
               }
@@ -130,5 +113,4 @@ export default function Footer1() {
       </Box>
     </>
   )
-
 }
