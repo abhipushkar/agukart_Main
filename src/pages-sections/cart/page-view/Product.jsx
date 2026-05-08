@@ -671,7 +671,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                     lineHeight={1.7}
                                 >
                                     <Link
-                                        href={`/product/${product?.product_id}`}
+                                        href={`/product/${product?.slug}/${product?.product_code}`}
                                         component={NextLink}
                                     >
                                         {parse(product?.product_name)}
