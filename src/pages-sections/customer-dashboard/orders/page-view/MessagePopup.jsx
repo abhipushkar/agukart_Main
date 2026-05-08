@@ -33,8 +33,6 @@ import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import useChat from "hooks/useChat";
 import { where, limit } from "firebase/firestore";
 import { useRouter } from 'next/navigation';
-
-
 const MessagePopup = ({
   vendorName,
   shopName,
@@ -61,7 +59,6 @@ const MessagePopup = ({
   const receiverId = receiverid;
   const senderId = usercredentials?._id;
   const router = useRouter();
-
   const chatQuery = query(
     collection(db, "chatRooms"),
     where("receiverId", "==", receiverId),
@@ -69,7 +66,6 @@ const MessagePopup = ({
     where("subOrderId", "==", subOrderId),
     limit(1)
   );
-
   const detectLink = (text) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, index) =>
@@ -82,7 +78,6 @@ const MessagePopup = ({
       )
     );
   };
-
   useEffect(() => {
     const q = query(
       collection(db, "chatRooms"),
@@ -91,13 +86,11 @@ const MessagePopup = ({
       where("subOrderId", "==", subOrderId),
       limit(1)
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const newMessages = snapshot?.docs?.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
       const matchingDocument = newMessages?.filter((doc) => {
         return (
           doc?.receiverId === receiverId &&
@@ -107,40 +100,31 @@ const MessagePopup = ({
         );
       });
       console.log("newMessagesnewMessages", matchingDocument);
-
       if (matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id) {
         setMessages([]);
         return;
       }
       matchingDocument.forEach((data) => {
         // console.log("qwwwwwsssssswwwwwwwdata", data);
-
         const filterArr = data?.text?.filter((msg) => {
           return msg.permanentDeleteUser !== senderId;
         });
-
         console.log(filterArr, "qwwwwwsssssswwwwwwwdata");
-
         setMessages(filterArr);
         // setUserIdData(data?.user);
       });
     });
-
     return () => unsubscribe();
   }, [senderId, receiverId, subOrderId]);
-
   const uploadImagesToFirebase = async () => {
     const uploadPromises = files.map(async (file) => {
       const storageRef = ref(storage, `chatImages/${file.name}`);
       const uploadTask = uploadBytesResumable(storageRef, file);
-
       await uploadTask;
       return getDownloadURL(uploadTask.snapshot.ref);
     });
-
     return Promise.all(uploadPromises);
   };
-
   const buildProductMessages = () => {
     // SUBORDER FLOW
     if (subOrderProducts && subOrderProducts.length > 0 && !productID && !productData) {
@@ -163,7 +147,6 @@ const MessagePopup = ({
         orderId: orderId,
         subOrderId: subOrderId,
       }));
-
       // 🔥 append actual user message at LAST
       productMessages.push({
         senderType: "user",
@@ -175,10 +158,8 @@ const MessagePopup = ({
         orderId: orderId,
         subOrderId: subOrderId
       });
-
       return productMessages;
     }
-
     // PRODUCT FLOW (unchanged)
     return [
       {
@@ -209,13 +190,11 @@ const MessagePopup = ({
       }
     ];
   };
-
   const sendMessage = async () => {
     let imageUrls = [];
     if (input.trim() || files.length > 0) {
       const querySnapshot = await getDocs(chatQuery);
       let matchingDocument = null;
-
       if (!querySnapshot.empty) {
         const docSnap = querySnapshot.docs[0];
         matchingDocument = {
@@ -228,10 +207,8 @@ const MessagePopup = ({
         imageUrls = await uploadImagesToFirebase();
         handleClearPreview(); // Clear preview and file after upload
       }
-
       if (matchingDocument) {
         console.log("Matching document:", matchingDocument);
-
         if (matchingDocument.data.permanentDeleteUser1 === senderId) {
           await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
             permanentDeleteUser1: "",
@@ -240,7 +217,6 @@ const MessagePopup = ({
         }
         const existingText = matchingDocument.data.text || [];
         let newMessages = [];
-
         // always push normal message if exists
         if (input.trim() || imageUrls.length > 0 || productID) {
           newMessages.push({
@@ -252,12 +228,10 @@ const MessagePopup = ({
             imageUrls: imageUrls,
           });
         }
-
         // 🔥 KEY LOGIC: check if product already exists in chat
         const alreadySent = productID
           ? existingText.some((msg) => msg.productId === productID)
           : false;
-
         // if not sent before → send product card
         if (productID && !alreadySent) {
           newMessages.push({
@@ -281,7 +255,6 @@ const MessagePopup = ({
           text: updatedText,
           currentTime: new Date(),
         });
-
         console.log("Updated document with new message array.");
       } else {
         console.log("No matching document found.");
@@ -335,30 +308,25 @@ const MessagePopup = ({
       setInput("");
     }
   };
-
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const previews = selectedFiles.map((file) => URL.createObjectURL(file));
     setImagePreviews(previews);
     setFiles(selectedFiles);
   };
-
   const handleRemoveImage = (index) => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
-
   const handleClearPreview = () => {
     setImagePreviews([]);
     setFiles([]);
     fileInputRef.current.value = "";
   };
-
   const formatDate = (timestamp) => {
     const date = new Date(timestamp?.seconds * 1000);
     return date?.toLocaleDateString();
   };
-
   const getExistingChatId = async () => {
     const q = query(
       collection(db, "chatRooms"),
@@ -367,14 +335,12 @@ const MessagePopup = ({
       where("subOrderId", "==", subOrderId),
       limit(1)
     );
-
     const snap = await getDocs(q);
     if (!snap.empty) {
       return snap.docs[0].id;
     }
     return null;
   };
-
   return (
     <Dialog
       open={openPopup}
@@ -471,15 +437,12 @@ const MessagePopup = ({
             <List>
               {messages?.map((msg, index) => {
                 console.log("sdfsgdhjdfjh", msg);
-
                 const currentMessageDate = formatDate(msg?.createdAt);
                 const prevMessageDate =
                   index > 0
                     ? formatDate(messages?.[index - 1]?.createdAt)
                     : null;
-
                 const showDate = currentMessageDate !== prevMessageDate;
-
                 return (
                   <ListItem
                     key={msg?.id}
@@ -502,7 +465,6 @@ const MessagePopup = ({
                         {currentMessageDate}
                       </Typography>
                     )}
-
                     <Box
                       sx={{
                         display: "flex",
@@ -976,5 +938,4 @@ const MessagePopup = ({
     </Dialog>
   );
 };
-
 export default MessagePopup;

@@ -20,7 +20,6 @@ import TrackingPopup from "./TrackingPopup";
 import Link from "next/link";
 import MessagePopup from "./MessagePopup";
 import IconButton from "@mui/material/IconButton";
-
 const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const router = useRouter();
   const { token } = useAuth();
@@ -32,7 +31,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const [itemRating, setItemRating] = useState(0);
   const [openTracking, setOpenTracking] = useState(false);
   const [openMessagePopup, setMessageOpenPopup] = useState(false);
-  // State add karo existing states ke saath
   const [reviewStep, setReviewStep] = useState(0);
   const [reviewData, setReviewData] = useState({
     rating: 0,
@@ -43,17 +41,12 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     review: '',
     photos: []
   });
-
   const { currency } = useCurrency();
-
   const parentSale = order?.parentSale || order;
   const items = order?.items || [];
   const [reviewProduct, setReviewProduct] = useState(null);
-
-
   const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
-
   const handleClosePopup = () => {
     setReviewId("");
     setVendorId("");
@@ -62,11 +55,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     setReviewStep(0); // reset step
     setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [] });
   };
-
   const handleMessageClosePopup = () => {
     setMessageOpenPopup(false);
   };
-
   const LightTooltip = styled(({ className, ...props }) => (
     <Tooltip {...props} classes={{ popper: className }} />
   ))(({ theme }) => ({
@@ -77,26 +68,21 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       fontSize: 11,
     },
   }));
-
-
   const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-
   function getDateRange(filterOrders) {
     const currentDate = new Date();
     const pastDate = new Date();
     pastDate.setMonth(currentDate.getMonth() - filterOrders);
-
     return {
       currentDate: formatDate(currentDate),
       pastDate: formatDate(pastDate),
     };
   }
-
   const formattedDate = (date) => {
     if (!date) return "";
     const parsedDate = new Date(date);
@@ -107,7 +93,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       year: "numeric",
     });
   }
-
   const validationSchema = Yup.object({
     deliveryRating: Yup.number()
       .required("Delivery rating is required")
@@ -119,23 +104,19 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       .required("Comments are required")
       .min(5, "Comment should be at least 5 characters"),
   });
-
   const submitReviewHandler = async () => {
   try {
     const formData = new FormData();
-
     formData.append("saleDetailId", reviewId);
     formData.append("vendor_id", vendorId);
     formData.append("delivery_rating", reviewData.delivery);
     formData.append("item_rating", reviewData.itemQuality);
     formData.append("additional_comment", reviewData.review);
     formData.append("recommended", reviewData.recommend);
-
     // images
     reviewData.photos.forEach((file) => {
       formData.append("images", file);
     });
-
     const res = await postAPIAuthFormData( 
       `user/sendRating`,
       formData,
@@ -143,11 +124,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       addToast,
       true // 👈 IMPORTANT (multipart flag)
     );
-
     if (res.status === 200) {
       setReviewStep(3);
     }
-
   } catch (error) {
     console.log("ERROR 👉", error);
     addToast("Something went wrong", {
@@ -156,9 +135,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     });
   }
 };
-
 const [isFollowing, setIsFollowing] = useState(false);
-
 const handleFollow = async () => {
   try {
     const res = await postAPIAuth(
@@ -167,10 +144,8 @@ const handleFollow = async () => {
       token,
       addToast
     );
-
     if (res.status === 200) {
       setIsFollowing(prev => !prev);
-
       addToast(
         !isFollowing ? "Followed successfully" : "Unfollowed successfully",
         {
@@ -187,13 +162,10 @@ const handleFollow = async () => {
     });
   }
 };
-
   const deliveryStatus = (items?.[0]?.delivery_status || parentSale?.delivery_status) === "No tracking"
     ? { tracking: false, status: "Shipped" } : { tracking: true, status: (items?.[0]?.delivery_status || parentSale?.delivery_status) };
-
   const refundStatus = (items?.[0]?.refund_status || parentSale?.refund_status) === "none"
     ? null : (items?.[0]?.refund_status || parentSale?.refund_status)
-
   return (
     <>
       <Box key={order.sub_order_id || order._id} mb={2}>
@@ -274,7 +246,6 @@ const handleFollow = async () => {
                             width: { xs: "100%", sm: "auto", md: "auto" },
                             maxWidth: { md: "150px" },
                             color: "#eee",
-
                           }}
                           onClick={() => setOpenTracking(true)}
                         >
@@ -472,7 +443,6 @@ const handleFollow = async () => {
               {/* <H2 fontWeight={600}>Delivered 5 july 2024</H2> */}
               {/* <Typography>Package was handed to resident</Typography> */}
             </Typography>
-
             {/* Shop section - using items array */}
             {items.length > 0 && (
               <Box>
@@ -487,7 +457,6 @@ const handleFollow = async () => {
                     }}
                   />
                 </Box> */}
-
                 {items.map(product => (
                   <Product
                     key={product?._id}
@@ -503,7 +472,6 @@ const handleFollow = async () => {
                 ))}
               </Box>
             )}
-
           </Box>
         </Box>
       </Box>
@@ -533,13 +501,11 @@ const handleFollow = async () => {
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
-
         {/* Body */}
         <Box sx={{ p: 2.5 }}>
           {/* STEP 1 */}
           {reviewStep === 0 && (
             <Box sx={{ textAlign: 'center' }}>
-
   {/* Product Info */}
   <Box sx={{
     display: 'flex',
@@ -556,18 +522,14 @@ const handleFollow = async () => {
     height: 130,
     borderRadius: 2,
     overflow: 'hidden',
-
     // 🔥 highlight styles
     border: '2.0px solid #e0e0e0',
     boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
     bgcolor: '#fafafa',
-
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-
     transition: 'all 0.2s ease',
-
     // 🔥 hover effect (premium feel)
     '&:hover': {
       boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
@@ -587,7 +549,6 @@ const handleFollow = async () => {
     }}
   />
 </Box>
-
     <Box textAlign="left">
       <Typography fontSize={16} fontWeight={600}>
         {reviewProduct?.product_name?.replace(/<\/?[^>]+(>|$)/g, "")}
@@ -597,30 +558,25 @@ const handleFollow = async () => {
       </Typography>
     </Box>
   </Box>
-
   {/* Rating */}
   <Typography fontSize={14} mb={1}>
     Your review rating *
   </Typography>
-
   <Rating
     size="large"
     value={reviewData.rating}
     onChange={(_, v) => setReviewData(p => ({ ...p, rating: v }))}
     sx={{ fontSize: 40 }}   // 🔥 BIG STARS
   />
-
   {reviewData.rating > 0 && (
     <Typography mt={1} fontSize={14}>
       {['', 'Disappointed', 'Not a fan', "It's okay", 'Like it', 'Love it'][reviewData.rating]}
     </Typography>
   )}
-
   {/* Recommend */}
   <Typography mt={3} mb={1} fontSize={14}>
     Would you recommend this item?
   </Typography>
-
   <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
     {[true, false].map(val => (
       <Button
@@ -641,10 +597,8 @@ const handleFollow = async () => {
       </Button>
     ))}
   </Box>
-
 </Box>
           )}
-
           {/* STEP 2 */}
           {reviewStep === 1 && (
             <Box>
@@ -675,11 +629,9 @@ const handleFollow = async () => {
               </Typography>
             </Box>
           )}
-
           {/* STEP 3 - Photo Upload */}
           {reviewStep === 2 && (
   <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-
     {/* LEFT TEXT */}
     <Box sx={{ flex: 1 }}>
       <Typography fontSize={18} fontWeight={500} mb={1}>
@@ -692,7 +644,6 @@ const handleFollow = async () => {
         community! <span style={{ fontSize: 13 }}>(optional)</span>
       </Typography>
     </Box>
-
     {/* RIGHT UPLOAD BOX */}
     {reviewData.photos.length < 4 && (
       <Button
@@ -725,11 +676,9 @@ const handleFollow = async () => {
       opacity: 0.8
     }}
   />
-
   <Typography fontSize={14} color="text.secondary">
     Click to upload an image
   </Typography>
-
   <input
     type="file"
     accept="image/*"
@@ -746,7 +695,6 @@ const handleFollow = async () => {
   />
 </Button>
     )}
-
     {/* 🔥 IMAGES BELOW (same screen jaisa flow) */}
     {reviewData.photos.length > 0 && (
       <Box sx={{ position: 'absolute', bottom: 20, left: 40, display: 'flex', gap: 1 }}>
@@ -766,7 +714,6 @@ const handleFollow = async () => {
               src={URL.createObjectURL(photo)}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
-
             <IconButton
               size="small"
               onClick={() =>
@@ -793,7 +740,6 @@ const handleFollow = async () => {
     )}
   </Box>
 )}
-
           {/* STEP 4 - Success */}
           {reviewStep === 3 && (
             <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -821,7 +767,6 @@ const handleFollow = async () => {
             </Box>
           )}
         </Box>
-
         {/* Footer */}
         {reviewStep < 3 && (
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -838,7 +783,6 @@ const handleFollow = async () => {
               sx={{ bgcolor: '#000', color: '#fff', borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#333' } }}
               onClick={() => {
   if (reviewStep === 1) {
-
     // validation
     if (!reviewData.itemQuality || !reviewData.delivery || !reviewData.review) {
       addToast("Please fill all fields", {
@@ -847,18 +791,15 @@ const handleFollow = async () => {
       });
       return;
     }
-
     // ❌ pehle API call ho rahi thi
     // ✅ ab next step pe jao (image upload)
     setReviewStep(2);
     return;
   }
-
   if (reviewStep === 2) {
     submitReviewHandler(); // API call yaha karo
     return;
   }
-
   setReviewStep(s => s + 1);
 }}
             >
@@ -884,5 +825,4 @@ const handleFollow = async () => {
     </>
   );
 };
-
 export default Order;

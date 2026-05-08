@@ -37,7 +37,6 @@ import {
 import PhoneInput from "react-phone-input-2";
 import Paper from "@mui/material/Paper";
 import NextLink from "next/link";
-
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import "react-phone-input-2/lib/style.css";
@@ -58,7 +57,6 @@ import useCart from "hooks/useCart";
 import { useCurrency } from "contexts/CurrencyContext";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import Checkout from "./Checkout";
-
 const DeliveryAddress = () => {
   const initialOptions = {
     // "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
@@ -95,21 +93,16 @@ const DeliveryAddress = () => {
   const searchParams = useSearchParams();
   const ids = searchParams.getAll("id"); 
   console.log(ids,"rth5rthrthrt")
-
   console.log(ids); 
-
   const { addToast } = useToasts();
-
   const handleWalletChange = async (e) => {
     setWallet(e.target.checked);
     const data = !wallet ? "1" : "0";
     getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount,allAddress[addressIndex]?.country);
   };
-
   useEffect(() => {
     localStorage.setItem("wallet", wallet);
   }, [wallet]);
-
   const validationSchema = Yup.object().shape({
     firstName: Yup.string().required("First name is required"),
     lastName: Yup.string(), // Optional field
@@ -132,22 +125,18 @@ const DeliveryAddress = () => {
         return false;
       }),
   });
-
   const handleClickPopup = () => {
     SetOpenPopup(true);
   };
-
   const handleClosePopup = () => {
     SetOpenPopup(false);
   };
-
   const splitCountryCode = (number) => {
     // Ensure the number includes a '+'
     if (!number.startsWith("+")) {
       number = `+${number}`;
     }
     console.log("Input number:", number); // Log the input number
-
     try {
       const phoneNumber = parsePhoneNumberFromString(number);
       console.log("Parsed phone number:", phoneNumber); // Log the parsed phone number
@@ -160,26 +149,22 @@ const DeliveryAddress = () => {
     } catch (error) {
       console.error("Error parsing phone number:", error.message);
     }
-
     return {
       countryCode: "",
       phoneNumber: number,
     };
   };
-
   const getPostCode = async (pincode, city) => {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&format=json`
       );
       const data = await res.json();
-
       const find = data.find((obj) => {
         return (
           obj.display_name.includes(city) && obj.display_name.includes(pincode)
         );
       });
-
       if (find) {
         return true;
       }
@@ -187,12 +172,10 @@ const DeliveryAddress = () => {
       console.log(error);
     }
   };
-
   const handleSubmit = async (values, resetForm) => {
     const { countryCode, phoneNumber } = splitCountryCode(values?.phone);
     try {
       setButtonDisable(true);
-
       const param = {
         _id: editAddress?._id ? editAddress?._id : `new`,
         first_name: `${values.firstName}`,
@@ -208,9 +191,7 @@ const DeliveryAddress = () => {
         pincode: `${values?.pincode}`,
         default: values.setAsDefault ? "1" : "0",
       };
-
       // const check = await getPostCode(values.pincode, values?.city?.name);
-
       // if (check) {
         const res = await postAPIAuth(
           "user/add-address",
@@ -243,7 +224,6 @@ const DeliveryAddress = () => {
       setButtonDisable(false);
     }
   };
-
   const getCountryData = async () => {
     try {
       const res = await getAPI("get-country");
@@ -255,7 +235,6 @@ const DeliveryAddress = () => {
       console.log("errro", error);
     }
   };
-
   const getStateData = async () => {
     try {
       const param = {
@@ -271,7 +250,6 @@ const DeliveryAddress = () => {
       console.log("errro", error);
     }
   };
-
   const getCitiesData = async () => {
     console.log("1");
     try {
@@ -286,7 +264,6 @@ const DeliveryAddress = () => {
       console.log("errro", error);
     }
   };
-
   useEffect(() => {
     if (!placeOrderValidate) {
       router.push("/");
@@ -296,15 +273,12 @@ const DeliveryAddress = () => {
   useEffect(() => {
     getCitiesData();
   }, [statevalue]);
-
   function calculateOffset(currentPage) {
     // console.log({currentPage, limit});
     return currentPage - 1;
   }
-
   const getAddressData = async () => {
     const offset = calculateOffset(currentPage);
-
     try {
       const res = await getAPIAuth(
         `user/get-address?limit=${`${5}`}&offset=${offset}`,
@@ -322,19 +296,16 @@ const DeliveryAddress = () => {
       console.log("errro", error);
     }
   };
-
   useEffect(() => {
     getCountryData();
     if (token) {
       getAddressData();
     }
   }, [token]);
-
   const editHandler = (address) => {
     setEditAddress(address);
     SetOpenPopup(true);
   };
-
   const deleteAddressHandler = async (id) => {
     try {
       const param = {
@@ -359,11 +330,9 @@ const DeliveryAddress = () => {
       console.log("errorr", error);
     }
   };
-
   const orderConfirmation = async () => {
     try {
       setLoading(true);
-      
       const payload = {
         address_id: allAddress[addressIndex]?._id,
         shop_count: ids?.length > 0 ? ids?.length : state?.cart?.length || 1,
@@ -371,18 +340,15 @@ const DeliveryAddress = () => {
         voucher_discount:voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
       };
-
       if (ids.length === 1) {
         payload.vendor_id = ids[0];
       }
-
       const res = await postAPIAuth(
         "user/checkout",
         payload,
         token,
         addToast
       );
-
       if (res.status === 200) {
         setUserCredentials(res?.data?.updateUser);
         setVoucherDetails({discount:0,voucherCode:""});
@@ -401,7 +367,6 @@ const DeliveryAddress = () => {
       console.log(error);
     }
   };
-
   useEffect(() => {
     if (token) {
       const wallet = localStorage.getItem("wallet");
@@ -414,7 +379,6 @@ const DeliveryAddress = () => {
       getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount,allAddress[addressIndex]?.country);
     }
   }, [token,allAddress,addressIndex]);
-
    useEffect(()=>{
       const data = localStorage.getItem("voucherDetails");
       if(data){
@@ -426,11 +390,9 @@ const DeliveryAddress = () => {
         setVoucherDetails(updatedVoucherDetails);
       }
     },[]);
-
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
   0);
-
   return (
     <>
       <Box p={5}>
@@ -442,7 +404,6 @@ const DeliveryAddress = () => {
             <Typography variant="h5" fontWeight={600} mb={2}>
               Choose Delivery Address
             </Typography>
-
             <Button
               variant="outlined"
               onClick={handleClickPopup}
@@ -478,7 +439,6 @@ const DeliveryAddress = () => {
                             }}
                             control={<Radio sx={{ padding: "0 9px" }} />}
                           />
-
                           <Box>
                             {address.default === "1" && (
                               <Typography sx={{ mb: 1 }}>
@@ -494,7 +454,6 @@ const DeliveryAddress = () => {
                                 </span>
                               </Typography>
                             )}
-
                             <Typography
                               sx={{ textTransform: "capitalize" }}
                               fontWeight={500}
@@ -539,7 +498,6 @@ const DeliveryAddress = () => {
                             <Button
                               onClick={() => {
                                 setDeleteAddressPopup(true);
-
                                 setDeleteAddressId(address._id);
                               }}
                             >
@@ -548,7 +506,6 @@ const DeliveryAddress = () => {
                           </Box>
                         </Box>
                       </Grid>
-
                       <React.Fragment>
                         <Dialog
                           open={deleteAddressPopup}
@@ -589,18 +546,15 @@ const DeliveryAddress = () => {
                 </Button>
               </DialogActions>
             </Dialog>
-
             <Typography mt={2} variant="body2" color="text.secondary">
               By choosing “Dispatch here,” you agree to our Privacy Policy and may receive order confirmation on SMS or WhatsApp.
             </Typography>
           </Grid>
-
           {/* RIGHT SIDE - Order Summary + Payment */}
           <Grid item xs={12} md={6}>
             <Typography variant="h5" fontWeight={600} mb={2}>
               Order Summary
             </Typography>
-
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 2 }}>
               <TableContainer>
                 <Table size="small">
@@ -624,7 +578,6 @@ const DeliveryAddress = () => {
                         </TableCell>
                       </TableRow>
                     )}
-
                     <TableRow>
                       <TableCell>({totalItems} Items) Total</TableCell>
                       <TableCell align="right">
@@ -632,7 +585,6 @@ const DeliveryAddress = () => {
                         {(state?.total * currency?.rate).toFixed(2)}
                       </TableCell>
                     </TableRow>
-
                     <TableRow>
                       <TableCell>Shop Discount</TableCell>
                       <TableCell align="right">
@@ -689,7 +641,6 @@ const DeliveryAddress = () => {
                 </Table>
               </TableContainer>
             </Paper>
-
             {state.cart.length > 0 && (
               <Box mb={3}>
                 <Typography color="text.secondary" fontSize={13}>
@@ -700,7 +651,6 @@ const DeliveryAddress = () => {
                 </Typography>
               </Box>
             )}
-
             <FormLabel component="legend" sx={{ mb: 1 }}>
               Select Payment Method
             </FormLabel>
@@ -712,7 +662,6 @@ const DeliveryAddress = () => {
               <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
               <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
             </RadioGroup>
-
             {paymentType === "1" && (
               <Button
                 fullWidth
@@ -732,7 +681,6 @@ const DeliveryAddress = () => {
                 Place Order
               </Button>
             )}
-
             {paymentType === "2" && (
               <Box mt={2}>
                 <PayPalScriptProvider options={initialOptions}>
@@ -749,7 +697,6 @@ const DeliveryAddress = () => {
       </Grid>
     </Grid>
       </Box>
-
       {/* popupForm */}
       <Box>
         <Dialog
@@ -788,41 +735,34 @@ const DeliveryAddress = () => {
                   const find = getCountry.find((country) => {
                     return country.name === editAddress?.country;
                   });
-
                   handleChange({
                     target: {
                       name: "country",
                       value: find,
                     },
                   });
-
                   setCountryValue(find ? find._id : "");
                 }
               }, [getCountry, editAddress]);
-
               useEffect(() => {
                 if (getState.length > 0 && editAddress?.state) {
                   const find = getState.find((state) => {
                     return state.name === editAddress?.state;
                   });
-
                   handleChange({
                     target: {
                       name: "state",
                       value: find,
                     },
                   });
-
                   setStateValue(find ? find._id : "");
                 }
               }, [getState]);
-
               useEffect(() => {
                 if (getCities.length > 0 && editAddress?.city) {
                   const find = getCities.find((city) => {
                     return city.name === editAddress?.city;
                   });
-
                   handleChange({
                     target: {
                       name: "city",
@@ -831,7 +771,6 @@ const DeliveryAddress = () => {
                   });
                 }
               }, [getCities, statevalue]);
-
               return (
                 <Form>
                   <Box
@@ -843,7 +782,6 @@ const DeliveryAddress = () => {
                     }}
                   >
                     <Typography variant="h5">Enter an address</Typography>
-
                     <Box
                       sx={{
                         display: "flex",
@@ -888,7 +826,6 @@ const DeliveryAddress = () => {
                         />
                       </Box>
                     </Box>
-
                     <Typography sx={{ fontWeight: "700", mt: 2 }}>
                       Address 1*
                     </Typography>
@@ -901,7 +838,6 @@ const DeliveryAddress = () => {
                       helperText={touched.address1 && errors.address1}
                       sx={{ ".MuiInputBase-root": { height: "50px" } }}
                     />
-
                     <Typography sx={{ fontWeight: "700", mt: 2 }}>
                       Address 2 (optional)
                     </Typography>
@@ -914,7 +850,6 @@ const DeliveryAddress = () => {
                       helperText={touched.address2 && errors.address2}
                       sx={{ ".MuiInputBase-root": { height: "50px" } }}
                     />
-
                     <Typography sx={{ fontWeight: "700", mt: 2 }}>
                       Country*
                     </Typography>
@@ -954,7 +889,6 @@ const DeliveryAddress = () => {
                         />
                       )}
                     />
-
                     <Typography sx={{ fontWeight: "700", mt: 2 }}>
                       State*
                     </Typography>
@@ -987,7 +921,6 @@ const DeliveryAddress = () => {
                         />
                       )}
                     />
-
                     <Typography sx={{ fontWeight: "700", mt: 2 }}>
                       City*
                     </Typography>
@@ -1016,7 +949,6 @@ const DeliveryAddress = () => {
                         />
                       )}
                     />
-
                     <Grid container spacing={2} mt={2}>
                       <Grid item lg={6} xs={12}>
                         <Typography sx={{ fontWeight: "700" }}>
@@ -1032,7 +964,6 @@ const DeliveryAddress = () => {
                           sx={{ ".MuiInputBase-root": { height: "50px" } }}
                         />
                       </Grid>
-
                       <Grid item lg={6} xs={12}>
                         <Typography sx={{ fontWeight: "700" }}>
                           Phone Number*
@@ -1059,7 +990,6 @@ const DeliveryAddress = () => {
                         </Box>
                       </Grid>
                     </Grid>
-
                     <Typography mt={2}>
                       <FormControlLabel
                         control={
@@ -1072,7 +1002,6 @@ const DeliveryAddress = () => {
                         label="Set as default Address "
                       />
                     </Typography>
-
                     <Box mt={3} textAlign="end">
                       <Button
                         sx={{ borderRadius: "30px", padding: "5px 18px" }}
@@ -1095,7 +1024,6 @@ const DeliveryAddress = () => {
                         Save
                       </Button>
                     </Box>
-
                     <Typography mt={1} sx={{ color: "#000" }}>
                       By choosing “Save,” you agree to Agukart’s{" "}
                       <Link
@@ -1113,7 +1041,6 @@ const DeliveryAddress = () => {
               );
             }}
           </Formik>
-
           <Button
             onClick={() => {
               handleClosePopup();
@@ -1132,5 +1059,4 @@ const DeliveryAddress = () => {
     </>
   );
 };
-
 export default DeliveryAddress;

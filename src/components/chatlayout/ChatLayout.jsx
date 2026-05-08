@@ -37,7 +37,6 @@ import {
   doc,
 } from "firebase/firestore";
 import { db, storage } from "../../../src/firebase/Firebase";
-
 const nameSelect = [
   {
     value: "Inbox",
@@ -64,7 +63,6 @@ const nameSelect = [
     label: "Recyle bin",
   },
 ];
-
 const ChatLayout = ({ children }) => {
   const { usercredentials } = useMyProvider();
   const [singleVendorDetails, setSingleVendorDetails] = useState({});
@@ -92,80 +90,59 @@ const ChatLayout = ({ children }) => {
     searchHandler,
     getSingleVendorDetails
   } = useChat();
-
   const open = Boolean(anchorEl);
   const open2 = Boolean(anchorEl2);
-
   const pathname = usePathname();
-
   // console.log({children})
-
   console.log(etsyCount, "childrenchildren");
-
   const searchParams = useSearchParams();
   const role = searchParams.get("role");
   let slug = searchParams.get("slug");
-
-
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
-
   const handleClose = () => {
     setAnchorEl(null);
   };
-
   const handleClick2 = (event) => {
     setAnchorEl2(event.currentTarget);
   };
-
   const handleClose2 = () => {
     setAnchorEl2(null);
   };
-
   const handleSendMessage = () => {
     if (input.trim()) {
       setMessages([...messages, input]);
       setInput(""); // Clear input field
     }
   };
-
   const router = useRouter();
   console.log("chats", chats, checkMessage);
   useEffect(() => {
     return () => setCheckMessage([]);
   }, []);
-
   const handleChange = (panel) => (event, isExpanded) => {
     setExpanded(isExpanded ? panel : null);
   };
-
   useEffect(() => {
     if (!slug) {
       setSingleVendorDetails({});
       return;
     }
-
     const collectionName = role === "admin" ? "composeChat" : "chatRooms";
     const chatRef = doc(db, collectionName, slug);
-
     const unsubscribe = onSnapshot(chatRef, async (snapshot) => {
       if (!snapshot.exists()) {
         setSingleVendorDetails({});
         return;
       }
-
       const chatData = snapshot.data();
-
       if (!chatData?.receiverId) return;
-
       const vendor_detail = await getSingleVendorDetails(chatData.receiverId);
       setSingleVendorDetails(vendor_detail || {});
     });
-
     return () => unsubscribe();
   }, [slug, role]);
-
   return (
     <Box>
       <Box
@@ -479,7 +456,6 @@ const ChatLayout = ({ children }) => {
                     />
                   </Typography>
                 )}
-
                 <List
                   sx={{
                     display: "flex",
@@ -904,5 +880,4 @@ const ChatLayout = ({ children }) => {
     </Box>
   );
 };
-
 export default ChatLayout;

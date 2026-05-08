@@ -1,16 +1,8 @@
-// LOCAL CUSTOM COMPONENTS
 import Categories from "./categories";
 import NavigationList from "./nav-list";
 import "./nav.css";
-// STYLED COMPONENTS
 import HeaderCategories from "./horizontal-category/HeaderCategories";
-
 import { NavBarWrapper, InnerContainer } from "./styles";
-// DATA TYPES
-
-// ==========================================================
-
-// ==========================================================
 export default function Navbar({
   border,
   elevation = 2,
@@ -38,12 +30,6 @@ export default function Navbar({
             <div>
               <Categories />
             </div>
-
-            {/* HORIZONTAL MENU */}
-            {/* <div className="header_nav">
-              <NavigationList />
-            </div> */}
-
             <HeaderCategories />
           </InnerContainer>
         )}

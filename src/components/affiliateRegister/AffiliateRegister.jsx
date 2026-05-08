@@ -1,9 +1,7 @@
 "use client";
-
 import { Fragment, useEffect, useState } from "react";
 import Link from "@mui/material/Link";
 // Local CUSTOM COMPONENTS
-
 import { SectionCreator } from "components/section-header";
 import Grid from "@mui/material/Grid";
 import Container from "@mui/material/Container";
@@ -23,10 +21,6 @@ import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
 import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
-
-
-// LOCAL CUSTOM COMPONENT
-
 // CUSTOM DATA MODEL
 import {
   Box,
@@ -47,8 +41,6 @@ import Button from "@mui/material/Button";
 import { getAPI, postAPI } from "utils/__api__/ApiServies";
 import { useToasts } from "react-toast-notifications";
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-
-
 const AffiliateRegister = () => {
   const { addToast } = useToasts();
   const [loading, setLoading] = useState(false);
@@ -61,7 +53,6 @@ const AffiliateRegister = () => {
   const [allCities, setAllCities] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
   const handleChange = (e) => {
@@ -140,7 +131,6 @@ const AffiliateRegister = () => {
       console.log("errro", error);
     }
   };
-
   const getStateData = async () => {
     try {
       const param = {
@@ -156,7 +146,6 @@ const AffiliateRegister = () => {
       console.log("errro", error);
     }
   };
-
   const getCitiesData = async () => {
     try {
       const param = {
@@ -170,26 +159,21 @@ const AffiliateRegister = () => {
       console.log("errro", error);
     }
   };
-
   useEffect(() => {
     getCountryData();
   }, []);
   useEffect(() => {
     getStateData();
   }, [formValues.country]);
-
   useEffect(() => {
     getCitiesData();
   }, [formValues.state]);
-
   useEffect(() => {
     setFormValues((prev) => ({ ...prev, state: "", city: "" }));
   }, [formValues.country]);
-
   useEffect(() => {
     setFormValues((prev) => ({ ...prev, city: "" }));
   }, [formValues.state]);
-
   return (
     <SectionCreator py={4} mb={0}>
       <Grid container spacing={2} justifyContent={"center"}>
@@ -625,5 +609,4 @@ const AffiliateRegister = () => {
     </SectionCreator>
   )
 }
-
 export default AffiliateRegister
