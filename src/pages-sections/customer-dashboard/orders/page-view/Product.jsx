@@ -5,25 +5,21 @@ import React, { useState } from "react";
 import MessagePopup from "./MessagePopup";
 import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
-
-const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product }) => {
+const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product, setReviewProduct }) => {
   console.log({ order, product, shopBaseUrl, baseUrl }, "DFhrtfyhrthjrthrt");
   const router = useRouter();
   const { addToast } = useToasts();
   const { currency } = useCurrency();
   const [openMessagePopup, SetMessageOpenPopup] = useState(false);
-
   const handleClickPopup = () => {
     SetOpenPopup(true);
   };
   const handleMessageClickPopup = () => {
     SetMessageOpenPopup(true);
   };
-
   const handleMessageClosePopup = () => {
     SetMessageOpenPopup(false);
   };
-
   return (
     <>
       <Grid
@@ -50,7 +46,6 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                 src={baseUrl + product?.productData?.image[0]}
               />
             </Box>
-
             <Typography component="div" ml={2}>
               <H3
                 sx={{
@@ -174,33 +169,25 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                 },
               }}
             >
-              {/* <Button
-                                    variant="contained"
-                                    sx={{
-                                      background: "#fff",
-                                      borderRadius: "30px",
-                                      border: "1px solid #000",
-                                      width: "100%",
-                                    }}
-                                  >
-                                    Contact to us
-                                  </Button> */}
-
               {product.order_status == "completed" &&
                 product.delivery_status == "Delivered" && (
                   <Button
                     onClick={() => {
-                      if (product.ratingStatus) {
-                        addToast("Product review have already given", {
-                          appearance: "error",
-                          autoDismiss: true,
-                        });
-                        return;
-                      }
-                      setReviewId(product?._id);
-                      setVendorId(product?.vendor_id);
-                      handleClickPopup();
-                    }}
+  if (product.ratingStatus) {
+    addToast("Product review have already given", {
+      appearance: "error",
+      autoDismiss: true,
+    });
+    return;
+  }
+  setReviewId(product?._id);
+  setVendorId(product?.vendor_id);
+  setReviewProduct({
+    image: product?.productData?.image,
+    product_name: product?.productData?.product_title
+  });
+  handleClickPopup();
+}}
                     variant="contained"
                     sx={{
                       background: "#fff",
@@ -235,5 +222,4 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
     </>
   );
 };
-
-export default Product;
+export default Product;3

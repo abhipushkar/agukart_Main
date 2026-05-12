@@ -16,17 +16,25 @@ const SellerInfo = ({
     onMessage,
     userDesignation
 }) => {
-    const [expanded, setExpanded] = useState("panel1");
+    const [expanded, setExpanded] = useState({
+    panel1: true,
+    panel2: false,
+    panel3: false,
+    panel4: false,
+});
 
-    const handleChangeAccord = (panel) => (event, newExpanded) => {
-        setExpanded(newExpanded ? panel : false);
-    };
+    const handleChangeAccord = (panel) => (event, isExpanded) => {
+    setExpanded((prev) => ({
+        ...prev,
+        [panel]: isExpanded,
+    }));
+};
 
     return (
         <Box mt={3}>
             <Accordion
                 sx={{ boxShadow: "none", background: "transparent" }}
-                expanded={expanded === "panel1"}
+                expanded={expanded.panel1}
                 onChange={handleChangeAccord("panel1")}
             >
                 <AccordionSummary
@@ -46,9 +54,9 @@ const SellerInfo = ({
                         <ExpandMoreIcon
                             sx={{
                                 transform:
-                                    expanded === "panel1"
-                                        ? "rotate(180deg)"
-                                        : "rotate(0deg)",
+    expanded.panel1
+        ? "rotate(180deg)"
+        : "rotate(0deg)",
                                 transition: "transform 0.3s ease",
                             }}
                         />
