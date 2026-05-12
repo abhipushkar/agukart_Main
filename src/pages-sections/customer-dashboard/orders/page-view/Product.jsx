@@ -182,10 +182,10 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
   }
   setReviewId(product?._id);
   setVendorId(product?.vendor_id);
-  setReviewProduct({                                    // 👈 ADD
-    image: product?.productData?.image,                // 👈 ADD
-    product_name: product?.productData?.product_title  // 👈 ADD
-  });                                                   // 👈 ADD
+  setReviewProduct({
+    image: product?.productData?.image,
+    product_name: product?.productData?.product_title
+  });
   handleClickPopup();
 }}
                     variant="contained"
@@ -222,4 +222,4 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
     </>
   );
 };
-export default Product;
+export default Product;3

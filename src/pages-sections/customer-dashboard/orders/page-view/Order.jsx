@@ -39,65 +39,18 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     delivery: 0,
     customerService: 0,
     review: '',
-    photos: []
+    photos: [],
+    photoUrls: []
   });
   const { currency } = useCurrency();
   const parentSale = order?.parentSale || order;
   const items = order?.items || [];
-  const dummyReviews = {
-  0: {
-    rating: 5,
-
-    review:
-      "I'm very happy with my purchase. It's well made & a great design. Quick shipping. I'd definitely purchase from them again.",
-
-    images: [
-      "/images/review1.jpg",
-      "/images/review2.jpg",
-      "/images/review3.jpg",
-      "/images/review4.jpg",
-    ],
-
-    flagged: true,
-
-    hidden: false,
-
-    locked: false,
-
-    buyerNote:
-      "Seller has acknowledged your review and will contact you shortly.",
-
-    reply: {
-      seller: "SilverCraft",
-      date: "Nov 24, 2023",
-      message:
-        "Thank you Pam, so happy you liked it.",
-    },
-  },
-
-  1: {
-    rating: 5,
-
-    review:
-      "Amazing quality and beautiful finishing. Delivery was quick and packaging was premium.",
-
-    images: [
-      "/images/review1.jpg",
-      "/images/review2.jpg",
-    ],
-
-    flagged: false,
-
-    hidden: true,
-
-    locked: true,
-
-    buyerNote:
-      "This review has been reviewed by support team.",
-
-    reply: null,
-  },
-};
+  const [localReviews, setLocalReviews] = useState({});
+  const [localReplies, setLocalReplies] = useState({});
+  const [localBuyerNotes, setLocalBuyerNotes] = useState({});
+  const [hiddenReviews, setHiddenReviews] = useState({});
+  const [lockedReviews, setLockedReviews] = useState({});
+  const [isEditMode, setIsEditMode] = useState(false);
   const [reviewProduct, setReviewProduct] = useState(null);
   const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
@@ -107,7 +60,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     SetOpenPopup(false);
     setOpenTracking(false);
     setReviewStep(0); // reset step
-    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [] });
+    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [], photoUrls: [] });
+    setIsEditMode(false);
+    setReviewProduct(null);
   };
   const handleMessageClosePopup = () => {
     setMessageOpenPopup(false);
@@ -158,64 +113,77 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       .required("Comments are required")
       .min(5, "Comment should be at least 5 characters"),
   });
+  const handleOpenReview = (product) => {
+    setReviewProduct(product);
+    setIsEditMode(false);
+    setReviewStep(0);
+    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [], photoUrls: [] });
+    SetOpenPopup(true);
+  };
+  const handleOpenEditReview = (product) => {
+    const existing = localReviews[product._id];
+    if (!existing) return;
+    setReviewProduct(product);
+    setIsEditMode(true);
+    setReviewStep(0);
+    setReviewData({
+      rating: existing.rating || 0,
+      recommend: existing.recommend ?? null,
+      itemQuality: existing.itemQuality || 0,
+      delivery: existing.delivery || 0,
+      customerService: existing.customerService || 0,
+      review: existing.review || '',
+      photos: [],
+      photoUrls: existing.photoUrls || [],
+    });
+    SetOpenPopup(true);
+  };
   const submitReviewHandler = async () => {
-  try {
-    const formData = new FormData();
-    formData.append("saleDetailId", reviewId);
-    formData.append("vendor_id", vendorId);
-    formData.append("delivery_rating", reviewData.delivery);
-    formData.append("item_rating", reviewData.itemQuality);
-    formData.append("additional_comment", reviewData.review);
-    formData.append("recommended", reviewData.recommend);
-    // images
-    reviewData.photos.forEach((file) => {
-      formData.append("images", file);
-    });
-    const res = await postAPIAuthFormData( 
-      `user/sendRating`,
-      formData,
-      token,
-      addToast,
-      true // 👈 IMPORTANT (multipart flag)
-    );
-    if (res.status === 200) {
+    try {
+      const newPhotoUrls = reviewData.photos.map((file) => URL.createObjectURL(file));
+      const savedReview = {
+        rating: reviewData.rating,
+        recommend: reviewData.recommend,
+        itemQuality: reviewData.itemQuality,
+        delivery: reviewData.delivery,
+        customerService: reviewData.customerService,
+        review: reviewData.review,
+        photoUrls: [...(reviewData.photoUrls || []), ...newPhotoUrls],
+        submitted: true,
+      };
+      setLocalReviews((prev) => ({ ...prev, [reviewProduct._id]: savedReview }));
       setReviewStep(3);
+    } catch (error) {
+      addToast("Something went wrong", { appearance: "error", autoDismiss: true });
     }
-  } catch (error) {
-    console.log("ERROR 👉", error);
-    addToast("Something went wrong", {
-      appearance: "error",
-      autoDismiss: true,
-    });
-  }
-};
-const [isFollowing, setIsFollowing] = useState(false);
-const handleFollow = async () => {
-  try {
-    const res = await postAPIAuth(
-      "user/follow-vendor",
-      { vendorId: vendorId },
-      token,
-      addToast
-    );
-    if (res.status === 200) {
-      setIsFollowing(prev => !prev);
-      addToast(
-        !isFollowing ? "Followed successfully" : "Unfollowed successfully",
-        {
-          appearance: "success",
-          autoDismiss: true,
-        }
+  };
+  const [isFollowing, setIsFollowing] = useState(false);
+  const handleFollow = async () => {
+    try {
+      const res = await postAPIAuth(
+        "user/follow-vendor",
+        { vendorId: vendorId },
+        token,
+        addToast
       );
+      if (res.status === 200) {
+        setIsFollowing(prev => !prev);
+        addToast(
+          !isFollowing ? "Followed successfully" : "Unfollowed successfully",
+          {
+            appearance: "success",
+            autoDismiss: true,
+          }
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      addToast("Something went wrong", {
+        appearance: "error",
+        autoDismiss: true,
+      });
     }
-  } catch (err) {
-    console.log(err);
-    addToast("Something went wrong", {
-      appearance: "error",
-      autoDismiss: true,
-    });
-  }
-};
+  };
   const deliveryStatus = (items?.[0]?.delivery_status || parentSale?.delivery_status) === "No tracking"
     ? { tracking: false, status: "Shipped" } : { tracking: true, status: (items?.[0]?.delivery_status || parentSale?.delivery_status) };
   const refundStatus = (items?.[0]?.refund_status || parentSale?.refund_status) === "none"
@@ -512,426 +480,258 @@ const handleFollow = async () => {
                   />
                 </Box> */}
                 {items.map((product, index) => {
-  const review = dummyReviews[index];
+                  const review = localReviews[product._id];
+                  const reply = localReplies[product._id];
+                  const buyerNote = localBuyerNotes[product._id];
+                  const isHidden = hiddenReviews[product._id];
+                  const isLocked = lockedReviews[product._id];
+                  const hasReview = review?.submitted;
+                  if (isHidden && hasReview) {
+                    return (
+                      <Box key={product?._id} sx={{ display: "flex", justifyContent: "flex-end", py: 3, borderBottom: index !== items.length - 1 ? "1px solid #ececec" : "none" }}>
+                        <Box sx={{ width: "100%", maxWidth: 520, bgcolor: "#f8f7f3", border: "1px solid #ece8dc", borderRadius: 2, p: 2 }}>
+                          <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+                            <Box sx={{ width: 42, height: 42, borderRadius: "50%", bgcolor: "#f1641e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
+                              {items[0]?.vendorData?.shop_name?.[0] || "S"}
+                            </Box>
+                            <Typography sx={{ color: "#666", fontSize: 14 }}>This review has been hidden by admin.</Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  }
+                  return (
+                    <Box
+                      key={product?._id}
+                      sx={{
+                        display: "flex",
+                        gap: 3,
+                        py: 3,
+                        borderBottom:
+                          index !== items.length - 1
+                            ? "1px solid #ececec"
+                            : "none",
+                        flexDirection: {
+                          xs: "column",
+                          md: "row",
+                        },
+                      }}
+                    >
+                      {/* LEFT PRODUCT */}
+                      <Box
+                        sx={{
+                          width: {
+                            xs: "100%",
+                            md: "45%",
+                          },
+                          display: "flex",
+                          gap: 2,
+                        }}
+                      >
+                        {/* IMAGE */}
+                        <Box
+                          sx={{
+                            width: 95,
+                            height: 95,
+                            borderRadius: 2,
+                            overflow: "hidden",
+                            border: "1px solid #e5e5e5",
+                            bgcolor: "#fafafa",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <img
+                            src={
+                              product?.image?.[0]
+                                ? `${baseUrl}/${product.image[0]}`
+                                : ""
+                            }
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        </Box>
+                        {/* PRODUCT INFO */}
+                        <Box>
+                          <Typography
+                            sx={{
+                              fontSize: 18,
+                              fontWeight: 500,
+                              lineHeight: 1.5,
+                              color: "#2b2b2b",
+                            }}
+                          >
+                            {product?.product_name?.replace(
+                              /<\/?[^>]+(>|$)/g,
+                              ""
+                            )}
+                          </Typography>
+                          <Typography
+                            sx={{
+                              mt: 1,
+                              color: "#777",
+                              fontSize: 15,
+                            }}
+                          >
+                            Materials: Sterling silver
+                          </Typography>
+                          <Typography
+                            sx={{
+                              color: "#777",
+                              fontSize: 15,
+                            }}
+                          >
+                            Ring Size (US size): 10
+                          </Typography>
+                          <Typography
+                            sx={{
+                              color: "#444",
+                              fontSize: 15,
+                              mt: 0.3,
+                            }}
+                          >
+                            Qty : {product?.quantity}
+                          </Typography>
 
-  if (review.hidden) {
-  return (
-    <Box
-      key={product?._id}
-      sx={{
-        display: "flex",
-        justifyContent: "flex-end",
-        py: 3,
-        borderBottom:
-          index !== items.length - 1
-            ? "1px solid #ececec"
-            : "none",
-      }}
-    >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: 520,
-          bgcolor: "#f8f7f3",
-          border: "1px solid #ece8dc",
-          borderRadius: 2,
-          p: 2,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1.5,
-            alignItems: "center",
-          }}
-        >
-          <Box
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: "50%",
-              bgcolor: "#f1641e",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              flexShrink: 0,
-            }}
-          >
-            Etsy
-          </Box>
-
-          <Typography
-            sx={{
-              color: "#666",
-              fontSize: 14,
-            }}
-          >
-            This review has been hidden by admin.
-          </Typography>
-        </Box>
-      </Box>
+                          {/* BUTTONS */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              mt: 2,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <Button
+                              sx={{
+                                bgcolor: "#f7efcf",
+                                color: "#222",
+                                borderRadius: "30px",
+                                px: 2,
+                                textTransform: "none",
+                                fontSize: 14,
+                                "&:hover": {
+                                  bgcolor: "#f1e4b2",
+                                },
+                              }}
+                            >
+                              Buy it Again
+                            </Button>
+                            <Button
+                              sx={{
+                                bgcolor: "#f7efcf",
+                                color: "#222",
+                                borderRadius: "30px",
+                                px: 2,
+                                textTransform: "none",
+                                fontSize: 14,
+                                "&:hover": {
+                                  bgcolor: "#f1e4b2",
+                                },
+                              }}
+                            >
+                              Help With Item
+                            </Button>
+                            {!hasReview && (
+                              <Button
+                                onClick={() => handleOpenReview(product)}
+                                sx={{ bgcolor: "#222", color: "#fff", borderRadius: "30px", px: 2, textTransform: "none", fontSize: 14, "&:hover": { bgcolor: "#444" } }}
+                              >
+                                Leave a Review
+                              </Button>
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                      {/* RIGHT REVIEW */}
+                      {/* RIGHT REVIEW */}
+<Box sx={{ flex: 1 }}>
+  {!hasReview ? (
+    <Box sx={{ bgcolor: "#f8f7f3", borderRadius: 2, p: 3, border: "1px solid #ece8dc", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
+      <Typography fontSize={14} color="text.secondary">You haven't reviewed this item yet.</Typography>
     </Box>
-  );
-}
-
-  return (
-    <Box
-      key={product?._id}
-      sx={{
-        display: "flex",
-        gap: 3,
-        py: 3,
-        borderBottom:
-          index !== items.length - 1
-            ? "1px solid #ececec"
-            : "none",
-        flexDirection: {
-          xs: "column",
-          md: "row",
-        },
-      }}
-    >
-      {/* LEFT PRODUCT */}
-      <Box
-        sx={{
-          width: {
-            xs: "100%",
-            md: "45%",
-          },
-          display: "flex",
-          gap: 2,
-        }}
-      >
-        {/* IMAGE */}
-        <Box
-          sx={{
-            width: 95,
-            height: 95,
-            borderRadius: 2,
-            overflow: "hidden",
-            border: "1px solid #e5e5e5",
-            bgcolor: "#fafafa",
-            flexShrink: 0,
-          }}
-        >
-          <img
-            src={
-              product?.image?.[0]
-                ? `${baseUrl}/${product.image[0]}`
-                : ""
-            }
-            alt=""
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
+  ) : (
+    <Box sx={{ bgcolor: "#f8f7f3", borderRadius: 2, p: 2, border: "1px solid #ece8dc" }}>
+      {/* Stars */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography fontWeight={600} fontSize={15}>Your Review</Typography>
+          <Typography sx={{ color: "#000", letterSpacing: 1, fontSize: 16 }}>
+            {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+          </Typography>
         </Box>
-
-        {/* PRODUCT INFO */}
-        <Box>
-          <Typography
-            sx={{
-              fontSize: 18,
-              fontWeight: 500,
-              lineHeight: 1.5,
-              color: "#2b2b2b",
-            }}
-          >
-            {product?.product_name?.replace(
-              /<\/?[^>]+(>|$)/g,
-              ""
-            )}
+        {review.recommend !== null && (
+          <Typography fontSize={12} sx={{ bgcolor: review.recommend ? "#e8f5e9" : "#fce4ec", color: review.recommend ? "#2e7d32" : "#c62828", px: 1.5, py: 0.3, borderRadius: 10 }}>
+            {review.recommend ? "✓ Recommended" : "✕ Not recommended"}
           </Typography>
-
-          <Typography
-            sx={{
-              mt: 1,
-              color: "#777",
-              fontSize: 15,
-            }}
-          >
-            Materials: Sterling silver
-          </Typography>
-
-          <Typography
-            sx={{
-              color: "#777",
-              fontSize: 15,
-            }}
-          >
-            Ring Size (US size): 10
-          </Typography>
-
-          <Typography
-            sx={{
-              color: "#444",
-              fontSize: 15,
-              mt: 0.3,
-            }}
-          >
-            Qty : {product?.quantity}
-          </Typography>
-
-          {/* BUTTONS */}
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              mt: 2,
-              flexWrap: "wrap",
-            }}
-          >
-            <Button
-              sx={{
-                bgcolor: "#f7efcf",
-                color: "#222",
-                borderRadius: "30px",
-                px: 2,
-                textTransform: "none",
-                fontSize: 14,
-                "&:hover": {
-                  bgcolor: "#f1e4b2",
-                },
-              }}
-            >
-              Buy it Again
-            </Button>
-
-            <Button
-              sx={{
-                bgcolor: "#f7efcf",
-                color: "#222",
-                borderRadius: "30px",
-                px: 2,
-                textTransform: "none",
-                fontSize: 14,
-                "&:hover": {
-                  bgcolor: "#f1e4b2",
-                },
-              }}
-            >
-              Help With Item
-            </Button>
-          </Box>
-        </Box>
+        )}
       </Box>
-
-      {/* RIGHT REVIEW */}
-      <Box
-        sx={{
-          flex: 1,
-          bgcolor: "#f8f7f3",
-          borderRadius: 2,
-          p: 2,
-          border: "1px solid #ece8dc",
-        }}
-      >
-        {/* TOP */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <Typography
-              fontWeight={600}
-              fontSize={15}
-            >
-              Your Review
-            </Typography>
-
-            <Typography
-              sx={{
-                color: "#000",
-                letterSpacing: 1,
-                fontSize: 16,
-              }}
-            >
-              {"★".repeat(review.rating)}
-            </Typography>
+      {/* Sub ratings */}
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 1.5 }}>
+        {[
+          { label: "Item Quality", val: review.itemQuality },
+          { label: "Delivery", val: review.delivery },
+          { label: "Customer Service", val: review.customerService },
+        ].map(({ label, val }) => (
+          <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Typography fontSize={12} color="text.secondary">{label}:</Typography>
+            <Rating value={val} readOnly size="small" sx={{ fontSize: 14 }} />
           </Box>
-
-          {/* FLAG */}
-          {review.flagged && !review.hidden && (
-            <Typography
-              sx={{
-                color: "#666",
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              
-            </Typography>
-          )}
-        </Box>
-
-        {/* REVIEW IMAGES */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            flexWrap: "wrap",
-            mb: 2,
-          }}
-        >
-          {review.images.map((img, imgIndex) => (
-            <Box
-              key={imgIndex}
-              sx={{
-                width: 72,
-                height: 72,
-                borderRadius: 1,
-                overflow: "hidden",
-                border: "1px solid #ddd",
-                bgcolor: "#fff",
-              }}
-            >
-              <img
-                src={img}
-                alt=""
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
+        ))}
+      </Box>
+      {/* Photos */}
+      {review.photoUrls?.length > 0 && (
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
+          {review.photoUrls.map((url, i) => (
+            <Box key={i} sx={{ width: 72, height: 72, borderRadius: 1, overflow: "hidden", border: "1px solid #ddd" }}>
+              <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </Box>
           ))}
         </Box>
-
-        {/* REVIEW TEXT */}
-        <Typography
-          sx={{
-            color: "#4d4d4d",
-            fontSize: 14,
-            lineHeight: 1.6,
-          }}
-        >
-          {review.review}
-        </Typography>
-
-        {/* EDIT */}
-        <Typography
-  sx={{
-    mt: 1.5,
-    color: review.locked ? "#b5b5b5" : "#666",
-    fontSize: 13,
-    textDecoration: "underline",
-    cursor: review.locked ? "not-allowed" : "pointer",
-    width: "fit-content",
-    opacity: review.locked ? 0.6 : 1,
-    pointerEvents: review.locked ? "none" : "auto",
-  }}
->
-  Edit review
-</Typography>
-
-        {/* SELLER REPLY */}
-        {review.reply && (
-          <Box
-            sx={{
-              mt: 2,
-              bgcolor: "#fff",
-              border: "1px solid #ececec",
-              borderRadius: 2,
-              p: 2,
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1.5,
-              }}
-            >
-              {/* AVATAR */}
-              <Box
-                sx={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  bgcolor: "#f1641e",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  flexShrink: 0,
-                }}
-              >
-                Etsy
-              </Box>
-
-              <Box>
-                <Typography
-                  fontWeight={600}
-                  fontSize={14}
-                >
-                  {review.reply.seller}
-
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: "#666",
-                      fontWeight: 400,
-                      ml: 1,
-                    }}
-                  >
-                    responded on Nov 24, 2023
-                  </Typography>
-                </Typography>
-
-                <Typography
-                  sx={{
-                    mt: 1,
-                    color: "#555",
-                    fontSize: 14,
-                  }}
-                >
-                  {review.reply.message}
-                </Typography>
-              </Box>
+      )}
+      {/* Review text */}
+      <Typography sx={{ color: "#4d4d4d", fontSize: 14, lineHeight: 1.6 }}>{review.review}</Typography>
+      {/* Edit review */}
+      <Typography
+        onClick={() => !isLocked && handleOpenEditReview(product)}
+        sx={{ mt: 1.5, color: isLocked ? "#b5b5b5" : "#666", fontSize: 13, textDecoration: "underline", cursor: isLocked ? "not-allowed" : "pointer", width: "fit-content", opacity: isLocked ? 0.6 : 1, pointerEvents: isLocked ? "none" : "auto" }}
+      >
+        Edit review
+      </Typography>
+      {/* Seller Reply */}
+      {reply && (
+        <Box sx={{ mt: 2, bgcolor: "#fff", border: "1px solid #ececec", borderRadius: 2, p: 2 }}>
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <Box sx={{ width: 42, height: 42, borderRadius: "50%", bgcolor: "#f1641e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
+              {items[0]?.vendorData?.shop_name?.[0] || "S"}
+            </Box>
+            <Box>
+              <Typography fontWeight={600} fontSize={14}>
+                {reply.seller}
+                <Typography component="span" sx={{ color: "#666", fontWeight: 400, ml: 1 }}>responded on {reply.date}</Typography>
+              </Typography>
+              <Typography sx={{ mt: 1, color: "#555", fontSize: 14 }}>{reply.message}</Typography>
             </Box>
           </Box>
-        )}
-        {review.buyerNote && (
-  <Box
-    sx={{
-      mt: 2,
-      bgcolor: "#fff8e1",
-      border: "1px solid #f1d58a",
-      borderRadius: 2,
-      p: 2,
-    }}
-  >
-    <Typography
-      sx={{
-        fontSize: 13,
-        color: "#8a6d1d",
-        lineHeight: 1.6,
-      }}
-    >
-      <strong>Note to Buyer:</strong>{" "}
-      {review.buyerNote}
-    </Typography>
-  </Box>
-)}
-      </Box>
+        </Box>
+      )}
+      {/* Note to Buyer */}
+      {buyerNote && (
+        <Box sx={{ mt: 2, bgcolor: "#fff8e1", border: "1px solid #f1d58a", borderRadius: 2, p: 2 }}>
+          <Typography sx={{ fontSize: 13, color: "#8a6d1d", lineHeight: 1.6 }}>
+            <strong>Note to Buyer:</strong> {buyerNote}
+          </Typography>
+        </Box>
+      )}
     </Box>
-  );
-})}
+  )}
+</Box>
+                    </Box>
+                  );
+                })}
               </Box>
             )}
           </Box>
@@ -955,7 +755,7 @@ const handleFollow = async () => {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h6" fontWeight={500}>
-            {reviewStep === 0 && 'Leave a Review'}
+{reviewStep === 0 && (isEditMode ? 'Edit Your Review' : 'Leave a Review')}
             {reviewStep === 1 && 'Great! Tell us more...'}
             {reviewStep === 2 && 'Extra credit: add a photo!'}
           </Typography>
@@ -968,98 +768,98 @@ const handleFollow = async () => {
           {/* STEP 1 */}
           {reviewStep === 0 && (
             <Box sx={{ textAlign: 'center' }}>
-  {/* Product Info */}
-  <Box sx={{
-    display: 'flex',
-    gap: 2,
-    alignItems: 'center',
-    p: 2,
-    bgcolor: 'grey.50',
-    borderRadius: 2,
-    mb: 3
-  }}>
-    <Box
-  sx={{
-    width: 500,
-    height: 130,
-    borderRadius: 2,
-    overflow: 'hidden',
-    // 🔥 highlight styles
-    border: '2.0px solid #e0e0e0',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-    bgcolor: '#fafafa',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.2s ease',
-    // 🔥 hover effect (premium feel)
-    '&:hover': {
-      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-      transform: 'scale(1.03)',
-    }
-  }}
->
-  <img
-    src={reviewProduct?.image?.[0]
-      ? `${baseUrl}/${reviewProduct.image[0]}`
-      : ""}
-    alt=""
-    style={{
-      width: '100%',
-      height: '100%',
-      objectFit: 'contain'
-    }}
-  />
-</Box>
-    <Box textAlign="left">
-      <Typography fontSize={16} fontWeight={600}>
-        {reviewProduct?.product_name?.replace(/<\/?[^>]+(>|$)/g, "")}
-      </Typography>
-      <Typography fontSize={13} color="text.secondary">
-        {items[0]?.vendorData?.shop_name}
-      </Typography>
-    </Box>
-  </Box>
-  {/* Rating */}
-  <Typography fontSize={14} mb={1}>
-    Your review rating *
-  </Typography>
-  <Rating
-    size="large"
-    value={reviewData.rating}
-    onChange={(_, v) => setReviewData(p => ({ ...p, rating: v }))}
-    sx={{ fontSize: 40 }}   // 🔥 BIG STARS
-  />
-  {reviewData.rating > 0 && (
-    <Typography mt={1} fontSize={14}>
-      {['', 'Disappointed', 'Not a fan', "It's okay", 'Like it', 'Love it'][reviewData.rating]}
-    </Typography>
-  )}
-  {/* Recommend */}
-  <Typography mt={3} mb={1} fontSize={14}>
-    Would you recommend this item?
-  </Typography>
-  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-    {[true, false].map(val => (
-      <Button
-        key={String(val)}
-        onClick={() => setReviewData(p => ({ ...p, recommend: val }))}
-        sx={{
-          px: 4,
-          py: 1.2,
-          borderRadius: 5,
-          border: '1px solid',
-          borderColor: reviewData.recommend === val ? '#000' : 'divider',
-          bgcolor: reviewData.recommend === val ? '#000' : 'transparent',
-          color: reviewData.recommend === val ? '#fff' : 'text.primary',
-          fontSize: 15
-        }}
-      >
-        {val ? '✓ Yes' : '✕ No'}
-      </Button>
-    ))}
-  </Box>
-</Box>
+              {/* Product Info */}
+              <Box sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                p: 2,
+                bgcolor: 'grey.50',
+                borderRadius: 2,
+                mb: 3
+              }}>
+                <Box
+                  sx={{
+                    width: 500,
+                    height: 130,
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    // 🔥 highlight styles
+                    border: '2.0px solid #e0e0e0',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    bgcolor: '#fafafa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    // 🔥 hover effect (premium feel)
+                    '&:hover': {
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                      transform: 'scale(1.03)',
+                    }
+                  }}
+                >
+                  <img
+                    src={reviewProduct?.image?.[0]
+                      ? `${baseUrl}/${reviewProduct.image[0]}`
+                      : ""}
+                    alt=""
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain'
+                    }}
+                  />
+                </Box>
+                <Box textAlign="left">
+                  <Typography fontSize={16} fontWeight={600}>
+                    {reviewProduct?.product_name?.replace(/<\/?[^>]+(>|$)/g, "")}
+                  </Typography>
+                  <Typography fontSize={13} color="text.secondary">
+                    {items[0]?.vendorData?.shop_name}
+                  </Typography>
+                </Box>
+              </Box>
+              {/* Rating */}
+              <Typography fontSize={14} mb={1}>
+                Your review rating *
+              </Typography>
+              <Rating
+                size="large"
+                value={reviewData.rating}
+                onChange={(_, v) => setReviewData(p => ({ ...p, rating: v }))}
+                sx={{ fontSize: 40 }}   // 🔥 BIG STARS
+              />
+              {reviewData.rating > 0 && (
+                <Typography mt={1} fontSize={14}>
+                  {['', 'Disappointed', 'Not a fan', "It's okay", 'Like it', 'Love it'][reviewData.rating]}
+                </Typography>
+              )}
+              {/* Recommend */}
+              <Typography mt={3} mb={1} fontSize={14}>
+                Would you recommend this item?
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                {[true, false].map(val => (
+                  <Button
+                    key={String(val)}
+                    onClick={() => setReviewData(p => ({ ...p, recommend: val }))}
+                    sx={{
+                      px: 4,
+                      py: 1.2,
+                      borderRadius: 5,
+                      border: '1px solid',
+                      borderColor: reviewData.recommend === val ? '#000' : 'divider',
+                      bgcolor: reviewData.recommend === val ? '#000' : 'transparent',
+                      color: reviewData.recommend === val ? '#fff' : 'text.primary',
+                      fontSize: 15
+                    }}
+                  >
+                    {val ? '✓ Yes' : '✕ No'}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
           )}
           {/* STEP 2 */}
           {reviewStep === 1 && (
@@ -1093,115 +893,102 @@ const handleFollow = async () => {
           )}
           {/* STEP 3 - Photo Upload */}
           {reviewStep === 2 && (
-  <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-    {/* LEFT TEXT */}
-    <Box sx={{ flex: 1 }}>
-      <Typography fontSize={18} fontWeight={500} mb={1}>
-        Extra credit: add a photo!
-      </Typography>
-
-      <Typography fontSize={14} color="text.secondary">
-        Show your appreciation <br />
-        and inspire the <br />
-        community! <span style={{ fontSize: 13 }}>(optional)</span>
-      </Typography>
-    </Box>
-    {/* RIGHT UPLOAD BOX */}
-    {reviewData.photos.length < 4 && (
-      <Button
-  component="label"
-  sx={{
-    width: 220,
-    height: 220,
-    border: '1px solid #ddd',
-    borderRadius: 3,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1.5,
-    bgcolor: '#fafafa',
-    textTransform: 'none',
-    '&:hover': {
-      bgcolor: '#f2f2f2'
-    }
-  }}
->
-  {/* 🔥 YOUR DOWNLOADED ICON */}
-  <img
-    src="/icons/camera.png"
-    alt="upload"
-    style={{
-      width: 60,
-      height: 60,
-      objectFit: 'contain',
-      opacity: 0.8
-    }}
-  />
-  <Typography fontSize={14} color="text.secondary">
-    Click to upload an image
-  </Typography>
-  <input
-    type="file"
-    accept="image/*"
-    hidden
-    onChange={e => {
-      const file = e.target.files[0];
-      if (file) {
-        setReviewData(p => ({
-          ...p,
-          photos: [...p.photos, file]
-        }));
-      }
-    }}
-  />
-</Button>
-    )}
-    {/* 🔥 IMAGES BELOW (same screen jaisa flow) */}
-    {reviewData.photos.length > 0 && (
-      <Box sx={{ position: 'absolute', bottom: 20, left: 40, display: 'flex', gap: 1 }}>
-        {reviewData.photos.map((photo, i) => (
-          <Box
-            key={i}                     
-            sx={{
-              width: 97,
-              height: 90,
-              borderRadius: 2,       
-              overflow: 'hidden',
-              border: '1px solid #ddd',
-              position: 'relative'
-            }}
-          >     
-            <img
-              src={URL.createObjectURL(photo)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <IconButton
-              size="small"
-              onClick={() =>
-                setReviewData(p => ({
-                  ...p,
-                  photos: p.photos.filter((_, idx) => idx !== i)
-                }))
-              }
-              sx={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                bgcolor: 'black',
-                color: '#fff',
-                width: 20,
-                height: 20
-              }}
-            >
-              <CloseIcon sx={{ fontSize: 12 }} />
-            </IconButton>
-          </Box>
-        ))}
+            <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+              {/* LEFT TEXT */}
+              <Box sx={{ flex: 1 }}>
+                <Typography fontSize={18} fontWeight={500} mb={1}>
+                  Extra credit: add a photo!
+                </Typography>
+                <Typography fontSize={14} color="text.secondary">
+                  Show your appreciation <br />
+                  and inspire the <br />
+                  community! <span style={{ fontSize: 13 }}>(optional)</span>
+                </Typography>
+              </Box>
+              {/* RIGHT UPLOAD BOX */}
+              {reviewData.photos.length < 4 && (
+                <Button
+                  component="label"
+                  sx={{
+                    width: 220,
+                    height: 220,
+                    border: '1px solid #ddd',
+                    borderRadius: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1.5,
+                    bgcolor: '#fafafa',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: '#f2f2f2'
+                    }
+                  }}
+                >
+                  {/* 🔥 YOUR DOWNLOADED ICON */}
+                  <img
+                    src="/icons/camera.png"
+                    alt="upload"
+                    style={{
+                      width: 60,
+                      height: 60,
+                      objectFit: 'contain',
+                      opacity: 0.8
+                    }}
+                  />
+                  <Typography fontSize={14} color="text.secondary">
+                    Click to upload an image
+                  </Typography>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={e => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setReviewData(p => ({
+                          ...p,
+                          photos: [...p.photos, file]
+                        }));
+                      }
+                    }}
+                  />
+                </Button>
+              )}
+              {/* 🔥 IMAGES BELOW (same screen jaisa flow) */}
+              {(reviewData.photoUrls?.length > 0 || reviewData.photos.length > 0) && (
+  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+    {/* Purani saved photos */}
+    {reviewData.photoUrls?.map((url, i) => (
+      <Box key={`old-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
+        <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+        <IconButton
+          size="small"
+          onClick={() => setReviewData(p => ({ ...p, photoUrls: p.photoUrls.filter((_, idx) => idx !== i) }))}
+          sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
+        >
+          <CloseIcon sx={{ fontSize: 12 }} />
+        </IconButton>
       </Box>
-    )}
+    ))}
+    {/* Naye photos */}
+    {reviewData.photos.map((photo, i) => (
+      <Box key={`new-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
+        <img src={URL.createObjectURL(photo)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+        <IconButton
+          size="small"
+          onClick={() => setReviewData(p => ({ ...p, photos: p.photos.filter((_, idx) => idx !== i) }))}
+          sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
+        >
+          <CloseIcon sx={{ fontSize: 12 }} />
+        </IconButton>
+      </Box>
+    ))}
   </Box>
 )}
+            </Box>
+          )}
           {/* STEP 4 - Success */}
           {reviewStep === 3 && (
             <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -1211,21 +998,21 @@ const handleFollow = async () => {
                 Follow <strong>{items[0]?.vendorData?.shop_name}</strong> for updates and special offers.
               </Typography>
               <Button
-  onClick={handleFollow}
-  variant="outlined"
-  startIcon={
-    <span style={{ color: isFollowing ? 'red' : '#999', fontSize: 14 }}>
-      ♥
-    </span>
-  }
-  sx={{
-    borderRadius: 20,
-    textTransform: 'none',
-    borderColor: isFollowing ? '#000' : 'divider'
-  }}
->
-  {isFollowing ? "Following" : "Follow"}
-</Button>
+                onClick={handleFollow}
+                variant="outlined"
+                startIcon={
+                  <span style={{ color: isFollowing ? 'red' : '#999', fontSize: 14 }}>
+                    ♥
+                  </span>
+                }
+                sx={{
+                  borderRadius: 20,
+                  textTransform: 'none',
+                  borderColor: isFollowing ? '#000' : 'divider'
+                }}
+              >
+                {isFollowing ? "Following" : "Follow"}
+              </Button>
             </Box>
           )}
         </Box>
@@ -1244,26 +1031,28 @@ const handleFollow = async () => {
               variant="contained"
               sx={{ bgcolor: '#000', color: '#fff', borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#333' } }}
               onClick={() => {
-  if (reviewStep === 1) {
-    // validation
-    if (!reviewData.itemQuality || !reviewData.delivery || !reviewData.review) {
-      addToast("Please fill all fields", {
-        appearance: "error",
-        autoDismiss: true,
-      });
-      return;
-    }
-    // ❌ pehle API call ho rahi thi
-    // ✅ ab next step pe jao (image upload)
-    setReviewStep(2);
+                if (reviewStep === 0) {
+  if (!reviewData.rating) {
+    addToast("Please give a rating", { appearance: "error", autoDismiss: true });
     return;
   }
-  if (reviewStep === 2) {
-    submitReviewHandler(); // API call yaha karo
+  setReviewStep(1);
+  return;
+}
+                if (reviewStep === 1) {
+  if (!reviewData.itemQuality || !reviewData.delivery || !reviewData.review) {
+    addToast("Please fill all fields", { appearance: "error", autoDismiss: true });
     return;
   }
-  setReviewStep(s => s + 1);
-}}
+  setReviewStep(2);
+  return;
+}
+if (reviewStep === 2) {
+  submitReviewHandler();
+  return;
+}
+setReviewStep(s => s + 1);
+              }}
             >
               {reviewStep === 2 ? (reviewData.photos.length > 0 ? 'Submit photo' : 'Skip') : 'Next'}
             </Button>
