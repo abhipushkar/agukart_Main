@@ -1471,7 +1471,11 @@ export const useProductVariants = (product) => {
       targetCombination.sku_product_id !== product._id &&
       !targetCombination.sold_out
     ) {
-      router.push(`/product/${targetCombination.slug}/${targetCombination.product_code}`);
+      const currentQuery =
+        typeof window !== "undefined" ? window.location.search : "";
+      router.push(
+        `/product/${targetCombination.slug}/${targetCombination.product_code}${currentQuery}`,
+      );
     }
   }, [selectedVariants, product, router, extractParentCombinations]);
 

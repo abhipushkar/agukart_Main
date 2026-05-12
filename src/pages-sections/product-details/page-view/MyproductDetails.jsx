@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Container,
   Grid,
@@ -74,6 +74,9 @@ const MyproductDetails = ({ res }) => {
   const [hoveredCustomizationImage, setHoveredCustomizationImage] =
     useState(null);
   const pathname = useParams();
+
+  // Ref to track if we've already initialized variants from URL params
+  const urlInitializedRef = useRef(false);
 
   // Custom Hooks
   const {
@@ -422,6 +425,152 @@ const MyproductDetails = ({ res }) => {
     }
   };
 
+  // Helper: Extract all variant attribute IDs from normalized variant data
+  const extractAllAttributeIds = useCallback(() => {
+    const ids = new Set();
+
+    // Get all variants using the same normalization as the hook
+    const allVariants = normalizeVariantData();
+    console.log("[Extract] normalizeVariantData result:", allVariants);
+
+    allVariants.forEach((variant) => {
+      console.log("[Extract] Processing variant:", variant.name, "attributes:", variant.attributes);
+      variant.attributes?.forEach((attr) => {
+        console.log("[Extract] Adding attribute ID:", attr.id);
+        ids.add(attr.id);
+      });
+    });
+
+    console.log("[Extract] Final attribute IDs:", Array.from(ids));
+    return ids;
+  }, [normalizeVariantData]);
+
+  // Helper: Build combinations map from product data
+  const buildCombinationsMap = useCallback(() => {
+    const map = new Map();
+    if (!myproduct?.combinationData) return map;
+
+    myproduct.combinationData.forEach((group) => {
+      group.combinations?.forEach((combo) => {
+        const attributeIds = [];
+
+        // Collect all attribute IDs from the combination
+        if (combo.name1 && combo.value1) {
+          const variant = myproduct.product_variants?.find(
+            (v) => v.variant_name === combo.name1
+          );
+          const attr = variant?.variant_attributes?.find(
+            (a) => a.value === combo.value1
+          );
+          if (attr?._id) attributeIds.push(attr._id);
+        }
+
+        if (combo.name2 && combo.value2) {
+          const variant = myproduct.product_variants?.find(
+            (v) => v.variant_name === combo.name2
+          );
+          const attr = variant?.variant_attributes?.find(
+            (a) => a.value === combo.value2
+          );
+          if (attr?._id) attributeIds.push(attr._id);
+        }
+
+        if (attributeIds.length > 0) {
+          const sortedKey = [...attributeIds].sort().join(",");
+          const isVisible = combo.isVisible === true || combo.isVisible === "true";
+          map.set(sortedKey, {
+            isVisible: isVisible,
+            attributeIds: attributeIds,
+          });
+        }
+      });
+    });
+
+    return map;
+  }, [myproduct]);
+
+  // Helper: Validate variant attribute IDs from URL params
+  const validateVariantsFromUrl = useCallback(
+    (attrIds) => {
+      if (!myproduct || !attrIds || attrIds.length === 0) return [];
+
+      const allAttributeIds = extractAllAttributeIds();
+      console.log("[Validate] allAttributeIds found in product:", Array.from(allAttributeIds));
+
+      const validated = [];
+
+      for (const attrId of attrIds) {
+        console.log("[Validate] Checking attrId:", attrId, "exists:", allAttributeIds.has(attrId));
+        // Check if attribute exists in current product
+        if (!allAttributeIds.has(attrId)) {
+          console.warn(`[Variant URL]: Attribute ${attrId} not found in current product`);
+          continue;
+        }
+        validated.push(attrId);
+      }
+
+      console.log("[Validate] Final validated:", validated);
+      return validated;
+    },
+    [myproduct, extractAllAttributeIds]
+  );
+
+  // Helper: Check if combination is available (not sold out)
+  const isCombinationAvailable = useCallback(
+    (attributeIds) => {
+      const combinationsMap = buildCombinationsMap();
+      if (attributeIds.length === 0) return true;
+
+      const sortedKey = [...attributeIds].sort().join(",");
+      const combination = combinationsMap.get(sortedKey);
+
+      if (!combination) {
+        console.warn(`[Variant URL]: Combination ${sortedKey} not found`);
+        return false;
+      }
+
+      if (!combination.isVisible) {
+        console.warn(`[Variant URL]: Combination ${sortedKey} is sold out or hidden`);
+        return false;
+      }
+
+      return true;
+    },
+    [buildCombinationsMap]
+  );
+
+  // Helper: Find variant identifier (name) for an attribute ID using normalizeVariantData
+  const findVariantIdentifierForAttribute = useCallback(
+    (attrId) => {
+      const allVariants = normalizeVariantData();
+      console.log("[FindVariant] Looking for attrId:", attrId, "in variants:", allVariants);
+
+      for (const variant of allVariants) {
+        const foundAttr = variant.attributes?.find((a) => a.id === attrId);
+        if (foundAttr) {
+          console.log("[FindVariant] Found variant:", variant.id, "for attrId:", attrId);
+          return variant.id; // Return the variant.id which is the variant name
+        }
+      }
+
+      console.log("[FindVariant] No variant found for attrId:", attrId);
+      return null;
+    },
+    [normalizeVariantData]
+  );
+
+  // Helper: identify if a variant is internal/parent by variant identifier
+  const getVariantTypeByIdentifier = useCallback(
+    (variantIdentifier) => {
+      if (!variantIdentifier) return null;
+      const variant = normalizeVariantData().find(
+        (item) => item.id === variantIdentifier
+      );
+      return variant?.type || null;
+    },
+    [normalizeVariantData]
+  );
+
   const getWishList = async () => {
     const key = localStorage.getItem(TOKEN_NAME)
     if (!token || !key) { return; }
@@ -460,6 +609,8 @@ const MyproductDetails = ({ res }) => {
     if (token) {
       viewProduct();
     }
+    // Reset URL initialization flag when product ID changes
+    urlInitializedRef.current = false;
   }, [pathname.productId]);
 
   useEffect(() => {
@@ -500,6 +651,122 @@ const MyproductDetails = ({ res }) => {
     customizeTextPrice,
     currentCombinationData,
   ]);
+
+  // URL Initialization: Auto-select variants from query params on component mount
+  useEffect(() => {
+    console.log("[URL Init] Effect running. myproduct:", !!myproduct, "searchParams:", searchParams.toString(), "urlInitialized:", urlInitializedRef.current);
+
+    if (!myproduct || !searchParams || urlInitializedRef.current) return;
+
+    const urlParams = new URLSearchParams(searchParams.toString());
+    const variantAttrIds = urlParams.getAll("var");
+
+    console.log("[URL Init] variantAttrIds from URL:", variantAttrIds);
+
+    // Mark as initialized to allow URL sync effect to run
+    // This must happen regardless of whether there are URL params
+    urlInitializedRef.current = true;
+    console.log("[URL Init] Marked as initialized");
+
+    if (variantAttrIds.length === 0) {
+      console.log("[URL Init] No variant params in URL");
+      return;
+    }
+
+    // Debug: Check product structure
+    console.log("[URL Init] myproduct.product_variants:", myproduct?.product_variants);
+    console.log("[URL Init] myproduct keys:", Object.keys(myproduct || {}));
+
+    // Validate attribute IDs exist in current product
+    const validated = validateVariantsFromUrl(variantAttrIds);
+    console.log("[URL Init] Validated variants:", validated);
+
+    if (validated.length === 0) {
+      console.log("[URL Init] No validated variants, returning");
+      return;
+    }
+
+    // Auto-select validated variants - let the hook's handleVariantChange determine if combination is valid
+    console.log("[URL Init] Auto-selecting variants...");
+    validated.forEach((attrId) => {
+      const variantName = findVariantIdentifierForAttribute(attrId);
+      console.log("[URL Init] Calling handleVariantChange with:", variantName, attrId);
+      const variantType = getVariantTypeByIdentifier(variantName);
+      if (variantName && variantType === "internal") {
+        handleVariantChange(variantName, attrId);
+      } else if (variantType === "parent") {
+        console.log(
+          "[URL Init] Skipping parent variant from URL params:",
+          variantName
+        );
+      }
+    });
+  }, [
+    myproduct,
+    searchParams,
+    validateVariantsFromUrl,
+    findVariantIdentifierForAttribute,
+    getVariantTypeByIdentifier,
+    handleVariantChange,
+  ]);
+
+  // URL Sync: Update URL query params when variants change
+  useEffect(() => {
+    console.log("[URL Sync] Effect running. myproduct:", !!myproduct, "initialized:", urlInitializedRef.current, "selectedVariants:", selectedVariants);
+
+    if (!myproduct || !urlInitializedRef.current) {
+      console.log("[URL Sync] Skipping - myproduct or not initialized");
+      return;
+    }
+
+    const selectedEntries = Object.entries(selectedVariants || {});
+    const hasParentSelection = selectedEntries.some(
+      ([variantIdentifier, attrId]) =>
+        !!attrId && getVariantTypeByIdentifier(variantIdentifier) === "parent"
+    );
+    const hasInternalSelection = selectedEntries.some(
+      ([variantIdentifier, attrId]) =>
+        !!attrId && getVariantTypeByIdentifier(variantIdentifier) === "internal"
+    );
+
+    // Important: when only parent variants are selected, do not touch URL query.
+    // This keeps default parent navigation behavior (slug/product_code route change).
+    if (hasParentSelection && !hasInternalSelection) {
+      console.log(
+        "[URL Sync] Skipping sync for parent-only selection to preserve navigation"
+      );
+      return;
+    }
+
+    const newParams = new URLSearchParams(searchParams.toString());
+
+    // Remove all existing variant params
+    newParams.delete("var");
+
+    // Add current variant selections
+    if (selectedVariants && Object.keys(selectedVariants).length > 0) {
+      Object.entries(selectedVariants).forEach(([variantIdentifier, attrId]) => {
+        const variantType = getVariantTypeByIdentifier(variantIdentifier);
+        if (attrId && variantType === "internal") {
+          newParams.append("var", attrId);
+        } else if (variantType === "parent") {
+          console.log(
+            "[URL Sync] Skipping parent variant in URL sync:",
+            variantIdentifier
+          );
+        }
+      });
+    }
+
+    const queryString = newParams.toString();
+    const newUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
+
+    console.log("[URL Sync] Updating URL to:", newUrl);
+    // Update URL without page reload
+    window.history.replaceState({ path: newUrl }, "", newUrl);
+  }, [selectedVariants, myproduct, searchParams, getVariantTypeByIdentifier]);
 
   // Check if there are dependent internal variants (combined pricing)
   const hasDependentInternalVariants = useMemo(() => {
@@ -1269,6 +1536,7 @@ const MyproductDetails = ({ res }) => {
           isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
           calculateAttributeData={calculateAttributeData} // Pass this
           productMainImage={res?.data?.image}
+          form_values={res?.data?.form_values}
         />
       );
     });
@@ -1373,7 +1641,7 @@ const MyproductDetails = ({ res }) => {
       });
     }
 
-    console.log("Combined media array:", combined);
+    // console.log("Combined media array:", combined);
     return combined;
   }, [selectedDropdowns, selectedVariantImages, media, myproduct]);
 
