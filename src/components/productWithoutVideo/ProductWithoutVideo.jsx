@@ -49,7 +49,7 @@ const ProductWithoutVideo = ({ product }) => {
 
   const getWishList = async () => {
     const key = localStorage.getItem(TOKEN_NAME);
-    if(!token || !key){
+    if (!token || !key) {
       return;
     }
     try {
@@ -96,23 +96,85 @@ const ProductWithoutVideo = ({ product }) => {
   }, [token]);
 
   useEffect(() => {
-    if (product?.isCombination) {
-      const mergedCombinations = product?.combinationData
-        ?.map((item) => item.combinations)
-        .flat();
-      const minimumPrice = mergedCombinations
-        ?.filter((obj) => +obj.price > 0)
-        ?.reduce((min, obj) => Math.min(min, +obj.price), Infinity);
-      setPrice(minimumPrice === Infinity ? +product?.sale_price : minimumPrice);
-      setOriginalPrice(minimumPrice === Infinity ? +product.sale_price : minimumPrice);
+    const hasCombinations =
+      Array.isArray(product?.combinationData) &&
+      product.combinationData.length > 0;
+
+    const isPriceControlled = product?.form_values?.isCheckedPrice;
+
+    // ✅ CASE 1: NOT PRICE CONTROLLED → SIMPLE FLOW
+    if (!isPriceControlled) {
+      const basePrice = Number(product?.sale_price || 0);
+
+      setOriginalPrice(basePrice);
+
       if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-        setPrice(calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, minimumPrice === Infinity ? +product.sale_price : minimumPrice))
+        setPrice(
+          calculatePriceAfterDiscount(
+            promotion?.offer_type,
+            +promotion?.discount_amount,
+            basePrice
+          )
+        );
+      } else {
+        setPrice(basePrice);
       }
-    } else {
-      setPrice(+product?.sale_price);
-      setOriginalPrice(+product?.sale_price);
+
+      return; // 🔥 STOP HERE (VERY IMPORTANT)
+    }
+
+    // ✅ CASE 2: PRICE CONTROLLED → USE COMBINATIONS
+    if (hasCombinations) {
+      const priceController = product?.form_values?.prices;
+
+      let priceGroup = product?.combinationData?.find(
+        group => group.variant_name === priceController
+      );
+
+      if (!priceGroup) {
+        priceGroup = product?.combinationData?.find(
+          group =>
+            group.variant_name
+              ?.toLowerCase()
+              .includes(priceController?.toLowerCase())
+        );
+      }
+
+      if (!priceGroup) {
+        console.warn(
+          "Price controller group not found:",
+          priceController,
+          product._id
+        );
+
+        const basePrice = Number(product?.sale_price || 0);
+        setOriginalPrice(basePrice);
+
+        setPrice(basePrice);
+        return;
+      }
+
+      const validPrices = priceGroup.combinations
+        ?.map(c => Number(c.price))
+        ?.filter(p => !isNaN(p) && p > 0);
+
+      const finalPrice =
+        validPrices.length > 0
+          ? Math.min(...validPrices)
+          : Number(product.sale_price || 0);
+
+      setOriginalPrice(finalPrice);
+
       if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-        setPrice(calculatePriceAfterDiscount(promotion?.offer_type, +promotion?.discount_amount, +product?.sale_price))
+        setPrice(
+          calculatePriceAfterDiscount(
+            promotion?.offer_type,
+            +promotion?.discount_amount,
+            finalPrice
+          )
+        );
+      } else {
+        setPrice(finalPrice);
       }
     }
   }, [product, promotion]);

@@ -1,5 +1,5 @@
-"use client";
-import axios from "axios";
+"use client"; 
+  import axios from "axios";
 import { TOKEN_NAME } from "constant";
 import { useToasts } from "react-toast-notifications";
 const baseURL = process.env.NEXT_PUBLIC_BASE_URL;

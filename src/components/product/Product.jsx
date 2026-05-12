@@ -106,89 +106,89 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
     }
   }, [token]);
 
-useEffect(() => {
-  const hasCombinations =
-    Array.isArray(product?.combinationData) &&
-    product.combinationData.length > 0;
+  useEffect(() => {
+    const hasCombinations =
+      Array.isArray(product?.combinationData) &&
+      product.combinationData.length > 0;
 
-  const isPriceControlled = product?.form_values?.isCheckedPrice;
+    const isPriceControlled = product?.form_values?.isCheckedPrice;
 
-  // ✅ CASE 1: NOT PRICE CONTROLLED → SIMPLE FLOW
-  if (!isPriceControlled) {
-    const basePrice = Number(product?.sale_price || 0);
-
-    setOriginalPrice(basePrice);
-
-    if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-      setPrice(
-        calculatePriceAfterDiscount(
-          promotion?.offer_type,
-          +promotion?.discount_amount,
-          basePrice
-        )
-      );
-    } else {
-      setPrice(basePrice);
-    }
-
-    return; // 🔥 STOP HERE (VERY IMPORTANT)
-  }
-
-  // ✅ CASE 2: PRICE CONTROLLED → USE COMBINATIONS
-  if (hasCombinations) {
-    const priceController = product?.form_values?.prices;
-
-    let priceGroup = product?.combinationData?.find(
-      group => group.variant_name === priceController
-    );
-
-    if (!priceGroup) {
-      priceGroup = product?.combinationData?.find(
-        group =>
-          group.variant_name
-            ?.toLowerCase()
-            .includes(priceController?.toLowerCase())
-      );
-    }
-
-    if (!priceGroup) {
-      console.warn(
-        "Price controller group not found:",
-        priceController,
-        product._id
-      );
-
+    // ✅ CASE 1: NOT PRICE CONTROLLED → SIMPLE FLOW
+    if (!isPriceControlled) {
       const basePrice = Number(product?.sale_price || 0);
+
       setOriginalPrice(basePrice);
 
-      setPrice(basePrice);
-      return;
+      if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
+        setPrice(
+          calculatePriceAfterDiscount(
+            promotion?.offer_type,
+            +promotion?.discount_amount,
+            basePrice
+          )
+        );
+      } else {
+        setPrice(basePrice);
+      }
+
+      return; // 🔥 STOP HERE (VERY IMPORTANT)
     }
 
-    const validPrices = priceGroup.combinations
-      ?.map(c => Number(c.price))
-      ?.filter(p => !isNaN(p) && p > 0);
+    // ✅ CASE 2: PRICE CONTROLLED → USE COMBINATIONS
+    if (hasCombinations) {
+      const priceController = product?.form_values?.prices;
 
-    const finalPrice =
-      validPrices.length > 0
-        ? Math.min(...validPrices)
-        : Number(product.sale_price || 0);
-
-    setOriginalPrice(finalPrice);
-
-    if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
-      setPrice(
-        calculatePriceAfterDiscount(
-          promotion?.offer_type,
-          +promotion?.discount_amount,
-          finalPrice
-        )
+      let priceGroup = product?.combinationData?.find(
+        group => group.variant_name === priceController
       );
-    } else {
-      setPrice(finalPrice);
+
+      if (!priceGroup) {
+        priceGroup = product?.combinationData?.find(
+          group =>
+            group.variant_name
+              ?.toLowerCase()
+              .includes(priceController?.toLowerCase())
+        );
+      }
+
+      if (!priceGroup) {
+        console.warn(
+          "Price controller group not found:",
+          priceController,
+          product._id
+        );
+
+        const basePrice = Number(product?.sale_price || 0);
+        setOriginalPrice(basePrice);
+
+        setPrice(basePrice);
+        return;
+      }
+
+      const validPrices = priceGroup.combinations
+        ?.map(c => Number(c.price))
+        ?.filter(p => !isNaN(p) && p > 0);
+
+      const finalPrice =
+        validPrices.length > 0
+          ? Math.min(...validPrices)
+          : Number(product.sale_price || 0);
+
+      setOriginalPrice(finalPrice);
+
+      if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
+        setPrice(
+          calculatePriceAfterDiscount(
+            promotion?.offer_type,
+            +promotion?.discount_amount,
+            finalPrice
+          )
+        );
+      } else {
+        setPrice(finalPrice);
+      }
     }
-  }
-}, [product, promotion]);
+  }, [product, promotion]);
 
   useEffect(() => {
     if (
@@ -562,7 +562,10 @@ useEffect(() => {
               }}
             >
               {currency?.symbol}
-              {(price * currency?.rate).toFixed(2)}
+              {
+                product.category !== undefined ? (price * currency?.rate).toFixed(2)
+                  : (product.finalPrice * currency?.rate).toFixed(2)
+              }
             </Typography>
 
             {originalPrice != price && (
