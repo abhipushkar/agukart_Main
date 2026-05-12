@@ -59,35 +59,36 @@ const prepareFieldRows = (grouped) => {
 // ProductSpecifications (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductSpecifications = ({ product }) => {
-  const dynamicFields = product?.dynamicFields || {};
+    const dynamicFields = product?.dynamicFields || {};
 
-// Add Ring Size from form_values
-if (
-    product?.form_values?.prices === "Ring Size" &&
-    product?.variant_attribute_id?.length
-) {
-    const ringSizes = product.variant_attribute_id
-        .map(item => item?.value)
-        .filter(Boolean);
+    // Add Ring Size from form_values
+    if (
+        product?.form_values?.prices === "Ring Size" &&
+        product?.variant_attribute_id?.length
+    ) {
+        const ringSizes = product.variant_attribute_id
+            .map(item => item?.value)
+            .filter(Boolean);
 
-    if (ringSizes.length) {
-        dynamicFields.ring_size = [...new Set(ringSizes)].join(", ");
-    }
-}
-
-if (dynamicFields) {
-    Object.keys(dynamicFields).forEach(key => {
-        if (
-            Array.isArray(dynamicFields[key]) &&
-            dynamicFields[key].length > 4
-        ) {
-            delete dynamicFields[key];
+        if (ringSizes.length) {
+            dynamicFields.ring_size = [...new Set(ringSizes)].join(", ");
         }
-    });
-}
+    }
+
     if (dynamicFields) {
         Object.keys(dynamicFields).forEach(key => {
-            if (Array.isArray(dynamicFields[key]) && dynamicFields[key].length > 4) delete dynamicFields[key];
+            if (
+                Array.isArray(dynamicFields[key]) &&
+                dynamicFields[key].length > 4
+            ) {
+                delete dynamicFields[key];
+            }
+        });
+    }
+    if (dynamicFields) {
+        Object.keys(dynamicFields).forEach(key => {
+            if (Array.isArray(dynamicFields[key]) && (dynamicFields[key].length > 4 || dynamicFields[key].length ===0)) delete dynamicFields[key];
+            if ((typeof dynamicFields[key] === 'string' && dynamicFields[key].length === 0) || dynamicFields[key]===null) delete dynamicFields[key];
         });
     }
     const dynamicFieldsArray = Object.entries(dynamicFields);
@@ -217,7 +218,7 @@ const ReviewCard = ({ review }) => (
     <Box sx={{ borderBottom: '1px solid #e5e5e5', py: 3 }}>
         {/* Main layout */}
         <Box display="flex" alignItems="flex-start" gap={2}>
-            
+
             {/* Left avatar */}
             <Avatar
                 src={review.user_image}
@@ -245,12 +246,12 @@ const ReviewCard = ({ review }) => (
                 </Typography>
 
                 {review.recommended && (
-    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
-        <Typography fontSize={13} sx={{ color: '#2e7d32', fontWeight: 500 }}>
-            ✓ Recommends this item
-        </Typography>
-    </Box>
-)}
+                    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
+                        <Typography fontSize={13} sx={{ color: '#2e7d32', fontWeight: 500 }}>
+                            ✓ Recommends this item
+                        </Typography>
+                    </Box>
+                )}
 
                 {/* Photos */}
                 {review.photos?.length > 0 && (
@@ -446,7 +447,7 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
     const avgRating = currentReviews.length > 0
         ? (currentReviews.reduce((s, r) => s + r.item_rating, 0) / currentReviews.length).toFixed(1)
         : 0;
-const scrollToReviews = () => {
+    const scrollToReviews = () => {
         const el = document.getElementById('reviews');
         if (!el) return;
         const top = el.getBoundingClientRect().top + window.scrollY - 49;
@@ -459,7 +460,7 @@ const scrollToReviews = () => {
         <Box>
             {/* Overall rating header */}
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <Typography fontSize={22} fontWeight={600}>
+                <Typography fontSize={22} fontWeight={500}>
                     {currentReviews.length.toLocaleString()} reviews
                 </Typography>
                 <Rating value={parseFloat(avgRating)} precision={0.1} readOnly size="medium" />
@@ -505,12 +506,12 @@ const scrollToReviews = () => {
                 ))}
 
                 {paginatedReviews.length === 0 && (
-        <Box sx={{ py: 6, textAlign: 'center', color: '#888' }}>
-            <Typography fontSize={15}>
-                No reviews yet for this {activeTab === 0 ? 'shop' : 'item'}.
-            </Typography>
-        </Box>
-    )}
+                    <Box sx={{ py: 6, textAlign: 'center', color: '#888' }}>
+                        <Typography fontSize={15}>
+                            No reviews yet for this {activeTab === 0 ? 'shop' : 'item'}.
+                        </Typography>
+                    </Box>
+                )}
             </Box>
 
             {/* Pagination */}
@@ -519,10 +520,10 @@ const scrollToReviews = () => {
                     <Pagination
                         count={totalPages}
                         page={page}
-                       onChange={(_, val) => {
-    setPage(val);
-    scrollToReviews();
-}}
+                        onChange={(_, val) => {
+                            setPage(val);
+                            scrollToReviews();
+                        }}
                         shape="rounded"
                         sx={{
                             '& .MuiPaginationItem-root': { fontSize: 14, color: '#333', border: '1px solid transparent' },
@@ -543,7 +544,7 @@ const scrollToReviews = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductTabs = ({ product }) => {
     const [activeTab, setActiveTab] = React.useState('description');
-     const scrollToSection = (id) => {
+    const scrollToSection = (id) => {
         const el = document.getElementById(id);
         if (!el) return;
         const top = el.getBoundingClientRect().top + window.scrollY - 49;
@@ -552,12 +553,12 @@ const ProductTabs = ({ product }) => {
 
     React.useEffect(() => {
         const sections = [
-    'description',
-    'specifications',
-    'reviews',
-    'shipping',
-    ...(product?.tabs || []).map((_, index) => `custom-tab-${index}`),
-];
+            'description',
+            'specifications',
+            'reviews',
+            'shipping',
+            ...(product?.tabs || []).map((_, index) => `custom-tab-${index}`),
+        ];
         const observer = new IntersectionObserver(
             entries => entries.forEach(e => { if (e.isIntersecting) setActiveTab(e.target.id); }),
             { threshold: 0.4 }
@@ -567,14 +568,14 @@ const ProductTabs = ({ product }) => {
     }, []);
 
     const tabStyle = (tabName) => ({
-    cursor: 'pointer', fontWeight: 400, fontSize: '15px',
-    color: activeTab === tabName ? '#d32f2f' : '#222',
-    borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
-    pb: '12px', transition: 'color 0.2s, border-bottom 0.2s', flexShrink: 0,
-    '&:hover': {                          // ✅ ADD KARO
-        color: '#d32f2f',
-    },
-});
+        cursor: 'pointer', fontWeight: 400, fontSize: '15px',
+        color: activeTab === tabName ? '#d32f2f' : '#222',
+        borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
+        pb: '12px', transition: 'color 0.2s, border-bottom 0.2s', flexShrink: 0,
+        '&:hover': {                          // ✅ ADD KARO
+            color: '#d32f2f',
+        },
+    });
 
     return (
         <Box py={2} sx={{ padding: '0 0', m: 'auto', maxWidth: '1550px' }}>
@@ -583,43 +584,43 @@ const ProductTabs = ({ product }) => {
                     <Box>
                         {/* Sticky Tab Nav */}
                         <Box
-    sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '40px',
-        pt: '20px',        // ✅ ADD KARO
-        pb: '0px',         // ✅ ADD KARO (borderBottom ke saath pb tabStyle mein hai)
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '40px',
+                                pt: '12px',        // ✅ ADD KARO
+                                pb: '0px',         // ✅ ADD KARO (borderBottom ke saath pb tabStyle mein hai)
 
-        pl: { xs: '25px', md: '100px' },
-        pr: { xs: '10px', md: '40px' },
+                                pl: { xs: '25px', md: '100px' },
+                                pr: { xs: '10px', md: '40px' },
 
-        borderBottom: '1px solid #e5e5e5',
-        overflowX: 'auto',
-        whiteSpace: 'nowrap',
-        position: 'sticky',
-        top: 0,
-        background: '#fff',
-        zIndex: 10,
+                                borderBottom: '1px solid #e5e5e5',
+                                overflowX: 'auto',
+                                whiteSpace: 'nowrap',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#fff',
+                                zIndex: 10,
 
-        '&::-webkit-scrollbar': {
-            display: 'none',
-        },
-    }}
->
+                                '&::-webkit-scrollbar': {
+                                    display: 'none',
+                                },
+                            }}
+                        >
                             {[
-    { id: 'description', label: 'Description' },
-    { id: 'specifications', label: 'Product Specification & Details' },
-    { id: 'reviews', label: 'Reviews' },
-    { id: 'shipping', label: 'Shipping And Return Policies' },
-    ...(product?.tabs || []).map((tab, index) => ({
-        id: `custom-tab-${index}`,
-        label: tab?.title || 'Custom Tab',
-    })),
-].map(tab => (
+                                { id: 'description', label: 'Description' },
+                                { id: 'specifications', label: 'Product Specification & Details' },
+                                { id: 'reviews', label: 'Reviews' },
+                                { id: 'shipping', label: 'Shipping And Return Policies' },
+                                ...(product?.tabs || []).map((tab, index) => ({
+                                    id: `custom-tab-${index}`,
+                                    label: tab?.title || 'Custom Tab',
+                                })),
+                            ].map(tab => (
                                 <Typography
                                     key={tab.id}
                                     sx={tabStyle(tab.id)}
-onClick={() => scrollToSection(tab.id)}
+                                    onClick={() => scrollToSection(tab.id)}
                                 >
                                     {tab.label}
                                 </Typography>
@@ -628,33 +629,33 @@ onClick={() => scrollToSection(tab.id)}
 
                         {/* Content */}
                         <Box
-  sx={{
-    pl: { xs: '25px', md: '100px' },
-    pr: { xs: '25px', md: '100px' }, // right side kam
-  }}
->
+                            sx={{
+                                pl: { xs: '25px', md: '100px' },
+                                pr: { xs: '25px', md: '100px' }, // right side kam
+                            }}
+                        >
                             <Box
-    id="description"
-    mb={6}
-    pt={3}
-    sx={{
-        pr: { xs: '10px', md: '120px' }, // right side se content andar aa jayega
-    }}
->
-    <Typography variant="h5" mb={2}>
-        Description
-    </Typography>
+                                id="description"
+                                mb={6}
+                                pt={3}
+                                sx={{
+                                    pr: { xs: '10px', md: '120px' }, // right side se content andar aa jayega
+                                }}
+                            >
+                                <Typography variant="h5" fontWeight={600} mb={2}>
+                                    Description
+                                </Typography>
 
-    <HtmlRenderer html={product?.description || ''} />
-</Box>
+                                <HtmlRenderer html={product?.description || ''} />
+                            </Box>
 
                             <Box id="specifications" mb={6}>
-                                <Typography variant="h5" mb={2}>Product Specifications & Details</Typography>
+                                <Typography variant="h5" fontWeight={600} my={2}>Product Specifications & Details</Typography>
                                 <ProductSpecifications product={product} />
                             </Box>
 
                             <Box id="reviews" mb={6}>
-                                <Typography variant="h5" mb={2}>Reviews</Typography>
+                                <Typography variant="h5" fontWeight={600} my={2}>Reviews</Typography>
                                 <ProductReviews
                                     reviews={product?.rating || []}
                                     productTitle={product?.product_title}
@@ -663,24 +664,24 @@ onClick={() => scrollToSection(tab.id)}
                             </Box>
 
                             <Box id="shipping" mb={6}>
-                                
-                                <Typography variant="h5" mb={2}>Shipping and Return Policies</Typography>
+
+                                <Typography variant="h5" fontWeight={600} my={2}>Shipping and Return Policies</Typography>
                                 <DeliveryAndReturnPolicy product={product} />
 
                             </Box>
                             {(product?.tabs || []).map((tab, index) => (
-    <Box
-        key={index}
-        id={`custom-tab-${index}`}
-        mb={6}
-    >
-        <Typography variant="h5" mb={2}>
-            {tab?.title}
-        </Typography>
+                                <Box
+                                    key={index}
+                                    id={`custom-tab-${index}`}
+                                    mb={6}
+                                >
+                                    <Typography variant="h5" mb={2}>
+                                        {tab?.title}
+                                    </Typography>
 
-        <HtmlRenderer html={tab?.description || ''} />
-    </Box>
-))}
+                                    <HtmlRenderer html={tab?.description || ''} />
+                                </Box>
+                            ))}
                         </Box>
                     </Box>
                 </Grid>
