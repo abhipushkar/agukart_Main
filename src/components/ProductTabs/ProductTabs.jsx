@@ -16,11 +16,17 @@ import {
     Tab,
     Pagination,
     IconButton,
+    Button,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     ChevronRight as ChevronRightIcon,
+    ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import moment from 'moment';
+import { useMediaQuery } from '@mui/material';
 import HtmlRenderer from 'components/HtmlRender/HtmlRenderer';
 import DeliveryAndReturnPolicy from '../DeliveryAndReturnPolicy/DeliveryAndReturnPolicy';
 
@@ -59,45 +65,51 @@ const prepareFieldRows = (grouped) => {
 // ProductSpecifications (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductSpecifications = ({ product }) => {
-  const dynamicFields = product?.dynamicFields || {};
+    const [showAllSpecs, setShowAllSpecs] = useState(false);
+    const isMobile = useMediaQuery('(max-width:600px)');
 
-// Add Ring Size from form_values
-if (
-    product?.form_values?.prices === "Ring Size" &&
-    product?.variant_attribute_id?.length
-) {
-    const ringSizes = product.variant_attribute_id
-        .map(item => item?.value)
-        .filter(Boolean);
+    const dynamicFields = { ...(product?.dynamicFields || {}) };
 
-    if (ringSizes.length) {
-        dynamicFields.ring_size = [...new Set(ringSizes)].join(", ");
-    }
-}
-
-if (dynamicFields) {
-    Object.keys(dynamicFields).forEach(key => {
-        if (
-            Array.isArray(dynamicFields[key]) &&
-            dynamicFields[key].length > 4
-        ) {
-            delete dynamicFields[key];
+    if (
+        product?.form_values?.prices === "Ring Size" &&
+        product?.variant_attribute_id?.length
+    ) {
+        const ringSizes = product.variant_attribute_id
+            .map(item => item?.value)
+            .filter(Boolean);
+        if (ringSizes.length) {
+            dynamicFields.ring_size = [...new Set(ringSizes)].join(", ");
         }
-    });
-}
+    }
+
     if (dynamicFields) {
         Object.keys(dynamicFields).forEach(key => {
-            if (Array.isArray(dynamicFields[key]) && dynamicFields[key].length > 4) delete dynamicFields[key];
+            if (Array.isArray(dynamicFields[key]) && dynamicFields[key].length > 4)
+                delete dynamicFields[key];
         });
     }
+
     const dynamicFieldsArray = Object.entries(dynamicFields);
-    if (dynamicFieldsArray.length === 0) return <Box sx={{ p: 3, textAlign: 'center' }}><Typography>No specifications available for this product.</Typography></Box>;
+    if (dynamicFieldsArray.length === 0) return (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography>No specifications available for this product.</Typography>
+        </Box>
+    );
 
     const groupedFields = groupFieldsByBaseName(dynamicFieldsArray);
-    const fieldRows = prepareFieldRows(groupedFields);
-    const midPoint = Math.ceil(fieldRows.length / 2);
-    const leftColumnRows = fieldRows.slice(0, midPoint);
-    const rightColumnRows = fieldRows.slice(midPoint);
+    const allFieldRows = prepareFieldRows(groupedFields);
+    const MOBILE_LIMIT = 5;
+    const visibleRows = (isMobile && !showAllSpecs)
+        ? allFieldRows.slice(0, MOBILE_LIMIT)
+        : allFieldRows;
+
+    const midPoint = Math.ceil(visibleRows.length / 2);
+    const leftColumnRows = visibleRows.slice(0, midPoint);
+    const rightColumnRows = visibleRows.slice(midPoint);
+
+    // Show More button: mobile pe hamesha dikhao agar 5 se zyada hain,
+    // desktop pe hide rahega (sab dikhta hai)
+    const showToggleButton = isMobile && allFieldRows.length > MOBILE_LIMIT;
 
     const renderSingleField = (row) => (
         <TableRow key={row.displayName} sx={{ borderBottom: '1px solid' }}>
@@ -105,44 +117,107 @@ if (dynamicFields) {
             <TableCell>{formatDynamicFieldValue(row.fields[0].value)}</TableCell>
         </TableRow>
     );
+
     const renderGroupedField = (row) => (
         <React.Fragment key={row.groupName}>
-            <TableRow><TableCell colSpan={2} sx={{ background: '#f5f5f5', fontWeight: 600, borderBottom: 'none', pt: 1, pb: 0.5 }}>{row.groupName}</TableCell></TableRow>
+            <TableRow>
+                <TableCell colSpan={2} sx={{ background: '#f5f5f5', fontWeight: 600, borderBottom: 'none', pt: 1, pb: 0.5 }}>
+                    {row.groupName}
+                </TableCell>
+            </TableRow>
             {row.fields.map((field, i) => (
                 <TableRow key={`${row.groupName}-${i}`} sx={{ borderBottom: i === row.fields.length - 1 ? '1px solid' : '1px dashed #ddd' }}>
-                    <TableCell sx={{ background: '#e9e9e9', fontWeight: 500, pl: 3, borderLeft: '3px solid #bbb' }}>{field.label}</TableCell>
+                    <TableCell sx={{ background: '#e9e9e9', fontWeight: 500, pl: 3, borderLeft: '3px solid #bbb' }}>
+                        {field.label}
+                    </TableCell>
                     <TableCell>{formatDynamicFieldValue(field.value)}</TableCell>
                 </TableRow>
             ))}
         </React.Fragment>
     );
-    const tableStyles = { minWidth: 300, '.MuiTableCell-root': { borderBottom: '1px solid #bbbbbb !important', width: '50%' } };
+
+    const tableStyles = {
+        minWidth: 300,
+        '.MuiTableCell-root': {
+            borderBottom: '1px solid #bbbbbb !important',
+            width: '50%',
+            fontSize: { xs: '12px', md: '14px' },
+            wordBreak: 'break-word',
+            px: { xs: 1, md: 2 },
+        },
+    };
 
     return (
-        <Grid container spacing={4}>
-            <Grid item lg={6} md={6} xs={12}>
-                <TableContainer sx={{ boxShadow: 'none' }} component={Paper}>
-                    <Table size="small" sx={tableStyles}>
-                        <TableHead><TableRow><TableCell colSpan={2} sx={{ fontSize: '18px', fontWeight: 'bold' }}>Product Specifications</TableCell></TableRow></TableHead>
-                        <TableBody>{leftColumnRows.map(row => row.type === 'single' ? renderSingleField(row) : renderGroupedField(row))}</TableBody>
-                    </Table>
-                </TableContainer>
+        <>
+            <Grid container spacing={4}>
+                <Grid item lg={6} md={6} xs={12}>
+                    <TableContainer sx={{ boxShadow: 'none' }} component={Paper}>
+                        <Table size="small" sx={tableStyles}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell colSpan={2} sx={{ fontSize: '18px', fontWeight: 'bold' }}>
+                                        Product Specifications
+                                    </TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {leftColumnRows.map(row =>
+                                    row.type === 'single' ? renderSingleField(row) : renderGroupedField(row)
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Grid>
+
+                {/* Right column — mobile pe hide karo jab collapsed ho */}
+                {(!isMobile || showAllSpecs) && (
+                    <Grid item lg={6} md={6} xs={12}>
+                        <TableContainer sx={{ boxShadow: 'none' }} component={Paper}>
+                            <Table size="small" sx={tableStyles}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell colSpan={2} sx={{ fontSize: '18px', fontWeight: 'bold' }}>
+                                            Product Specifications
+                                        </TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {rightColumnRows.map(row =>
+                                        row.type === 'single' ? renderSingleField(row) : renderGroupedField(row)
+                                    )}
+                                    {rightColumnRows.length === 0 && (
+                                        <>
+                                            <TableRow><TableCell sx={{ background: '#e9e9e9' }}>&nbsp;</TableCell><TableCell>&nbsp;</TableCell></TableRow>
+                                            <TableRow><TableCell sx={{ background: '#e9e9e9' }}>&nbsp;</TableCell><TableCell>&nbsp;</TableCell></TableRow>
+                                        </>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Grid>
+                )}
             </Grid>
-            <Grid item lg={6} md={6} xs={12}>
-                <TableContainer sx={{ boxShadow: 'none' }} component={Paper}>
-                    <Table size="small" sx={tableStyles}>
-                        <TableHead><TableRow><TableCell colSpan={2} sx={{ fontSize: '18px', fontWeight: 'bold' }}>Product Specifications</TableCell></TableRow></TableHead>
-                        <TableBody>
-                            {rightColumnRows.map(row => row.type === 'single' ? renderSingleField(row) : renderGroupedField(row))}
-                            {rightColumnRows.length === 0 && (<><TableRow><TableCell sx={{ background: '#e9e9e9' }}>&nbsp;</TableCell><TableCell>&nbsp;</TableCell></TableRow><TableRow><TableCell sx={{ background: '#e9e9e9' }}>&nbsp;</TableCell><TableCell>&nbsp;</TableCell></TableRow></>)}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Grid>
-        </Grid>
+
+            {/* Show More / Less button — sirf mobile pe */}
+            {showToggleButton && (
+                <Box display="flex" justifyContent="center" mt={3}>
+                    <Button
+                        onClick={() => setShowAllSpecs(!showAllSpecs)}
+                        variant="outlined"
+                        sx={{
+                            textTransform: 'none',
+                            borderRadius: '30px',
+                            px: 3,
+                            fontWeight: 600,
+                        }}
+                    >
+                        {showAllSpecs ? 'Show Less' : 'Show More'}
+                    </Button>
+                </Box>
+            )}
+        </>
     );
 };
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Dummy Data
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,8 +291,12 @@ const REVIEWS_PER_PAGE = 2;
 const ReviewCard = ({ review }) => (
     <Box sx={{ borderBottom: '1px solid #e5e5e5', py: 3 }}>
         {/* Main layout */}
-        <Box display="flex" alignItems="flex-start" gap={2}>
-            
+        <Box
+            display="flex"
+            alignItems="flex-start"
+            gap={1.5}
+        >
+
             {/* Left avatar */}
             <Avatar
                 src={review.user_image}
@@ -245,12 +324,12 @@ const ReviewCard = ({ review }) => (
                 </Typography>
 
                 {review.recommended && (
-    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
-        <Typography fontSize={13} sx={{ color: '#2e7d32', fontWeight: 500 }}>
-            ✓ Recommends this item
-        </Typography>
-    </Box>
-)}
+                    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
+                        <Typography fontSize={13} sx={{ color: '#2e7d32', fontWeight: 500 }}>
+                            ✓ Recommends this item
+                        </Typography>
+                    </Box>
+                )}
 
                 {/* Photos */}
                 {review.photos?.length > 0 && (
@@ -267,8 +346,8 @@ const ReviewCard = ({ review }) => (
                                 src={photo}
                                 alt=""
                                 sx={{
-                                    width: 140,
-                                    height: 140,
+                                    width: { xs: 90, sm: 120, md: 140 },
+                                    height: { xs: 90, sm: 120, md: 140 },
                                     objectFit: 'cover',
                                     borderRadius: '6px',
                                     cursor: 'pointer',
@@ -362,8 +441,8 @@ const ReviewCard = ({ review }) => (
                             src={review.purchased_item.image}
                             alt=""
                             sx={{
-                                width: 64,
-                                height: 64,
+                                width: { xs: 52, md: 64 },
+                                height: { xs: 52, md: 64 },
                                 objectFit: 'cover',
                                 borderRadius: 1,
                                 flexShrink: 0,
@@ -412,7 +491,10 @@ const PhotosFromReviews = ({ reviews }) => {
                             component="img"
                             src={photo}
                             alt=""
-                            sx={{ width: 150, height: 150, objectFit: 'cover', borderRadius: 1, flexShrink: 0, cursor: 'pointer', '&:hover': { opacity: 0.85 } }}
+                            sx={{
+                                width: { xs: 100, sm: 130, md: 150 },
+                                height: { xs: 100, sm: 130, md: 150 }, objectFit: 'cover', borderRadius: 1, flexShrink: 0, cursor: 'pointer', '&:hover': { opacity: 0.85 }
+                            }}
                         />
                     ))}
                 </Box>
@@ -446,7 +528,7 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
     const avgRating = currentReviews.length > 0
         ? (currentReviews.reduce((s, r) => s + r.item_rating, 0) / currentReviews.length).toFixed(1)
         : 0;
-const scrollToReviews = () => {
+    const scrollToReviews = () => {
         const el = document.getElementById('reviews');
         if (!el) return;
         const top = el.getBoundingClientRect().top + window.scrollY - 49;
@@ -505,12 +587,12 @@ const scrollToReviews = () => {
                 ))}
 
                 {paginatedReviews.length === 0 && (
-        <Box sx={{ py: 6, textAlign: 'center', color: '#888' }}>
-            <Typography fontSize={15}>
-                No reviews yet for this {activeTab === 0 ? 'shop' : 'item'}.
-            </Typography>
-        </Box>
-    )}
+                    <Box sx={{ py: 6, textAlign: 'center', color: '#888' }}>
+                        <Typography fontSize={15}>
+                            No reviews yet for this {activeTab === 0 ? 'shop' : 'item'}.
+                        </Typography>
+                    </Box>
+                )}
             </Box>
 
             {/* Pagination */}
@@ -519,10 +601,10 @@ const scrollToReviews = () => {
                     <Pagination
                         count={totalPages}
                         page={page}
-                       onChange={(_, val) => {
-    setPage(val);
-    scrollToReviews();
-}}
+                        onChange={(_, val) => {
+                            setPage(val);
+                            scrollToReviews();
+                        }}
                         shape="rounded"
                         sx={{
                             '& .MuiPaginationItem-root': { fontSize: 14, color: '#333', border: '1px solid transparent' },
@@ -537,13 +619,61 @@ const scrollToReviews = () => {
         </Box>
     );
 };
+// ─────────────────────────────────────────────────────────────────────────────
+// ExpandableDescription — mobile pe 10 lines, desktop pe full
+// ─────────────────────────────────────────────────────────────────────────────
+const ExpandableDescription = ({ children }) => {
+    const [expanded, setExpanded] = useState(false);
+    const isMobile = useMediaQuery('(max-width:600px)');
 
+    if (!isMobile) return <>{children}</>;
+
+    return (
+        <Box>
+            <Box
+                sx={{
+                    maxHeight: expanded ? 'none' : '15em', // ~10 lines
+                    overflow: 'hidden',
+                    position: 'relative',
+                    '&::after': expanded ? {} : {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '60px',
+                        background: 'linear-gradient(transparent, #fff)',
+                    },
+                }}
+            >
+                {children}
+            </Box>
+            <Button
+                onClick={() => setExpanded(!expanded)}
+                variant="outlined"
+                size="small"
+                sx={{
+                    mt: 1.5,
+                    textTransform: 'none',
+                    borderRadius: '30px',
+                    px: 3,
+                    fontWeight: 600,
+                    display: 'block',
+                    mx: 'auto',
+                }}
+            >
+                {expanded ? 'Show Less' : 'Show More'}
+            </Button>
+        </Box>
+    );
+};
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductTabs
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductTabs = ({ product }) => {
     const [activeTab, setActiveTab] = React.useState('description');
-     const scrollToSection = (id) => {
+    const [openAccordion, setOpenAccordion] = React.useState(null);
+    const scrollToSection = (id) => {
         const el = document.getElementById(id);
         if (!el) return;
         const top = el.getBoundingClientRect().top + window.scrollY - 49;
@@ -552,12 +682,12 @@ const ProductTabs = ({ product }) => {
 
     React.useEffect(() => {
         const sections = [
-    'description',
-    'specifications',
-    'reviews',
-    'shipping',
-    ...(product?.tabs || []).map((_, index) => `custom-tab-${index}`),
-];
+            'description',
+            'specifications',
+            'reviews',
+            'shipping',
+            ...(product?.tabs || []).map((_, index) => `custom-tab-${index}`),
+        ];
         const observer = new IntersectionObserver(
             entries => entries.forEach(e => { if (e.isIntersecting) setActiveTab(e.target.id); }),
             { threshold: 0.4 }
@@ -567,14 +697,14 @@ const ProductTabs = ({ product }) => {
     }, []);
 
     const tabStyle = (tabName) => ({
-    cursor: 'pointer', fontWeight: 400, fontSize: '15px',
-    color: activeTab === tabName ? '#d32f2f' : '#222',
-    borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
-    pb: '12px', transition: 'color 0.2s, border-bottom 0.2s', flexShrink: 0,
-    '&:hover': {                          // ✅ ADD KARO
-        color: '#d32f2f',
-    },
-});
+        cursor: 'pointer', fontWeight: 400, fontSize: { xs: '13px', md: '15px' },
+        color: activeTab === tabName ? '#d32f2f' : '#222',
+        borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
+        pb: '12px', transition: 'color 0.2s, border-bottom 0.2s', flexShrink: 0,
+        '&:hover': {                          // ✅ ADD KARO
+            color: '#d32f2f',
+        },
+    });
 
     return (
         <Box py={2} sx={{ padding: '0 0', m: 'auto', maxWidth: '1550px' }}>
@@ -584,76 +714,216 @@ const ProductTabs = ({ product }) => {
                         {/* Sticky Tab Nav */}
                         <Box
     sx={{
-        display: 'flex',
+        display: { xs: 'none', md: 'flex' },
         alignItems: 'center',
-        gap: '40px',
-        pt: '20px',        // ✅ ADD KARO
-        pb: '0px',         // ✅ ADD KARO (borderBottom ke saath pb tabStyle mein hai)
 
-        pl: { xs: '25px', md: '100px' },
-        pr: { xs: '10px', md: '40px' },
+                                gap: { xs: 2.5, md: 5 },
 
-        borderBottom: '1px solid #e5e5e5',
-        overflowX: 'auto',
-        whiteSpace: 'nowrap',
-        position: 'sticky',
-        top: 0,
-        background: '#fff',
-        zIndex: 10,
+                                pt: { xs: 1.5, md: 2.5 },
+                                pb: 0,
 
-        '&::-webkit-scrollbar': {
-            display: 'none',
-        },
-    }}
->
+                                px: { xs: 2, sm: 3, md: 10 },
+
+                                borderBottom: '1px solid #e5e5e5',
+
+                                overflowX: 'auto',
+                                overflowY: 'hidden',
+
+                                whiteSpace: 'nowrap',
+
+                                position: 'sticky',
+                                top: 0,
+
+                                background: '#fff',
+                                zIndex: 10,
+
+                                scrollbarWidth: 'none',
+
+                                '&::-webkit-scrollbar': {
+                                    display: 'none',
+                                },
+                            }}
+                        >
                             {[
-    { id: 'description', label: 'Description' },
-    { id: 'specifications', label: 'Product Specification & Details' },
-    { id: 'reviews', label: 'Reviews' },
-    { id: 'shipping', label: 'Shipping And Return Policies' },
-    ...(product?.tabs || []).map((tab, index) => ({
-        id: `custom-tab-${index}`,
-        label: tab?.title || 'Custom Tab',
-    })),
-].map(tab => (
+                                { id: 'description', label: 'Description' },
+                                { id: 'specifications', label: 'Product Specification & Details' },
+                                { id: 'reviews', label: 'Reviews' },
+                                { id: 'shipping', label: 'Shipping And Return Policies' },
+                                ...(product?.tabs || []).map((tab, index) => ({
+                                    id: `custom-tab-${index}`,
+                                    label: tab?.title || 'Custom Tab',
+                                })),
+                            ].map(tab => (
                                 <Typography
                                     key={tab.id}
                                     sx={tabStyle(tab.id)}
-onClick={() => scrollToSection(tab.id)}
+                                    onClick={() => scrollToSection(tab.id)}
                                 >
                                     {tab.label}
                                 </Typography>
                             ))}
                         </Box>
+                        {/* Mobile Accordion Tabs */}
+ {/* Mobile Accordion Tabs */}
+<Box sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}>
+
+    {/* Description */}
+    <Accordion
+        expanded={openAccordion === 'description'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'description' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Description</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <HtmlRenderer html={product?.description || ''} />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
+
+    {/* Specifications */}
+    <Accordion
+        expanded={openAccordion === 'specifications'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'specifications' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Product Specifications & Details</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <ProductSpecifications product={product} />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
+
+    {/* Reviews */}
+    <Accordion
+        expanded={openAccordion === 'reviews'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'reviews' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Reviews</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <ProductReviews
+                reviews={product?.rating || []}
+                productTitle={product?.product_title}
+                shopName={product?.shop_name || 'SilverCraft'}
+            />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
+
+    {/* Shipping */}
+    <Accordion
+        expanded={openAccordion === 'shipping'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'shipping' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Shipping and Return Policies</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <DeliveryAndReturnPolicy product={product} />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
+
+    {/* Custom Tabs */}
+    {(product?.tabs || []).map((tab, index) => (
+        <Accordion
+            key={index}
+            expanded={openAccordion === `custom-${index}`}
+            onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? `custom-${index}` : null)}
+        >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight={600}>{tab?.title}</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+                <HtmlRenderer html={tab?.description || ''} />
+                <Box display="flex" justifyContent="center" mt={2}>
+                    <Button variant="outlined" size="small"
+                        onClick={() => setOpenAccordion(null)}
+                        sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                    >
+                        Show Less
+                    </Button>
+                </Box>
+            </AccordionDetails>
+        </Accordion>
+    ))}
+
+</Box>
 
                         {/* Content */}
                         <Box
-  sx={{
-    pl: { xs: '25px', md: '100px' },
-    pr: { xs: '25px', md: '100px' }, // right side kam
-  }}
->
+                            sx={{
+                                px: { xs: 2, sm: 3, md: 10 }, // right side kam
+                            }}
+                        >
                             <Box
     id="description"
     mb={6}
     pt={3}
     sx={{
-        pr: { xs: '10px', md: '120px' }, // right side se content andar aa jayega
+        display: { xs: 'none', md: 'block' },
+        pr: { xs: 0, md: 15 },
     }}
 >
-    <Typography variant="h5" mb={2}>
-        Description
-    </Typography>
+                                <Typography
+                                    sx={{
+                                        fontSize: { xs: '22px', md: '30px' },
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Description
+                                </Typography>
 
-    <HtmlRenderer html={product?.description || ''} />
-</Box>
+                                <ExpandableDescription>
+                                    <HtmlRenderer html={product?.description || ''} />
+                                </ExpandableDescription>
+                            </Box>
 
-                            <Box id="specifications" mb={6}>
+                            <Box 
+                            id="specifications" 
+                            mb={6}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
+                            >
                                 <Typography variant="h5" mb={2}>Product Specifications & Details</Typography>
                                 <ProductSpecifications product={product} />
                             </Box>
 
-                            <Box id="reviews" mb={6}>
+                            <Box 
+                            id="reviews" 
+                            mb={6}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
+                            >
                                 <Typography variant="h5" mb={2}>Reviews</Typography>
                                 <ProductReviews
                                     reviews={product?.rating || []}
@@ -662,25 +932,30 @@ onClick={() => scrollToSection(tab.id)}
                                 />
                             </Box>
 
-                            <Box id="shipping" mb={6}>
-                                
+                            <Box 
+                            id="shipping" 
+                            mb={6}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
+                            >
+
                                 <Typography variant="h5" mb={2}>Shipping and Return Policies</Typography>
                                 <DeliveryAndReturnPolicy product={product} />
 
                             </Box>
                             {(product?.tabs || []).map((tab, index) => (
-    <Box
-        key={index}
-        id={`custom-tab-${index}`}
-        mb={6}
-    >
-        <Typography variant="h5" mb={2}>
-            {tab?.title}
-        </Typography>
+                                <Box
+                                    key={index}
+                                    id={`custom-tab-${index}`}
+                                    mb={6}
+                                    sx={{ display: { xs: 'none', md: 'block' } }}
+                                >
+                                    <Typography variant="h5" mb={2}>
+                                        {tab?.title}
+                                    </Typography>
 
-        <HtmlRenderer html={tab?.description || ''} />
-    </Box>
-))}
+                                    <HtmlRenderer html={tab?.description || ''} />
+                                </Box>
+                            ))}
                         </Box>
                     </Box>
                 </Grid>

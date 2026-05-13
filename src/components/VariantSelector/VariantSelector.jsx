@@ -889,14 +889,29 @@ const VariantSelector = ({
         {/* Header */}
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            position: "relative",
             mt: 2,
+            display: "flex",
+            flexWrap: { xs: "wrap", sm: "wrap", md: undefined },
+            // alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 1,
           }}
         >
-          <Typography variant="h6" sx={{ fontSize: "17px", fontWeight: 600 }}>
+
+          {/* Title */}
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: "17px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              overflow: "visible",
+              textOverflow: "unset",
+            }}
+          >
             {variant.name}{" "}
+
             {selectedAttr && (
               <span style={{ fontSize: "15px", fontWeight: 400 }}>
                 : {hoveredAttrValue || selectedAttr.value}
@@ -904,18 +919,24 @@ const VariantSelector = ({
             )}
           </Typography>
 
+          {/* Guide Button */}
           {hasGuide && (
             <Button
               onClick={handleGuideClick}
               size="small"
               variant="outlined"
               sx={{
+                top: 0,
+                right: 0,
+
                 fontSize: "12px",
                 padding: "2px 8px",
                 minWidth: "auto",
                 textTransform: "none",
+
                 borderColor: "#D23F57",
                 color: "#D23F57",
+
                 "&:hover": {
                   borderColor: "#b32e44",
                   backgroundColor: "rgba(210, 63, 87, 0.04)",
@@ -1381,22 +1402,22 @@ const VariantSelector = ({
 
                           // Get image source
                           // (ignore nulls, "", undefined)
-const cleanImages = (attr.images || []).filter(
-  (img) => img && typeof img === "string" && img.trim() !== ""
-);
+                          const cleanImages = (attr.images || []).filter(
+                            (img) => img && typeof img === "string" && img.trim() !== ""
+                          );
 
-// FINAL IMAGE RESOLUTION (priority based)
-let imageSrc = null;
+                          // FINAL IMAGE RESOLUTION (priority based)
+                          let imageSrc = null;
 
-if (cleanImages.length > 0) {
-  imageSrc = cleanImages[0]; // always valid now
-} else if (attr.preview_image) {
-  imageSrc = attr.preview_image;
-} else if (productMainImage) {
-  imageSrc = Array.isArray(productMainImage)
-    ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
-    : `https://api.agukart.com/uploads/product/${productMainImage}`;
-}
+                          if (cleanImages.length > 0) {
+                            imageSrc = cleanImages[0]; // always valid now
+                          } else if (attr.preview_image) {
+                            imageSrc = attr.preview_image;
+                          } else if (productMainImage) {
+                            imageSrc = Array.isArray(productMainImage)
+                              ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
+                              : `https://api.agukart.com/uploads/product/${productMainImage}`;
+                          }
 
                           // Get thumbnail image
                           const thumbnailSrc = attr.thumbnail;

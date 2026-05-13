@@ -34,7 +34,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import Product from "components/product/Product";
 import ReportShop from "./ReportShop";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
-
 const SORT_OPTIONS = [
   {
     label: "Relevance",
@@ -53,7 +52,6 @@ const SORT_OPTIONS = [
     value: "desc",
   },
 ];
-
 const CollectionTab = ({
   wishListProducts,
   getWishListProducts,
@@ -81,9 +79,7 @@ const CollectionTab = ({
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("relevance");
   console.log({ search, sortBy });
-
   const handleChangeSortBy = useCallback((v) => setSortBy(v), []);
-
   console.log({ storeProducts });
   console.log({ stores });
   const toggleWishList = async (id) => {
@@ -91,7 +87,6 @@ const CollectionTab = ({
       router.push("/login");
       return;
     }
-
     try {
       const res = await getAPIAuth(`user/add-delete-wishlist/${id}`, token);
       if (res.status === 200) {
@@ -101,7 +96,6 @@ const CollectionTab = ({
       console.log(error);
     }
   };
-
   const addToCartHandler = (product) => {
     if (!token) {
       dispatch({
@@ -141,7 +135,6 @@ const CollectionTab = ({
   useEffect(() => {
     getStoreName();
   }, []);
-
   const getStoreProducts = async (search) => {
     try {
       const payload = {
@@ -168,13 +161,11 @@ const CollectionTab = ({
       setStoreProductLoading(false);
     }
   };
-
   useEffect(() => {
     if (selectedStoreId) {
       getStoreProducts(search);
     }
   }, [selectedStoreId, page, search, sortBy]);
-
   const handlePageChange = (event, value) => {
     setPage(value);
     const currentParams = new URLSearchParams(window.location.search);
@@ -183,7 +174,6 @@ const CollectionTab = ({
       `${window.location.pathname}?${currentParams.toString()}#collection`
     );
   };
-
   return (
     <>
       <Box
@@ -288,7 +278,6 @@ const CollectionTab = ({
                 ))}
               </Select>
             </Box>
-
             <List
               sx={{
                 borderRight: { md: "1px solid #d6d6d6", xs: "none" },
@@ -303,7 +292,6 @@ const CollectionTab = ({
                   All Product
                 </Typography>
               </ListItem>
-
               <ListItem
                 sx={{ px: 0, cursor: "pointer" }}
                 onClick={() => {
@@ -312,7 +300,6 @@ const CollectionTab = ({
                   );
                   currentParams.set("store_id", "all");
                   currentParams.set("page", 1);
-
                   router.push(
                     `${window.location.pathname}?${currentParams.toString()}#collection`
                   );
@@ -326,7 +313,6 @@ const CollectionTab = ({
                   All
                 </Typography>
               </ListItem>
-
               {stores?.map((store) => (
                 <ListItem
                   key={store._id}
@@ -355,7 +341,6 @@ const CollectionTab = ({
                 </ListItem>
               ))}
             </List>
-
             <Button
               fullWidth
               variant="outlined"
@@ -373,7 +358,6 @@ const CollectionTab = ({
             >
               Contact shop owner
             </Button>
-
             <Typography mt={2} sx={{ display: { xs: "none", md: "flex" } }}>
               {vendorCategories?.sale_count} Sales
             </Typography>
@@ -385,7 +369,6 @@ const CollectionTab = ({
                 {vendorCategories?.favourite_count} Admires
               </Link>
             </Typography>
-
             <Box mt={2} sx={{ display: { xs: "none", md: "flex" } }}>
               <ReportShop shop_id={vendorDetail?._id} />
             </Box>
@@ -435,5 +418,4 @@ const CollectionTab = ({
     </>
   );
 };
-
 export default CollectionTab;
