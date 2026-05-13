@@ -51,7 +51,8 @@ const VariantSelector = ({
   isAttributeCombinationSoldOut,
   selectedVariants,
   calculateAttributeData,
-  productMainImage
+  productMainImage,
+  form_values
 }) => {
   const [guideOpen, setGuideOpen] = useState(false);
   const [currentGuide, setCurrentGuide] = useState(null);
@@ -1234,6 +1235,8 @@ const VariantSelector = ({
       onHoverOut && onHoverOut();
     };
 
+    const showPrice = form_values?.isCheckedPrice && form_values?.prices.includes(`${variant.name}`);
+
     return (
       <Grid item xs={12} sx={{ mb: 2 }}>
         <Box
@@ -1411,7 +1414,7 @@ const VariantSelector = ({
 
                           if (cleanImages.length > 0) {
                             imageSrc = cleanImages[0]; // always valid now
-                          } else if (attr.preview_image) {
+                          } else if (attr.preview_image && attr.preview_image!=='__DELETE__') {
                             imageSrc = attr.preview_image;
                           } else if (productMainImage) {
                             imageSrc = Array.isArray(productMainImage)
@@ -1421,7 +1424,7 @@ const VariantSelector = ({
 
                           // Get thumbnail image
                           const thumbnailSrc = attr.thumbnail;
-                          const showThubnail = cleanImages.length === 0 && !attr.preview_image;
+                          const showThubnail = cleanImages.length === 0 && !(attr.preview_image && attr.preview_image!=='__DELETE__');
                           return (
                             <Box
                               key={attr.id}
@@ -1547,8 +1550,9 @@ const VariantSelector = ({
                       {variant.attributes.map((attr) => {
                         const isDisabled = isAttributeDisabled(attr);
                         const isVisible = isAttributeVisible(attr);
-                        const previewImage = getPreviewImage(attr);
-                        const priceText = renderAttributePriceForDropdown(attr);
+                        const previewImageFlag = getPreviewImage(attr);
+                        const previewImage = previewImageFlag !== "__DELETE__" ? previewImageFlag: null
+                        const priceText = showPrice ? renderAttributePriceForDropdown(attr) : "";
                         const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
 
                         // Get quantity info for display

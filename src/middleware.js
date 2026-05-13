@@ -27,10 +27,10 @@ export async function middleware(request) {
           const data = await res.json();
 
           if (data?.redirect && data?.newSlug) {
-            return NextResponse.redirect(
-              new URL(data.newSlug, request.url),
-              301
-            );
+            const redirectUrl = new URL(data.newSlug, request.url);
+            // Preserve query parameters
+            redirectUrl.search = request.nextUrl.search;
+            return NextResponse.redirect(redirectUrl, 301);
           }
         }
       } catch (err) {
@@ -58,10 +58,10 @@ export async function middleware(request) {
         const data = await res.json();
 
         if (data?.redirect && data?.newSlug) {
-          return NextResponse.redirect(
-            new URL(`/category/${data.newSlug}`, request.url),
-            301
-          );
+          const redirectUrl = new URL(`/category/${data.newSlug}`, request.url);
+          // Preserve query parameters
+          redirectUrl.search = request.nextUrl.search;
+          return NextResponse.redirect(redirectUrl, 301);
         }
       }
     } catch (err) {
