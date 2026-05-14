@@ -268,6 +268,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   return (
     <Link
       href={`/product/${product.slug}/${product.product_code}`}
+      prefetch={false}
       style={{ textDecoration: "none", color: "inherit" }}
     >
       <Box

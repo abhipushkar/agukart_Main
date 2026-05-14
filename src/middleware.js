@@ -4,6 +4,16 @@ export async function middleware(request) {
   const pathname = request.nextUrl.pathname;
 
   // =========================================================
+  // 🚀 SKIP NEXT.js INTERNAL RSC REQUESTS
+  // =========================================================
+
+  if (
+    request.nextUrl.searchParams.has("_rsc")
+  ) {
+    return NextResponse.next();
+  }
+
+  // =========================================================
   // 🔥 SEO PRODUCT REDIRECTS
   // =========================================================
 
@@ -19,7 +29,9 @@ export async function middleware(request) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/product/${slug}/${product_code}`,
           {
-            cache: "no-store",
+            next: {
+              revalidate: 300,
+            },
           }
         );
 
@@ -50,7 +62,9 @@ export async function middleware(request) {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/${slugPath}`,
         {
-          cache: "no-store",
+          next: {
+            revalidate: 300,
+          },
         }
       );
 
@@ -69,40 +83,36 @@ export async function middleware(request) {
     }
   }
 
-  // =========================================================
-  // 🌍 COUNTRY BLOCK LOGIC
-  // =========================================================
+  if (pathname.startsWith("/store/")) {
+    const segments = pathname.split("/").filter(Boolean);
 
-  const ip = (request.headers.get('x-forwarded-for')?.split(',')[0].trim()) || request.ip || '127.0.0.1';
-  
-  let data = {};
+    // /store/[slug]
+    if (segments.length === 2) {
+      const slug = segments[1];
 
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/get-country-by-ip?ip=${ip}`
-    );
-    data = await res.json();
-  } catch (error) {
-    console.error("Failed to fetch location data for IP", ip);
-    return NextResponse.next();
-  }
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/store/${slug}`,
+          {
+            next: {
+              revalidate: 300,
+            },
+          }
+        );
 
-  const userCountry = data?.data?.country;
-  let blockedCountries = [];
-
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/get-blocked-country`
-    );
-    data = await res.json();
-    blockedCountries = data?.result?.map((country) => country.name);
-  } catch (error) {
-    console.error("Failed to fetch blocked country data");
-    return NextResponse.next();
-  }
-
-  if (blockedCountries.includes(userCountry) && request.nextUrl.pathname !== '/blocked') {
-    return NextResponse.redirect(new URL('/blocked', request.url));
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.redirect && data?.newSlug) {
+            const redirectUrl = new URL(data.newSlug, request.url.replace("/store/", "/"));
+            // Preserve query parameters
+            redirectUrl.search = request.nextUrl.search;
+            return NextResponse.redirect(redirectUrl, 301);
+          }
+        }
+      } catch (err) {
+        console.error("Product redirect middleware error:", err);
+      }
+    }
   }
 
   // =========================================================
@@ -126,11 +136,69 @@ export async function middleware(request) {
     request.nextUrl.pathname.startsWith(path.replace("/:path*", ""))
   );
 
+  // =========================================================
+  // 🌍 COUNTRY BLOCKING ONLY FOR PROTECTED ROUTES
+  // =========================================================
+
   if (isProtectedPath) {
+    const ip =
+      request.headers
+        .get("x-forwarded-for")
+        ?.split(",")[0]
+        .trim() ||
+      request.ip ||
+      "127.0.0.1";
+
+    let data = {};
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/get-country-by-ip?ip=${ip}`
+      );
+
+      data = await res.json();
+    } catch (error) {
+      console.error("Failed to fetch location data for IP", ip);
+      return NextResponse.next();
+    }
+
+    const userCountry = data?.data?.country;
+
+    let blockedCountries = [];
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/get-blocked-country`
+      );
+
+      data = await res.json();
+
+      blockedCountries =
+        data?.result?.map((country) => country.name) || [];
+    } catch (error) {
+      console.error("Failed to fetch blocked country data");
+      return NextResponse.next();
+    }
+
+    if (
+      blockedCountries.includes(userCountry) &&
+      request.nextUrl.pathname !== "/blocked"
+    ) {
+      return NextResponse.redirect(
+        new URL("/blocked", request.url)
+      );
+    }
+
+    // =========================================================
+    // 🔐 TOKEN CHECK
+    // =========================================================
+
     const token = request.cookies.get("TOKEN_NAME");
 
     if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(
+        new URL("/login", request.url)
+      );
     }
   }
 
@@ -138,5 +206,20 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/', '/:path*'],  // Match all routes including root
+  matcher: [
+    /*
+     * ONLY RUN middleware where actually needed
+     */
+
+    // SEO redirects
+    "/product/:path*",
+    "/category/:path*",
+    "/store/:path*",
+
+    // protected routes
+    "/messages/:path*",
+    "/profile/:path*",
+    "/delivery-address",
+    "/change-social-email",
+  ],
 };

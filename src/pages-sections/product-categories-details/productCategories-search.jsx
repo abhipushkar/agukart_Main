@@ -96,8 +96,6 @@ export default function ProductCategoriesSearchPageView({
   initialProducts,
   initialBreadcrumb }) {
   const searchParams = useSearchParams();
-  let queryPage = searchParams.get("page");
-  queryPage = queryPage ? parseInt(queryPage) : "";
 
   const pathname = usePathname();
 
@@ -110,6 +108,7 @@ export default function ProductCategoriesSearchPageView({
   const [filters, setFilters] = useState({
     ...initialFilters,
   });
+  const [hasMounted, setHasMounted] = useState(false);
 
   const [title, setTitle] = useState(initialCategory?.current?.title || "");
   const [id, setId] = useState(initialCategory?.current?._id || "");
@@ -118,39 +117,18 @@ export default function ProductCategoriesSearchPageView({
   const [childCategories, setChildCategories] = useState(initialBreadcrumb?.data || []);
 
   const { token } = useAuth();
-  console.log("asfhdsuifydsuisubcategoryMenus", subcategoryMenus);
+  // console.log("asfhdsuifydsuisubcategoryMenus", subcategoryMenus);
   const [isLoading, setIsLoading] = useState(false);
 
   // const slug = pathname.replace('/category/', ''); // full slug from browser URL
   console.log({ slug, initialCategory, initialProducts, initialBreadcrumb, msg: "here is slug" });
 
-  const [totalPages, setTotalPages] = useState(1);
-  const page = Number(searchParams.get("page") || 1);
-
+  const [totalPages, setTotalPages] = useState(
+    initialProducts?.pagination?.totalPages || 1
+  );
+  const [page, setPage] = useState(1);
   const imageBaseUrl = initialProducts?.base_url;
   const videoBaseUrl = initialProducts?.video_base_url;
-
-  // const getCategoriesData = async () => {
-  //   if (initialData) return;
-  //   try {
-  //     setIsLoading(true);
-  //     const res = await getAPI(`get-category?slug=${slug}`, token);
-  //     console.log("res?.data?.category", res);
-  //     setSubCategoryMenus(res?.data?.category);
-  //     setTitle(res?.data?.current?.title);
-  //     setId(res?.data?.current?._id);
-  //   } catch (error) {
-  //     console.log("errro", error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (slug) {
-  //     getCategoriesData();
-  //   }
-  // }, [slug]);
 
   const downMd = useMediaQuery((theme) => theme.breakpoints.down("md"));
 
@@ -170,10 +148,18 @@ export default function ProductCategoriesSearchPageView({
       params.delete("sort");
     }
 
-    // ✅ ALWAYS reset page to 1 explicitly
+    // reset page
     params.delete("page");
 
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    // sync URL WITHOUT navigation
+    window.history.replaceState(
+      null,
+      "",
+      `${pathname}?${params.toString()}`
+    );
+
+    // local state
+    setPage(1);
   };
 
   const toggleView = useCallback((v) => () => setView(v), []);
@@ -192,7 +178,7 @@ export default function ProductCategoriesSearchPageView({
   const productSearchById = async () => {
     try {
       setLoading(true);
-      console.log("product api called here", page);
+      // console.log("product api called here", page);
       const res = await getAPI(
         `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
       );
@@ -216,10 +202,21 @@ export default function ProductCategoriesSearchPageView({
   };
 
   useEffect(() => {
-    if (id) {
-      productSearchById();
+    if (!id) return;
+
+    // skip first hydration fetch
+    if (!hasMounted) {
+      setHasMounted(true);
+      return;
     }
-  }, [searchParams]);
+
+    productSearchById();
+  }, [page, sortBy, id]);
+
+  useEffect(() => {
+    const currentPage = Number(searchParams.get("page") || 1);
+    setPage(currentPage);
+  }, []);
 
 
   // const getParentCategory = async () => {
@@ -242,10 +239,18 @@ export default function ProductCategoriesSearchPageView({
 
 
   const handlePageChange = (event, value) => {
+    setPage(value);
+
+    // optional URL sync without navigation
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", value.toString());
 
-    router.push(`${pathname}?${params.toString()}`);
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   return (
@@ -382,7 +387,7 @@ export default function ProductCategoriesSearchPageView({
               {productList?.length > 0 ? (
                 <Grid container spacing={2}>
                   {productList?.map((product) => (
-                    <Grid key={product.id} item xs={6} sm={4} md={3}>
+                    <Grid key={product._id} item xs={6} sm={4} md={3}>
                       <Product
                         product={product}
                         imageBaseUrl={imageBaseUrl}

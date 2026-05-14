@@ -49,7 +49,7 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
 
   return (
     <div>
-      <Link href={`/category/${slug}`} style={{ display: "block" }}>
+      <Link href={`/category/${slug}`} prefetch={false} style={{ display: "block" }}>
         <Box sx={{ cursor: "pointer" }}>
           <FlexBox position="relative" borderRadius={3} mb={2}>
             <LazyImage
@@ -75,7 +75,7 @@ export default function ProductCategories1({ product, subcategoryMenus }) {
       </Link>
 
       <FlexBetween justifyContent="center" alignItems="flex-end">
-        <Link href={`/category/${slug}`} style={{ textDecoration: "none" }}>
+        <Link href={`/category/${slug}`} prefetch={false} style={{ textDecoration: "none" }}>
           <H6
             fontWeight={700}
             mb={1}

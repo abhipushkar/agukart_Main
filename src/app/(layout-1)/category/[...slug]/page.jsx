@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import ProductCategoriesSearchPageView from "pages-sections/product-categories-details/productCategories-search";
 import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
@@ -7,25 +8,66 @@ import { Box, Typography, Chip } from "@mui/material";
 const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
 
+const getCategoryData = cache(async (slugPath) => {
+  const res = await fetch(
+    `${baseURL}/get-category?slug=${slugPath}`,
+    {
+      next: {
+        revalidate: 300,
+      },
+    }
+  );
+
+  if (!res.ok) return null;
+
+  return res.json();
+});
+
+const getBreadcrumbData = cache(async (slugPath) => {
+  const res = await fetch(
+    `${baseURL}/get-category-by-slug/${slugPath}`,
+    {
+      next: {
+        revalidate: 300,
+      },
+    }
+  );
+
+  if (!res.ok) return null;
+
+  return res.json();
+});
+
+const getInitialProducts = cache(async (categoryId) => {
+  const res = await fetch(
+    `${baseURL}/get-product?categoryId=${categoryId}&page=1&limit=64`,
+    {
+      next: {
+        revalidate: 60,
+      },
+    }
+  );
+
+  if (!res.ok) return null;
+
+  return res.json();
+});
+
+
 export async function generateMetadata({ params }) {
-  const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
 
   // 🔥 2. FETCH CATEGORY SEO DATA
-  const categoryRes = await fetch(
-    `${baseURL}/get-category?slug=${slugPath}`,
-    { cache: "no-store" }
-  );
+  const categoryData = await getCategoryData(slugPath);
 
-  if (!categoryRes.ok) {
+  if (!categoryData) {
     return {
       title: "Not Found",
     };
   }
 
-  const categoryData = await categoryRes.json();
   const current = categoryData?.current || {};
 
   return {
@@ -51,38 +93,27 @@ export async function generateMetadata({ params }) {
   };
 }
 
+
 export default async function ProductSearch({ params }) {
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
 
   // 2. THEN FETCH CATEGORY
-  const categoryRes = await fetch(
-    `${baseURL}/get-category?slug=${slugPath}`,
-    { cache: "no-store" }
-  );
+  const categoryData = await getCategoryData(slugPath);
 
-  if (!categoryRes.ok) {
+  if (!categoryData) {
     return notFound();
   }
 
-  const categoryData = await categoryRes.json();
+  const [productData, breadcrumbData] = await Promise.all([
+    getInitialProducts(categoryData?.current?._id),
+    getBreadcrumbData(slugPath),
+  ]);
 
-
-  const productRes = await fetch(
-    `${baseURL}/get-product?categoryId=${categoryData?.current?._id}&page=1&limit=64`,
-    { cache: "no-store" }
-  );
-
-  const productData = productRes.ok ? await productRes.json() : null;
-
-  const breadcrumbRes = await fetch(
-    `${baseURL}/get-category-by-slug/${slugPath}`,
-    { cache: "no-store" }
-  );
-
-  const breadcrumbData = breadcrumbRes.ok ? await breadcrumbRes.json() : null;
   const title = categoryData?.current?.title || (slugArray.length ? slugArray[slugArray.length - 1] : "Category");
+
   const description = categoryData?.current?.description || "";
+
   const searchTerms = categoryData?.current?.search_terms || [];
 
   // 🔥 3. PASS DATA / SLUG TO CLIENT COMPONENT

@@ -723,7 +723,7 @@ const VariantSelector = ({
       sx={{
         "& .MuiDialog-paper": {
           maxWidth: "90vw",
-          maxHeight: "90vh",
+          maxHeight: "95vh",
         },
       }}
     >
@@ -760,7 +760,16 @@ const VariantSelector = ({
         )}
 
         {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box sx={{ height: "60vh", width: "100%" }}>
+          <Box
+            sx={{
+              width: "100%",
+              height: "85vh",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "hidden",
+            }}
+          >
             <TransformWrapper
               ref={transformRef}
               initialScale={1}
@@ -768,42 +777,33 @@ const VariantSelector = ({
               maxScale={5}
               wheel={{ step: 0.2 }}
               doubleClick={{ disabled: false }}
-              pinch={{ step: 5 }}
+              pinch={{ step: 10 }}
               onPanningStart={() => setIsDragging(true)}
               onPanningStop={() => setIsDragging(false)}
               onZoomStop={(ref) => setScale(ref.state.scale)}
             >
-              {({ zoomIn, zoomOut, resetTransform }) => (
-                <>
-                  {/* 🔥 Viewer */}
-                  <TransformComponent
-                    wrapperStyle={{
-                      width: "100%",
-                      height: "60vh",
-                      cursor:
-                        isDragging
-                          ? "grabbing"
-                          : "grab"
-                    }}
-                    contentStyle={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                  >
-                    <img
-                      src={currentGuide.file}
-                      alt="guide"
-                      style={{
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        objectFit: "contain",
-                        display: "block",
-                        margin: "auto",
-                      }}
-                    />
-                  </TransformComponent>
-                </>
-              )}
+              <TransformComponent
+                wrapperStyle={{
+                  display: "inline-block",
+                  width: "85vw",
+                  height: "fit-content",
+                  cursor: isDragging ? "grabbing" : "grab",
+                }}
+                contentStyle={{
+                  display: "inline-block",
+                }}
+              >
+                <img
+                  src={currentGuide.file}
+                  alt="guide"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "85vh",
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              </TransformComponent>
             </TransformWrapper>
           </Box>
         )}
@@ -890,14 +890,29 @@ const VariantSelector = ({
         {/* Header */}
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            position: "relative",
             mt: 2,
+            display: "flex",
+            flexWrap: { xs: "wrap", sm: "wrap", md: undefined },
+            // alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 1,
           }}
         >
-          <Typography variant="h6" sx={{ fontSize: "17px", fontWeight: 600 }}>
+
+          {/* Title */}
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: "17px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              overflow: "visible",
+              textOverflow: "unset",
+            }}
+          >
             {variant.name}{" "}
+
             {selectedAttr && (
               <span style={{ fontSize: "15px", fontWeight: 400 }}>
                 : {hoveredAttrValue || selectedAttr.value}
@@ -905,18 +920,24 @@ const VariantSelector = ({
             )}
           </Typography>
 
+          {/* Guide Button */}
           {hasGuide && (
             <Button
               onClick={handleGuideClick}
               size="small"
               variant="outlined"
               sx={{
+                top: 0,
+                right: 0,
+
                 fontSize: "12px",
                 padding: "2px 8px",
                 minWidth: "auto",
                 textTransform: "none",
+
                 borderColor: "#D23F57",
                 color: "#D23F57",
+
                 "&:hover": {
                   borderColor: "#b32e44",
                   backgroundColor: "rgba(210, 63, 87, 0.04)",
@@ -1393,7 +1414,7 @@ const VariantSelector = ({
 
                           if (cleanImages.length > 0) {
                             imageSrc = cleanImages[0]; // always valid now
-                          } else if (attr.preview_image && attr.preview_image!=='__DELETE__') {
+                          } else if (attr.preview_image && attr.preview_image !== '__DELETE__') {
                             imageSrc = attr.preview_image;
                           } else if (productMainImage) {
                             imageSrc = Array.isArray(productMainImage)
@@ -1403,7 +1424,7 @@ const VariantSelector = ({
 
                           // Get thumbnail image
                           const thumbnailSrc = attr.thumbnail;
-                          const showThubnail = cleanImages.length === 0 && !(attr.preview_image && attr.preview_image!=='__DELETE__');
+                          const showThubnail = cleanImages.length === 0 && !(attr.preview_image && attr.preview_image !== '__DELETE__');
                           return (
                             <Box
                               key={attr.id}
@@ -1530,7 +1551,7 @@ const VariantSelector = ({
                         const isDisabled = isAttributeDisabled(attr);
                         const isVisible = isAttributeVisible(attr);
                         const previewImageFlag = getPreviewImage(attr);
-                        const previewImage = previewImageFlag !== "__DELETE__" ? previewImageFlag: null
+                        const previewImage = previewImageFlag !== "__DELETE__" ? previewImageFlag : null
                         const priceText = showPrice ? renderAttributePriceForDropdown(attr) : "";
                         const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
 
