@@ -1621,7 +1621,7 @@ const MyproductDetails = ({ res }) => {
         onFollowShop={toggelFollowShopHandler}
         onMessage={() => setOpenPopup(true)}
         userDesignation={usercredentials?.designation_id}
-      />  
+      />
     </CardContent>
   );
   if (loading) return <ProductDetailShimmer />;
@@ -1692,10 +1692,10 @@ const MyproductDetails = ({ res }) => {
       {/* Related Products */}
       {/* <SimilarProducts product_id={pathname.productId || myproduct?._id} /> */}
       {/* <ShopProducts product_id={pathname.productId || myproduct?._id} /> */}
-       {/* Report Item  */}
-<Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-    <ReportItem product_id={myproduct?._id} />
-</Box>
+      {/* Report Item  */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+        <ReportItem product_id={myproduct?._id} />
+      </Box>
       {/* Modals */}
       {/* Message Popup */}
       <MessagePopup

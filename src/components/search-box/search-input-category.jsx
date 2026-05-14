@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { getAPI, getAPIAuth } from "utils/__api__/ApiServies";
 import { round } from "lodash";
 import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export default function SearchInputWithCategory() {
   const {
@@ -25,7 +26,8 @@ export default function SearchInputWithCategory() {
     catId,
   } = useSearch();
   const searchPrams = useSearchParams();
-  const search = searchPrams.get("search");
+  const search = searchPrams.get("q");
+  const pathname = usePathname();
   const router = useRouter();
   const [cat, setCat] = useState([]);
   const [productList, setProductList] = useState([]);
@@ -46,6 +48,10 @@ export default function SearchInputWithCategory() {
     getCategories();
   }, []);
 
+  useEffect(() => {
+    setSearchTerms(search || "");
+  }, [search]);
+
   const searchProduct = async () => {
     try {
       const res = await getAPIAuth(
@@ -59,15 +65,35 @@ export default function SearchInputWithCategory() {
     }
   };
 
+  const navigateSearch = () => {
+    const trimmed = searchTerms?.trim();
+
+    // empty search
+    if (!trimmed) {
+      setProductList([]);
+      router.push("/");
+      return;
+    }
+
+    // prevent extremely short spam searches
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    router.push(
+      `/search-product-list?q=${encodeURIComponent(trimmed)}`
+    );
+  };
+
   const handleKeyDown = (event) => {
-    if (event.key === 'Enter') {
-      router.push(`/search-product-list?q=${searchTerms}`);
+    if (event.key === "Enter") {
+      navigateSearch();
     }
   };
 
   const handleClick = () => {
-    router.push(`/search-product-list?q=${searchTerms}`);
-  }
+    navigateSearch();
+  };
 
   const INPUT_PROPS = {
     sx: {
@@ -108,12 +134,24 @@ export default function SearchInputWithCategory() {
   };
 
   useEffect(() => {
-    if (searchTerms) {
-      searchProduct();
-    } else {
-      setProductList([])
+    const trimmed = searchTerms?.trim();
+    // clear suggestions
+    if (!trimmed || trimmed.length < 2) {
+      setProductList([]);
+      return;
     }
+    searchProduct();
   }, [searchTerms]);
+
+  useEffect(() => {
+    const trimmed = search?.trim();
+
+    // if user manually clears query from URL
+    if (pathname === "/search-product-list" && (!trimmed || trimmed.length < 2)) {
+      router.replace("/");
+    }
+  }, [search, pathname, router]);
+
   return (
     <Box
       position="relative"

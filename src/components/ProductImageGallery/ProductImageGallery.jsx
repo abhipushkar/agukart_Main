@@ -38,31 +38,31 @@ const ProductImageGallery = ({
     const isMobileView = useMediaQuery('(max-width:600px)');
 
     const touchStartX = useRef(null);
-const touchEndX = useRef(null);
+    const touchEndX = useRef(null);
 
-const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-};
+    const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
 
-const handleTouchMove = (e) => {
-    touchEndX.current = e.touches[0].clientX;
-};
+    const handleTouchMove = (e) => {
+        touchEndX.current = e.touches[0].clientX;
+    };
 
-const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 40) { // 40px threshold
-        if (diff > 0) {
-            // Swipe left → next image
-            onImageSelect((selectedImage + 1) % media.length);
-        } else {
-            // Swipe right → prev image
-            onImageSelect((selectedImage - 1 + media.length) % media.length);
+    const handleTouchEnd = () => {
+        if (touchStartX.current === null || touchEndX.current === null) return;
+        const diff = touchStartX.current - touchEndX.current;
+        if (Math.abs(diff) > 40) { // 40px threshold
+            if (diff > 0) {
+                // Swipe left → next image
+                onImageSelect((selectedImage + 1) % media.length);
+            } else {
+                // Swipe right → prev image
+                onImageSelect((selectedImage - 1 + media.length) % media.length);
+            }
         }
-    }
-    touchStartX.current = null;
-    touchEndX.current = null;
-};
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
 
     // Helper to get current media item
     const getCurrentMediaItem = () => {
@@ -162,29 +162,28 @@ const handleTouchEnd = () => {
     };
 
     const handleWheel = (e) => {
-        e.preventDefault();
-        if (sliderRef.current) {
-            if (e.deltaY > 0) {
-                sliderRef.current.slickNext();
-            } else {
-                sliderRef.current.slickPrev();
-            }
+        e.stopPropagation();
+        if (!sliderRef.current) return;
+        if (e.deltaY > 0) {
+            sliderRef.current.slickNext();
+        } else {
+            sliderRef.current.slickPrev();
         }
     };
 
-    const disableScroll = (e) => e.preventDefault();
+    // const disableScroll = (e) => e.preventDefault();
 
-    const handleMouseEnter = () => {
-        window.addEventListener("scroll", disableScroll, { passive: true });
-        window.addEventListener("wheel", disableScroll, { passive: true });
-        window.addEventListener("touchmove", disableScroll, { passive: true });
-    };
+    // const handleMouseEnter = () => {
+    //     window.addEventListener("scroll", disableScroll, { passive: true });
+    //     window.addEventListener("wheel", disableScroll, { passive: true });
+    //     window.addEventListener("touchmove", disableScroll, { passive: true });
+    // };
 
-    const handleMouseLeave = () => {
-        window.removeEventListener("scroll", disableScroll);
-        window.removeEventListener("wheel", disableScroll);
-        window.removeEventListener("touchmove", disableScroll);
-    };
+    // const handleMouseLeave = () => {
+    //     window.removeEventListener("scroll", disableScroll);
+    //     window.removeEventListener("wheel", disableScroll);
+    //     window.removeEventListener("touchmove", disableScroll);
+    // };
 
     // Update the sliderImages for lightbox with proper video handling
     const sliderImages = media?.map((mediaItem) => {
@@ -227,127 +226,127 @@ const handleTouchEnd = () => {
         currentDisplayUrl,
         hoveredImage
     });
-if (isMobileView) {
-    return (
-        <Box sx={{ position: 'relative', width: '100%', mb: 1 }}>
-            {/* Full width image */}
-            <Box sx={{
-                width: '100%',
-                height: '380px',
-                position: 'relative',
-                overflow: 'visible',
-                backgroundColor: '#f5f5f5',
-            }}
-            onTouchStart={handleTouchStart}
-    onTouchMove={handleTouchMove}
-    onTouchEnd={handleTouchEnd}
-            >
-                {currentDisplayUrl && !isCurrentVideo ? (
-                    <img
-                        src={currentDisplayUrl}
-                        alt="Product"
-                        onClick={() => setIsOpen(true)}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            cursor: 'pointer',
-                        }}
-                    />
-                ) : currentDisplayUrl && isCurrentVideo ? (
-                    <video
-                        src={currentDisplayUrl}
-                        autoPlay loop muted playsInline
-                        onClick={() => setIsOpen(true)}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            cursor: 'pointer',
-                        }}
-                    />
-                ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                        <Typography color="textSecondary">No image available</Typography>
-                    </Box>
-                )}
+    if (isMobileView) {
+        return (
+            <Box sx={{ position: 'relative', width: '100%', mb: 1 }}>
+                {/* Full width image */}
+                <Box sx={{
+                    width: '100%',
+                    height: '380px',
+                    position: 'relative',
+                    overflow: 'visible',
+                    backgroundColor: '#f5f5f5',
+                }}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    {currentDisplayUrl && !isCurrentVideo ? (
+                        <img
+                            src={currentDisplayUrl}
+                            alt="Product"
+                            onClick={() => setIsOpen(true)}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                                cursor: 'pointer',
+                            }}
+                        />
+                    ) : currentDisplayUrl && isCurrentVideo ? (
+                        <video
+                            src={currentDisplayUrl}
+                            autoPlay loop muted playsInline
+                            onClick={() => setIsOpen(true)}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                                cursor: 'pointer',
+                            }}
+                        />
+                    ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                            <Typography color="textSecondary">No image available</Typography>
+                        </Box>
+                    )}
 
-                
 
-                {/* Share + Wishlist */}
-<Box sx={{ position: 'absolute', bottom: -20, right: 10, display: 'flex', gap: 1 }}>
-                    <Button
-                        onClick={onShareClick}
-                        sx={{
-                            background: '#fff', borderRadius: '50%',
-                            minWidth: '34px', width: '34px', height: '34px',
-                            boxShadow: '0 0 3px #696969', p: 0,
-                        }}
-                    >
-                        <IosShareIcon sx={{ fontSize: 16 }} />
-                    </Button>
-                    {userDesignation !== "4" && (
+
+                    {/* Share + Wishlist */}
+                    <Box sx={{ position: 'absolute', bottom: -20, right: 10, display: 'flex', gap: 1 }}>
                         <Button
-                            onClick={onWishlistToggle}
+                            onClick={onShareClick}
                             sx={{
                                 background: '#fff', borderRadius: '50%',
                                 minWidth: '34px', width: '34px', height: '34px',
                                 boxShadow: '0 0 3px #696969', p: 0,
                             }}
                         >
-                            {isInWishlist
-                                ? <FavoriteIcon sx={{ fontSize: 18 }} />
-                                : <FavoriteBorderIcon sx={{ fontSize: 18 }} />
-                            }
+                            <IosShareIcon sx={{ fontSize: 16 }} />
                         </Button>
+                        {userDesignation !== "4" && (
+                            <Button
+                                onClick={onWishlistToggle}
+                                sx={{
+                                    background: '#fff', borderRadius: '50%',
+                                    minWidth: '34px', width: '34px', height: '34px',
+                                    boxShadow: '0 0 3px #696969', p: 0,
+                                }}
+                            >
+                                {isInWishlist
+                                    ? <FavoriteIcon sx={{ fontSize: 18 }} />
+                                    : <FavoriteBorderIcon sx={{ fontSize: 18 }} />
+                                }
+                            </Button>
+                        )}
+                    </Box>
+
+                    {/* Badge */}
+                    {product?.product_bedge && !hoveredImage && (
+                        <ProductBadge badge={product.product_bedge} />
                     )}
                 </Box>
 
-                {/* Badge */}
-                {product?.product_bedge && !hoveredImage && (
-                    <ProductBadge badge={product.product_bedge} />
+                {/* Dots */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: '6px', mt: 1.2, mb: 0.5 }}>
+                    {media?.map((_, i) => (
+                        <Box
+                            key={i}
+                            onClick={() => onImageSelect(i)}
+                            sx={{
+                                width: selectedImage === i ? '18px' : '7px',
+                                height: '7px',
+                                borderRadius: '4px',
+                                backgroundColor: selectedImage === i ? '#222' : '#bbb',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                            }}
+                        />
+                    ))}
+                </Box>
+
+                {/* Lightbox */}
+                {isOpen && (
+                    <Lightbox
+                        open={isOpen}
+                        close={() => setIsOpen(false)}
+                        slides={sliderImages}
+                        index={selectedImage}
+                        plugins={[Zoom, Video]}
+                        zoom={{ maxZoomPixelRatio: 3, zoomInMultiplier: 2 }}
+                    />
                 )}
             </Box>
-
-            {/* Dots */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: '6px', mt: 1.2, mb: 0.5 }}>
-                {media?.map((_, i) => (
-                    <Box
-                        key={i}
-                        onClick={() => onImageSelect(i)}
-                        sx={{
-                            width: selectedImage === i ? '18px' : '7px',
-                            height: '7px',
-                            borderRadius: '4px',
-                            backgroundColor: selectedImage === i ? '#222' : '#bbb',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                        }}
-                    />
-                ))}
-            </Box>
-
-            {/* Lightbox */}
-            {isOpen && (
-                <Lightbox
-                    open={isOpen}
-                    close={() => setIsOpen(false)}
-                    slides={sliderImages}
-                    index={selectedImage}
-                    plugins={[Zoom, Video]}
-                    zoom={{ maxZoomPixelRatio: 3, zoomInMultiplier: 2 }}
-                />
-            )}
-        </Box>
-    );
-}
+        );
+    }
     return (
         <Grid container spacing={2} m={0} width={"100%"} sx={{
-    position: "sticky",
-    top: 0,
-    marginBottom: { xs: "10px" },
-    height: { xs: "auto", md: "559px" }
-}}>
+            position: "sticky",
+            top: 0,
+            marginBottom: { xs: "10px" },
+            height: { xs: "auto", md: "559px" }
+        }}>
             {/* Thumbnail Slider */}
             <Grid lg={1} md={2} xs={2} sx={{
                 display: { xs: "none", md: "block" },
@@ -360,10 +359,15 @@ if (isMobileView) {
                         height: "100%",
                         overflow: "hidden",
                         display: { xs: "none", md: "block" },
+                        overscrollBehavior: "contain",
+                        touchAction: "pan-y",
+                        "& .slick-slider, & .slick-list, & .slick-track": {
+                            touchAction: "pan-y !important",
+                        },
                     }}
                     onWheel={handleWheel}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
+                // onMouseEnter={handleMouseEnter}
+                // onMouseLeave={handleMouseLeave}
                 >
                     <List sx={{
                         height: "559px",
@@ -486,12 +490,12 @@ if (isMobileView) {
 
             {/* Main Image Display */}
             <Grid item lg={11} md={10} xs={12} sx={{
-    textAlign: "center",
-    margin: "0",
-    paddingLeft: { xs: "0 !important", md: "0 !important" },
-    paddingTop: { xs: "0 !important", md: "inherit" },
-    height: { xs: "auto", md: "559px" }
-}}>
+                textAlign: "center",
+                margin: "0",
+                paddingLeft: { xs: "0 !important", md: "0 !important" },
+                paddingTop: { xs: "0 !important", md: "inherit" },
+                height: { xs: "auto", md: "559px" }
+            }}>
                 <Box sx={{
                     position: "relative",
                     height: "100%",
@@ -633,20 +637,20 @@ if (isMobileView) {
                     )}
 
                     {/* Action Buttons */}
-                    
+
                     <Button
                         onClick={onShareClick}
                         sx={{
                             zIndex: "99",
                             position: "absolute",
-bottom: { xs: "8px", md: "12px" },
-right: { xs: "46px", md: "64px" },
+                            bottom: { xs: "8px", md: "12px" },
+                            right: { xs: "46px", md: "64px" },
                             background: "#fff",
                             boxShadow: "0 0 3px #696969",
                             borderRadius: "50%",
                             height: { xs: "30px", md: "40px" },
-width: { xs: "30px", md: "40px" },
-minWidth: { xs: "30px", md: "40px" },
+                            width: { xs: "30px", md: "40px" },
+                            minWidth: { xs: "30px", md: "40px" },
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -656,7 +660,7 @@ minWidth: { xs: "30px", md: "40px" },
                             },
                         }}
                     >
-                       <IosShareIcon sx={{ fontSize: { xs: 16, md: 24 } }} />
+                        <IosShareIcon sx={{ fontSize: { xs: 16, md: 24 } }} />
                     </Button>
 
                     {userDesignation !== "4" && (
@@ -665,14 +669,14 @@ minWidth: { xs: "30px", md: "40px" },
                             sx={{
                                 zIndex: "99",
                                 position: "absolute",
-bottom: { xs: "8px", md: "12px" },
-right: { xs: "6px", md: "12px" },
+                                bottom: { xs: "8px", md: "12px" },
+                                right: { xs: "6px", md: "12px" },
                                 background: "#fff",
                                 boxShadow: "0 0 3px #696969",
                                 borderRadius: "50%",
                                 height: { xs: "30px", md: "40px" },
-width: { xs: "30px", md: "40px" },
-minWidth: { xs: "30px", md: "40px" },
+                                width: { xs: "30px", md: "40px" },
+                                minWidth: { xs: "30px", md: "40px" },
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -683,10 +687,10 @@ minWidth: { xs: "30px", md: "40px" },
                             }}
                         >
                             {isInWishlist ? (
-    <FavoriteIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
-) : (
-    <FavoriteBorderIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
-)}
+                                <FavoriteIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
+                            ) : (
+                                <FavoriteBorderIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
+                            )}
                         </Button>
                     )}
 
