@@ -112,7 +112,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
                             {row1.map((product) => (
                               <Grid
                                 item
-                                xs={12}
+                                xs={6}
                                 sm={6}
                                 md={4}
                                 lg={2} // lg=2 means 6 items per row (12/2=6)
@@ -130,7 +130,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
                             {row2.map((product) => (
                               <Grid
                                 item
-                                xs={12}
+                                xs={6}
                                 sm={6}
                                 md={4}
                                 lg={2}
@@ -154,7 +154,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
                   {shopProducts.map((product) => (
                     <Grid
                       item
-                      xs={12}
+                      xs={6}
                       sm={6}
                       md={4}
                       lg={2} // same here for 6 per row

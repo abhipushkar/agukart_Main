@@ -36,15 +36,39 @@ function ShopSmall() {
       style={{
         background: "#fff",
         padding: "26px 0",
-        marginBottom: "50px",
+        marginBottom: {
+  xs: "10px",
+  md: "40px",
+},
       }}
     >
-      <Grid item lg={12} md={12} sm={12} xs={12} sx={{ margin: "25px 0" }}>
+      <Grid
+  item
+  lg={12}
+  md={12}
+  sm={12}
+  xs={12}
+  sx={{
+    margin: {
+      xs: "10px 0",
+      md: "25px 0",
+    },
+  }}
+>
         <Typography sx={{ textAlign: "center", fontSize: "30px" }}>
           Small Shop Make Every Moment More Special
         </Typography>
 
-        <Grid container spacing={1} sx={{ marginTop: "15px" }}>
+        <Grid
+  container
+  spacing={1}
+  sx={{
+    marginTop: {
+      xs: "5px",
+      md: "15px",
+    },
+  }}
+>
           <Grid item lg={10} md={10} sm={12} xs={12} sx={{ margin: "0 auto" }}>
             <Grid container spacing={1} justifyContent="center">
               {loading

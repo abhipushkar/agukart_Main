@@ -106,14 +106,7 @@ const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
                     <Box key={index} px={2}>
                       <Grid container spacing={4}>
                         {row1.map((product) => (
-                          <Grid
-                            item
-                            xs={12}
-                            sm={6}
-                            md={4}
-                            lg={2}
-                            key={product._id}
-                          >
+                          <Grid item xs={6} sm={6} md={4} lg={2} key={product._id}>
                             <Product
                               product={product}
                               imageBaseUrl={imageBaseUrl}
@@ -124,14 +117,7 @@ const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
                       </Grid>
                       <Grid container spacing={4} mt={1}>
                         {row2.map((product) => (
-                          <Grid
-                            item
-                            xs={12}
-                            sm={6}
-                            md={4}
-                            lg={2}
-                            key={product._id}
-                          >
+                          <Grid item xs={6} sm={6} md={4} lg={2} key={product._id}>
                             <Product
                               product={product}
                               imageBaseUrl={imageBaseUrl}
@@ -148,7 +134,7 @@ const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
           ) : (
             <Grid container spacing={4}>
               {similarProducts.map((product) => (
-                <Grid item xs={12} sm={6} md={4} lg={2} key={product._id}>
+                <Grid item xs={6} sm={6} md={4} lg={2} key={product._id}>
                   <Product
                     product={product}
                     imageBaseUrl={imageBaseUrl}

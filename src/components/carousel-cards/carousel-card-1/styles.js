@@ -1,27 +1,32 @@
 "use client";
 
 import styled from "@mui/material/styles/styled";
-export const StyledRoot = styled("div")(({
-  theme
-}) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
+
+export const StyledRoot = styled("div")(({ theme }) => ({
+  display: "block",        // 👈 flex hata do, block karo
+  padding: 0,
+  margin: 0,
+  lineHeight: 0,
+  fontSize: 0,
+  overflow: "hidden",      // 👈 ye add karo
+  width: "100%",           // 👈 ye add karo
+
   ".title": {
     fontSize: 50,
     marginTop: 0,
     lineHeight: 1.2,
     marginBottom: "1.35rem"
   },
+
   [theme.breakpoints.up("sm")]: {
     ".grid-item": {
-      minHeight: 424,
       display: "flex",
       alignItems: "baseline",
       flexDirection: "column",
       justifyContent: "center"
     }
   },
+
   [theme.breakpoints.down("sm")]: {
     marginLeft: 0,
     paddingLeft: 0,
@@ -29,6 +34,7 @@ export const StyledRoot = styled("div")(({
       fontSize: 32
     }
   },
+
   [theme.breakpoints.down("xs")]: {
     ".title": {
       fontSize: 16
