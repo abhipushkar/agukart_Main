@@ -60,7 +60,15 @@ export default function Section24() {
 
   return (
     <div>
-      <SectionCreator icon={<GiftBox />} title="Popular Gifts for You">
+      <SectionCreator
+  icon={<GiftBox />}
+  title="Popular Gifts for You"
+  mb={1}
+  sx={{
+    mb: 0.5,
+    pb: 0.5,
+  }}
+>
         {loading ? (
           <Carousel slidesToShow={5} responsive={responsive}>
             {Array.from({ length: 5 }).map((_, i) => (

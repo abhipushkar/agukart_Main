@@ -97,10 +97,15 @@ const Slider = ({ cat }) => {
                     alt="banner"
                     src={product.base_url + product.image[0]}
                     sx={{
-                      height: "260px",
-                      objectFit: "cover",
-                      aspectRatio: "1/1",
-                    }}
+  height: {
+    xs: "170px",
+    sm: "220px",
+    md: "260px",
+  },
+  width: "100%",
+  objectFit: "cover",
+  aspectRatio: "1/1",
+}}
                   />
                 </Box>
               </Link>
@@ -127,10 +132,15 @@ const Slider = ({ cat }) => {
                   alt="banner"
                   src={product.base_url + product.image[0]}
                   sx={{
-                    height: "260px",
-                    objectFit: "cover",
-                    aspectRatio: "1/1",
-                  }}
+  height: {
+    xs: "170px",
+    sm: "220px",
+    md: "260px",
+  },
+  width: "100%",
+  objectFit: "cover",
+  aspectRatio: "1/1",
+}}
                 />
               </Box>
             </Link>

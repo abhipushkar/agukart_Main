@@ -74,7 +74,7 @@ const section20 = () => {
   return (
     <SectionCreator>
       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-        <H2 fontSize={25} mb={1} sx={{ display: "flex", alignItems: "center" }}>
+        <H2 fontSize={24} mb={1} sx={{ display: "flex", alignItems: "center" }}>
           Fresh from the blog <ArrowForwardIcon sx={{ marginLeft: "8px" }} />
         </H2>
 
@@ -82,7 +82,7 @@ const section20 = () => {
           <FlexBox alignItems="center" color="grey.600">
             View All
             {settings.direction === "ltr" ? (
-              <ArrowRight fontSize="small" color="inherit" />
+              <ArrowRight fontSize="large" color="inherit" />
             ) : (
               <ArrowLeft fontSize="small" color="inherit" />
             )}

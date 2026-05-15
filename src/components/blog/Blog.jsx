@@ -11,6 +11,7 @@ import Link from "@mui/material/Link";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
 import {
   Card,
   CardContent,
@@ -21,6 +22,7 @@ import {
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
+import MenuIcon from "@mui/icons-material/Menu";
 import { getAPIAuth, postAPI } from "utils/__api__/ApiServies";
 import { useSearchParams } from "next/navigation";
 const Blog = () => {
@@ -30,6 +32,7 @@ const Blog = () => {
   const [page, setPage] = useState(1);
   const [tags,setTags] = useState([]);
   const [selectedTag,setSelectedTag] = useState("");
+  const [openTags, setOpenTags] = useState(false);
 
   const searchParams = useSearchParams();
   const slug = searchParams.get("slug");
@@ -115,104 +118,332 @@ const Blog = () => {
       <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
         <Grid item lg={12} xs={12}>
           <Box
-            display={"flex"}
-            alignItems={"center"}
-            pb={4}
-            sx={{
-              borderBottom:"1px solid #e0e0e0",
-              justifyContent: { lg: "space-between", md: "space-between", xs: "center" },
-            }}
-          >
+  sx={{
+    display: "flex",
+    flexDirection: {
+      xs: "column",
+      md: "row",
+    },
+    alignItems: {
+      xs: "flex-start",
+      md: "center",
+    },
+    justifyContent: "space-between",
+    gap: 2,
+    pb: 4,
+    borderBottom: "1px solid #e0e0e0",
+  }}
+>
 
-            <Typography component="div">
-              <Typography variant="h2" fontWeight={400}>
-                Agukart Journal
-              </Typography>
-              <Typography fontSize={16} fontWeight={600}>
-                 Explore ideas and inspiration for creative living
-              </Typography>
-            </Typography>
+            <Box>
+              <Typography
+  variant="h2"
+  sx={{
+    fontWeight: 500,
+    fontSize: {
+      xs: "24px",
+      md: "40px",
+    },
+    whiteSpace: {
+  xs: "normal",
+  md: "nowrap",
+},
+    lineHeight: 1.1,
+  }}
+>
+  Agukart Journal
+</Typography>
+              <Typography
+  sx={{
+    fontSize: {
+      xs: "14px",
+      md: "16px",
+    },
+    fontWeight: 500,
+    lineHeight: 1.5,
+    color: "#555",
+    mt: 1,
+    maxWidth: {
+      xs: "100%",
+      md: "500px",
+    },
+  }}
+>
+  Explore ideas and inspiration for creative living
+</Typography>
+            </Box>
 
-            <Typography
-              display={"flex"}
-              alignItems={"center"}
-              justifyContent={"space-between"}
-              position={"relative"}
-              component="div"
-              sx={{
-                width: "100%",
-                boxShadow: "inset 1px 1px 4px #0e0e0e3d",
-                background: "#fff",
-                maxWidth: "280px",
-                height: "fit-content",
-                borderRadius: "99999px",
-              }}
-            >
-              <TextField
-                onChange={(e) => setSearch(e.target.value)}
-                value={search}
-                placeholder="Search By Title"
-                sx={{
-                  border: "none",
-                  boxShadow: "none",
-                  padding: "9px 12px",
-                  "& fieldset": {
-                    border: "none",
-                  },
-                }}
-              />
-              <IconButton
-                onClick={searchBlogs}
-                type="button"
-                aria-label="search"
-                sx={{
-                  borderRadius: "0 24px 24px 0",
-                  padding: "8 13px",
-                  height: "55px",
-                  transition: "all 500ms ease",
-                  "&:hover": {
-                    background: "#000",
-                    color: "#fff",
-                    "& .MuiSvgIcon-root": {
-                      transition: "all 500ms ease",
-                      color: "#fff", // Change icon color on hover
-                    },
-                  },
-                }}
-              >
-                <SearchIcon
-                  sx={{ color: "#000", transition: "all 500ms ease" }}
-                />
-              </IconButton>
-            </Typography>
+            <Box
+  sx={{
+    position: "relative",
+    width: {
+      xs: "100%",
+      md: "280px",
+    },
+    display: "flex",
+    alignItems: "center",
+    gap: 1,
+    mt: {
+      xs: 1,
+      md: 0,
+    },
+  }}
+>
+  {/* Mobile Menu Icon */}
+  <Box
+  onClick={() => setOpenTags(true)}
+  sx={{
+    
+    display: {
+      xs: "flex",
+      md: "none",
+    },
+    cursor: "pointer",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "44px",
+      height: "44px",
+      borderRadius: "50%",
+      background: "#f5f5f5",
+      border: "1px solid #ddd",
+      flexShrink: 0,
+    }}
+  >
+    <MenuIcon sx={{ color: "#000", fontSize: "22px" }} />
+  </Box>
+
+  {/* Search Bar */}
+  <Box
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      position: "relative",
+      width: "100%",
+      boxShadow: "inset 1px 1px 4px #0e0e0e3d",
+      background: "#fff",
+      borderRadius: "99999px",
+    }}
+  >
+    <TextField
+      onChange={(e) => setSearch(e.target.value)}
+      value={search}
+      placeholder="Search By Title"
+      sx={{
+        width: "100%",
+        border: "none",
+        boxShadow: "none",
+        padding: {
+          xs: "6px 10px",
+          md: "9px 12px",
+        },
+        "& fieldset": {
+  border: "none",
+},
+"& .MuiInputBase-input": {
+  padding: "12px 14px",
+},
+      }}
+    />
+
+    <IconButton
+      onClick={searchBlogs}
+      type="button"
+      aria-label="search"
+      sx={{
+        borderRadius: "0 24px 24px 0",
+        padding: "8px 13px",
+        height: "100%",
+minHeight: "48px",
+        transition: "all 500ms ease",
+        "&:hover": {
+          background: "#000",
+          color: "#fff",
+          "& .MuiSvgIcon-root": {
+            transition: "all 500ms ease",
+            color: "#fff",
+          },
+        },
+      }}
+    >
+      <SearchIcon
+        sx={{ color: "#000", transition: "all 500ms ease" }}
+      />
+    </IconButton>
+  </Box>
+</Box>
           </Box>
-          <Box pt={2}>
-           <Typography component="div" display="flex">
-            {
-              tags?.map((item) => (
-                <Box
-                  key={item.slug}
-                  onClick={() => setSelectedTag(item._id)}
-                  sx={{
-                    marginRight: '14px',
-                    color: '#000',
-                    textDecoration: 'underline',
-                    fontSize: { lg: '14px', md: '14px', xs: '12px' },
-                    cursor: 'pointer',
-                    display: 'inline-block',
-                  }}
-                >
-                  {item.title}
-                </Box>
-              ))
-            }
-           </Typography>
-        </Box>
-        <Box sx={{textAlign:'center'}} pt={5}>
+          <Box
+  sx={{
+    position: "relative",
+  }}
+>
+  <Box
+    sx={{
+      position: {
+        xs: "absolute",
+        md: "static",
+      },
+
+      top: {
+        xs: "60px",
+        md: "0px",
+      },
+
+      left: 0,
+
+      width: {
+        xs: "220px",
+        md: "100%",
+      },
+
+      zIndex: 999,
+
+      display: {
+        xs: openTags ? "flex" : "none",
+        md: "flex",
+      },
+
+      flexDirection: {
+        xs: "column",
+        md: "row",
+      },
+
+      background: {
+        xs: "#fff",
+        md: "transparent",
+      },
+
+      padding: {
+        xs: "14px",
+        md: "0px",
+      },
+
+      borderRadius: "12px",
+
+      boxShadow: {
+        xs: "0 8px 24px rgba(0,0,0,0.12)",
+        md: "none",
+      },
+
+      flexWrap: "wrap",
+      gap: 1,
+    }}
+  >
+    {tags?.map((item) => (
+      <Box
+        key={item.slug}
+        onClick={() => setSelectedTag(item._id)}
+        sx={{
+          marginRight: "14px",
+          color: "#000",
+          textDecoration: "underline",
+          fontSize: {
+            lg: "14px",
+            md: "14px",
+            xs: "12px",
+          },
+          cursor: "pointer",
+          display: "inline-block",
+        }}
+      >
+        {item.title}
+      </Box>
+    ))}
+  </Box>
+</Box>
+        <Box
+  sx={{
+    textAlign: "center",
+    pt: {
+      xs: 2,
+      md: 5,
+    },
+  }}
+>
            <Typography fontSize={13}>All articles tagged:</Typography>
            <Typography variant="h3" fontWeight={400} >Style</Typography>
         </Box>
         </Grid>
+        <Drawer
+  anchor="left"
+  open={openTags}
+  onClose={() => setOpenTags(false)}
+  PaperProps={{
+    sx: {
+      width: "260px",
+      padding: "20px",
+      borderTopRightRadius: "18px",
+      borderBottomRightRadius: "18px",
+    },
+  }}
+>
+  <Typography
+    sx={{
+      fontSize: "20px",
+      fontWeight: 600,
+      mb: 3,
+    }}
+  >
+    Categories
+  </Typography>
+
+  <Box
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 2,
+    }}
+  >
+    {tags?.map((item) => (
+      <Box
+        key={item.slug}
+        onClick={() => {
+          setSelectedTag(item._id);
+          setOpenTags(false);
+        }}
+        sx={{
+          padding: "10px 14px",
+          borderRadius: "10px",
+          background:
+            selectedTag === item._id
+              ? "#000"
+              : "#f5f5f5",
+
+          color:
+            selectedTag === item._id
+              ? "#fff"
+              : "#000",
+
+          cursor: "pointer",
+          transition: "0.3s",
+          fontSize: "14px",
+          fontWeight: 500,
+
+          "&:hover": {
+            background: "#000",
+            color: "#fff",
+          },
+        }}
+      >
+        {item.title}
+      </Box>
+    ))}
+  </Box>
+</Drawer>
+
+<Box
+  sx={{
+    display: {
+      xs: "none",
+      md: "flex",
+    },
+    flexWrap: "wrap",
+    gap: 1,
+    mt: 2,
+  }}
+>
+</Box>
       </Grid>
       <Grid
         container

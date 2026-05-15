@@ -65,7 +65,6 @@ const prepareFieldRows = (grouped) => {
 // ProductSpecifications (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductSpecifications = ({ product }) => {
-    const [showAllSpecs, setShowAllSpecs] = useState(false);
     const isMobile = useMediaQuery('(max-width:600px)');
 
     const dynamicFields = { ...(product?.dynamicFields || {}) };
@@ -99,17 +98,11 @@ const ProductSpecifications = ({ product }) => {
     const groupedFields = groupFieldsByBaseName(dynamicFieldsArray);
     const allFieldRows = prepareFieldRows(groupedFields);
     const MOBILE_LIMIT = 5;
-    const visibleRows = (isMobile && !showAllSpecs)
-        ? allFieldRows.slice(0, MOBILE_LIMIT)
-        : allFieldRows;
+    const visibleRows = allFieldRows;
 
     const midPoint = Math.ceil(visibleRows.length / 2);
     const leftColumnRows = visibleRows.slice(0, midPoint);
     const rightColumnRows = visibleRows.slice(midPoint);
-
-    // Show More button: mobile pe hamesha dikhao agar 5 se zyada hain,
-    // desktop pe hide rahega (sab dikhta hai)
-    const showToggleButton = isMobile && allFieldRows.length > MOBILE_LIMIT;
 
     const renderSingleField = (row) => (
         <TableRow key={row.displayName} sx={{ borderBottom: '1px solid' }}>
@@ -170,7 +163,7 @@ const ProductSpecifications = ({ product }) => {
                 </Grid>
 
                 {/* Right column — mobile pe hide karo jab collapsed ho */}
-                {(!isMobile || showAllSpecs) && (
+                {(
                     <Grid item lg={6} md={6} xs={12}>
                         <TableContainer sx={{ boxShadow: 'none' }} component={Paper}>
                             <Table size="small" sx={tableStyles}>
@@ -197,24 +190,6 @@ const ProductSpecifications = ({ product }) => {
                     </Grid>
                 )}
             </Grid>
-
-            {/* Show More / Less button — sirf mobile pe */}
-            {showToggleButton && (
-                <Box display="flex" justifyContent="center" mt={3}>
-                    <Button
-                        onClick={() => setShowAllSpecs(!showAllSpecs)}
-                        variant="outlined"
-                        sx={{
-                            textTransform: 'none',
-                            borderRadius: '30px',
-                            px: 3,
-                            fontWeight: 600,
-                        }}
-                    >
-                        {showAllSpecs ? 'Show Less' : 'Show More'}
-                    </Button>
-                </Box>
-            )}
         </>
     );
 };

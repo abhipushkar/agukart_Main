@@ -539,8 +539,8 @@ const ProductWithoutVideo = ({ product }) => {
                   }}
                 >
                   {promotion?.offer_type == "flat"
-                    ? `Save ${currency?.symbol}${promotion?.discount_amount}`
-                    : `Save ${promotion?.discount_amount}%`}
+  ? `Save ${currency?.symbol}${promotion?.discount_amount}`
+  : `${promotion?.discount_amount}% off`}
                 </Typography>
               )}
             </FlexBox>

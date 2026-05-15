@@ -66,9 +66,9 @@ export default function Section4() {
           ))}
         </Carousel>
       ) : bestRatedProduct?.length <= 4 ? (
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {bestRatedProduct?.map((product) => (
-            <Grid item lg={2.4} md={3} sm={4} xs={5} key={product.id}>
+            <Grid item lg={2.4} md={3} sm={4} xs={6} key={product.id}>
               <ProductWithoutVideo product={product} />
             </Grid>
           ))}

@@ -15,10 +15,7 @@ const section14 = () => {
 
   const getPopularGiftCatgories = async () => {
     try {
-      const res = await postAPI("get-admin-category", {
-        type: "popular",
-      });
-
+      const res = await postAPI("get-admin-category", { type: "popular" });
       if (res.status === 200) {
         setPopularGiftCategories(res.data.data);
       }
@@ -41,119 +38,110 @@ const section14 = () => {
   ];
 
   const shimmerCard = (
-    <Box
-      sx={{
-        border: "1px solid #cbcbcb",
-        borderRadius: "8px",
-        overflow: "hidden",
-        padding: 1,
-      }}
-    >
+    <Box sx={{ border: "1px solid #cbcbcb", borderRadius: "8px", overflow: "hidden", padding: 1 }}>
       <Skeleton variant="rectangular" height={198} width="100%" animation="wave" />
-      <Skeleton
-        variant="text"
-        height={30}
-        width="60%"
-        sx={{ mx: "auto", mt: 2 }}
-      />
+      <Skeleton variant="text" height={30} width="60%" sx={{ mx: "auto", mt: 2 }} />
     </Box>
   );
 
   return (
-    <>
-      <SectionCreator title="Shop Our Popular Gift Categories">
-        {loading ? (
-          <Carousel slidesToShow={5} responsive={responsive}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Box key={i}>{shimmerCard}</Box>
-            ))}
-          </Carousel>
-        ) : popularGiftCategories.length <= 5 ? (
-          <Grid container spacing={"20px"}>
-            {popularGiftCategories.map((gift) => (
-              <Grid key={gift._id} item xs={12} md={4} lg={2.4}>
-                <Box
-                  sx={{
-                    border: "1px solid #cbcbcb",
-                    borderRadius: "8px",
-                    transition: "all 500ms",
-                    overflow: "hidden",
-                    "&:hover": {
-                      boxShadow: "0 0 6px #c2c1c1",
-                    },
-                  }}
-                >
-                  <Link
-                    href={`/${gift.slug}?id=${gift._id}&title=${gift.title}`}
-                  >
-                    <Box sx={{ borderRadius: "8px 8px 0px 0px" }}>
-                      <LazyImage
-                        width={198}
-                        height={198}
-                        alt={gift.title}
-                        src={gift.image}
-                        sx={{
-                          height: "198px",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </Box>
-                    <H4
-                      style={{ textTransform: "capitalize" }}
-                      fontSize={18}
-                      py={3}
-                      sx={{ textAlign: "center" }}
-                    >
-                      {gift.title}
-                    </H4>
-                  </Link>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Carousel slidesToShow={5} responsive={responsive}>
-            {popularGiftCategories.map((gift) => (
+    <SectionCreator
+  title="Shop Our Popular Gift Categories"
+  mb={0}
+  sx={{
+    mt: 0,
+    pt: 0,
+    pb: 0,
+  }}
+>
+      {loading ? (
+        <Carousel slidesToShow={5} responsive={responsive}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Box key={i}>{shimmerCard}</Box>
+          ))}
+        </Carousel>
+      ) : popularGiftCategories.length <= 5 ? (
+        <Grid container spacing={1.5}>
+          {popularGiftCategories.map((gift) => (
+            <Grid key={gift._id} item xs={12} md={4} lg={2.4}>
               <Box
-                key={gift._id}
                 sx={{
                   border: "1px solid #cbcbcb",
                   borderRadius: "8px",
                   transition: "all 500ms",
                   overflow: "hidden",
-                  "&:hover": {
-                    boxShadow: "0 0 6px #c2c1c1",
-                  },
+                  "&:hover": { boxShadow: "0 0 6px #c2c1c1" },
                 }}
               >
-                <Link
-                  href={`/${gift.slug}?id=${gift._id}&title=${gift.title}`}
-                >
-                  <HoverBox sx={{ borderRadius: "8px 8px 0px 0px" }}>
+                <Link href={`/${gift.slug}?id=${gift._id}&title=${gift.title}`}>
+                  <Box sx={{ borderRadius: "8px 8px 0px 0px" }}>
                     <LazyImage
                       width={198}
                       height={198}
                       alt={gift.title}
                       src={gift.image}
-                      sx={{
-                        height: {
-                          md: "289px",
-                          sm: "auto",
-                        },
-                        objectFit: "cover",
-                      }}
+                      sx={{ height: "198px", objectFit: "cover" }}
                     />
-                  </HoverBox>
-                  <H4 fontSize={18} my={2} sx={{ textAlign: "center" }}>
+                  </Box>
+                  <H4
+  style={{ textTransform: "capitalize" }}
+  fontSize={17}
+  sx={{
+    textAlign: "center",
+    py: 1,
+    px: 0.5,
+    lineHeight: 1.2,
+    mb: 0,
+  }}
+>
                     {gift.title}
                   </H4>
                 </Link>
               </Box>
-            ))}
-          </Carousel>
-        )}
-      </SectionCreator>
-    </>
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Carousel slidesToShow={5} responsive={responsive}>
+          {popularGiftCategories.map((gift) => (
+            <Box
+              key={gift._id}
+              sx={{
+                border: "1px solid #cbcbcb",
+                borderRadius: "8px",
+                transition: "all 500ms",
+                overflow: "hidden",
+                "&:hover": { boxShadow: "0 0 6px #c2c1c1" },
+              }}
+            >
+              <Link href={`/${gift.slug}?id=${gift._id}&title=${gift.title}`}>
+                <HoverBox sx={{ borderRadius: "8px 8px 0px 0px" }}>
+                  <LazyImage
+                    width={198}
+                    height={198}
+                    alt={gift.title}
+                    src={gift.image}
+                    sx={{ height: { md: "289px", sm: "auto" }, objectFit: "cover" }}
+                  />
+                </HoverBox>
+                <H4
+  fontSize={17}
+  sx={{
+    textAlign: "center",
+    my: 0,
+    py: 1,
+    lineHeight: 1.2,
+    mb: 0,
+  }}
+>
+                  {gift.title}
+                </H4>
+              </Link>
+            </Box>
+          ))}
+        </Carousel>
+      )}
+    </SectionCreator>
   );
 };
 

@@ -60,29 +60,36 @@ export default function Section1() {
                     width: "100%",
                     height: { xs: 200, sm: 300, md: 400 },
                     objectFit: "cover",
-                    borderRadius: 2,
+                    objectPosition: { xs: "center top", sm: "center center" },
                     display: "block",
+                    borderRadius: 2,
+                    lineHeight: 0,
+                    fontSize: 0,
                   }}
                 />
               </Grid>
             </Grid>
           </StyledRoot>
         ) : (
-          <Carousel slidesToShow={1} arrows={false} dots autoplay>
-            {data?.map((item, ind) => (
-              <Box
-                key={ind}
-                sx={{
-                  width: "100%",
-                  height: { xs: 200, sm: 300, md: 400 }, 
-                  overflow: "hidden",
-                  borderRadius: 2,
-                }}
-              >
-                <CarouselCard1 {...item} />
-              </Box>
-            ))}
-          </Carousel>
+          <div style={{ marginBottom: 0, paddingBottom: 0, lineHeight: 0, fontSize: 0 }}>
+            <Carousel slidesToShow={1} arrows={false} dots autoplay>
+              {data?.map((item, ind) => (
+                <Box
+                  key={ind}
+                  sx={{
+                    width: "100%",
+                    height: { xs: 200, sm: 300, md: 400 },
+                    overflow: "hidden",
+                    borderRadius: 2,
+                    lineHeight: 0,
+                    fontSize: 0,
+                  }}
+                >
+                  <CarouselCard1 {...item} />
+                </Box>
+              ))}
+            </Carousel>
+          </div>
         )}
       </Container>
     </div>
