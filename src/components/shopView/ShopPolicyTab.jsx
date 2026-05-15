@@ -1,16 +1,26 @@
 "use client";
+
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import TabPanel from "@mui/lab/TabPanel";
-import LockIcon from "@mui/icons-material/Lock";
-import Image from "next/image";
 import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
 
-const ShopPolicyTab = ({shop_policy}) => {
+const ShopPolicyTab = ({ shop_policy }) => {
+  if (!shop_policy) return null;
+
   return (
-    <>
-      <HtmlRenderer html={ shop_policy || ""} />
-    </>
+    <Box sx={{ width: "100%" }}>
+  <Typography
+    sx={{
+      fontWeight: 700,
+      fontSize: "20px",
+      mb: 2,
+    }}
+  >
+     
+  </Typography>
+
+  <HtmlRenderer html={shop_policy || ""} />
+</Box>
   );
 };
 
