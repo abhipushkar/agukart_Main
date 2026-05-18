@@ -73,16 +73,65 @@ const section20 = () => {
 
   return (
     <SectionCreator>
-      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-        <H2 fontSize={24} mb={1} sx={{ display: "flex", alignItems: "center" }}>
-          Fresh from the blog <ArrowForwardIcon sx={{ marginLeft: "8px" }} />
+      <Box
+  sx={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "nowrap",
+    gap: 1,
+    mb: 1,
+  }}
+>
+        <H2
+  mb={0}
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    fontSize: {
+      xs: "14px",
+      sm: "24px",
+    },
+    lineHeight: 1.3,
+    fontWeight: 700,
+    flex: 1,
+  }}
+>
+          Fresh from the blog <ArrowForwardIcon
+  sx={{
+    ml: "4px",
+    fontSize: {
+      xs: "16px",
+      sm: "24px",
+    },
+  }}
+/>
         </H2>
 
         <Link href={"/blog"}>
-          <FlexBox alignItems="center" color="grey.600">
+          <FlexBox
+  alignItems="center"
+  color="grey.600"
+  sx={{
+    fontSize: {
+      xs: "12px",
+      sm: "14px",
+    },
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  }}
+>
             View All
             {settings.direction === "ltr" ? (
-              <ArrowRight fontSize="large" color="inherit" />
+              <ArrowRight
+  sx={{
+    fontSize: {
+      xs: "18px",
+      sm: "28px",
+    },
+  }}
+  color="inherit"
+/>
             ) : (
               <ArrowLeft fontSize="small" color="inherit" />
             )}

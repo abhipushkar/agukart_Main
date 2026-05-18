@@ -51,11 +51,21 @@ const Section18 = () => {
   );
 
   return (
-    <SectionCreator title="Featured Brands" icon={<DottedStar />}>
+    <SectionCreator
+  title="Featured Brands"
+  icon={<DottedStar />}
+  mb={0}
+  sx={{
+    mt: 0,
+    mb: 0,
+    pt: 0,
+    pb: 0,
+  }}
+>
       {loading ? (
         <Carousel slidesToShow={3} responsive={responsive}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <Box key={i} px={1}>
+            <Box key={i} px={0.5}>
               <ShimmerCard />
             </Box>
           ))}
@@ -63,18 +73,19 @@ const Section18 = () => {
       ) : (
         <Carousel slidesToShow={featureBrand.length <= 2 ? featureBrand.length : 3} responsive={responsive}>
           {featureBrand.map((brand) => (
-            <Box key={brand._id} px={1}>
+            <Box key={brand._id} px={0.5}>
               <Link href={`${brand?.link}`} style={{ display: 'block', textDecoration: 'none' }}>
                 <BazaarCard
-                  className="p-1"
-                  sx={{
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease-in-out',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 3
-                    }
-                  }}
+  sx={{
+    p: 1,
+    pb: 1,
+    overflow: 'hidden',
+    transition: 'transform 0.3s ease-in-out',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 3
+    }
+  }}
                 >
                   <Box sx={{
                     overflow: 'hidden',
@@ -99,7 +110,7 @@ const Section18 = () => {
                   </Box>
                   <H4
                     fontSize={14}
-                    pt={1}
+                    pt={0.5}
                     sx={{
                       textTransform: "capitalize",
                       px: 2,

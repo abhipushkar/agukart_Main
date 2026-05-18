@@ -579,6 +579,8 @@ gap: 1.5,
   {/* Icons + Announcement row - mobile */}
 <Box
   sx={{
+    mt: 0,
+    mb: 0,
     display: { xs: "flex", md: "none" },
     alignItems: "center",
     justifyContent: "space-between",
@@ -841,19 +843,19 @@ boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
               </Box>
             </Box>
             <Box
-              mb={4}
+              mb={0}
               sx={{
                 position: "sticky",
 top: 0,
 zIndex: 99,
 background: "#fff",
-py: 1,
+py: 0.3,
                 width: "100%",
                 display: { lg: "flex", md: "flex", xs: "block" },
                 alignItems: "center",
                 marginTop: {
                   xs: 0,
-                  md: announcementShowMore ? "20px" : "-50px", //adjustment made to push tabs in same row as follow button but below See More 
+                  md: announcementShowMore ? "8px" : "-30px", //adjustment made to push tabs in same row as follow button but below See More 
                 },
                 marginLeft: {
                   xs: 0,
@@ -893,18 +895,21 @@ py: 1,
         cursor: "pointer",
         fontWeight: 600,
 fontSize: "15px",
-pb: 1,
+pb: 0.4,
 color: "#555",
 transition: "all .2s ease",
 position: "relative",
-borderBottom: "2px solid transparent",
+borderBottom:
+  id === "home"
+    ? "2px solid #000"
+    : "2px solid transparent",
 "&:hover": { borderBottom: "2px solid #000" },
 "&::after": {
   content: '""',
   position: "absolute",
   left: 0,
   bottom: 0,
-  width: "0%",
+  width: id === "home" ? "100%" : "0%",
   height: "2px",
   background: "#000",
   transition: "0.3s",
@@ -932,7 +937,7 @@ borderBottom: "2px solid transparent",
                 height: '1px',
 backgroundColor: '#ececec',
                 position: "relative",
-                top: -10
+                top: -22
               }}
             />
             <Box>
@@ -1105,7 +1110,7 @@ backgroundColor: '#ececec',
             background: "#111",
             color: "#fff",
             px: 3,
-            py: 1,
+            py: 0.3,
             borderRadius: "999px",
             fontWeight: 600,
             "&:hover": {

@@ -14,6 +14,7 @@ import { FlexBox } from "components/flex-box";
 import AddIcon from "@mui/icons-material/Add";
 import Pagination from "@mui/material/Pagination";
 import Select from "@mui/material/Select";
+import SortIcon from "@mui/icons-material/Sort";
 
 import {
   Checkbox,
@@ -72,6 +73,7 @@ const CollectionTab = ({
   const [selectedStoreId, setSelectedStoreId] = useState(store_id || "all");
   const [storeProductLoading, setStoreProductLoading] = useState(true);
   const [storeProducts, setStoreProducts] = useState([]);
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
   const [productbaseUrl, setProductBaseUrl] = useState("");
@@ -177,107 +179,142 @@ const CollectionTab = ({
   return (
     <>
       <Box
-        mt={3}
-        mb={3}
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "row", md: "row" },
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 2,
-        }}
-      >
-        <Box
-          sx={{
-            width: { lg: "300px", md: "250px", xs: "100%" },
-            background: "#e5e5e5",
-            boxShadow: "0 0 3px #a9a9a9",
-            borderRadius: "30px",
-            px: 2,
-            py: 1,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <InputBase
-            placeholder="Search all orders..."
-            inputProps={{ "aria-label": "search" }}
-            sx={{ flex: 1 }}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <IconButton size="small">
-            <SearchIcon />
-          </IconButton>
-        </Box>
-        <Box sx={{ minWidth: "150px" }}>
-          <FlexBox alignItems="center" gap={1}>
-            <Typography
-              color="grey.600"
-              sx={{
-                whiteSpace: "nowrap",
-              }}
-            >
-              Sort by:
-            </Typography>
-            <TextField
-              select
-              size="small"
-              value={sortBy}
-              variant="outlined"
-              onChange={(e) => handleChangeSortBy(e.target.value)}
-              sx={{
-                minWidth: 120,
-                ".MuiOutlinedInput-notchedOutline": { border: "none" },
-                ".MuiSelect-select": { pl: 0 },
-              }}
-            >
-              {SORT_OPTIONS.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </FlexBox>
-        </Box>
-      </Box>
+  mt={1}
+  mb={1.5}
+  sx={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 1.2,
+  }}
+>
+  {/* SEARCH + SORT */}
+  {/* SEARCH */}
+<Box
+  sx={{
+    width: "100%",
+    background: "#f7f7f7",
+    border: "1.5px solid #d6d6d6",
+    borderRadius: "14px",
+    px: 1.5,
+    height: "44px",
+    display: "flex",
+    alignItems: "center",
+  }}
+>
+  <InputBase
+    placeholder="Search products..."
+    inputProps={{ "aria-label": "search" }}
+    sx={{
+      flex: 1,
+      fontSize: "14px",
+    }}
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+
+  <SearchIcon sx={{ fontSize: "20px", color: "#666" }} />
+</Box>
+</Box>
       <Grid container spacing={3}>
         <Grid item lg={2.5} md={3.5} xs={12}>
           <Box sx={{ pr: { lg: 2, md: 2, xs: 0 } }}>
-            <Box sx={{ display: { xs: "block", md: "none" }, mb: 2 }}>
-              <Select
-                value={selectedStoreId}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const currentParams = new URLSearchParams(
-                    window.location.search
-                  );
-                  currentParams.set("store_id", value);
-                  router.push(
-                    `${window.location.pathname}?${currentParams.toString()}#collection`
-                  );
-                  setSelectedStoreId(value);
-                }}
-                fullWidth
-                sx={{
-                  borderRadius: "30px",
-                  height: "40px",
-                  bgcolor: "#fff",
-                  border: "1px solid #ccc",
-                  "& fieldset": { border: "none" }, // Remove default border
-                }}
-                displayEmpty
-              >
-                <MenuItem value="all">All ({stores?.length ?? 0})</MenuItem>
-                {stores?.map((store) => (
-                  <MenuItem key={store._id} value={store._id}>
-                    {store?.store_name?.charAt(0)?.toUpperCase() +
-                      store?.store_name?.slice(1)?.toLowerCase()}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
+            <Box
+  sx={{
+    display: { xs: "flex", md: "none" },
+    alignItems: "center",
+    gap: 1.2,
+    mb: 1.5,
+  }}
+>
+  <Select
+    value={selectedStoreId}
+    onChange={(e) => {
+      const value = e.target.value;
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.set("store_id", value);
+      router.push(
+        `${window.location.pathname}?${currentParams.toString()}#collection`
+      );
+      setSelectedStoreId(value);
+    }}
+    sx={{
+      flex: 1,
+      borderRadius: "14px",
+      height: "44px",
+      bgcolor: "#fff",
+      border: "1.5px solid #d6d6d6",
+      "& .MuiSelect-select": {
+        fontSize: "14px",
+        py: 1.2,
+      },
+      "& fieldset": {
+        border: "none",
+      },
+    }}
+    displayEmpty
+  >
+    <MenuItem value="all">All ({stores?.length ?? 0})</MenuItem>
+    {stores?.map((store) => (
+      <MenuItem key={store._id} value={store._id}>
+        {store?.store_name?.charAt(0)?.toUpperCase() +
+          store?.store_name?.slice(1)?.toLowerCase()}
+      </MenuItem>
+    ))}
+  </Select>
+
+  <Box sx={{ position: "relative" }}>
+  <IconButton
+    onClick={() => setShowSortMenu((prev) => !prev)}
+    sx={{
+      border: "1.5px solid #d6d6d6",
+borderRadius: "12px",
+height: "44px",
+width: "44px",
+      bgcolor: "#fff",
+    }}
+  >
+    <SortIcon sx={{ fontSize: "22px", color: "#555" }} />
+  </IconButton>
+
+  {showSortMenu && (
+    <Box
+      sx={{
+        position: "absolute",
+        top: "48px",
+        right: 0,
+        bgcolor: "#fff",
+        border: "1px solid #ececec",
+        borderRadius: "12px",
+        zIndex: 999,
+        minWidth: "170px",
+        boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
+        overflow: "hidden",
+      }}
+    >
+      {SORT_OPTIONS.map((item) => (
+        <Box
+          key={item.value}
+          onClick={() => {
+            handleChangeSortBy(item.value);
+            setShowSortMenu(false);
+          }}
+          sx={{
+            px: 2,
+            py: 1.2,
+            fontSize: "13px",
+            cursor: "pointer",
+            bgcolor: sortBy === item.value ? "#f7f7f7" : "#fff",
+            fontWeight: sortBy === item.value ? 600 : 400,
+            "&:hover": { bgcolor: "#f7f7f7" },
+          }}
+        >
+          {item.label}
+        </Box>
+      ))}
+    </Box>
+  )}
+</Box>
+</Box>
             <List
               sx={{
                 borderRight: { md: "1px solid #d6d6d6", xs: "none" },
