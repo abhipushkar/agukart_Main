@@ -1,9 +1,7 @@
 import Grid from "@mui/material/Grid";
-import Button from "@mui/material/Button"; 
 import BazaarImage from "components/BazaarImage";
-import { Paragraph } from "components/Typography"; 
-import { StyledRoot } from "./styles"; 
-
+import { StyledRoot } from "./styles";
+ 
 export default function CarouselCard1({
   title,
   image,
@@ -13,26 +11,33 @@ export default function CarouselCard1({
   buttonColor = "primary"
 }) {
   return (
-    <StyledRoot>
-      <Grid container spacing={3} alignItems="center">
-        <Grid item xl={12} md={12} sm={12} xs={12}>
-         <BazaarImage
-  src={image}
-  alt="slider"
-  sx={{
-    mx: "auto",
-    width: "100%",
-    height: { xs: 140, sm: 350, md: 450 },
-objectFit: "contain",
-    objectPosition: { xs: "center top" },
-    display: "block",
-    borderRadius: 2,
-    padding: 0,
-    margin: 0
-  }}
-/>
-        </Grid>
-      </Grid>
-    </StyledRoot>
+<StyledRoot sx={{ p: 0, m: 0 }}>
+<Grid
+        container
+        spacing={0}
+        alignItems="center"
+        sx={{ m: 0 }}
+>
+<Grid item xs={12} sx={{ p: "0 !important" }}>
+<BazaarImage
+            src={image}
+            alt="slider"
+            sx={{
+              display: "block",
+              width: "100%",
+              height: { xs: 140, sm: 350, md: 450 },
+ 
+              objectFit: "cover", // change from contain
+              objectPosition: "center",
+ 
+              borderRadius: 2,
+              m: 0,
+              p: 0,
+              lineHeight: 0
+            }}
+          />
+</Grid>
+</Grid>
+</StyledRoot>
   );
 }

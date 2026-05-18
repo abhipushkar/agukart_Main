@@ -222,7 +222,6 @@ export default function Topbar({ bgColor }) {
         <FlexBetween width="100%">
           {dealsData?.header_text && (
             <FlexBox alignItems="center" gap={1} sx={{ margin: "0 auto" }}>
-              <StyledChip label={t("HOT")} size="small" />
               <Span
                 sx={{
                   display: "-webkit-box",
