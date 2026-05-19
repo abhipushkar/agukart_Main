@@ -61,7 +61,7 @@ useEffect(() => {
 },
       }}
     >
-      <Box sx={{ px: 1, pb: 2 }}>
+      <Box sx={{ px: 1, pb: 2, display: { xs: "block", md: "none" } }}>
         <Box
           sx={{
             display: "flex",
