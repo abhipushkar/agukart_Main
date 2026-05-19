@@ -83,8 +83,8 @@ const ProductSpecifications = ({ product }) => {
 
     if (dynamicFields) {
         Object.keys(dynamicFields).forEach(key => {
-            if (Array.isArray(dynamicFields[key]) && (dynamicFields[key].length > 4 || dynamicFields[key].length === 0)) delete dynamicFields[key];
-            if ((typeof dynamicFields[key] === 'string' && dynamicFields[key].length === 0) || dynamicFields[key] === null) delete dynamicFields[key];
+            if (Array.isArray(dynamicFields[key]) && dynamicFields[key].length > 4)
+                delete dynamicFields[key];
         });
     }
 
@@ -103,6 +103,10 @@ const ProductSpecifications = ({ product }) => {
     const midPoint = Math.ceil(visibleRows.length / 2);
     const leftColumnRows = visibleRows.slice(0, midPoint);
     const rightColumnRows = visibleRows.slice(midPoint);
+
+    // Show More button: mobile pe hamesha dikhao agar 5 se zyada hain,
+    // desktop pe hide rahega (sab dikhta hai)
+    const showToggleButton = isMobile && allFieldRows.length > MOBILE_LIMIT;
 
     const renderSingleField = (row) => (
         <TableRow key={row.displayName} sx={{ borderBottom: '1px solid' }}>
@@ -163,7 +167,7 @@ const ProductSpecifications = ({ product }) => {
                 </Grid>
 
                 {/* Right column — mobile pe hide karo jab collapsed ho */}
-                {(
+                {true && (
                     <Grid item lg={6} md={6} xs={12}>
                         <TableContainer sx={{ boxShadow: 'none' }} component={Paper}>
                             <Table size="small" sx={tableStyles}>
@@ -606,39 +610,9 @@ const ExpandableDescription = ({ children }) => {
     return (
         <Box>
             <Box
-                sx={{
-                    maxHeight: expanded ? 'none' : '15em', // ~10 lines
-                    overflow: 'hidden',
-                    position: 'relative',
-                    '&::after': expanded ? {} : {
-                        content: '""',
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: '60px',
-                        background: 'linear-gradient(transparent, #fff)',
-                    },
-                }}
             >
-                {children}
+            {children}
             </Box>
-            <Button
-                onClick={() => setExpanded(!expanded)}
-                variant="outlined"
-                size="small"
-                sx={{
-                    mt: 1.5,
-                    textTransform: 'none',
-                    borderRadius: '30px',
-                    px: 3,
-                    fontWeight: 600,
-                    display: 'block',
-                    mx: 'auto',
-                }}
-            >
-                {expanded ? 'Show Less' : 'Show More'}
-            </Button>
         </Box>
     );
 };
@@ -688,13 +662,13 @@ const ProductTabs = ({ product }) => {
                     <Box>
                         {/* Sticky Tab Nav */}
                         <Box
-                            sx={{
-                                display: { xs: 'none', md: 'flex' },
-                                alignItems: 'center',
+    sx={{
+        display: { xs: 'none', md: 'flex' },
+        alignItems: 'center',
 
                                 gap: { xs: 2.5, md: 5 },
 
-                                pt: { xs: 1.5, md: 2 },
+                                pt: { xs: 1.5, md: 2.5 },
                                 pb: 0,
 
                                 px: { xs: 2, sm: 3, md: 10 },
@@ -739,122 +713,122 @@ const ProductTabs = ({ product }) => {
                             ))}
                         </Box>
                         {/* Mobile Accordion Tabs */}
-                        {/* Mobile Accordion Tabs */}
-                        <Box sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}>
+ {/* Mobile Accordion Tabs */}
+<Box sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}>
 
-                            {/* Description */}
-                            <Accordion
-                                expanded={openAccordion === 'description'}
-                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'description' : null)}
-                            >
-                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                    <Typography fontWeight={600}>Description</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
-                                    <HtmlRenderer html={product?.description || ''} />
-                                    <Box display="flex" justifyContent="center" mt={2}>
-                                        <Button variant="outlined" size="small"
-                                            onClick={() => setOpenAccordion(null)}
-                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                                        >
-                                            Show Less
-                                        </Button>
-                                    </Box>
-                                </AccordionDetails>
-                            </Accordion>
+    {/* Description */}
+    <Accordion
+        expanded={openAccordion === 'description'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'description' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Description</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <HtmlRenderer html={product?.description || ''} />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
 
-                            {/* Specifications */}
-                            <Accordion
-                                expanded={openAccordion === 'specifications'}
-                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'specifications' : null)}
-                            >
-                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                    <Typography fontWeight={600}>Product Specifications & Details</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
-                                    <ProductSpecifications product={product} />
-                                    <Box display="flex" justifyContent="center" mt={2}>
-                                        <Button variant="outlined" size="small"
-                                            onClick={() => setOpenAccordion(null)}
-                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                                        >
-                                            Show Less
-                                        </Button>
-                                    </Box>
-                                </AccordionDetails>
-                            </Accordion>
+    {/* Specifications */}
+    <Accordion
+        expanded={openAccordion === 'specifications'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'specifications' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Product Specifications & Details</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <ProductSpecifications product={product} />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
 
-                            {/* Reviews */}
-                            <Accordion
-                                expanded={openAccordion === 'reviews'}
-                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'reviews' : null)}
-                            >
-                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                    <Typography fontWeight={600}>Reviews</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
-                                    <ProductReviews
-                                        reviews={product?.rating || []}
-                                        productTitle={product?.product_title}
-                                        shopName={product?.shop_name || 'SilverCraft'}
-                                    />
-                                    <Box display="flex" justifyContent="center" mt={2}>
-                                        <Button variant="outlined" size="small"
-                                            onClick={() => setOpenAccordion(null)}
-                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                                        >
-                                            Show Less
-                                        </Button>
-                                    </Box>
-                                </AccordionDetails>
-                            </Accordion>
+    {/* Reviews */}
+    <Accordion
+        expanded={openAccordion === 'reviews'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'reviews' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Reviews</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <ProductReviews
+                reviews={product?.rating || []}
+                productTitle={product?.product_title}
+                shopName={product?.shop_name || 'SilverCraft'}
+            />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
 
-                            {/* Shipping */}
-                            <Accordion
-                                expanded={openAccordion === 'shipping'}
-                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'shipping' : null)}
-                            >
-                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                    <Typography fontWeight={600}>Shipping and Return Policies</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
-                                    <DeliveryAndReturnPolicy product={product} />
-                                    <Box display="flex" justifyContent="center" mt={2}>
-                                        <Button variant="outlined" size="small"
-                                            onClick={() => setOpenAccordion(null)}
-                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                                        >
-                                            Show Less
-                                        </Button>
-                                    </Box>
-                                </AccordionDetails>
-                            </Accordion>
+    {/* Shipping */}
+    <Accordion
+        expanded={openAccordion === 'shipping'}
+        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'shipping' : null)}
+    >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Shipping and Return Policies</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+            <DeliveryAndReturnPolicy product={product} />
+            <Box display="flex" justifyContent="center" mt={2}>
+                <Button variant="outlined" size="small"
+                    onClick={() => setOpenAccordion(null)}
+                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                >
+                    Show Less
+                </Button>
+            </Box>
+        </AccordionDetails>
+    </Accordion>
 
-                            {/* Custom Tabs */}
-                            {(product?.tabs || []).map((tab, index) => (
-                                <Accordion
-                                    key={index}
-                                    expanded={openAccordion === `custom-${index}`}
-                                    onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? `custom-${index}` : null)}
-                                >
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                        <Typography fontWeight={600}>{tab?.title}</Typography>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                        <HtmlRenderer html={tab?.description || ''} />
-                                        <Box display="flex" justifyContent="center" mt={2}>
-                                            <Button variant="outlined" size="small"
-                                                onClick={() => setOpenAccordion(null)}
-                                                sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                                            >
-                                                Show Less
-                                            </Button>
-                                        </Box>
-                                    </AccordionDetails>
-                                </Accordion>
-                            ))}
+    {/* Custom Tabs */}
+    {(product?.tabs || []).map((tab, index) => (
+        <Accordion
+            key={index}
+            expanded={openAccordion === `custom-${index}`}
+            onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? `custom-${index}` : null)}
+        >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight={600}>{tab?.title}</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+                <HtmlRenderer html={tab?.description || ''} />
+                <Box display="flex" justifyContent="center" mt={2}>
+                    <Button variant="outlined" size="small"
+                        onClick={() => setOpenAccordion(null)}
+                        sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                    >
+                        Show Less
+                    </Button>
+                </Box>
+            </AccordionDetails>
+        </Accordion>
+    ))}
 
-                        </Box>
+</Box>
 
                         {/* Content */}
                         <Box
@@ -863,14 +837,14 @@ const ProductTabs = ({ product }) => {
                             }}
                         >
                             <Box
-                                id="description"
-                                mb={6}
-                                pt={3}
-                                sx={{
-                                    display: { xs: 'none', md: 'block' },
-                                    pr: { xs: 0, md: 15 },
-                                }}
-                            >
+    id="description"
+    mb={6}
+    pt={3}
+    sx={{
+        display: { xs: 'none', md: 'block' },
+        pr: { xs: 0, md: 15 },
+    }}
+>
                                 <Typography
                                     sx={{
                                         fontSize: { xs: '22px', md: '30px' },
@@ -885,21 +859,21 @@ const ProductTabs = ({ product }) => {
                                 </ExpandableDescription>
                             </Box>
 
-                            <Box
-                                id="specifications"
-                                mb={6}
-                                sx={{ display: { xs: 'none', md: 'block' } }}
+                            <Box 
+                            id="specifications" 
+                            mb={6}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
                             >
-                                <Typography variant="h5" my={2} pt={1}>Product Specifications & Details</Typography>
+                                <Typography variant="h5" mb={2}>Product Specifications & Details</Typography>
                                 <ProductSpecifications product={product} />
                             </Box>
 
-                            <Box
-                                id="reviews"
-                                mb={6}
-                                sx={{ display: { xs: 'none', md: 'block' } }}
+                            <Box 
+                            id="reviews" 
+                            mb={6}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
                             >
-                                <Typography variant="h5" my={2} pt={1}>Reviews</Typography>
+                                <Typography variant="h5" mb={2}>Reviews</Typography>
                                 <ProductReviews
                                     reviews={product?.rating || []}
                                     productTitle={product?.product_title}
@@ -907,13 +881,13 @@ const ProductTabs = ({ product }) => {
                                 />
                             </Box>
 
-                            <Box
-                                id="shipping"
-                                mb={6}
-                                sx={{ display: { xs: 'none', md: 'block' } }}
+                            <Box 
+                            id="shipping" 
+                            mb={6}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
                             >
 
-                                <Typography variant="h5" my={2} pt={1}>Shipping and Return Policies</Typography>
+                                <Typography variant="h5" mb={2}>Shipping and Return Policies</Typography>
                                 <DeliveryAndReturnPolicy product={product} />
 
                             </Box>
@@ -924,7 +898,7 @@ const ProductTabs = ({ product }) => {
                                     mb={6}
                                     sx={{ display: { xs: 'none', md: 'block' } }}
                                 >
-                                    <Typography variant="h5" my={2} pt={1}>
+                                    <Typography variant="h5" mb={2}>
                                         {tab?.title}
                                     </Typography>
 

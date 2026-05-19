@@ -46,6 +46,7 @@ export default function MobileMenu() {
       const res = await getAPIAuth("get-admin-menu-category", token);
       if (res.status === 200) {
         setCat(res.data.data);
+        console.log("admin cats", res.data.data); // ← YE ADD KAR
       }
     } catch (error) {
       console.log(error);
