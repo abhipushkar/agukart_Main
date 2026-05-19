@@ -138,23 +138,6 @@ export default function MobileMenu() {
                 >
                   Home
                 </Button>
-                {cat?.map((cat) => {
-                  return (
-                    <Button
-                      onClick={() => navigation(cat)}
-                      key={cat._id}
-                      sx={{
-                        whiteSpace: "nowrap",
-                        borderBottom: "1px solid transparent",
-                        "&:hover": {
-                          borderBottom: "1px solid black",
-                        },
-                      }}
-                    >
-                      {cat.title}
-                    </Button>
-                  );
-                })}
                 {usercredentials?.designation_id != "4" && (
                   <Button
                     onClick={() => navigation("gift-card-category")}
