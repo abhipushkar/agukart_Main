@@ -17,6 +17,11 @@ import useCart from 'hooks/useCart';
 import { postAPIAuth } from 'utils/__api__/ApiServies';
 import { calculatePriceAfterDiscount } from 'utils/calculatePriceAfterDiscount';
 import { useToasts } from 'react-toast-notifications';
+import { resolveMatchingCombination } from "../utils/resolveMatchingCombination";
+import { resolveCartItemState } from "../utils/resolveCartItemState";
+import { validateCartItem } from "../utils/validateCartItem";
+import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
+import { resolveCartPricing } from "../utils/resolveCartPricing";
 
 const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true, parentCombinationData = [] }) => {
     const { addToast } = useToasts();
@@ -24,12 +29,32 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const { currency } = useCurrency();
     const [stock, setStock] = useState(0);
     const { token } = useAuth();
-    const { dispatch, getCartDetails, getCartItems } = useCart();
+    const { dispatch, getCartDetails, getCartItems, state, updateCartRecoveryState, clearCartRecoveryState, setCartPendingUpdate } = useCart();
     const combinationVariant = new Set();
     const [nextPromotion, setNextPromotion] = useState({});
-    const [quantity, setQuantity] = useState(0);
     const [price, setPrice] = useState(0);
     const [originalPrice, setOriginalPrice] = useState(0);
+    const [reconciliationSnapshot, setReconciliationSnapshot] = useState(null);
+
+    const cartIdentity = useMemo(() => {
+        return buildCartItemIdentity(product);
+    }, [product]);
+
+    const isPendingUpdate =
+        state?.cartPendingUpdates?.[
+        cartIdentity
+        ] === true;
+
+    const recoveryQuantity =
+        state?.cartRecoveryState?.[
+            cartIdentity
+        ]?.quantity;
+
+    const localQuantity =
+        recoveryQuantity !== undefined &&
+            recoveryQuantity !== null
+            ? recoveryQuantity
+            : (product?.qty || "");
 
     // Extract all variant names from combinationData
     product.combinationData?.forEach(e => {
@@ -86,50 +111,50 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     // }, [hasInternalVariants, isChildProduct]);
 
     // Find matching combination for internal variants
-    const findInternalCombination = useMemo(() => {
-        if (!product?.combinationData?.length) return null;
-        if (!hasInternalVariants) return null;
+    // const findInternalCombination = useMemo(() => {
+    //     if (!product?.combinationData?.length) return null;
+    //     if (!hasInternalVariants) return null;
 
-        const selectedValues = product.variants.map(v =>
-            v.attributeName.trim().toLowerCase()
-        );
+    //     const selectedValues = product.variants.map(v =>
+    //         v.attributeName.trim().toLowerCase()
+    //     );
 
-        let pairMatch = null;
-        let singleMatch = null;
+    //     let pairMatch = null;
+    //     let singleMatch = null;
 
-        for (const group of product.combinationData) {
-            for (const combo of group.combinations || []) {
+    //     for (const group of product.combinationData) {
+    //         for (const combo of group.combinations || []) {
 
-                if (!combo.combValues) continue;
+    //             if (!combo.combValues) continue;
 
-                const comboValues = combo.combValues.map(v =>
-                    v.trim().toLowerCase()
-                );
+    //             const comboValues = combo.combValues.map(v =>
+    //                 v.trim().toLowerCase()
+    //             );
 
-                // ✅ CASE 1: TWO-VARIANT COMBO (PRIORITY)
-                if (comboValues.length === 2) {
-                    const match = comboValues.every(val =>
-                        selectedValues.includes(val)
-                    );
+    //             // ✅ CASE 1: TWO-VARIANT COMBO (PRIORITY)
+    //             if (comboValues.length === 2) {
+    //                 const match = comboValues.every(val =>
+    //                     selectedValues.includes(val)
+    //                 );
 
-                    if (match) {
-                        pairMatch = combo;
-                    }
-                }
+    //                 if (match) {
+    //                     pairMatch = combo;
+    //                 }
+    //             }
 
-                // ✅ CASE 2: SINGLE VARIANT COMBO (FALLBACK)
-                if (comboValues.length === 1) {
-                    if (selectedValues.includes(comboValues[0])) {
-                        singleMatch = combo;
-                    }
-                }
-            }
-        }
+    //             // ✅ CASE 2: SINGLE VARIANT COMBO (FALLBACK)
+    //             if (comboValues.length === 1) {
+    //                 if (selectedValues.includes(comboValues[0])) {
+    //                     singleMatch = combo;
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        // 🔥 PRIORITY RETURN
-        return pairMatch || singleMatch || null;
+    //     // 🔥 PRIORITY RETURN
+    //     return pairMatch || singleMatch || null;
 
-    }, [product?.variants, product?.combinationData, hasInternalVariants]);
+    // }, [product?.variants, product?.combinationData, hasInternalVariants]);
 
     // Get combinations based on selected variants
     const getCombinations = (arr) => {
@@ -148,130 +173,119 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         return combinations;
     };
 
+    const matchedCombination = useMemo(() => {
+        return resolveMatchingCombination(product);
+    }, [product]);
+
+    const resolvedCartState = useMemo(() => {
+        return resolveCartItemState(product);
+    }, [product]);
+
+    const cartValidation = useMemo(() => {
+
+        if (isPendingUpdate) {
+
+            return {
+                valid: true,
+                disableCheckout: false,
+                shouldResetQuantity: false,
+                allowQuantitySelection: true,
+                message: ""
+            };
+        }
+
+        return validateCartItem(product, {
+            pendingQuantity: localQuantity
+        });
+
+    }, [
+        product,
+        localQuantity,
+        isPendingUpdate
+    ]);
+
+
+    const hasRecoveredInvalidState = useMemo(() => {
+
+        if (
+            !cartValidation?.shouldResetQuantity
+        ) {
+            return false;
+        }
+
+        return (
+            recoveryQuantity !== undefined &&
+            recoveryQuantity !== null &&
+            recoveryQuantity !== ""
+        );
+
+    }, [
+        cartValidation,
+        recoveryQuantity
+    ]);
+
+    const shouldShowUnavailableState =
+        stock <= 0 &&
+        cartValidation.valid;
+
+    const displayValidation =
+        isPendingUpdate &&
+            reconciliationSnapshot
+            ? reconciliationSnapshot.validation
+            : cartValidation;
+
+    const displayQuantity =
+        isPendingUpdate &&
+            reconciliationSnapshot
+            ? reconciliationSnapshot.quantity
+            : localQuantity;
+
+    const selectQuantityValue =
+        (
+            displayValidation?.shouldResetQuantity &&
+            !hasRecoveredInvalidState
+        )
+            ? ""
+            : displayQuantity;
+
+    const displayPrice =
+        isPendingUpdate &&
+            reconciliationSnapshot
+            ? reconciliationSnapshot.price
+            : price;
+
+    const displayOriginalPrice =
+        isPendingUpdate &&
+            reconciliationSnapshot
+            ? reconciliationSnapshot.originalPrice
+            : originalPrice;
+
+    const displayStock =
+        isPendingUpdate &&
+            reconciliationSnapshot
+            ? reconciliationSnapshot.stock
+            : stock;
+
     // Calculate stock based on all variant types
     const calculateStock = () => {
-        // Case 1: Child product (has parent variants)
-        if (isChildProduct) {
-            const variantAttributeIds = product?.variant_attribute_id || [];
-
-            // If no internal variants, check parent combinations
-            if (!hasInternalVariants) {
-                // Check if there's a matching parent combination
-                if (parentCombinationData?.length > 0) {
-                    const matchingParentCombination = parentCombinationData?.find(
-                        item => item.combination_id === variantAttributeIds[0]
-                    );
-
-                    if (matchingParentCombination) {
-                        // Check if sold out from parent combination
-                        if (matchingParentCombination.sold_out) {
-                            return 0;
-                        }
-                    }
-                }
-
-                // Fall back to product stock
-                return +product.stock || 0;
-            }
-
-            // Case 2: Child product with internal variants
-            const internalCombination = findInternalCombination;
-            if (internalCombination) {
-                if (internalCombination.isVisible === "false") {
-                    return 0;
-                }
-
-                // 🔥 FIX START
-
-                // Case 1: qty NOT controlled → treat as available
-                if (
-                    internalCombination.qty === "" ||
-                    internalCombination.qty === null ||
-                    internalCombination.qty === undefined
-                ) {
-                    return 10; // or any safe default (UI limit already caps at 10)
-                }
-
-                // Case 2: qty controlled
-                if (+internalCombination.qty > 0) {
-                    return +internalCombination.qty;
-                }
-
-                // Case 3: qty = 0 → sold out
-                return 0;
-
-                // 🔥 FIX END
-            }
-
-            return +product.stock || 0;
-        }
-
-        // Case 3: Product with internal variants only (not a child product)
-        if (hasInternalVariants) {
-            const internalCombination = findInternalCombination;
-            if (internalCombination) {
-                if (internalCombination.isVisible === "false") {
-                    return 0;
-                }
-
-                // 🔥 FIX START
-
-                // Case 1: qty NOT controlled → treat as available
-                if (
-                    internalCombination.qty === "" ||
-                    internalCombination.qty === null ||
-                    internalCombination.qty === undefined
-                ) {
-                    return 10; // or any safe default (UI limit already caps at 10)
-                }
-
-                // Case 2: qty controlled
-                if (+internalCombination.qty > 0) {
-                    return +internalCombination.qty;
-                }
-
-                // Case 3: qty = 0 → sold out
-                return 0;
-
-                // 🔥 FIX END
-            }
-
-            return +product.stock || 0;
-        }
-
-        // Case 4: Simple product (no variants)
-        return +product.stock || 0;
+        return resolvedCartState.latestStock;
     };
+
 
     const handleQuantityChange = (e) => {
         const newQuantity = e.target.value;
-        setQuantity(newQuantity);
+        updateCartRecoveryState(
+            cartIdentity,
+            {
+                quantity: newQuantity
+            }
+        );
         updateCart(newQuantity);
     };
 
     // Calculate price based on variant combinations
     const calculateVariantPrice = () => {
-        let basePrice = +product.original_price || +product.real_price || 0;
-
-        // Check for internal variant price adjustment
-        if (findInternalCombination) {
-            if (findInternalCombination.price && findInternalCombination.price !== "") {
-                basePrice = +findInternalCombination.price;
-            }
-        }
-
-        // Check for parent combination price adjustment
-        if (isChildProduct && parentCombinationData?.length > 0) {
-            const variantAttributeIds = product?.variant_attribute_id || [];
-            const matchingParentCombination = parentCombinationData?.find(
-                item => item.combination_id === variantAttributeIds[0]
-            );
-
-            // Note: Parent combinations might have their own pricing logic
-            // This would need to be implemented based on backend data structure
-        }
-
-        return basePrice;
+        return resolveCartPricing(product);
     };
 
     const updateCart = async (targetQty = quantity) => {
@@ -348,12 +362,14 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
                 if (deltaQty === 0) return;
 
+                const latestResolvedPrice = resolveCartPricing(product);
+
                 const payload = {
                     product_id: product.product_id,
                     vendor_id: cart?.vendor_id,
                     qty: deltaQty,
                     price: finalPrice,
-                    original_price: variantPrice,
+                    original_price: latestResolvedPrice,
                     isCombination: product?.isCombination,
                     variant_id: [],
                     variant_attribute_id: [],
@@ -372,11 +388,26 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     payload.variants = product.variants;
                 }
 
+                setReconciliationSnapshot({
+                    validation: cartValidation,
+                    quantity: localQuantity,
+                    price,
+                    originalPrice,
+                    stock
+                });
+
+                setCartPendingUpdate(
+                    cartIdentity,
+                    true
+                );
+
                 const res = await postAPIAuth("user/add-to-cart", payload);
                 if (res.status === 200) {
                     getCartItems(defaultAddress?._id);
                     const data = wallet ? "1" : "0";
                     getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                    clearCartRecoveryState(cartIdentity);
+                    setCartPendingUpdate(cartIdentity, false);
                 }
             } catch (error) {
                 console.error("Error updating cart:", error);
@@ -384,6 +415,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     appearance: "error",
                     autoDismiss: true,
                 });
+                setCartPendingUpdate(
+                    cartIdentity,
+                    false
+                );
             }
         }
     };
@@ -475,13 +510,37 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     useEffect(() => {
         const calculatedStock = calculateStock();
         setStock(calculatedStock);
-    }, [product, parentCombinationData, findInternalCombination]);
+    }, [product, parentCombinationData, matchedCombination]);
 
     useEffect(() => {
-        const variantPrice = calculateVariantPrice();
-        setQuantity(+product?.qty || 1);
-        setPrice(+product?.sale_price || variantPrice);
-        setOriginalPrice(variantPrice);
+
+        const resolvedPrice =
+            resolveCartPricing(product);
+
+        setOriginalPrice(
+            resolvedPrice
+        );
+
+        /*
+        DISPLAY PRICE
+        */
+
+        if (
+            +product?.sale_price > 0 &&
+            +product?.sale_price !== +product?.original_price
+        ) {
+
+            setPrice(
+                +product?.sale_price
+            );
+
+        } else {
+
+            setPrice(
+                resolvedPrice
+            );
+        }
+
     }, [product]);
 
     useEffect(() => {
@@ -498,6 +557,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         // setPromotion(product.appliedPromotion); 
         // setBestPromotion(product.appliedPromotion);
     }, [product]);
+
 
     // Render variant information
     const renderVariantInfo = () => {
@@ -699,83 +759,137 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                     </>
                                 )}
 
-                                {(stock > 0 && !product?.isDeleted && product?.status) ? (
-                                    <Typography component="div">
-                                        {nextPromotion && Object.keys(nextPromotion).length > 0 && +nextPromotion?.qty > product.qty && (
+                                <Typography component="div">
+
+                                    {nextPromotion &&
+                                        Object.keys(nextPromotion).length > 0 &&
+                                        +nextPromotion?.qty > product.qty && (
                                             <>
-                                                <p>Save {nextPromotion?.offer_type == "flat" ? `$ ${nextPromotion?.discount_amount}` : `${nextPromotion?.discount_amount} %`} when you buy {nextPromotion?.qty != 0 ? nextPromotion?.qty : ''} items at this shop</p>
+                                                <p>
+                                                    Save {
+                                                        nextPromotion?.offer_type == "flat"
+                                                            ? `$ ${nextPromotion?.discount_amount}`
+                                                            : `${nextPromotion?.discount_amount} %`
+                                                    } when you buy {
+                                                        nextPromotion?.qty != 0
+                                                            ? nextPromotion?.qty
+                                                            : ''
+                                                    } items at this shop
+                                                </p>
+
                                                 <p>Shop the sale</p>
                                             </>
-                                        )}
+                                        )
+                                    }
 
-                                        {/* Show edit button ONLY if variant selection is incomplete */}
-                                        {isVariantSelectionIncomplete && (
+                                    {/* VARIANT SELECTION */}
+                                    {isVariantSelectionIncomplete && (
+                                        <Box
+                                            sx={{
+                                                backgroundColor: "#ffe5e5",
+                                                border: "1px solid #ffcccc",
+                                                color: "#d32f2f",
+                                                padding: "16px",
+                                                borderRadius: "8px",
+                                                textAlign: "center",
+                                                display: "flex",
+                                                gap: "8px",
+                                                maxWidth: "600px",
+                                                margin: "16px auto",
+                                                cursor: "pointer"
+                                            }}
+                                            onClick={handleEditProduct}
+                                        >
+                                            <ErrorOutlineIcon sx={{ fontSize: 24 }} />
+
+                                            <Typography
+                                                variant="body1"
+                                                sx={{ fontWeight: 500 }}
+                                            >
+                                                Choose a variant
+                                            </Typography>
+                                        </Box>
+                                    )}
+
+                                    {/* VALIDATION */}
+                                    {!displayValidation.valid &&
+                                        !hasRecoveredInvalidState && (
                                             <Box
                                                 sx={{
-                                                    backgroundColor: "#ffe5e5",
-                                                    border: "1px solid #ffcccc",
-                                                    color: "#d32f2f",
-                                                    padding: "16px",
+                                                    background: "#fff3cd",
+                                                    border: "1px solid #ffeeba",
+                                                    color: "#856404",
+                                                    padding: "10px",
                                                     borderRadius: "8px",
-                                                    textAlign: "center",
-                                                    display: "flex",
-                                                    gap: "8px",
-                                                    maxWidth: "600px",
-                                                    margin: "16px auto",
-                                                    cursor: "pointer"
+                                                    marginBottom: "12px",
+                                                    marginTop: "8px",
                                                 }}
-                                                onClick={handleEditProduct}
                                             >
-                                                <ErrorOutlineIcon sx={{ fontSize: 24 }} />
-                                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                                    Choose a variant
+                                                <Typography fontSize={13}>
+                                                    {displayValidation.message}
                                                 </Typography>
                                             </Box>
-                                        )}
+                                        )
+                                    }
 
-                                        {/* Show quantity selector if:
-                                            1. Variant selection is complete OR 
-                                            2. Product is a child product (parent variant already selected) OR
-                                            3. Product has no combination data */}
-                                        {(!isVariantSelectionIncomplete || isChildProduct || !hasCombinationData) && (
-                                            <Typography
-                                                component="div"
-                                                pt={1}
-                                                display={"flex"}
-                                                alignItems={"center"}
-                                            >
-                                                <FormControl sx={{ width: "100px" }}>
-                                                    <Select
-                                                        onChange={handleQuantityChange}
-                                                        value={quantity}
-                                                        sx={{
-                                                            border: "none",
-                                                            background: "#fff",
-                                                            height: "50px",
-                                                        }}
-                                                        disabled={stock === 0 || isVariantSelectionIncomplete}
-                                                    >
-                                                        {Array.from({ length: Math.min(stock, 10) }, (_, i) => i + 1).map((q) => (
-                                                            <MenuItem key={q} value={q}>
-                                                                {q}
-                                                            </MenuItem>
-                                                        ))}
-                                                    </Select>
-                                                </FormControl>
-                                            </Typography>
-                                        )}
-                                    </Typography>
-                                ) : (
-                                    <Typography
-                                        component="div"
-                                        sx={{
-                                            color: "#bc1111",
-                                        }}
-                                        pt={2}
-                                    >
-                                        {(!product?.status || product?.isDeleted) ? "Currently Unavailable" : "Sold Out"}
-                                    </Typography>
-                                )}
+                                    {/* SOLD OUT */}
+                                    {shouldShowUnavailableState && (
+                                        <Typography
+                                            component="div"
+                                            sx={{
+                                                color: "#bc1111",
+                                            }}
+                                            pt={2}
+                                        >
+                                            {
+                                                (!product?.status || product?.isDeleted)
+                                                    ? "Currently Unavailable"
+                                                    : "Sold Out"
+                                            }
+                                        </Typography>
+                                    )}
+
+                                    {/* QTY SELECTOR */}
+                                    {displayValidation.allowQuantitySelection && (
+                                        <Typography
+                                            component="div"
+                                            pt={1}
+                                            display={"flex"}
+                                            alignItems={"center"}
+                                        >
+                                            <FormControl sx={{ width: "100px" }}>
+                                                <Select
+                                                    onChange={handleQuantityChange}
+                                                    value={selectQuantityValue}
+                                                    sx={{
+                                                        border: "none",
+                                                        background: "#fff",
+                                                        height: "50px",
+                                                    }}
+                                                    disabled={
+                                                        shouldShowUnavailableState ||
+                                                        isVariantSelectionIncomplete
+                                                    }
+                                                >
+                                                    {Array.from(
+                                                        {
+                                                            length: Math.min(stock, 10)
+                                                        },
+                                                        (_, i) => i + 1
+                                                    ).map((q) => (
+                                                        <MenuItem
+                                                            key={q}
+                                                            value={q}
+                                                        >
+                                                            {q}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </Typography>
+                                    )}
+
+                                </Typography>
 
                                 {showButtons && (
                                     <Typography component="div" mt={2}>
@@ -908,8 +1022,8 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 },
                                             }}
                                         >
-                                            {originalPrice != price && currency?.symbol}
-                                            {originalPrice != price && (originalPrice * currency.rate * quantity).toFixed(2)}
+                                            {displayOriginalPrice != displayPrice && currency?.symbol}
+                                            {displayOriginalPrice != displayPrice && (displayOriginalPrice * currency.rate * Number(displayQuantity || 0)).toFixed(2)}
                                         </Typography>) : (<Typography
                                             fontSize={19}
                                             fontWeight={600}
@@ -924,7 +1038,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 },
                                             }}
                                         >
-                                            {currency?.symbol}{(price * quantity * currency?.rate).toFixed(2)}
+                                            {currency?.symbol}{(displayPrice * Number(displayQuantity || 0) * currency?.rate).toFixed(2)}
                                         </Typography>)}
                                         {!(cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced)) && (<Typography
                                             fontSize={19}
@@ -949,11 +1063,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 }}
                                                 component="del"
                                             >
-                                                {originalPrice != price && currency?.symbol}
-                                                {originalPrice != price && (originalPrice * currency.rate * quantity).toFixed(2)}
+                                                {displayOriginalPrice != displayPrice && currency?.symbol}
+                                                {displayOriginalPrice != displayPrice && (displayOriginalPrice * currency.rate * Number(displayQuantity || 0)).toFixed(2)}
                                             </Small>
                                         </Typography>)}
-                                        {quantity > 1 && (
+                                        {Number(localQuantity || 0) > 1 && (
                                             <Typography
                                                 fontSize={12}
                                                 color={"gray"}
@@ -968,7 +1082,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                     },
                                                 }}
                                             >
-                                                ({currency?.symbol}{(price * currency?.rate).toFixed(2)} each)
+                                                ({currency?.symbol}{(displayPrice * currency?.rate).toFixed(2)} each)
                                             </Typography>
                                         )}
 

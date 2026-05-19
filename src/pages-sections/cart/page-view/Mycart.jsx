@@ -48,6 +48,8 @@ import { useLocation } from "../../../contexts/location_context";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { CountryModal } from "./country_modal";
 import { Sell } from "@mui/icons-material";
+import { validateCartItem } from "../utils/validateCartItem";
+import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
 
 const Mycart = () => {
   const { currency } = useCurrency();
@@ -83,7 +85,7 @@ const Mycart = () => {
   });
   const [errors, setErrors] = useState({ voucher_code: "" });
   const router = useRouter();
-  
+
   const debounceRef = useRef(null);
 
   // Check if cart has only one vendor
@@ -268,16 +270,16 @@ const Mycart = () => {
   }, [state.cart]);
 
   const cartValue = useMemo(() => {
-  return state?.cart?.reduce((acc, vendor) => {
-    return (
-      acc +
-      vendor.products.reduce((sum, p) => {
-        const price = +p.original_price || +p.real_price || 0;
-        return sum + price * p.qty;
-      }, 0)
-    );
-  }, 0);
-}, [state.cart]);
+    return state?.cart?.reduce((acc, vendor) => {
+      return (
+        acc +
+        vendor.products.reduce((sum, p) => {
+          const price = +p.original_price || +p.real_price || 0;
+          return sum + price * p.qty;
+        }, 0)
+      );
+    }, 0);
+  }, [state.cart]);
 
   const [confirmation, setconfirmation] = React.useState(false);
 
@@ -482,39 +484,39 @@ const Mycart = () => {
   };
 
   const revalidateVoucher = async () => {
-  if (!voucherDetails?.voucherCode || !token) return;
+    if (!voucherDetails?.voucherCode || !token) return;
 
-  try {
-    const payload = {
-      voucher_code: voucherDetails.voucherCode,
-    };
+    try {
+      const payload = {
+        voucher_code: voucherDetails.voucherCode,
+      };
 
-    const res = await postAPIAuth("user/check-voucher-for-product", payload);
+      const res = await postAPIAuth("user/check-voucher-for-product", payload);
 
-    if (res.status === 200) {
-      const discount = res?.data?.discount || 0;
+      if (res.status === 200) {
+        const discount = res?.data?.discount || 0;
 
-      if (discount <= 0) {
-        // Voucher no longer valid
-        handleRemove();
-        addToast("Voucher removed because cart no longer meets requirements", {
-          appearance: "warning",
-          autoDismiss: true,
-        });
-      } else {
-        setVoucherDetails((prev) => ({
-          ...prev,
-          discount: discount,
-        }));
+        if (discount <= 0) {
+          // Voucher no longer valid
+          handleRemove();
+          addToast("Voucher removed because cart no longer meets requirements", {
+            appearance: "warning",
+            autoDismiss: true,
+          });
+        } else {
+          setVoucherDetails((prev) => ({
+            ...prev,
+            discount: discount,
+          }));
 
-        const walletdata = wallet ? "1" : "0";
-        getCartDetails(walletdata, null, discount);
+          const walletdata = wallet ? "1" : "0";
+          getCartDetails(walletdata, null, discount);
+        }
       }
+    } catch (error) {
+      handleRemove();
     }
-  } catch (error) {
-    handleRemove();
-  }
-};
+  };
 
   // Initialize store coupon form when vendor has coupon applied
   useEffect(() => {
@@ -559,19 +561,41 @@ const Mycart = () => {
   }, [token]);
 
 
-useEffect(() => {
-  if (!voucherDetails?.voucherCode) return;
+  useEffect(() => {
+    if (!voucherDetails?.voucherCode) return;
 
-  clearTimeout(debounceRef.current);
+    clearTimeout(debounceRef.current);
 
-  debounceRef.current = setTimeout(() => {
-    revalidateVoucher();
-  }, 400);
-}, [cartValue]);
+    debounceRef.current = setTimeout(() => {
+      revalidateVoucher();
+    }, 400);
+  }, [cartValue]);
 
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
-  0);
+    0);
+
+  const hasInvalidCartItems =
+    state?.cart?.some(vendor =>
+
+      vendor?.products?.some(product => {
+
+        const identity =
+          buildCartItemIdentity(product);
+
+        const pendingQuantity =
+          state?.cartRecoveryState?.[
+            identity
+          ]?.quantity;
+
+        const validation =
+          validateCartItem(product, {
+            pendingQuantity
+          });
+
+        return validation.disableCheckout;
+      })
+    );
 
   return (
     <>
@@ -914,9 +938,9 @@ useEffect(() => {
                                           background: "#f5f5f5",
                                           borderRadius: "6px",
                                           "& .MuiOutlinedInput-notchedOutline":
-                                            {
-                                              border: "none",
-                                            },
+                                          {
+                                            border: "none",
+                                          },
                                         }}
                                       />
 
@@ -1110,7 +1134,8 @@ useEffect(() => {
                             isShippingAvailable ||
                             isStockAvailable ||
                             isDeleteProduct ||
-                            isAvailable
+                            isAvailable ||
+                            hasInvalidCartItems
                           }
                           variant="contained"
                           sx={{
