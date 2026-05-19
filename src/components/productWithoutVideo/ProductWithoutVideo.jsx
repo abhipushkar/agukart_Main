@@ -539,7 +539,7 @@ const ProductWithoutVideo = ({ product }) => {
                   }}
                 >
                   {promotion?.offer_type == "flat"
-  ? `Save ${currency?.symbol}${promotion?.discount_amount}`
+  ? `${currency?.symbol}${promotion?.discount_amount} off`
   : `${promotion?.discount_amount}% off`}
                 </Typography>
               )}

@@ -35,6 +35,7 @@ const ProductImageGallery = ({
 }) => {
     const sliderRef = useRef(null);
     const [isOpen, setIsOpen] = React.useState(false);
+    const [activeArrow, setActiveArrow] = React.useState(null);
     const isMobileView = useMediaQuery('(max-width:600px)');
 
     const touchStartX = useRef(null);
@@ -638,61 +639,71 @@ const ProductImageGallery = ({
 
                     {/* Action Buttons */}
 
-                    <Button
-                        onClick={onShareClick}
-                        sx={{
-                            zIndex: "99",
-                            position: "absolute",
-                            bottom: { xs: "8px", md: "12px" },
-                            right: { xs: "46px", md: "64px" },
-                            background: "#fff",
-                            boxShadow: "0 0 3px #696969",
-                            borderRadius: "50%",
-                            height: { xs: "30px", md: "40px" },
-                            width: { xs: "30px", md: "40px" },
-                            minWidth: { xs: "30px", md: "40px" },
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": {
-                                background: "#fff",
-                                boxShadow: "0 0 4px #000",
-                            },
-                        }}
-                    >
-                        <IosShareIcon sx={{ fontSize: { xs: 16, md: 24 } }} />
-                    </Button>
+                    {/* Action Buttons */}
+<Box
+    sx={{
+        position: "absolute",
+        top: { xs: "auto", md: "12px" },
+        bottom: { xs: "-50px", md: "auto" },
+        right: { xs: "6px", md: "12px" },
 
-                    {userDesignation !== "4" && (
-                        <Button
-                            onClick={onWishlistToggle}
-                            sx={{
-                                zIndex: "99",
-                                position: "absolute",
-                                bottom: { xs: "8px", md: "12px" },
-                                right: { xs: "6px", md: "12px" },
-                                background: "#fff",
-                                boxShadow: "0 0 3px #696969",
-                                borderRadius: "50%",
-                                height: { xs: "30px", md: "40px" },
-                                width: { xs: "30px", md: "40px" },
-                                minWidth: { xs: "30px", md: "40px" },
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                "&:hover": {
-                                    background: "#fff",
-                                    boxShadow: "0 0 4px #000",
-                                },
-                            }}
-                        >
-                            {isInWishlist ? (
-                                <FavoriteIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
-                            ) : (
-                                <FavoriteBorderIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
-                            )}
-                        </Button>
-                    )}
+        display: "flex",
+        flexDirection: { xs: "row", md: "column" },
+
+        gap: 1,
+        zIndex: 99,
+    }}
+>
+    {/* Share Button */}
+    <Button
+        onClick={onShareClick}
+        sx={{
+            background: "#fff",
+            boxShadow: "0 0 3px #696969",
+            borderRadius: "50%",
+            height: { xs: "30px", md: "40px" },
+            width: { xs: "30px", md: "40px" },
+            minWidth: { xs: "30px", md: "40px" },
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            "&:hover": {
+                background: "#fff",
+                boxShadow: "0 0 4px #000",
+            },
+        }}
+    >
+        <IosShareIcon sx={{ fontSize: { xs: 16, md: 24 } }} />
+    </Button>
+
+    {/* Wishlist Button */}
+    {userDesignation !== "4" && (
+        <Button
+            onClick={onWishlistToggle}
+            sx={{
+                background: "#fff",
+                boxShadow: "0 0 3px #696969",
+                borderRadius: "50%",
+                height: { xs: "30px", md: "40px" },
+                width: { xs: "30px", md: "40px" },
+                minWidth: { xs: "30px", md: "40px" },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                "&:hover": {
+                    background: "#fff",
+                    boxShadow: "0 0 4px #000",
+                },
+            }}
+        >
+            {isInWishlist ? (
+                <FavoriteIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
+            ) : (
+                <FavoriteBorderIcon sx={{ fontSize: { xs: 18, md: 24 } }} />
+            )}
+        </Button>
+    )}
+</Box>
 
                     {/* Navigation Arrows */}
                     <Box
@@ -708,41 +719,67 @@ const ProductImageGallery = ({
                         }}
                     >
                         <Button
-                            onClick={() => {
-                                let totalImages = media.length;
-                                onImageSelect((prev) => (prev - 1 + totalImages) % totalImages);
-                            }}
-                            sx={{
-                                background: "#fff",
-                                boxShadow: "0 0 3px #000",
-                                borderRadius: "50%",
-                                width: { xs: "40px", md: "50px" },
-                                height: { xs: "40px", md: "50px" },
-                                zIndex: 3,
-                                pointerEvents: "auto",
-                                ml: { xs: 1, md: 2 }
-                            }}
-                        >
-                            <ChevronLeftIcon sx={{ fontSize: "32px" }} />
-                        </Button>
+    onClick={() => {
+        setActiveArrow("left");
+
+        let totalImages = media.length;
+        onImageSelect((prev) => (prev - 1 + totalImages) % totalImages);
+
+        setTimeout(() => setActiveArrow(null), 150);
+    }}
+    sx={{
+        background: activeArrow === "left"
+            ? "#fff"
+            : "transparent",
+
+        boxShadow:
+            activeArrow === "left"
+                ? "0 0 6px #000"
+                : "none",
+
+        borderRadius: "50%",
+        width: { xs: "40px", md: "50px" },
+        height: { xs: "40px", md: "50px" },
+        zIndex: 3,
+        pointerEvents: "auto",
+        ml: { xs: 1, md: 2 },
+
+        transition: "all 0.2s ease",
+    }}
+>
+    <ChevronLeftIcon sx={{ fontSize: "32px", color: "#000" }} />
+</Button>
                         <Button
-                            onClick={() => {
-                                let totalImages = media.length;
-                                onImageSelect((prev) => (prev + 1) % totalImages);
-                            }}
-                            sx={{
-                                background: "#fff",
-                                boxShadow: "0 0 3px #000",
-                                borderRadius: "50%",
-                                width: { xs: "40px", md: "50px" },
-                                height: { xs: "40px", md: "50px" },
-                                zIndex: 3,
-                                pointerEvents: "auto",
-                                mr: { xs: 1, md: 2 }
-                            }}
-                        >
-                            <ChevronRightIcon sx={{ fontSize: "32px" }} />
-                        </Button>
+    onClick={() => {
+        setActiveArrow("right");
+
+        let totalImages = media.length;
+        onImageSelect((prev) => (prev + 1) % totalImages);
+
+        setTimeout(() => setActiveArrow(null), 150);
+    }}
+    sx={{
+        background: activeArrow === "right"
+            ? "#fff"
+            : "transparent",
+
+        boxShadow:
+            activeArrow === "right"
+                ? "0 0 6px #000"
+                : "none",
+
+        borderRadius: "50%",
+        width: { xs: "40px", md: "50px" },
+        height: { xs: "40px", md: "50px" },
+        zIndex: 3,
+        pointerEvents: "auto",
+        mr: { xs: 1, md: 2 },
+
+        transition: "all 0.2s ease",
+    }}
+>
+    <ChevronRightIcon sx={{ fontSize: "32px", color: "#000" }} />
+</Button>
                     </Box>
                 </Box>
             </Grid>
