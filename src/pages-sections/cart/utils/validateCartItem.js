@@ -10,6 +10,18 @@ export const validateCartItem = (product, options = {}) => {
 
     /*
     ===================================
+    SAFE FLAGS
+    ===================================
+    */
+
+    const priceExists =
+        resolvedState?.priceExists !== false;
+
+    const stockExists =
+        resolvedState?.stockExists !== false;
+
+    /*
+    ===================================
     PRODUCT REMOVED
     ===================================
     */
@@ -60,52 +72,23 @@ export const validateCartItem = (product, options = {}) => {
 
     /*
     ===================================
-    VARIANT REMOVED
+    PRICE COMBINATION REMOVED
     ===================================
     */
 
-    if (!resolvedState.exists) {
-
-        const variantNames = [];
-
-        if (product?.variantData?.length > 0) {
-
-            product.variantData.forEach((variant) => {
-
-                if (variant?.variant_name) {
-
-                    variantNames.push(
-                        variant.variant_name
-                    );
-                }
-            });
-        }
-
-        if (product?.variants?.length > 0) {
-
-            product.variants.forEach((variant) => {
-
-                if (variant?.variantName) {
-
-                    variantNames.push(
-                        variant.variantName
-                    );
-                }
-            });
-        }
+    if (!priceExists) {
 
         return {
 
             valid: false,
 
-            type: "VARIANT_REMOVED",
+            type: "PRICE_COMBINATION_REMOVED",
 
             message:
-                variantNames.length > 0
-                    ? `Your selected ${variantNames.join(", ")} is no longer available. Please choose another option.`
-                    : "This variation is no longer available.",
+                "This pricing option is no longer available.",
 
             shouldResetQuantity: true,
+
             allowQuantitySelection: false,
 
             disableCheckout: true,
@@ -128,7 +111,8 @@ export const validateCartItem = (product, options = {}) => {
 
             type: "VARIANT_HIDDEN",
 
-            message: "This variation is currently unavailable.",
+            message:
+                "This variation is currently unavailable.",
 
             shouldResetQuantity: true,
 
@@ -140,28 +124,36 @@ export const validateCartItem = (product, options = {}) => {
 
     /*
     ===================================
-    PRICE CHANGED
+    QTY COMBINATION REMOVED
     ===================================
     */
 
-    const cartSnapshotPrice =
-        +product?.original_price || 0;
+    if (!stockExists) {
 
-    if (
-        cartSnapshotPrice !== resolvedState.latestPrice
-    ) {
+        const invalidValues =
+            resolvedState?.invalidValues || [];
+
+        const invalidLabel =
+            invalidValues.length > 0
+                ? invalidValues.map(value => value.charAt(0).toUpperCase() + value.slice(1)).join(", ")
+                : "Selected option";
 
         return {
 
             valid: false,
 
-            type: "PRICE_CHANGED",
+            type: "QTY_COMBINATION_REMOVED",
 
-            message: "This item price has changed. Please choose quantity again.",
+            message:  `${invalidValues.length>1? "Selected Combination" : "Selected Option"} ${invalidLabel} is no longer available. Please choose another option.`,
 
-            shouldResetQuantity: true,
-            allowQuantitySelection: true,
-            disableCheckout: pendingQuantity === undefined || pendingQuantity === null || pendingQuantity === "",
+            // shouldResetQuantity: true,
+
+            // allowQuantitySelection: true,
+
+            disableCheckout:
+                pendingQuantity === undefined ||
+                pendingQuantity === null ||
+                pendingQuantity === "",
 
             resolvedState,
         };
@@ -196,7 +188,7 @@ export const validateCartItem = (product, options = {}) => {
 
     /*
     ===================================
-    QUANTITY INVALID
+    EFFECTIVE QUANTITY
     ===================================
     */
 
@@ -206,6 +198,12 @@ export const validateCartItem = (product, options = {}) => {
             pendingQuantity !== ""
             ? +pendingQuantity
             : +product?.qty;
+
+    /*
+    ===================================
+    QUANTITY INVALID
+    ===================================
+    */
 
     if (
         effectiveQuantity >
@@ -224,11 +222,51 @@ export const validateCartItem = (product, options = {}) => {
             shouldResetQuantity: true,
             allowQuantitySelection: true,
 
-            disableCheckout: pendingQuantity === undefined || pendingQuantity === null || pendingQuantity === "",
+            disableCheckout:
+                pendingQuantity === undefined ||
+                pendingQuantity === null ||
+                pendingQuantity === "",
 
             resolvedState,
         };
     }
+
+    /*
+===================================
+PRICE CHANGED
+===================================
+*/
+
+    const cartSnapshotPrice =
+        +product?.original_price || 0;
+
+    if (
+        cartSnapshotPrice !==
+        resolvedState.latestPrice
+    ) {
+
+        return {
+
+            valid: false,
+
+            type: "PRICE_CHANGED",
+
+            message:
+                "This item price has changed. Please choose quantity again.",
+
+            shouldResetQuantity: true,
+
+            allowQuantitySelection: true,
+
+            disableCheckout:
+                pendingQuantity === undefined ||
+                pendingQuantity === null ||
+                pendingQuantity === "",
+
+            resolvedState,
+        };
+    }
+
 
     /*
     ===================================
@@ -245,6 +283,7 @@ export const validateCartItem = (product, options = {}) => {
         message: "",
 
         shouldResetQuantity: false,
+
         allowQuantitySelection: true,
 
         disableCheckout: false,

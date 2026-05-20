@@ -36,7 +36,10 @@ PRODUCT LEVEL STOCK
 
     if (+product?.stock > 0) {
 
-        return +product.stock;
+        return {
+            stockExists: true,
+            latestStock: +product.stock,
+        };
     }
 
     /*
@@ -103,10 +106,18 @@ PRODUCT LEVEL STOCK
                     return +product?.stock || 0;
                 }
 
-                return +combination.qty || 0;
+                return {
+                    stockExists: true,
+                    latestStock: +combination.qty || 0,
+                };
             }
         }
     }
 
-    return +product?.stock || 0;
+    return {
+        stockExists: false,
+        latestStock: 0,
+        invalidValues: selectedValues
+    };
+
 };

@@ -79,7 +79,7 @@ export const resolveCartItemState = (product) => {
 
     const latestPrice = resolveCartPricing(product);
 
-    const latestStock = resolveCartStock(product);
+    const stockState = resolveCartStock(product);
 
     return {
 
@@ -94,7 +94,11 @@ export const resolveCartItemState = (product) => {
 
         latestPrice,
 
-        latestStock,
+        stockExists: stockState.stockExists,
+
+        latestStock: stockState.latestStock,
+
+        invalidValues: stockState.invalidValues || [],
 
         matchedCombination,
     };

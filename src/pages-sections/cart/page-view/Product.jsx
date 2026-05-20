@@ -22,6 +22,7 @@ import { resolveCartItemState } from "../utils/resolveCartItemState";
 import { validateCartItem } from "../utils/validateCartItem";
 import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
 import { resolveCartPricing } from "../utils/resolveCartPricing";
+import CartEditDrawer from "components/cart/CartEditDrawer";
 
 const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true, parentCombinationData = [] }) => {
     const { addToast } = useToasts();
@@ -35,6 +36,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const [price, setPrice] = useState(0);
     const [originalPrice, setOriginalPrice] = useState(0);
     const [reconciliationSnapshot, setReconciliationSnapshot] = useState(null);
+    const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
     const cartIdentity = useMemo(() => {
         return buildCartItemIdentity(product);
@@ -892,7 +894,20 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                 </Typography>
 
                                 {showButtons && (
-                                    <Typography component="div" mt={2}>
+                                    <Typography component="div" mt={2} display={"flex"} gap={1}>
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => setEditDrawerOpen(true)}
+                                            sx={{
+                                                background: "transparent",
+                                                fontSize: "14px",
+                                                boxShadow: "none",
+                                                borderRadius: "25px",
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            Edit
+                                        </Button>
                                         <Button
                                             onClick={addToWishlistHandler}
                                             variant="contained"
@@ -901,7 +916,6 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 fontSize: "14px",
                                                 boxShadow: "none",
                                                 borderRadius: "25px",
-                                                marginRight: "10px",
                                                 cursor: isVariantSelectionIncomplete ? "not-allowed" : "pointer",
                                                 opacity: isVariantSelectionIncomplete ? 0.5 : 1,
                                             }}
@@ -1113,6 +1127,11 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     </Typography>
                 </Box>
             </Box>
+            <CartEditDrawer
+                open={editDrawerOpen}
+                onClose={() => setEditDrawerOpen(false)}
+                cartProduct={product}
+            />
         </>
     );
 };
