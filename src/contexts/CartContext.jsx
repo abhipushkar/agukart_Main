@@ -6,10 +6,14 @@ import useAuth from "hooks/useAuth";
 import { CART_ITEM } from "constant";
 import { useToasts } from "react-toast-notifications";
 import { useLocation } from "./location_context";
+import { buildCartItemIdentity } from "pages-sections/cart/utils/buildCartItemIdentity";
 
 // =================================================================================
 const INITIAL_STATE = {
   cart: [],
+  cartRecoveryState: {},
+  cartPendingUpdates: {}, //loding state
+
   shopDiscount: 0,
   subTotal: 0,
   delivery: 0,
@@ -118,21 +122,11 @@ const reducer = (state, action) => {
 
                 // For combination products, check all variant types
                 // Check parent variants (variantData/variantAttributeData)
-                const parentVariantsMatch = variantDataEqual(
-                  product.variantData,
-                  product.variantAttributeData,
-                  productItem.variantData,
-                  productItem.variantAttributeData,
-                );
+                const existingIdentity = buildCartItemIdentity(product);
 
-                // Check internal variants (variants array)
-                const internalVariantsMatch = variantsEqual(
-                  product.variants,
-                  productItem.variants,
-                );
+                const incomingIdentity = buildCartItemIdentity(productItem);
 
-                // If both parent and internal variants match, remove this product
-                return !(parentVariantsMatch && internalVariantsMatch);
+                return existingIdentity !== incomingIdentity;
               });
               return { ...vendor, products: filteredProducts };
             })
@@ -153,21 +147,11 @@ const reducer = (state, action) => {
             }
 
             // Check parent variants match
-            const parentVariantsMatch = variantDataEqual(
-              product.variantData,
-              product.variantAttributeData,
-              productItem.variantData,
-              productItem.variantAttributeData,
-            );
+            const existingIdentity = buildCartItemIdentity(product);
 
-            // Check internal variants match
-            const internalVariantsMatch = variantsEqual(
-              product.variants,
-              productItem.variants,
-            );
+            const incomingIdentity = buildCartItemIdentity(productItem);
 
-            // If both match, update this product
-            if (parentVariantsMatch && internalVariantsMatch) {
+            if (existingIdentity === incomingIdentity) {
               exist = true;
               return {
                 ...product,
@@ -301,6 +285,56 @@ const reducer = (state, action) => {
           action?.payload?.voucherDiscount,
       };
 
+    case "UPDATE_CART_RECOVERY_STATE":
+
+      return {
+
+        ...state,
+
+        cartRecoveryState: {
+
+          ...state.cartRecoveryState,
+
+          [action.payload.identity]: {
+
+            ...state.cartRecoveryState?.[
+            action.payload.identity
+            ],
+
+            ...action.payload.data
+          }
+        }
+      };
+
+    case "CLEAR_CART_RECOVERY_STATE": {
+
+      const updated = {
+        ...state.cartRecoveryState
+      };
+
+      delete updated[action.payload];
+
+      return {
+        ...state,
+        cartRecoveryState: updated
+      };
+    }
+
+    case "SET_CART_PENDING_UPDATE":
+
+      return {
+
+        ...state,
+
+        cartPendingUpdates: {
+
+          ...state.cartPendingUpdates,
+
+          [action.payload.identity]:
+            action.payload.value
+        }
+      };
+
     default: {
       return state;
     }
@@ -314,6 +348,44 @@ export default function CartProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const { token } = useAuth();
   const { location } = useLocation();
+
+  const updateCartRecoveryState = (
+    identity,
+    data
+  ) => {
+
+    dispatch({
+      type: "UPDATE_CART_RECOVERY_STATE",
+      payload: {
+        identity,
+        data
+      }
+    });
+  };
+
+  const clearCartRecoveryState = (
+    identity
+  ) => {
+
+    dispatch({
+      type: "CLEAR_CART_RECOVERY_STATE",
+      payload: identity
+    });
+  };
+
+  const setCartPendingUpdate = (
+    identity,
+    value
+  ) => {
+
+    dispatch({
+      type: "SET_CART_PENDING_UPDATE",
+      payload: {
+        identity,
+        value
+      }
+    });
+  };
 
   const getCartItems = async (address_id) => {
     const cartData = JSON.parse(localStorage.getItem(CART_ITEM));
@@ -423,6 +495,10 @@ export default function CartProvider({ children }) {
       dispatch,
       getCartItems,
       getCartDetails,
+
+      updateCartRecoveryState,
+      clearCartRecoveryState,
+      setCartPendingUpdate,
     }),
     [state, dispatch],
   );

@@ -358,7 +358,7 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                                                     {option.code}
                                                 </Typography>
                                             </Box>
-                                            {isShippingAvailable ? (
+                                            {/* {isShippingAvailable ? (
                                                 <Chip
                                                     label="Available"
                                                     size="small"
@@ -367,6 +367,15 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                                                     sx={{ height: 20, fontSize: 11 }}
                                                 />
                                             ) : (
+                                                <Chip
+                                                    label="Unavailable"
+                                                    size="small"
+                                                    color="error"
+                                                    variant="outlined"
+                                                    sx={{ height: 20, fontSize: 11 }}
+                                                />
+                                            )} */}
+                                            {!isShippingAvailable && (
                                                 <Chip
                                                     label="Unavailable"
                                                     size="small"

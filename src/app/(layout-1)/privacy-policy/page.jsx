@@ -1,16 +1,34 @@
 import React from "react";
 import PrivacyPolicy from "components/privacy-policy/PrivacyPolicy";
-export const metadata = {
-  title: "Privacy Policy - Agukart Next.js E-commerce Template",
-  description: `Agukart is a React Next.js E-commerce template. Build SEO friendly Online store, delivery app and Multi vendor store`,
-  authors: [
-    {
-      name: "UI-LIB",
-      url: "https://ui-lib.com",
-    },
-  ],
-  keywords: ["e-commerce", "e-commerce template", "next.js", "react"],
-};
+import axios from "axios";
+
+const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
+
+export async function generateMetadata() {
+  try {
+    const res = await axios.post(
+      `${baseURL}/get-informations`,
+      {
+        type: "Privacy Policy",
+      }
+    );
+
+    const data = res?.data?.information;
+
+    return {
+      title: `Privacy Policy - ${data?.meta_title || "Privacy Policy"}`,
+      description: data?.meta_description || "",
+      keywords: data?.meta_keywords || [],
+    };
+  } catch (error) {
+    console.log(error);
+
+    return {
+      title: "Privacy Policy",
+    };
+  }
+}
+
 const page = () => {
   return <PrivacyPolicy />;
 };
