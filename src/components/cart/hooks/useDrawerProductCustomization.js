@@ -8,8 +8,8 @@ export const useDrawerProductCustomization = (product) => {
   const [customizeDropdownPrice, setCustomizeDropdownPrice] = useState(0);
   const [customizeTextPrice, setCustomizeTextPrice] = useState(0);
   const [isExpanded, setIsExpanded] = useState(
-    product?.customizationData?.isExpanded === "true" ||
-    product?.customizationData?.isExpanded === true ||
+    product?.availableCustomization?.isExpanded === "true" ||
+    product?.availableCustomization?.isExpanded === true ||
     false
   );
 
@@ -62,7 +62,8 @@ export const useDrawerProductCustomization = (product) => {
     const errors = {};
     let isValid = true;
 
-    product?.customizationData?.customizations?.forEach((customization) => {
+    const customizations = product?.availableCustomization?.customizations || [];
+    customizations.forEach((customization) => {
       const isRequired = customization.isCompulsory === "true";
       if (!isRequired) return;
 
@@ -85,8 +86,10 @@ export const useDrawerProductCustomization = (product) => {
 
   const checkInputMinValue = () => {
     let hasError = false;
+    const customizations = product?.availableCustomization?.customizations || [];
     Object.entries(customizationText || {}).forEach(([label, { value, min, max }]) => {
-      if (value.length < min) {
+      const customField = customizations.find(c => c.label === label);
+      if (customField && value.length < min) {
         setValidationErrors((prev) => ({
           ...prev,
           [label]: `Input should be between ${min} and ${max} characters.`,

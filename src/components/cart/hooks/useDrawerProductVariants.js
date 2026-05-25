@@ -84,13 +84,25 @@ export const useDrawerProductVariants = (product) => {
         const allVariants = [];
 
         // Parent variants
+        // Handle parent product variants - ONLY if product has parent_id
         if (product?.parent_id) {
-            if (product.parent_id.product_variants?.length) {
+            // Try new structure first (product_variants)
+            if (
+                product.parent_id.product_variants &&
+                product.parent_id.product_variants.length > 0
+            ) {
                 product.parent_id.product_variants.forEach((variant) => {
                     const guideData = variant?.guide;
+                    // Make sure variant.variant_name exists and is valid
+                    const variantId = variant.variant_name;
+                    if (!variantId) {
+                        console.warn("Parent variant has no variant_name:", variant);
+                        return;
+                    }
+
                     allVariants.push({
                         type: "parent",
-                        id: variant.variant_name,
+                        id: variantId,
                         name: variant.variant_name,
                         guide_name: guideData?.guide_name || "",
                         guide_file: guideData?.guide_file || "",
@@ -107,11 +119,22 @@ export const useDrawerProductVariants = (product) => {
                             })) || [],
                     });
                 });
-            } else if (product.parent_id.variant_id?.length) {
+            }
+            // Fallback to old structure (variant_id)
+            else if (
+                product.parent_id.variant_id &&
+                Array.isArray(product.parent_id.variant_id)
+            ) {
                 product.parent_id.variant_id.forEach((variant) => {
+                    const variantId = variant._id || variant.variant_name;
+                    if (!variantId) {
+                        console.warn("Parent variant has no id:", variant);
+                        return;
+                    }
+
                     allVariants.push({
                         type: "parent",
-                        id: variant._id,
+                        id: variantId,
                         name: variant.variant_name,
                         guide_name: variant.guide_name || "",
                         guide_file: variant.guide_file || "",
@@ -226,6 +249,7 @@ export const useDrawerProductVariants = (product) => {
                 }
             });
         }
+        console.log("Normalized variants:", allVariants);
         return allVariants;
     }, [product]);
 
@@ -309,7 +333,7 @@ export const useDrawerProductVariants = (product) => {
                     }
 
                     if (attributeIds.length) {
-                        const sortedIds = [...attributeIds].sort().join(",");
+                        const sortedIds = [...new Set(attributeIds)].sort().join(",");
                         const price = combo.price && combo.price !== "" ? parseFloat(combo.price) : null;
                         const qty = (combo.qty === "" || combo.qty === null || combo.qty === undefined) ? "NOT_CONTROLLED" : parseInt(combo.qty, 10);
                         const isVisible = combo.isVisible === true || combo.isVisible === "true";
@@ -560,23 +584,94 @@ export const useDrawerProductVariants = (product) => {
     }, []);
 
     const handleVariantChange = useCallback((variantId, value) => {
+        // Safety check - don't proceed if variantId is undefined
+        if (!variantId) {
+            console.error("handleVariantChange called with undefined variantId");
+            return;
+        }
+
         setSelectedVariants(prev => {
             const newSelected = { ...prev };
             const normalizedVariants = normalizeVariantData();
             const selectedVariant = normalizedVariants.find(v => v.id === variantId);
+
             if (selectedVariant?.type === "parent") {
                 const internalVariantIds = normalizedVariants.filter(v => v.type === "internal").map(v => v.id);
                 internalVariantIds.forEach(internalId => delete newSelected[internalId]);
             }
+
             if (value === "" || value === undefined || value === null) {
                 delete newSelected[variantId];
             } else {
                 newSelected[variantId] = value;
             }
+
+            // Clean up any undefined keys
+            if (newSelected.undefined) {
+                delete newSelected.undefined;
+            }
+
             return newSelected;
         });
         setErrors(prev => ({ ...prev, [variantId]: "" }));
     }, [normalizeVariantData]);
+
+    // Handle parent variant navigation - refetch product when parent variant changes
+    // Handle parent variant navigation - refetch product when parent variant changes
+    const handleParentVariantNavigation = useCallback((selectedVariantId, selectedAttributeId) => {
+        console.log("handleParentVariantNavigation called:", { selectedVariantId, selectedAttributeId });
+
+        if (!product?.parent_id) return null;
+
+        // Get all selected parent variants (including the newly selected one)
+        const parentSelections = {};
+
+        // First, get all parent variants from normalizeVariantData
+        const normalizedVariants = normalizeVariantData();
+        const parentVariants = normalizedVariants.filter(v => v.type === "parent");
+
+        // Add existing selections
+        Object.entries(selectedVariants).forEach(([variantId, attrId]) => {
+            const variant = parentVariants.find(v => v.id === variantId);
+            if (variant) {
+                parentSelections[variantId] = attrId;
+            }
+        });
+
+        // Add or update the newly selected one
+        if (selectedVariantId && selectedAttributeId) {
+            parentSelections[selectedVariantId] = selectedAttributeId;
+        }
+
+        console.log("Parent selections:", parentSelections);
+
+        const selectedIds = Object.values(parentSelections).filter(Boolean);
+        if (selectedIds.length === 0) return null;
+
+        const selectionString = selectedIds.sort().join(",");
+        console.log("Selection string:", selectionString);
+
+        // Find matching parent combination
+        const parentCombinations = extractParentCombinations();
+        console.log("Parent combinations:", parentCombinations);
+
+        const targetCombination = parentCombinations.find(combo => {
+            const comboString = combo.combination_ids.sort().join(",");
+            return comboString === selectionString;
+        });
+
+        console.log("Target combination:", targetCombination);
+
+        if (targetCombination && targetCombination.sku_product_id !== product._id && !targetCombination.sold_out) {
+            return {
+                product_code: targetCombination.product_code,
+                slug: targetCombination.slug,
+                sku_product_id: targetCombination.sku_product_id
+            };
+        }
+
+        return null;
+    }, [product, selectedVariants, normalizeVariantData, extractParentCombinations]);
 
     const validateVariants = useCallback(() => {
         const errorsObj = {};
@@ -594,41 +689,82 @@ export const useDrawerProductVariants = (product) => {
         if (!(product?.isCombination || product?.combinationData?.length) || !selectedVariants || !Object.keys(selectedVariants).length) {
             return { price: null, quantity: null, priceRange: null, quantityRange: null };
         }
+        console.log("Entered! selectedVariants:", selectedVariants);
+        // Check if price and quantity are controlled by combinations
+        const isPriceControlled = product?.form_values?.isCheckedPrice === true;
+        const isQuantityControlled = product?.form_values?.isCheckedQuantity === true;
+
         const priceControlVariants = priceControllingVariants;
         const quantityControlVariants = quantityControllingVariants;
-        const priceSelectionIds = [], quantitySelectionIds = [];
-        Object.entries(selectedVariants).forEach(([variantName, attrId]) => {
-            if (priceControlVariants.includes(variantName)) priceSelectionIds.push(attrId);
-            if (quantityControlVariants.includes(variantName)) quantitySelectionIds.push(attrId);
-        });
+        console.log({ isPriceControlled, isQuantityControlled, priceControlVariants, quantityControlVariants });
+
         const { combinationsMap } = internalCombinationsMap;
         let priceResult = null, quantityResult = null;
-        if (shouldUseCombinationPrice && priceSelectionIds.length) {
-            const priceKey = priceSelectionIds.sort().join(",");
-            const priceCombo = combinationsMap.get(priceKey);
-            if (priceCombo && priceCombo.price !== null && priceCombo.isVisible) priceResult = priceCombo.price;
-        }
-        if (shouldUseCombinationQuantity && quantitySelectionIds.length) {
-            const quantityKey = quantitySelectionIds.sort().join(",");
-            const quantityCombo = combinationsMap.get(quantityKey);
-            if (quantityCombo && quantityCombo.qty !== null && quantityCombo.isVisible) {
-                quantityResult = quantityCombo.qty;
-            } else {
-                let minQuantity = Infinity, foundAnyVisible = false;
-                combinationsMap.forEach((combo, key) => {
-                    const ids = key.split(",");
-                    const matches = quantitySelectionIds.every(id => ids.includes(id));
-                    if (matches && combo.qty !== "NOT_CONTROLLED" && combo.isVisible) {
-                        foundAnyVisible = true;
-                        if (combo.qty > 0) minQuantity = Math.min(minQuantity, combo.qty);
-                    }
-                });
-                if (minQuantity !== Infinity && minQuantity > 0) quantityResult = minQuantity;
-                else if (foundAnyVisible) quantityResult = 0;
+
+        // Get price from combinations - find ANY combination that matches selected price-controlling variants
+        if (isPriceControlled && priceControlVariants.length) {
+            // Collect selected attribute IDs for price-controlling variants only
+            const priceSelectionIds = [];
+            Object.entries(selectedVariants).forEach(([variantName, attrId]) => {
+                console.log("Checking variant for price control:", { variantName, attrId });
+                if (priceControlVariants.includes(variantName)) {
+                    priceSelectionIds.push(attrId);
+                }
+            });
+            console.log("Price selection IDs:", priceSelectionIds);
+            // If we have any price-controlling variants selected, try to find price
+            if (priceSelectionIds.length) {
+                const priceKey = priceSelectionIds.sort().join(",");
+                const priceCombo = combinationsMap.get(priceKey);
+                if (priceCombo && priceCombo.price !== null && priceCombo.isVisible) {
+                    priceResult = priceCombo.price;
+                }
+                console.log("Price combo for key", {priceKey, priceCombo, combinationsMap});
             }
         }
-        return { price: priceResult, quantity: quantityResult, priceRange: null, quantityRange: null, isVisible: true };
-    }, [product, selectedVariants, internalCombinationsMap, shouldUseCombinationPrice, shouldUseCombinationQuantity, priceControllingVariants, quantityControllingVariants]);
+
+        // Get quantity from combinations - find ANY combination that matches selected quantity-controlling variants
+        if (isQuantityControlled && quantityControlVariants.length) {
+            // Collect selected attribute IDs for quantity-controlling variants only
+            const quantitySelectionIds = [];
+            Object.entries(selectedVariants).forEach(([variantName, attrId]) => {
+                if (quantityControlVariants.includes(variantName)) {
+                    quantitySelectionIds.push(attrId);
+                }
+            });
+
+            // If we have any quantity-controlling variants selected, try to find quantity
+            if (quantitySelectionIds.length) {
+                const quantityKey = quantitySelectionIds.sort().join(",");
+                const quantityCombo = combinationsMap.get(quantityKey);
+                if (quantityCombo && quantityCombo.qty !== null && quantityCombo.isVisible) {
+                    quantityResult = quantityCombo.qty;
+                } else {
+                    // If no exact match, find any matching combo with quantity
+                    let minQuantity = Infinity, foundAnyVisible = false;
+                    combinationsMap.forEach((combo, key) => {
+                        const ids = key.split(",");
+                        const matches = quantitySelectionIds.every(id => ids.includes(id));
+                        if (matches && combo.qty !== "NOT_CONTROLLED" && combo.isVisible) {
+                            foundAnyVisible = true;
+                            if (combo.qty > 0) minQuantity = Math.min(minQuantity, combo.qty);
+                        }
+                    });
+                    if (minQuantity !== Infinity && minQuantity > 0) quantityResult = minQuantity;
+                    else if (foundAnyVisible) quantityResult = 0;
+                }
+            }
+        }
+        console.log("Combination results:", { priceResult, quantityResult });
+
+        return {
+            price: priceResult,
+            quantity: quantityResult,
+            priceRange: null,
+            quantityRange: null,
+            isVisible: true
+        };
+    }, [product, selectedVariants, internalCombinationsMap, priceControllingVariants, quantityControllingVariants]);
 
     const currentCombinationData = useMemo(() => getCurrentCombinationData(), [getCurrentCombinationData]);
 
@@ -654,33 +790,47 @@ export const useDrawerProductVariants = (product) => {
         if (quantityControllingVariants.includes(attributeVariant.id)) quantityControlSelections[attributeVariant.id] = attributeId;
         const priceSelectedIds = Object.values(priceControlSelections);
         const quantitySelectedIds = Object.values(quantityControlSelections);
+        // Inside calculateAttributeData function
         let price = null, priceRange = null;
+
         if (shouldUseCombinationPrice) {
-            if (priceSelectedIds.length === 0) {
-                const ranges = getAttributeRanges(attributeId);
-                priceRange = ranges?.priceRange || null;
-            } else {
-                const priceKey = priceSelectedIds.sort().join(",");
-                const priceCombo = combinationsMap.get(priceKey);
-                if (priceCombo && priceCombo.price !== null && priceCombo.isVisible) price = priceCombo.price;
-                else {
+            const isPriceControlled = product?.form_values?.isCheckedPrice === true;
+
+            if (isPriceControlled) {
+                if (priceSelectedIds.length === 0) {
                     const ranges = getAttributeRanges(attributeId);
                     priceRange = ranges?.priceRange || null;
+                } else {
+                    const priceKey = priceSelectedIds.sort().join(",");
+                    const priceCombo = combinationsMap.get(priceKey);
+                    if (priceCombo && priceCombo.price !== null && priceCombo.isVisible) {
+                        price = priceCombo.price;
+                    } else {
+                        const ranges = getAttributeRanges(attributeId);
+                        priceRange = ranges?.priceRange || null;
+                    }
                 }
             }
         }
+
         let quantity = null, quantityRange = null;
+
         if (shouldUseCombinationQuantity) {
-            if (quantitySelectedIds.length === 0) {
-                const ranges = getAttributeRanges(attributeId);
-                quantityRange = ranges?.quantityRange || null;
-            } else {
-                const quantityKey = quantitySelectedIds.sort().join(",");
-                const quantityCombo = combinationsMap.get(quantityKey);
-                if (quantityCombo && quantityCombo.qty !== null && quantityCombo.isVisible) quantity = quantityCombo.qty;
-                else {
+            const isQuantityControlled = product?.form_values?.isCheckedQuantity === true;
+
+            if (isQuantityControlled) {
+                if (quantitySelectedIds.length === 0) {
                     const ranges = getAttributeRanges(attributeId);
                     quantityRange = ranges?.quantityRange || null;
+                } else {
+                    const quantityKey = quantitySelectedIds.sort().join(",");
+                    const quantityCombo = combinationsMap.get(quantityKey);
+                    if (quantityCombo && quantityCombo.qty !== null && quantityCombo.isVisible) {
+                        quantity = quantityCombo.qty;
+                    } else {
+                        const ranges = getAttributeRanges(attributeId);
+                        quantityRange = ranges?.quantityRange || null;
+                    }
                 }
             }
         }
@@ -772,8 +922,37 @@ export const useDrawerProductVariants = (product) => {
                 currentCombination.combination_ids.forEach((combId) => {
                     const variantAttr = variantAttributes.find(attr => attr._id === combId);
                     if (variantAttr) {
-                        const variantIdentifier = product.parent_id.product_variants ? variantAttr.variant : variantAttr.variant;
-                        initialSelections[variantIdentifier] = variantAttr._id;
+                        let variantIdentifier = null;
+
+                        // NEW STRUCTURE
+                        if (product.parent_id.product_variants?.length) {
+
+                            const parentVariant =
+                                product.parent_id.product_variants.find(v =>
+                                    v.variant_attributes?.some(
+                                        attr => attr._id === variantAttr._id
+                                    )
+                                );
+
+                            variantIdentifier = parentVariant?.variant_name;
+                        }
+
+                        // OLD STRUCTURE
+                        else {
+
+                            const parentVariant =
+                                product.parent_id.variant_id?.find(
+                                    v => v._id === variantAttr.variant
+                                );
+
+                            variantIdentifier =
+                                parentVariant?.variant_name || parentVariant?._id;
+                        }
+
+                        // ONLY SET VALID KEYS
+                        if (variantIdentifier) {
+                            initialSelections[variantIdentifier] = variantAttr._id;
+                        }
                     }
                 });
                 setSelectedVariants(initialSelections);
@@ -808,8 +987,15 @@ export const useDrawerProductVariants = (product) => {
             cartItem.variantData.forEach((variant, index) => {
                 const attribute = cartItem.variantAttributeData[index];
                 if (variant?.variant_name && attribute?._id) {
-                    newSelections[variant.variant_name] = attribute._id;
-                    console.log(`  Added parent variant: ${variant.variant_name} = ${attribute._id}`);
+                    // Only add if this variant exists in the current product's normalized data
+                    const normalizedVariants = normalizeVariantData();
+                    const variantExists = normalizedVariants.some(v => v.id === variant.variant_name);
+                    if (variantExists) {
+                        newSelections[variant.variant_name] = attribute._id;
+                        console.log(`  Added parent variant: ${variant.variant_name} = ${attribute._id}`);
+                    } else {
+                        console.log(`  Skipping parent variant ${variant.variant_name} - not found in current product`);
+                    }
                 }
             });
         }
@@ -817,6 +1003,7 @@ export const useDrawerProductVariants = (product) => {
         // Handle internal variants - use normalized variants data
         const normalizedVariants = normalizeVariantData();
         const internalVariants = normalizedVariants.filter(v => v.type === "internal");
+        const parentVariants = normalizedVariants.filter(v => v.type === "parent");
 
         if (cartItem.variants?.length) {
             console.log("Internal variants found in cartItem.variants:", cartItem.variants);
@@ -850,12 +1037,29 @@ export const useDrawerProductVariants = (product) => {
             });
         }
 
-        console.log("Final newSelections:", newSelections);
-        setSelectedVariants(prev => ({ ...prev, ...newSelections }));
+        // IMPORTANT: Clear any existing selections that are not in the newSelections
+        // This prevents stale selections from previous products
+        setSelectedVariants((prev) => {
+            // Only keep keys that are valid variant IDs from current product
+            const validVariantIds = [...parentVariants.map(v => v.id), ...internalVariants.map(v => v.id)];
+            const cleanedPrev = {};
+
+            Object.keys(prev).forEach(key => {
+                // Only keep valid keys that are also in newSelections (to preserve parent selections if needed)
+                if (validVariantIds.includes(key) && newSelections[key]) {
+                    cleanedPrev[key] = prev[key];
+                }
+            });
+
+            const updated = { ...cleanedPrev, ...newSelections };
+            console.log("Updated selectedVariants (cleaned):", updated);
+            return updated;
+        });
     }, [product, normalizeVariantData]);
 
     return {
         selectedVariants,
+        setSelectedVariants,
         variantAttributes,
         filterVariantAttributes,
         errors,
@@ -866,6 +1070,7 @@ export const useDrawerProductVariants = (product) => {
         selectedVariantImages,
         calculateAttributeData,
         handleVariantChange,
+        handleParentVariantNavigation,
         handleVariantHover,
         handleVariantHoverOut,
         isAttributeCombinationSoldOut,

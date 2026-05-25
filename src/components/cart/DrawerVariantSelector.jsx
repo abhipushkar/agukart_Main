@@ -62,8 +62,10 @@ const DrawerVariantSelector = ({
   const menuRef = useRef(null);
   const hasAutoScrolledRef = useRef(false);
   const triggerRef = useRef(null);
-  const [dropdownLeft, setDropdownLeft] = useState(0);
-  const [dropdownWidth, setDropdownWidth] = useState(0);
+  // const [dropdownLeft, setDropdownLeft] = useState(0);
+  // const [dropdownWidth, setDropdownWidth] = useState(0);
+  // Add this state with other states (around line 30)
+  const [dropdownBelow, setDropdownBelow] = useState(true);
   const [hoveredAttrValue, setHoveredAttrValue] = useState(null);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -159,20 +161,20 @@ const DrawerVariantSelector = ({
   }, [variant.attributes.length, calculatePageMetrics]);
 
   // Prevent background scroll when dropdown open (for internal variant)
-  useEffect(() => {
-    if (open) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    };
-  }, [open]);
+  // useEffect(() => {
+  //   if (open) {
+  //     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+  //     document.body.style.overflow = "hidden";
+  //     document.body.style.paddingRight = `${scrollbarWidth}px`;
+  //   } else {
+  //     document.body.style.overflow = "";
+  //     document.body.style.paddingRight = "";
+  //   }
+  //   return () => {
+  //     document.body.style.overflow = "";
+  //     document.body.style.paddingRight = "";
+  //   };
+  // }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -206,8 +208,8 @@ const DrawerVariantSelector = ({
   const handleToggle = () => {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setDropdownLeft(rect.left);
-      setDropdownWidth(rect.width);
+      // setDropdownLeft(rect.left);
+      // setDropdownWidth(rect.width);
     }
     setOpen((prev) => !prev);
     setIsViewAllOpen(false);
@@ -225,6 +227,17 @@ const DrawerVariantSelector = ({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [calculatePageMetrics]);
+
+  // Add this useEffect after the other useEffects (around line 120)
+  useEffect(() => {
+    if (open && !isViewAllOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // Show below if more space below, otherwise show above
+      setDropdownBelow(spaceBelow > spaceAbove);
+    }
+  }, [open, isViewAllOpen]);
 
   useEffect(() => {
     if (guideOpen) setZoom(1);
@@ -402,6 +415,7 @@ const DrawerVariantSelector = ({
             <Button onClick={() => transformRef.current?.zoomIn()} variant="outlined">Zoom +</Button>
             <Button onClick={() => transformRef.current?.zoomOut()} variant="outlined">Zoom -</Button>
             <Button onClick={() => transformRef.current?.resetTransform()} variant="outlined">Reset</Button>
+            <Button onClick={() => setGuideOpen(false)} variant="outlined">Close</Button>
           </Box>
         </DialogActions>
       )}
@@ -531,24 +545,23 @@ const DrawerVariantSelector = ({
 
             {open && (
               <>
-                <Box sx={{ position: "fixed", inset: 0, background: "transparent", zIndex: 1100 }} />
+                <Box sx={{ position: "fixed", inset: 0, background: "transparent", zIndex: 1100 }} onClick={() => setOpen(false)} />
                 <Box
                   ref={menuRef}
                   sx={{
-                    position: "fixed",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    left: isViewAllOpen ? "50%" : dropdownLeft,
-                    transform: isViewAllOpen ? "translate(-50%, -50%)" : "translateY(-50%)",
-                    width: isViewAllOpen ? "calc(100vw - 32px)" : dropdownWidth,
-                    maxWidth: isViewAllOpen ? "1200px" : "none",
+                    position: "absolute",
+                    top: dropdownBelow ? "100%" : "auto",
+                    bottom: dropdownBelow ? "auto" : "100%",
+                    left: 0,
+                    right: 0,
+                    maxHeight: "300px",
                     background: "#fff",
                     boxShadow: "0 7px 14px rgba(0,0,0,0.4)",
                     zIndex: 1300,
-                    maxHeight: "80vh",
                     overflowY: "auto",
                     borderRadius: "4px",
-                    transition: "width 0.3s ease-out",
+                    mt: dropdownBelow ? 1 : 0,
+                    mb: dropdownBelow ? 0 : 1,
                   }}
                 >
                   {!isViewAllOpen && (
@@ -559,39 +572,232 @@ const DrawerVariantSelector = ({
                   )}
 
                   {isViewAllOpen ? (
-                    <Box sx={{ p: 2 }}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                        <Typography variant="h6" sx={{ fontSize: "17px" }}>{variant.name}</Typography>
-                        <IconButton onClick={() => setIsViewAllOpen(false)} size="small">✕</IconButton>
-                      </Box>
-                      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(auto-fill, minmax(180px, 1fr))" }, gap: 2, overflowY: "auto" }}>
-                        {variant.attributes.map((attr) => {
-                          const isDisabled = isAttributeDisabled(attr);
-                          const isVisible = isAttributeVisible(attr);
-                          const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
-                          if (!isVisible) return null;
-                          const cleanImages = (attr.images || []).filter(img => img && typeof img === "string" && img.trim() !== "");
-                          let imageSrc = null;
-                          if (cleanImages.length) imageSrc = cleanImages[0];
-                          else if (attr.preview_image && attr.preview_image !== '__DELETE__') imageSrc = attr.preview_image;
-                          else if (productMainImage) imageSrc = Array.isArray(productMainImage) ? `https://api.agukart.com/uploads/product/${productMainImage[0]}` : `https://api.agukart.com/uploads/product/${productMainImage}`;
-                          const thumbnailSrc = attr.thumbnail;
-                          const showThumbnail = cleanImages.length === 0 && !(attr.preview_image && attr.preview_image !== '__DELETE__');
-                          return (
-                            <Box key={attr.id} onClick={() => { if (isDisabled) return; handleImageSelect(attr); }} sx={{ cursor: isDisabled ? "not-allowed" : "pointer", opacity: isDisabled ? 0.5 : 1, position: "relative", border: isSelected ? "2px solid #D23F57" : "1px solid #e0e0e0", borderRadius: "8px", overflow: "hidden", transition: "all 0.2s ease", "&:hover": { transform: isDisabled ? "none" : "translateY(-2px)", boxShadow: isDisabled ? "none" : "0 4px 12px rgba(0,0,0,0.1)" } }}>
-                              <Box sx={{ position: "relative", paddingTop: "100%", backgroundColor: "#f5f5f5" }}>
-                                {imageSrc ? <img src={imageSrc} alt={attr.value} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f5f5f5", color: "#999" }}>No Image</Box>}
-                                {showThumbnail && thumbnailSrc && <Box sx={{ position: "absolute", bottom: "8px", right: "8px", width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden", border: "2px solid white", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", backgroundColor: "white" }}><img src={thumbnailSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></Box>}
-                              </Box>
-                              <Box sx={{ p: 1.5, textAlign: "center" }}>
-                                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "13px", mb: 0.5, color: isDisabled ? "#999" : "inherit" }}>{attr.value}</Typography>
-                                {isDisabled && <Typography variant="caption" sx={{ color: "#d32f2f", fontSize: "10px", display: "block" }}>Sold Out</Typography>}
-                              </Box>
-                            </Box>
-                          );
-                        })}
-                      </Box>
-                    </Box>
+                    <Dialog
+                      open={isViewAllOpen}
+                      onClose={() => setIsViewAllOpen(false)}
+                      fullWidth
+                      maxWidth="md"
+                      PaperProps={{
+                        sx: {
+                          borderRadius: "12px",
+                          maxHeight: "90vh",
+                        },
+                      }}
+                    >
+                      <DialogContent sx={{ p: 0 }}>
+                        <Box sx={{ p: 2 }}>
+                          {/* Header */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              mb: 2,
+                              position: "sticky",
+                              top: 0,
+                              background: "#fff",
+                              zIndex: 10,
+                              pb: 1,
+                              borderBottom: "1px solid #eee",
+                            }}
+                          >
+                            <Typography variant="h6" sx={{ fontSize: "17px" }}>
+                              {variant.name}
+                            </Typography>
+
+                            <IconButton
+                              onClick={() => setIsViewAllOpen(false)}
+                              size="small"
+                            >
+                              ✕
+                            </IconButton>
+                          </Box>
+
+                          {/* Grid */}
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: {
+                                xs: "repeat(2, 1fr)",
+                                sm: "repeat(auto-fill, minmax(180px, 1fr))",
+                              },
+                              gap: 2,
+                              overflowY: "auto",
+                              maxHeight: "70vh",
+                              pr: 1,
+                            }}
+                          >
+                            {variant.attributes.map((attr) => {
+                              const isDisabled = isAttributeDisabled(attr);
+                              const isVisible = isAttributeVisible(attr);
+                              const isSelected =
+                                selectedAttr &&
+                                (selectedAttr.id === attr.id ||
+                                  selectedAttr.value === attr.value);
+
+                              if (!isVisible) return null;
+
+                              const cleanImages = (attr.images || []).filter(
+                                (img) =>
+                                  img &&
+                                  typeof img === "string" &&
+                                  img.trim() !== ""
+                              );
+
+                              let imageSrc = null;
+
+                              if (cleanImages.length) {
+                                imageSrc = cleanImages[0];
+                              } else if (
+                                attr.preview_image &&
+                                attr.preview_image !== "__DELETE__"
+                              ) {
+                                imageSrc = attr.preview_image;
+                              } else if (productMainImage) {
+                                imageSrc = Array.isArray(productMainImage)
+                                  ? `https://api.agukart.com/uploads/product/${productMainImage[0]}`
+                                  : `https://api.agukart.com/uploads/product/${productMainImage}`;
+                              }
+
+                              const thumbnailSrc = attr.thumbnail;
+
+                              const showThumbnail =
+                                cleanImages.length === 0 &&
+                                !(
+                                  attr.preview_image &&
+                                  attr.preview_image !== "__DELETE__"
+                                );
+
+                              return (
+                                <Box
+                                  key={attr.id}
+                                  onClick={() => {
+                                    if (isDisabled) return;
+                                    handleImageSelect(attr);
+                                  }}
+                                  sx={{
+                                    cursor: isDisabled ? "not-allowed" : "pointer",
+                                    opacity: isDisabled ? 0.5 : 1,
+                                    position: "relative",
+                                    border: isSelected
+                                      ? "2px solid #D23F57"
+                                      : "1px solid #e0e0e0",
+                                    borderRadius: "8px",
+                                    overflow: "hidden",
+                                    transition: "all 0.2s ease",
+                                    "&:hover": {
+                                      transform: isDisabled
+                                        ? "none"
+                                        : "translateY(-2px)",
+                                      boxShadow: isDisabled
+                                        ? "none"
+                                        : "0 4px 12px rgba(0,0,0,0.1)",
+                                    },
+                                  }}
+                                >
+                                  {/* Image */}
+                                  <Box
+                                    sx={{
+                                      position: "relative",
+                                      paddingTop: "100%",
+                                      backgroundColor: "#f5f5f5",
+                                    }}
+                                  >
+                                    {imageSrc ? (
+                                      <img
+                                        src={imageSrc}
+                                        alt={attr.value}
+                                        style={{
+                                          position: "absolute",
+                                          top: 0,
+                                          left: 0,
+                                          width: "100%",
+                                          height: "100%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    ) : (
+                                      <Box
+                                        sx={{
+                                          position: "absolute",
+                                          top: 0,
+                                          left: 0,
+                                          width: "100%",
+                                          height: "100%",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          backgroundColor: "#f5f5f5",
+                                          color: "#999",
+                                        }}
+                                      >
+                                        No Image
+                                      </Box>
+                                    )}
+
+                                    {/* Thumbnail */}
+                                    {showThumbnail && thumbnailSrc && (
+                                      <Box
+                                        sx={{
+                                          position: "absolute",
+                                          bottom: "8px",
+                                          right: "8px",
+                                          width: "48px",
+                                          height: "48px",
+                                          borderRadius: "4px",
+                                          overflow: "hidden",
+                                          border: "2px solid white",
+                                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                          backgroundColor: "white",
+                                        }}
+                                      >
+                                        <img
+                                          src={thumbnailSrc}
+                                          alt=""
+                                          style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                          }}
+                                        />
+                                      </Box>
+                                    )}
+                                  </Box>
+
+                                  {/* Footer */}
+                                  <Box sx={{ p: 1.5, textAlign: "center" }}>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontWeight: 500,
+                                        fontSize: "13px",
+                                        mb: 0.5,
+                                        color: isDisabled ? "#999" : "inherit",
+                                      }}
+                                    >
+                                      {attr.value}
+                                    </Typography>
+
+                                    {isDisabled && (
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          color: "#d32f2f",
+                                          fontSize: "10px",
+                                          display: "block",
+                                        }}
+                                      >
+                                        Sold Out
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      </DialogContent>
+                    </Dialog>
                   ) : (
                     <>
                       {variant.attributes.map((attr) => {

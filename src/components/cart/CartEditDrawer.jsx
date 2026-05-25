@@ -46,6 +46,42 @@ const CartEditDrawer = ({ open, onClose, cartProduct }) => {
     const [selectedImage, setSelectedImage] = useState(0);
     const [hoveredImage, setHoveredImage] = useState(null);
 
+    // Callback to handle product changes from parent variant selection
+    const handleProductChange = useCallback((newProduct) => {
+        // console.log("Product changed to:", newProduct._id);
+
+        // Only update if the product ID is different
+        if (productData?._id === newProduct._id) {
+            // console.log("Same product, skipping update");
+            return;
+        }
+
+        // Update product data
+        setProductData(newProduct);
+
+        // Rebuild media array
+        const productMedia = [];
+        if (newProduct.image && Array.isArray(newProduct.image)) {
+            newProduct.image.forEach((img) => {
+                const imageUrl = newProduct.image_url
+                    ? `${newProduct.image_url}${img}`
+                    : `/uploads/product/${img}`;
+                productMedia.push({ type: "image", url: imageUrl });
+            });
+        }
+        if (newProduct.videos && Array.isArray(newProduct.videos)) {
+            newProduct.videos.forEach((video) => {
+                const videoUrl = newProduct.video_url
+                    ? `${newProduct.video_url}${video}`
+                    : `/uploads/product/${video}`;
+                productMedia.push({ type: "video", url: videoUrl });
+            });
+        }
+        setMedia(productMedia);
+        setSelectedImage(0);
+    }, [productData?._id]);
+
+
     useEffect(() => {
         if (!open || !cartProduct?.product_id) return;
         fetchProduct();
@@ -129,6 +165,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct }) => {
                             </Box>
                         ) : productData ? (
                             <CartEditContent
+                                key={productData?._id}
                                 product={productData}
                                 media={media}
                                 selectedImage={selectedImage}
@@ -142,6 +179,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct }) => {
                                 onHoverImage={handleHoverImage}
                                 onHoverOut={handleHoverOut}
                                 hoveredImage={hoveredImage}
+                                onProductChange={handleProductChange}
                             />
                         ) : (
                             <Typography>Product not found</Typography>
@@ -170,6 +208,7 @@ const CartEditContent = ({
     onHoverImage,
     onHoverOut,
     hoveredImage,
+    onProductChange
 }) => {
     // Drawer‑simplified variant hook
     const {
@@ -182,6 +221,7 @@ const CartEditContent = ({
         selectedVariantImages,
         calculateAttributeData,
         handleVariantChange,
+        handleParentVariantNavigation,
         handleVariantHover,
         handleVariantHoverOut,
         validateVariants,
@@ -216,24 +256,47 @@ const CartEditContent = ({
 
     // Calculate stock based on combination data
     const calculateStock = useCallback(() => {
-        if (!product.isCombination) return Number(product.qty || 0);
-        if (currentCombinationData?.quantity !== undefined && currentCombinationData?.quantity !== null)
+        if (!product.isCombination && !product.form_values?.isCheckedQuantity) return Number(product.qty || 0);
+
+        // Check if quantity is controlled by combinations
+        const isQuantityControlled = product.form_values?.isCheckedQuantity === true;
+
+        // If quantity is NOT controlled by combinations, use product.qty
+        if (!isQuantityControlled) {
+            return Number(product.qty || 0);
+        }
+        // Quantity IS controlled by combinations
+        if (currentCombinationData?.quantity !== undefined && currentCombinationData?.quantity !== null) {
             return currentCombinationData.quantity;
+        }
         return Number(product.qty || 0);
-    }, [product, currentCombinationData]);
+    }, [product?.isCombination, product?.qty, product?.form_values?.isCheckedQuantity, currentCombinationData?.quantity]);
 
     // Price calculation – FIX: ensure base price is set correctly
+    // Price calculation
     useEffect(() => {
         if (!product) return;
 
-        // Base price: sale_price for simple products; combination price for variant products
-        let basePrice = product.sale_price || product.price || 0;
+        // Check if price is controlled by combinations
+        const isPriceControlled = product.form_values?.isCheckedPrice === true;
 
-        if (product.isCombination && currentCombinationData?.price !== null && currentCombinationData?.price !== undefined) {
-            basePrice = currentCombinationData.price;
+        let basePrice = 0;
+
+        if (isPriceControlled && product.isCombination) {
+            // Price IS controlled by combinations
+            if (currentCombinationData?.price !== null && currentCombinationData?.price !== undefined) {
+                basePrice = currentCombinationData.price;
+            } else {
+                basePrice = product.sale_price || product.price || 0;
+            }
+        } else {
+            // Price is NOT controlled by combinations - use product's own price
+            basePrice = product.sale_price || product.price || 0;
         }
 
         let finalPrice = basePrice + customizeDropdownPrice + customizeTextPrice;
+
+        // Apply promotion if applicable
         if (bestPromotion && bestPromotion.qty <= quantity) {
             finalPrice = calculatePriceAfterDiscount(
                 bestPromotion.offer_type,
@@ -241,12 +304,16 @@ const CartEditContent = ({
                 finalPrice
             );
         }
+
         setPrice(finalPrice);
         setOriginalPrice(basePrice + customizeDropdownPrice + customizeTextPrice);
         setPlusToggle(product.isCombination && !areAllInternalVariantsSelected());
     }, [
-        product,
-        currentCombinationData,
+        product?.sale_price,
+        product?.price,
+        product?.isCombination,
+        product?.form_values?.isCheckedPrice,
+        currentCombinationData?.price,
         customizeDropdownPrice,
         customizeTextPrice,
         quantity,
@@ -322,71 +389,81 @@ const CartEditContent = ({
     // Reset prefill flag when drawer opens with new product/cartItem
     useEffect(() => {
         if (product && cartItem) {
-            console.log("Resetting prefillDoneRef for new product/cartItem");
-            prefillDoneRef.current = false;
+            // Only reset if the product ID matches (meaning we're back to the original product)
+            // Don't reset when product changes due to parent variant selection
+            if (product._id === cartItem.product_id) {
+                // console.log("Resetting prefillDoneRef for matching product/cartItem");
+                prefillDoneRef.current = false;
+            } else {
+                // console.log("Product ID mismatch, not resetting prefillDoneRef");
+            }
         }
     }, [product, cartItem]);
 
     // Prefill variants and customizations from cart item (only once)
-    // Reset prefill flag when drawer opens with new product/cartItem
-    useEffect(() => {
-        if (product && cartItem) {
-            console.log("Resetting prefillDoneRef for new product/cartItem");
-            prefillDoneRef.current = false;
-        }
-    }, [product, cartItem]);
 
     // SINGLE PREFILL USEFFECT - REPLACE both existing ones with this
+    // Prefill variants and customizations from cart item (only once)
     useEffect(() => {
         if (!product || !cartItem) {
-            console.log("No product or cartItem, skipping prefill");
+            // console.log("No product or cartItem, skipping prefill");
             return;
         }
 
         if (prefillDoneRef.current) {
-            console.log("Prefill already done, skipping");
+            // console.log("Prefill already done, skipping");
             return;
         }
 
-        console.log("Starting prefill...");
+        // CRITICAL: Only prefill if the product ID matches the cart item's product ID
+        // When parent variant changes, the new product will have a different ID
+        // We should NOT prefill for the new product because it has different variants
+        if (product._id !== cartItem.product_id) {
+            // console.log("Product ID mismatch - skipping prefill for this product");
+            // console.log(`  product._id: ${product._id}`);
+            // console.log(`  cartItem.product_id: ${cartItem.product_id}`);
+            return;
+        }
+
+        // console.log("Starting prefill...");
 
         // Small delay to ensure all data is ready
         const timer = setTimeout(() => {
             // Prefill variants using the hook's method
-            console.log("Calling prefillFromCart with cartItem");
+            // console.log("Calling prefillFromCart with cartItem");
             prefillFromCart(cartItem);
 
             // Prefill customizations
-            console.log("\nPrefilling customizations...");
-            console.log("cartItem.customizationData:", cartItem.customizationData);
+            // console.log("\nPrefilling customizations...");
+            // console.log("cartItem.customizationData:", cartItem.customizationData);
 
-            if (cartItem.customizationData && cartItem.customizationData.length >= 2) {
-                const dropdowns = cartItem.customizationData[0];
-                const texts = cartItem.customizationData[1];
+            if (cartItem.selectedCustomization && cartItem.selectedCustomization.length >= 1) {
+                const dropdowns = cartItem.selectedCustomization[0];
+                const texts = cartItem.selectedCustomization?.[1] || {};
 
-                console.log("Dropdowns from cart:", dropdowns);
-                console.log("Texts from cart:", texts);
+                // console.log("Dropdowns from cart:", dropdowns);
+                // console.log("Texts from cart:", texts);
 
                 // Prefill dropdown customizations
                 if (dropdowns && typeof dropdowns === "object") {
-                    console.log("Processing dropdown customizations...");
+                    // console.log("Processing dropdown customizations...");
                     Object.entries(dropdowns).forEach(([key, value]) => {
-                        console.log(`  Dropdown ${key}:`, value);
+                        // console.log(`  Dropdown ${key}:`, value);
                         const optionValue = typeof value === 'object' ? value.value : value;
-                        console.log(`    Extracted value: ${optionValue}`);
+                        // console.log(`    Extracted value: ${optionValue}`);
 
                         if (optionValue) {
                             const customField = product.customizationData?.customizations?.find(c => c.label === key);
-                            console.log(`    Found custom field:`, customField ? "YES" : "NO");
+                            // console.log(`    Found custom field:`, customField ? "YES" : "NO");
 
                             const option = customField?.optionList?.find(opt => opt.optionName === optionValue);
-                            console.log(`    Found option:`, option ? "YES" : "NO");
+                            // console.log(`    Found option:`, option ? "YES" : "NO");
 
                             if (option) {
-                                console.log(`    Calling handleDropdownChange with option:`, option);
+                                // console.log(`    Calling handleDropdownChange with option:`, option);
                                 handleDropdownChange(key, option);
                             } else {
-                                console.log(`    Calling handleDropdownChange with value: ${optionValue}`);
+                                // console.log(`    Calling handleDropdownChange with value: ${optionValue}`);
                                 handleDropdownChange(key, optionValue);
                             }
                         }
@@ -395,14 +472,14 @@ const CartEditContent = ({
 
                 // Prefill text customizations
                 if (texts && typeof texts === "object") {
-                    console.log("Processing text customizations...");
+                    // console.log("Processing text customizations...");
                     Object.entries(texts).forEach(([key, value]) => {
-                        console.log(`  Text ${key}:`, value);
+                        // console.log(`  Text ${key}:`, value);
                         const textValue = typeof value === 'object' ? value.value : value;
                         const price = typeof value === 'object' ? value.price : 0;
                         const min = typeof value === 'object' ? value.min : 1;
                         const max = typeof value === 'object' ? value.max : 100;
-                        console.log(`    Calling handleTextChange with: ${textValue}, price: ${price}, min: ${min}, max: ${max}`);
+                        // console.log(`    Calling handleTextChange with: ${textValue}, price: ${price}, min: ${min}, max: ${max}`);
 
                         if (textValue) {
                             handleTextChange(key, price, min, max, textValue);
@@ -410,43 +487,89 @@ const CartEditContent = ({
                     });
                 }
             } else {
-                console.log("No customization data found in cartItem");
+                // console.log("No customization data found in cartItem");
             }
 
             prefillDoneRef.current = true;
-            console.log("Prefill completed, prefillDoneRef set to true");
-            console.log("==========================================\n");
+            // console.log("Prefill completed, prefillDoneRef set to true");
+            // console.log("==========================================\n");
         }, 100);
 
         return () => clearTimeout(timer);
-    }, [product, cartItem]); // Note: prefillFromCart, handleDropdownChange, handleTextChange NOT in dependencies
+    }, [product, cartItem]); // Note: prefillFromCart not in dependencies to prevent re-runs // Note: prefillFromCart, handleDropdownChange, handleTextChange NOT in dependencies
 
 
-    // DEBUG: Log cart item data when drawer opens
-    useEffect(() => {
-        if (!product || !cartItem) return;
+    // // DEBUG: Log cart item data when drawer opens
+    // useEffect(() => {
+    //     if (!product || !cartItem) return;
 
-        console.log("========== CART PREFILL DEBUG ==========");
-        console.log("1. Cart Item:", {
-            cart_id: cartItem.cart_id,
-            variants: cartItem.variants,
-            variantData: cartItem.variantData,
-            variantAttributeData: cartItem.variantAttributeData,
-            customizationData: cartItem.customizationData,
-            customize: cartItem.customize,
-            product_id: cartItem.product_id
-        });
+    //     // console.log("========== CART PREFILL DEBUG ==========");
+    //     // console.log("1. Cart Item:", {
+    //         cart_id: cartItem.cart_id,
+    //         variants: cartItem.variants,
+    //         variantData: cartItem.variantData,
+    //         variantAttributeData: cartItem.variantAttributeData,
+    //         customizationData: cartItem.customizationData,
+    //         customize: cartItem.customize,
+    //         product_id: cartItem.product_id
+    //     });
 
-        console.log("2. Product Data:", {
-            product_id: product._id,
-            isCombination: product.isCombination,
-            hasParentId: !!product.parent_id,
-            product_variants: product.product_variants?.map(v => v.variant_name),
-            variant_id: product.variant_id?.length,
-            variant_attribute_id: product.variant_attribute_id?.length,
-            customizationData: product.customizationData
-        });
-    }, [product, cartItem]);
+    //     // console.log("2. Product Data:", {
+    //         product_id: product._id,
+    //         isCombination: product.isCombination,
+    //         hasParentId: !!product.parent_id,
+    //         product_variants: product.product_variants?.map(v => v.variant_name),
+    //         variant_id: product.variant_id?.length,
+    //         variant_attribute_id: product.variant_attribute_id?.length,
+    //         customizationData: product.customizationData
+    //     });
+    // }, [product, cartItem]);
+
+    // Wrapper for variant change to handle parent variant navigation
+    const handleVariantChangeWithNavigation = useCallback(async (variantId, value) => {
+        // First, check if this is a parent variant change
+        const allVariants = normalizeVariantData();
+        const variant = allVariants.find(v => v.id === variantId);
+        // console.log(`in parent variant change: ${variantId}, value: ${value}`, { found: variant });
+        if (variant?.type === "parent" && value) {
+            // Call the original change to update local state temporarily
+            handleVariantChange(variantId, value);
+
+            // Check if we need to navigate to a different product
+            const navigationTarget = handleParentVariantNavigation(variantId, value);
+
+            if (navigationTarget) {
+                // Fetch the new product
+                try {
+                    setSaving(false); // Reset any saving state
+                    const res = await axios.get(
+                        `${process.env.NEXT_PUBLIC_BASE_URL}/get-productById?productId=${navigationTarget.product_code}`
+                    );
+                    if (res?.data?.data) {
+                        const newProduct = res.data.data;
+
+                        // Update product data
+                        // You'll need to pass a setProductData function from parent
+                        // For now, we'll call a prop callback
+                        if (onProductChange) {
+                            onProductChange(newProduct);
+                        }
+
+                        // Reset prefill flag for the new product
+                        prefillDoneRef.current = false;
+
+                        addToast("Product variant updated", { appearance: "success", autoDismiss: true });
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch variant product:", error);
+                    addToast("Failed to load variant", { appearance: "error" });
+                }
+            }
+        } else {
+            // Just handle regular variant change
+            handleVariantChange(variantId, value);
+        }
+    }, [handleVariantChange, handleParentVariantNavigation, normalizeVariantData, addToast]);
 
     const handleSave = async () => {
         if (!validateVariants()) {
@@ -635,20 +758,10 @@ const CartEditContent = ({
         }
     };
 
-    // Inside the return statement, before rendering variants
-    console.log("========== RENDERING VARIANTS ==========");
-    console.log("All variants from normalizeVariantData():", normalizeVariantData().map(v => ({
-        id: v.id,
-        name: v.name,
-        type: v.type,
-        attributesCount: v.attributes?.length
-    })));
-    console.log("Current selectedVariants:", selectedVariants);
-    console.log("Current errors:", errors);
 
     // Debug: Monitor selectedVariants changes
     useEffect(() => {
-        console.log("selectedVariants CHANGED:", selectedVariants);
+        // console.log("selectedVariants CHANGED:", selectedVariants);
     }, [selectedVariants]);
 
     return (
@@ -681,13 +794,13 @@ const CartEditContent = ({
             )}
 
             {/* Render all variants (parent + internal) using normalizeVariantData */}
-            {allVariants.map(variant => (
+            {allVariants.filter(v => v.id && typeof v.id === 'string' && v.id !== 'undefined').map(variant => (
                 <DrawerVariantSelector
-                    key={variant.id}
+                    key={`${variant.id}-${product._id}`}
                     variant={variant}
                     selectedValue={selectedVariants[variant.id]}
                     selectedVariants={selectedVariants}
-                    onChange={handleVariantChange}
+                    onChange={handleVariantChangeWithNavigation}
                     onHover={(attrId) => {
                         handleVariantHover(attrId);
                         // Update gallery hover image

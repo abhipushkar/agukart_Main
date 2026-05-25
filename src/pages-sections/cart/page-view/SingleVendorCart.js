@@ -32,6 +32,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckoutPopup from "./CheckoutPopup";
 import { useLocation } from "../../../contexts/location_context"; // Adjust path as needed
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import MessagePopup from "./MessagePopup";
 
 const DELIVERY_STORAGE_KEY = "persisted_delivery_options";
 
@@ -107,6 +108,7 @@ const SingleVendorCart = ({
     return cart?.selectedShipping || "standardShipping";
   });
   const [isModalOpen, setModalOpen] = useState(false);
+  const [openContact, setOpenContact] = useState(false);
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState(() => {
     // Try to get from persisted storage first
@@ -228,11 +230,11 @@ const SingleVendorCart = ({
         if (lockedPromotions.length > 0) {
           const currentSavings = appliedPromotion
             ? variantPrice -
-              calculatePriceAfterDiscount(
-                appliedPromotion.offer_type,
-                appliedPromotion.discount_amount,
-                variantPrice,
-              )
+            calculatePriceAfterDiscount(
+              appliedPromotion.offer_type,
+              appliedPromotion.discount_amount,
+              variantPrice,
+            )
             : 0;
           const betterPromotions = lockedPromotions
             .map((promo) => {
@@ -335,11 +337,10 @@ const SingleVendorCart = ({
 
       return {
         value: item.shippingType,
-        label: `${shippingLabel} (${formatDate(minDate)} - ${formatDate(maxDate)}) ${
-          price > 0
+        label: `${shippingLabel} (${formatDate(minDate)} - ${formatDate(maxDate)}) ${price > 0
             ? `— ${currency.symbol}${(price * currency.rate).toFixed(2)}`
             : ""
-        }`,
+          }`,
       };
     })
     .filter(Boolean);
@@ -702,9 +703,9 @@ const SingleVendorCart = ({
               },
             }}
           >
-            <Link component={NextLink} href="/">
+            <Button onClick={() => setOpenContact(true)}>
               Contact shop
-            </Link>
+            </Button>
           </Typography>
         </Typography>
         {processedCart?.products?.map((product, index) => (
@@ -1111,6 +1112,17 @@ const SingleVendorCart = ({
       <CountryModal
         open={showCountryModal}
         onClose={() => setShowCountryModal(false)}
+      />
+      {/* Message Popup */}
+      <MessagePopup
+        handleClosePopup={() => setOpenContact(false)}
+        openPopup={openContact}
+        vendorName={cart.vendor_name}
+        shopName={cart.shop_name}
+        vendorImage={cart.shop_icon}
+        shopImage={cart.shop_icon}
+        receiverid={cart.vendor_id}
+        products={cart.products}
       />
     </>
   );

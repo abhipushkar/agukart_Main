@@ -1,293 +1,223 @@
+// utils/validateCartItem.js
 import { resolveCartItemState } from "./resolveCartItemState";
+import { resolveCartStock } from "./resolveCartStock";
 
+/**
+ * Validates a cart item against current product data.
+ * Returns a detailed result including validity, message, and suggested action.
+ * @param {Object} product - Current product data
+ * @param {Object} options - { pendingQuantity, cartItem }
+ * @returns {Object} Validation result
+ */
 export const validateCartItem = (product, options = {}) => {
+    const { pendingQuantity, cartItem } = options;
+    const state = resolveCartItemState(product, cartItem || product);
+    const pendingQty = pendingQuantity !== undefined && pendingQuantity !== null && pendingQuantity !== ""
+        ? +pendingQuantity
+        : undefined;
 
-    const resolvedState =
-        resolveCartItemState(product);
-
-    const pendingQuantity =
-        options?.pendingQuantity;
-
-    /*
-    ===================================
-    SAFE FLAGS
-    ===================================
-    */
-
-    const priceExists =
-        resolvedState?.priceExists !== false;
-
-    const stockExists =
-        resolvedState?.stockExists !== false;
-
-    /*
-    ===================================
-    PRODUCT REMOVED
-    ===================================
-    */
-
+    // --- 1. Product deleted / inactive ---
     if (product?.isDeleted === true) {
-
         return {
-
             valid: false,
-
             type: "PRODUCT_DELETED",
-
-            message:
-                "This item is no longer available.",
-
+            caseType: "PRODUCT_DELETED",
+            message: "This item is no longer available. Please remove it from your cart.",
             shouldResetQuantity: true,
-
-            disableCheckout: true,
-
-            resolvedState,
-        };
-    }
-
-    /*
-    ===================================
-    PRODUCT INACTIVE
-    ===================================
-    */
-
-    if (product?.status === false) {
-
-        return {
-
-            valid: false,
-
-            type: "PRODUCT_INACTIVE",
-
-            message:
-                "This item is currently unavailable.",
-
-            shouldResetQuantity: true,
-
-            disableCheckout: true,
-
-            resolvedState,
-        };
-    }
-
-    /*
-    ===================================
-    PRICE COMBINATION REMOVED
-    ===================================
-    */
-
-    if (!priceExists) {
-
-        return {
-
-            valid: false,
-
-            type: "PRICE_COMBINATION_REMOVED",
-
-            message:
-                "This pricing option is no longer available.",
-
-            shouldResetQuantity: true,
-
             allowQuantitySelection: false,
-
             disableCheckout: true,
-
-            resolvedState,
+            openEditDrawer: false,
+            resolvedState: state,
         };
     }
-
-    /*
-    ===================================
-    VARIANT HIDDEN
-    ===================================
-    */
-
-    if (!resolvedState.isVisible) {
-
+    if (product?.status === false) {
         return {
-
             valid: false,
-
-            type: "VARIANT_HIDDEN",
-
-            message:
-                "This variation is currently unavailable.",
-
+            type: "PRODUCT_INACTIVE",
+            caseType: "PRODUCT_INACTIVE",
+            message: "This item is currently unavailable. Please remove it.",
             shouldResetQuantity: true,
-
+            allowQuantitySelection: false,
             disableCheckout: true,
-
-            resolvedState,
+            openEditDrawer: false,
+            resolvedState: state,
         };
     }
 
-    /*
-    ===================================
-    QTY COMBINATION REMOVED
-    ===================================
-    */
-
-    if (!stockExists) {
-
-        const invalidValues =
-            resolvedState?.invalidValues || [];
-
-        const invalidLabel =
-            invalidValues.length > 0
-                ? invalidValues.map(value => value.charAt(0).toUpperCase() + value.slice(1)).join(", ")
-                : "Selected option";
-
+    // --- 2. Missing variant selection (product now requires variants) ---
+    if (state.caseType === "VARIANT_SELECTION_REQUIRED") {
         return {
-
             valid: false,
-
-            type: "QTY_COMBINATION_REMOVED",
-
-            message:  `${invalidValues.length>1? "Selected Combination" : "Selected Option"} ${invalidLabel} is no longer available. Please choose another option.`,
-
-            // shouldResetQuantity: true,
-
-            // allowQuantitySelection: true,
-
-            disableCheckout:
-                pendingQuantity === undefined ||
-                pendingQuantity === null ||
-                pendingQuantity === "",
-
-            resolvedState,
-        };
-    }
-
-    /*
-    ===================================
-    OUT OF STOCK
-    ===================================
-    */
-
-    if (
-        resolvedState.latestStock <= 0
-    ) {
-
-        return {
-
-            valid: false,
-
-            type: "OUT_OF_STOCK",
-
-            message:
-                "This item is out of stock.",
-
+            type: "VARIANT_SELECTION_REQUIRED",
+            caseType: "VARIANT_SELECTION_REQUIRED",
+            message: "This product now requires variant selection. Please edit your item.",
             shouldResetQuantity: true,
-
+            allowQuantitySelection: false,
             disableCheckout: true,
-
-            resolvedState,
+            openEditDrawer: true,
+            resolvedState: state,
         };
     }
 
-    /*
-    ===================================
-    EFFECTIVE QUANTITY
-    ===================================
-    */
-
-    const effectiveQuantity =
-        pendingQuantity !== undefined &&
-            pendingQuantity !== null &&
-            pendingQuantity !== ""
-            ? +pendingQuantity
-            : +product?.qty;
-
-    /*
-    ===================================
-    QUANTITY INVALID
-    ===================================
-    */
-
-    if (
-        effectiveQuantity >
-        resolvedState.latestStock
-    ) {
-
+    // --- 3. Parent variant removed ---
+    if (state.caseType === "PARENT_VARIANT_REMOVED") {
         return {
-
             valid: false,
-
-            type: "QTY_CHANGED",
-
-            message:
-                "The selected quantity is no longer available. Please choose quantity again.",
-
+            type: "PARENT_VARIANT_REMOVED",
+            caseType: "PARENT_VARIANT_REMOVED",
+            message: "The selected option is no longer available. Please edit your selection.",
             shouldResetQuantity: true,
-            allowQuantitySelection: true,
-
-            disableCheckout:
-                pendingQuantity === undefined ||
-                pendingQuantity === null ||
-                pendingQuantity === "",
-
-            resolvedState,
+            allowQuantitySelection: false,
+            disableCheckout: true,
+            openEditDrawer: true,
+            resolvedState: state,
         };
     }
 
-    /*
-===================================
-PRICE CHANGED
-===================================
-*/
-
-    const cartSnapshotPrice =
-        +product?.original_price || 0;
-
-    if (
-        cartSnapshotPrice !==
-        resolvedState.latestPrice
-    ) {
-
+    // --- 4. Combination removed (internal variants) ---
+    if (state.caseType === "COMBINATION_REMOVED") {
         return {
-
             valid: false,
+            type: "COMBINATION_REMOVED",
+            caseType: "COMBINATION_REMOVED",
+            message: "The selected variation is no longer available. Please edit your selection.",
+            shouldResetQuantity: true,
+            allowQuantitySelection: false,
+            disableCheckout: true,
+            openEditDrawer: true,
+            resolvedState: state,
+        };
+    }
 
+    // --- 5. Product unavailable (general) ---
+    if (state.caseType === "PRODUCT_UNAVAILABLE") {
+        return {
+            valid: false,
+            type: "PRODUCT_UNAVAILABLE",
+            caseType: "PRODUCT_UNAVAILABLE",
+            message: "This item is no longer available. Please remove it from your cart.",
+            shouldResetQuantity: true,
+            allowQuantitySelection: false,
+            disableCheckout: true,
+            openEditDrawer: false,
+            resolvedState: state,
+        };
+    }
+
+    // --- 6. Customization removed or invalid ---
+    if (state.hasCustomization && (!state.customizationValid || state.customizationRemoved)) {
+        if (state.customizationRemoved) {
+            return {
+                valid: false,
+                type: "CUSTOMIZATION_REMOVED",
+                caseType: "CUSTOMIZATION_REMOVED",
+                message: "Some customization options you selected are no longer available. Please edit your item.",
+                shouldResetQuantity: true,
+                allowQuantitySelection: false,
+                disableCheckout: true,
+                openEditDrawer: true,
+                resolvedState: state,
+            };
+        }
+        if (!state.customizationValid) {
+            return {
+                valid: false,
+                type: "CUSTOMIZATION_INCOMPLETE",
+                caseType: "CUSTOMIZATION_INCOMPLETE",
+                message: "Required customizations are missing. Please complete them.",
+                shouldResetQuantity: true,
+                allowQuantitySelection: false,
+                disableCheckout: true,
+                openEditDrawer: true,
+                resolvedState: state,
+            };
+        }
+    }
+
+    // --- 7. Price changed (combination or main) ---
+    if (state.priceChangeType !== "none") {
+        const isCombinationPriceChange = state.caseType === "COMBINATION_PRICE_CHANGED";
+        const isCustomizationPriceChange = state.caseType === "CUSTOMIZATION_PRICE_CHANGED";
+        
+        let message = "This item's price has changed. Please review.";
+        if (isCombinationPriceChange) {
+            message = "The price of this variation has changed. Please review.";
+        } else if (isCustomizationPriceChange) {
+            message = "The price of your customizations has changed. Please review.";
+        }
+        
+        return {
+            valid: false,
             type: "PRICE_CHANGED",
-
-            message:
-                "This item price has changed. Please choose quantity again.",
-
+            caseType: state.caseType,
+            message,
             shouldResetQuantity: true,
-
             allowQuantitySelection: true,
-
-            disableCheckout:
-                pendingQuantity === undefined ||
-                pendingQuantity === null ||
-                pendingQuantity === "",
-
-            resolvedState,
+            disableCheckout: true,
+            openEditDrawer: false,
+            resolvedState: state,
         };
     }
 
+    // --- 8. Customization price changed (separate message - kept for backward compatibility) ---
+    if (state.customizationPriceChanged && state.caseType !== "PRICE_CHANGED") {
+        return {
+            valid: false,
+            type: "CUSTOMIZATION_PRICE_CHANGED",
+            caseType: "CUSTOMIZATION_PRICE_CHANGED",
+            message: "The price of your customizations has changed. Please review.",
+            shouldResetQuantity: true,
+            allowQuantitySelection: true,
+            disableCheckout: true,
+            openEditDrawer: false,
+            resolvedState: state,
+        };
+    }
 
-    /*
-    ===================================
-    VALID
-    ===================================
-    */
+    // --- 9. Stock validation (combination or main) ---
+    const stockState = resolveCartStock(product);
+    const currentStock = stockState.latestStock;
+    
+    if (currentStock <= 0) {
+        return {
+            valid: false,
+            type: "OUT_OF_STOCK",
+            caseType: state.caseType === "MAIN_STOCK_CHANGED" ? "MAIN_STOCK_CHANGED" : "OUT_OF_STOCK",
+            message: "This item is out of stock.",
+            shouldResetQuantity: true,
+            allowQuantitySelection: false,
+            disableCheckout: true,
+            openEditDrawer: false,
+            resolvedState: state,
+        };
+    }
+    
+    // --- 10. Quantity exceeds stock ---
+    const effectiveQuantity = pendingQty !== undefined ? pendingQty : (+product?.qty || 0);
+    if (effectiveQuantity > currentStock) {
+        return {
+            valid: false,
+            type: "QUANTITY_EXCEEDS_STOCK",
+            caseType: "QUANTITY_EXCEEDS_STOCK",
+            message: `Only ${currentStock} item(s) available. Please adjust quantity.`,
+            shouldResetQuantity: true,
+            allowQuantitySelection: true,
+            disableCheckout: false,
+            openEditDrawer: false,
+            resolvedState: state,
+        };
+    }
 
+    // --- All valid ---
     return {
-
         valid: true,
-
         type: "VALID",
-
+        caseType: "VALID",
         message: "",
-
         shouldResetQuantity: false,
-
         allowQuantitySelection: true,
-
         disableCheckout: false,
-
-        resolvedState,
+        openEditDrawer: false,
+        resolvedState: state,
     };
 };
