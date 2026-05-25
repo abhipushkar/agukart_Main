@@ -595,8 +595,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                   }}
                 >
                   {promotion?.offer_type == "flat"
-                    ? `Save ${currency?.symbol}${promotion?.discount_amount}`
-                    : `Save ${promotion?.discount_amount}%`}
+  ? `${currency?.symbol}${promotion?.discount_amount} off`
+  : `${promotion?.discount_amount}% off`}
                 </Typography>
               )}
           </FlexBox>

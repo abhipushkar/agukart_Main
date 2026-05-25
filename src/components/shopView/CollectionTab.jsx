@@ -180,40 +180,80 @@ const CollectionTab = ({
     <>
       <Box
   mt={1}
-  mb={1.5}
+  mb={2}
   sx={{
     display: "flex",
-    flexDirection: "column",
-    gap: 1.2,
-  }}
->
-  {/* SEARCH + SORT */}
-  {/* SEARCH */}
-<Box
-  sx={{
-    width: "100%",
-    background: "#f7f7f7",
-    border: "1.5px solid #d6d6d6",
-    borderRadius: "14px",
-    px: 1.5,
-    height: "44px",
-    display: "flex",
+    justifyContent: "space-between",
     alignItems: "center",
+    gap: 2,
   }}
 >
-  <InputBase
-    placeholder="Search products..."
-    inputProps={{ "aria-label": "search" }}
+  {/* SEARCH */}
+  <Box
     sx={{
       flex: 1,
-      fontSize: "14px",
+      background: "#f7f7f7",
+      border: "1.5px solid #d6d6d6",
+      borderRadius: "14px",
+      px: 1.5,
+      height: "44px",
+      display: "flex",
+      alignItems: "center",
     }}
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-  />
+  >
+    <InputBase
+      placeholder="Search products..."
+      inputProps={{ "aria-label": "search" }}
+      sx={{
+        flex: 1,
+        fontSize: "14px",
+      }}
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+    />
 
-  <SearchIcon sx={{ fontSize: "20px", color: "#666" }} />
-</Box>
+    <SearchIcon sx={{ fontSize: "20px", color: "#666" }} />
+  </Box>
+
+  {/* DESKTOP SORT */}
+  <Box
+    sx={{
+      display: { xs: "none", md: "flex" },
+      alignItems: "center",
+      gap: 1,
+    }}
+  >
+    <Typography
+      color="grey.600"
+      sx={{
+        whiteSpace: "nowrap",
+      }}
+    >
+      Sort by:
+    </Typography>
+
+    <TextField
+      select
+      size="small"
+      value={sortBy}
+      variant="outlined"
+      onChange={(e) => handleChangeSortBy(e.target.value)}
+      sx={{
+        minWidth: 170,
+        bgcolor: "#fff",
+        borderRadius: "10px",
+        ".MuiOutlinedInput-notchedOutline": {
+          border: "1px solid #d6d6d6",
+        },
+      }}
+    >
+      {SORT_OPTIONS.map((item) => (
+        <MenuItem key={item.value} value={item.value}>
+          {item.label}
+        </MenuItem>
+      ))}
+    </TextField>
+  </Box>
 </Box>
       <Grid container spacing={3}>
         <Grid item lg={2.5} md={3.5} xs={12}>
@@ -277,42 +317,39 @@ width: "44px",
   </IconButton>
 
   {showSortMenu && (
-    <Box
-      sx={{
-        position: "absolute",
-        top: "48px",
-        right: 0,
-        bgcolor: "#fff",
-        border: "1px solid #ececec",
-        borderRadius: "12px",
-        zIndex: 999,
-        minWidth: "170px",
-        boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
-        overflow: "hidden",
+  <Box
+    sx={{
+      display: { xs: "block", md: "none" },
+      position: "absolute",
+      top: "52px",
+      right: 0,
+      width: "180px",
+      bgcolor: "#fff",
+      border: "1px solid #e0e0e0",
+      borderRadius: "12px",
+      boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+      zIndex: 20,
+      p: 1,
+    }}
+  >
+    <TextField
+      select
+      fullWidth
+      size="small"
+      value={sortBy}
+      onChange={(e) => {
+        handleChangeSortBy(e.target.value);
+        setShowSortMenu(false);
       }}
     >
       {SORT_OPTIONS.map((item) => (
-        <Box
-          key={item.value}
-          onClick={() => {
-            handleChangeSortBy(item.value);
-            setShowSortMenu(false);
-          }}
-          sx={{
-            px: 2,
-            py: 1.2,
-            fontSize: "13px",
-            cursor: "pointer",
-            bgcolor: sortBy === item.value ? "#f7f7f7" : "#fff",
-            fontWeight: sortBy === item.value ? 600 : 400,
-            "&:hover": { bgcolor: "#f7f7f7" },
-          }}
-        >
+        <MenuItem key={item.value} value={item.value}>
           {item.label}
-        </Box>
+        </MenuItem>
       ))}
-    </Box>
-  )}
+    </TextField>
+  </Box>
+)}
 </Box>
 </Box>
             <List

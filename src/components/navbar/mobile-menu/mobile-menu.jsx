@@ -46,6 +46,7 @@ export default function MobileMenu() {
       const res = await getAPIAuth("get-admin-menu-category", token);
       if (res.status === 200) {
         setCat(res.data.data);
+        console.log("admin cats", res.data.data); // ← YE ADD KAR
       }
     } catch (error) {
       console.log(error);
@@ -137,23 +138,6 @@ export default function MobileMenu() {
                 >
                   Home
                 </Button>
-                {cat?.map((cat) => {
-                  return (
-                    <Button
-                      onClick={() => navigation(cat)}
-                      key={cat._id}
-                      sx={{
-                        whiteSpace: "nowrap",
-                        borderBottom: "1px solid transparent",
-                        "&:hover": {
-                          borderBottom: "1px solid black",
-                        },
-                      }}
-                    >
-                      {cat.title}
-                    </Button>
-                  );
-                })}
                 {usercredentials?.designation_id != "4" && (
                   <Button
                     onClick={() => navigation("gift-card-category")}

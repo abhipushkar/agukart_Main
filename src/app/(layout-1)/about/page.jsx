@@ -1,17 +1,34 @@
 import About from "components/about/About";
+import axios from "axios";
 import React from "react";
 
-export const metadata = {
-  title: "About - Agukart Next.js E-commerce Template",
-  description: `Agukart is a React Next.js E-commerce template. Build SEO friendly Online store, delivery app and Multi vendor store`,
-  authors: [
-    {
-      name: "UI-LIB",
-      url: "https://ui-lib.com",
-    },
-  ],
-  keywords: ["e-commerce", "e-commerce template", "next.js", "react"],
+const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
+
+export async function generateMetadata() {
+  try {
+    const res = await axios.post(
+      `${baseURL}/get-description`,
+      {
+        type: "About Agukart",
+      }
+    );
+
+    const data = res?.data?.information;
+
+
+   return {
+  title: `About - ${data?.meta_title || "About"}`,
+  description: data?.meta_description || "",
+  keywords: data?.meta_keywords || [],
 };
+  } catch (error) {
+    console.log(error);
+
+    return {
+      title: "About",
+    };
+  }
+}
 
 const page = () => {
   return <About />;
