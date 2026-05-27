@@ -384,20 +384,23 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         </Box>
                                     )}
                                     {!displayValidation.valid && !hasRecoveredInvalidState && (
-                                        <Box sx={{
-                                            background: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#fff3cd" : "#ffe5e5",
-                                            border: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "1px solid #ffeeba" : "1px solid #ffcccc",
-                                            color: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#856404" : "#d32f2f",
-                                            padding: "10px", borderRadius: "8px", marginBottom: "12px", marginTop: "8px", cursor: shouldOpenEditDrawer ? "pointer" : "default"
-                                        }} onClick={shouldOpenEditDrawer ? handleOpenEditDrawer : undefined}>
-                                            <Typography fontSize={13}>{validationMessage}</Typography>
-                                            {shouldOpenEditDrawer && (
-                                                <Typography fontSize={12} sx={{ mt: 0.5, textDecoration: "underline" }}>
-                                                    Click to edit
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    )}
+    <Box sx={{
+    background: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#fff3cd" : "#ffe5e5",
+    border: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "1px solid #ffeeba" : "1px solid #ffcccc",
+    color: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#856404" : "#d32f2f",
+    padding: "10px", borderRadius: "8px", marginBottom: "12px", marginTop: "8px", cursor: "pointer"
+}} onClick={handleOpenEditDrawer}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <ErrorOutlineIcon sx={{ fontSize: 18, cursor: "pointer" }} onClick={handleOpenEditDrawer} />
+        <Typography fontSize={13}>{validationMessage}</Typography>
+    </Box>
+    {shouldOpenEditDrawer && (
+        <Typography fontSize={12} sx={{ mt: 0.5, textDecoration: "underline" }}>
+            Click to edit
+        </Typography>
+    )}
+</Box>
+)}
                                     {displayValidation.type === "OUT_OF_STOCK" && (
                                         <Typography component="div" sx={{ color: "#bc1111" }} pt={2}>
                                             {(!product?.status || product?.isDeleted) ? "Currently Unavailable" : "Sold Out"}
