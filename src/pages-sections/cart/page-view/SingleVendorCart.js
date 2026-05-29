@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import Box from "@mui/material/Box";
 import {
   Card,
@@ -162,46 +162,11 @@ const SingleVendorCart = ({
     const processedProducts = cart.products.map((product) => {
       const variantPrice = +product.original_price || +product.real_price || 0;
 
-      let bestPromotion = null;
-
-      const validPromotions =
-        product?.promotionalOfferData?.filter((promo) => {
-          if (promo.promotion_type === "qty_per_product")
-            return promo.qty <= product.qty;
-          // CHECK AGAINST TOTAL SHOP VALUE (Cart Level)
-          if (promo.promotion_type === "amount")
-            return promo.offer_amount <= totalShopValue;
-          if (promo.promotion_type === "qty_total_shop")
-            return promo.qty <= totalShopProductQty;
-          return false;
-        }) || [];
-
-      if (validPromotions.length > 0) {
-        bestPromotion = validPromotions.reduce((prev, current) => {
-          const prevFinalPrice = calculatePriceAfterDiscount(
-            prev.offer_type,
-            prev.discount_amount,
-            variantPrice,
-          );
-          const currentFinalPrice = calculatePriceAfterDiscount(
-            current.offer_type,
-            current.discount_amount,
-            variantPrice,
-          );
-
-          const prevSavings = variantPrice - prevFinalPrice;
-          const currentSavings = variantPrice - currentFinalPrice;
-
-          return currentSavings > prevSavings ? current : prev;
-        });
-      }
-
       let finalPrice = variantPrice;
       let appliedPromotion = null;
-
+      const bestPromotion = product?.appliedPromotion || null;
       if (isCouponApplied && isSynced) {
         finalPrice = variantPrice;
-        appliedPromotion = null;
       } else {
         if (bestPromotion) {
           finalPrice = calculatePriceAfterDiscount(
@@ -209,78 +174,16 @@ const SingleVendorCart = ({
             bestPromotion.discount_amount,
             variantPrice,
           );
-          appliedPromotion = bestPromotion;
+          appliedPromotion = bestPromotion || product.appliedPromotion || null;
         }
       }
 
-      let upsellData = null;
-      if (!isCouponApplied || (isCouponApplied && !isSynced)) {
-        const lockedPromotions =
-          product?.promotionalOfferData?.filter((promo) => {
-            let isLocked = false;
-            if (promo.promotion_type === "qty_per_product")
-              isLocked = promo.qty > product.qty;
-            if (promo.promotion_type === "amount")
-              isLocked = promo.offer_amount > totalShopValue;
-            if (promo.promotion_type === "qty_total_shop")
-              isLocked = promo.qty > totalShopProductQty;
-            return isLocked;
-          }) || [];
-
-        if (lockedPromotions.length > 0) {
-          const currentSavings = appliedPromotion
-            ? variantPrice -
-            calculatePriceAfterDiscount(
-              appliedPromotion.offer_type,
-              appliedPromotion.discount_amount,
-              variantPrice,
-            )
-            : 0;
-          const betterPromotions = lockedPromotions
-            .map((promo) => {
-              const potentialPrice = calculatePriceAfterDiscount(
-                promo.offer_type,
-                promo.discount_amount,
-                variantPrice,
-              );
-              const potentialSavings = variantPrice - potentialPrice;
-              return { ...promo, potentialSavings };
-            })
-            .filter((p) => p.potentialSavings > currentSavings);
-
-          if (betterPromotions.length > 0) {
-            const nextBest = betterPromotions.sort((a, b) => {
-              if (a.promotion_type !== b.promotion_type) return 0;
-              if (a.promotion_type === "amount")
-                return a.offer_amount - b.offer_amount;
-              return a.qty - b.qty;
-            })[0];
-
-            let message = "";
-            if (nextBest.promotion_type === "qty_per_product") {
-              const diff = nextBest.qty - product.qty;
-              message = `Add ${diff} more to save ${currency?.symbol}${(nextBest.potentialSavings - currentSavings).toFixed(2)} per item!`;
-            } else if (nextBest.promotion_type === "amount") {
-              const diff = nextBest.offer_amount - totalShopValue;
-              message = `Add ${currency?.symbol}${diff.toFixed(2)} to cart to save ${currency?.symbol}${(nextBest.potentialSavings - currentSavings).toFixed(2)} per item!`;
-            } else if (nextBest.promotion_type === "qty_total_shop") {
-              const diff = nextBest.qty - totalShopProductQty;
-              message = `Add ${diff} more items from this shop to save ${currency?.symbol}${(nextBest.potentialSavings - currentSavings).toFixed(2)} per item!`;
-            }
-
-            upsellData = {
-              ...nextBest,
-              message,
-            };
-          }
-        }
-      }
 
       return {
         ...product,
         calculatedPrice: finalPrice,
-        appliedPromotion: appliedPromotion,
-        upsellData: upsellData,
+        appliedPromotion: product.appliedPromotion || null,
+        upsellData: product.upsellData || null,
       };
     });
 
@@ -338,8 +241,8 @@ const SingleVendorCart = ({
       return {
         value: item.shippingType,
         label: `${shippingLabel} (${formatDate(minDate)} - ${formatDate(maxDate)}) ${price > 0
-            ? `— ${currency.symbol}${(price * currency.rate).toFixed(2)}`
-            : ""
+          ? `— ${currency.symbol}${(price * currency.rate).toFixed(2)}`
+          : ""
           }`,
       };
     })
@@ -581,6 +484,46 @@ const SingleVendorCart = ({
       addParentCart();
     }
   }, [deliveryOption]);
+
+  // Add this useEffect after other useEffects (around line 300-320)
+  const previousCartIdRef = useRef();
+  const previousProductsHashRef = useRef();
+
+  useEffect(() => {
+    // Check if cart has changed (cart_id changed or products changed)
+    const currentCartId = cart?.cart_id;
+    const productsHash = JSON.stringify(cart?.products?.map(p => ({ id: p.product_id, qty: p.qty })));
+
+    if (previousCartIdRef.current !== currentCartId || previousProductsHashRef.current !== productsHash) {
+      previousCartIdRef.current = currentCartId;
+      previousProductsHashRef.current = productsHash;
+
+      // Validate coupon after cart changes
+      const validateCoupon = async () => {
+        if (!cart?.vendor_coupon?.coupon_data?.coupon_code) return;
+
+        try {
+          const payload = {
+            coupon_code: cart.vendor_coupon.coupon_data.coupon_code,
+            vendor_id: cart?.vendor_id,
+          };
+          const res = await postAPIAuth("user/check-coupon-for-product", payload);
+          // add sanity checks
+          if (res.status !== 200) {
+            await postAPIAuth("user/remove-coupon-for-product", payload);
+            const data = wallet ? "1" : "0";
+            getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+            addToast("Coupon removed as it is no longer valid", { appearance: "warning", autoDismiss: true });
+          }
+        } catch (error) {
+          console.error("Coupon validation failed:", error);
+        }
+      };
+
+      validateCoupon();
+    }
+  }, [cart?.cart_id, cart?.products, cart?.vendor_coupon]);
+
 
   const handleVendorCheckout = () => {
     if (!token) {

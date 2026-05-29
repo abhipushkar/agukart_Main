@@ -13,6 +13,7 @@ const INITIAL_STATE = {
   cart: [],
   cartRecoveryState: {},
   cartPendingUpdates: {}, //loding state
+  cartDetails: null,
 
   shopDiscount: 0,
   subTotal: 0,
@@ -285,6 +286,12 @@ const reducer = (state, action) => {
           action?.payload?.voucherDiscount,
       };
 
+    case "SET_CART_DETAILS":
+      return {
+        ...state,
+        cartDetails: action.payload
+      };
+
     case "UPDATE_CART_RECOVERY_STATE":
 
       return {
@@ -387,6 +394,13 @@ export default function CartProvider({ children }) {
     });
   };
 
+  const setCartDetails = (data) => {
+    dispatch({
+      type: "SET_CART_DETAILS",
+      payload: data
+    });
+  };
+
   const getCartItems = async (address_id) => {
     const cartData = JSON.parse(localStorage.getItem(CART_ITEM));
     if (token && cartData?.length) {
@@ -443,7 +457,7 @@ export default function CartProvider({ children }) {
       );
 
       if (res?.data?.status) {
-        dispatch({ type: "CALCULATION", payload: res.data.data });
+        setCartDetails(res.data.data);
       } else {
         dispatch({ type: "CALCULATION", payload: res.data.data });
         addToast(res?.data?.message, {
@@ -495,6 +509,8 @@ export default function CartProvider({ children }) {
       dispatch,
       getCartItems,
       getCartDetails,
+      cartDetails: state.cartDetails,
+      setCartDetails,
 
       updateCartRecoveryState,
       clearCartRecoveryState,

@@ -1,6 +1,6 @@
 // components/Cart/DrawerImageGallery.jsx
 import React, { useState, useEffect } from "react";
-import { Box, IconButton, MobileStepper, Typography } from "@mui/material";
+import { Box, Card, IconButton, MobileStepper, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { normalize } from "path";
@@ -59,7 +59,7 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
   }
 
   return (
-    <Box sx={{ mb: 2 }}>
+    <>
       {/* Main image display */}
       <Box
         sx={{
@@ -152,7 +152,7 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           ))}
         </Box>
       )}
-    </Box>
+    </>
   );
 };
 

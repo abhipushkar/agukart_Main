@@ -137,8 +137,10 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   };
 
     const getVendorCartDetails = async (discountAmount = 0) => {
+      if(!defaultAddress?._id){
+        return;
+      }
         try {
-          console.log("add:",defaultAddress??'no add');
             const res = await getAPIAuth(
                 `user/getVendorCartDetails/${vendor_id}?address_id=${defaultAddress?._id || ""}&discount=${discountAmount}`,
                 token

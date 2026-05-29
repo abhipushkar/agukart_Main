@@ -167,11 +167,11 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         </Link>
 
         <Tiny color="grey.600">
-          {currency?.symbol}{(item.sale_price * currency?.rate).toFixed(2)} x {item.qty}
+          {currency?.symbol}{(item.price * currency?.rate).toFixed(2)} x {item.qty}
         </Tiny>
 
         <H6 color="primary.main" mt={0.5}>
-          {currency?.symbol}{(item.qty * item.sale_price * currency?.rate).toFixed(2)}
+          {currency?.symbol}{(item.line_total * currency?.rate).toFixed(2)}
         </H6>
       </Box>
 

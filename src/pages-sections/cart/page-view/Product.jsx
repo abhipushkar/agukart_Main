@@ -17,7 +17,6 @@ import useCart from 'hooks/useCart';
 import { postAPIAuth } from 'utils/__api__/ApiServies';
 import { calculatePriceAfterDiscount } from 'utils/calculatePriceAfterDiscount';
 import { useToasts } from 'react-toast-notifications';
-import { resolveMatchingCombination } from "../utils/resolveMatchingCombination";
 import { resolveCartItemState } from "../utils/resolveCartItemState";
 import { validateCartItem } from "../utils/validateCartItem";
 import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
@@ -51,6 +50,23 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
     const resolvedCartState = useMemo(() => resolveCartItemState(product, product), [product]);
 
+    // Get the correct discounted price and original price from cart item
+    const effectivePrice = useMemo(() => {
+        // Use the cart item's price (already includes promotion discount)
+        if (product?.price) return product.price;
+        // Fallback to calculated price
+        return resolvedCartState?.latestPrice || product?.sale_price || 0;
+    }, [product, resolvedCartState]);
+
+    const effectiveOriginalPrice = useMemo(() => {
+        // Use the cart item's original_price (before any discount)
+        if (product?.original_price) return product.original_price;
+        // If product has real_price, use that
+        if (product?.real_price) return product.real_price;
+        // Fallback to sale_price or price
+        return product?.sale_price || product?.price || 0;
+    }, [product]);
+
     const cartValidation = useMemo(() => {
         if (isPendingUpdate) {
             return {
@@ -63,34 +79,28 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 caseType: null
             };
         }
-        const validation = validateCartItem(product, { pendingQuantity: localQuantity, cartItem: product });
-        console.log("Cart validation for product:", product.product_name, validation);
-        return validation;
+        return validateCartItem(product, { pendingQuantity: localQuantity, cartItem: product });
     }, [product, localQuantity, isPendingUpdate]);
 
     const hasRecoveredInvalidState = useMemo(() => {
         return cartValidation?.shouldResetQuantity && recoveryQuantity !== undefined && recoveryQuantity !== null && recoveryQuantity !== "";
     }, [cartValidation, recoveryQuantity]);
 
-    const shouldShowUnavailableState = stock <= 0 && cartValidation.valid;
-
     const displayValidation = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.validation : cartValidation;
     const displayQuantity = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.quantity : localQuantity;
-
     const selectQuantityValue = (displayValidation?.shouldResetQuantity && !hasRecoveredInvalidState) ? "" : displayQuantity;
 
-    // Compute display price and original price from resolved state (includes customizations)
-    const displayPrice = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.price : resolvedCartState.latestPrice;
-    const displayOriginalPrice = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.originalPrice : resolvedCartState.latestPrice;
+    // Display prices - use effective values from cart
+    const displayPrice = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.price : effectivePrice;
+    const displayOriginalPrice = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.originalPrice : effectiveOriginalPrice;
     const displayStock = isPendingUpdate && reconciliationSnapshot ? reconciliationSnapshot.stock : stock;
-    // console.log({displayStock, stock, reconciliationSnapshot, resolvedCartState});
 
     // Update stock when resolved state changes
     useEffect(() => {
         setStock(resolvedCartState.latestStock);
     }, [resolvedCartState.latestStock]);
 
-    // Price calculation for payload (same as resolvedCartState.latestPrice)
+    // Price calculation for payload
     const calculateVariantPrice = () => resolveCartPricing(product, product);
 
     const updateCart = async (targetQty) => {
@@ -103,28 +113,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         const couponValues = cart?.vendor_coupon || {};
         const isSynced = couponValues?.isSynced || couponValues?.coupon_data?.isSynced || false;
 
-        const otherProductsQty = cart?.products?.reduce((acc, item) => {
-            return item.product_id === product.product_id ? acc : acc + (item?.qty || 0);
-        }, 0) || 0;
-        const newTotalShopQty = otherProductsQty + Number(targetQty);
-
-        let bestPromotion = null;
-        const validPromotions = product?.promotionalOfferData?.filter(promo => {
-            if (promo.promotion_type === 'qty_per_product') return promo.qty <= targetQty;
-            if (promo.promotion_type === 'amount') return promo.offer_amount <= variantPrice;
-            if (promo.promotion_type === 'qty_total_shop') return promo.qty <= newTotalShopQty;
-            return false;
-        }) || [];
-
-        if (validPromotions.length > 0) {
-            bestPromotion = validPromotions.reduce((prev, current) => {
-                const prevFinalPrice = calculatePriceAfterDiscount(prev.offer_type, prev.discount_amount, variantPrice);
-                const currentFinalPrice = calculatePriceAfterDiscount(current.offer_type, current.discount_amount, variantPrice);
-                return (variantPrice - currentFinalPrice) > (variantPrice - prevFinalPrice) ? current : prev;
-            });
-        }
-
+        let bestPromotion = product?.appliedPromotion;
         let finalPrice = variantPrice;
+        
         if (cart?.coupon_status && isSynced) {
             finalPrice = variantPrice;
         } else if (bestPromotion) {
@@ -166,19 +157,12 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 price: finalPrice,
                 original_price: latestResolvedPrice,
                 isCombination: product?.isCombination,
-                variant_id: [],
-                variant_attribute_id: [],
+                variant_id: product?.variant_id || [],
+                variant_attribute_id: product?.variant_attribute_id || [],
+                variants: product?.variants || [],
                 customize: product?.selectedCustomization?.length > 0 ? "Yes" : product?.customize,
                 customizationData: product?.selectedCustomization || []
             };
-
-            if (product?.variant_id?.length) {
-                payload.variant_id = product.variant_id;
-                payload.variant_attribute_id = product.variant_attribute_id;
-            }
-            if (product?.variants?.length) {
-                payload.variants = product.variants;
-            }
 
             setReconciliationSnapshot({
                 validation: cartValidation,
@@ -267,10 +251,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     };
 
     const handleEditProduct = () => router.push(`/product/${product?.slug}/${product?.product_code}`);
-
-    const handleOpenEditDrawer = () => {
-        setEditDrawerOpen(true);
-    };
+    const handleOpenEditDrawer = () => setEditDrawerOpen(true);
 
     useEffect(() => {
         const nextPromotion = product?.promotionalOfferData?.reduce((next, promotion) => {
@@ -314,12 +295,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         return variantInfo;
     };
 
-    // Get validation message and action
     const validationMessage = displayValidation?.message || "";
     const shouldOpenEditDrawer = displayValidation?.openEditDrawer === true;
     const caseType = displayValidation?.caseType;
-
-    // console.log(cartValidation, "cartValidation", displayValidation, "displayValidation");
 
     return (
         <>
@@ -436,6 +414,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                 <Typography component="div" display={"flex"}>
                                     <Typography component="div" flexGrow={1} flexBasis={"100%"} maxWidth={"100%"} textAlign={"right"}
                                         sx={{ flexDirection: "column", display: "flex", alignItems: { xs: "start", md: "end" }, justifyContent: { xs: "flex-start", md: "flex-end" } }}>
+                                        
                                         {product?.appliedPromotion && (
                                             <Box sx={{
                                                 display: "inline-block", backgroundColor: "#00C853", color: "#fff", borderRadius: "4px",
@@ -448,31 +427,34 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 </Typography>
                                             </Box>
                                         )}
+                                        
                                         {cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced) && (
-                                            <Box sx={{ display: "inline-block", backgroundColor: "#2196f3", color: "#fff", borderRadius: "4px", padding: "4px 8px", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", width: "fit-content" }}>COUPON APPLIED</Box>
+                                            <Box sx={{ display: "inline-block", backgroundColor: "#2196f3", color: "#fff", borderRadius: "4px", padding: "4px 8px", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", width: "fit-content" }}>
+                                                COUPON APPLIED
+                                            </Box>
                                         )}
-                                        {cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced) ? (
-                                            <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
-                                                {displayOriginalPrice !== displayPrice && currency?.symbol}
-                                                {displayOriginalPrice !== displayPrice && (displayOriginalPrice * currency.rate * Number(displayQuantity || 0)).toFixed(2)}
-                                            </Typography>
-                                        ) : (
-                                            <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
-                                                {currency?.symbol}{(displayPrice * Number(displayQuantity || 0) * currency?.rate).toFixed(2)}
-                                            </Typography>
-                                        )}
-                                        {!(cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced)) && displayOriginalPrice !== displayPrice && (
+                                        
+                                        {/* Current Price - Discounted */}
+                                        <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
+                                            {currency?.symbol}{(displayPrice * Number(displayQuantity || 0) * currency?.rate).toFixed(2)}
+                                        </Typography>
+
+                                        {/* Original Price with Strikethrough */}
+                                        {Number(effectiveOriginalPrice) > Number(displayPrice) && (
                                             <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
                                                 <Small pl={1} sx={{ fontSize: "18px", fontWeight: "600", color: "gray" }} component="del">
-                                                    {currency?.symbol}{(displayOriginalPrice * currency.rate * Number(displayQuantity || 0)).toFixed(2)}
+                                                    {currency?.symbol}{(effectiveOriginalPrice * currency.rate * Number(displayQuantity || 0)).toFixed(2)}
                                                 </Small>
                                             </Typography>
                                         )}
-                                        {Number(localQuantity || 0) > 1 && (
+
+                                        {/* Per-unit price hint */}
+                                        {Number(displayQuantity || 0) > 1 && (
                                             <Typography fontSize={12} color={"gray"} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
                                                 ({currency?.symbol}{(displayPrice * currency?.rate).toFixed(2)} each)
                                             </Typography>
                                         )}
+                                        
                                         {product?.upsellData && (
                                             <Box sx={{ mt: 1, p: "4px 8px", backgroundColor: "#e3f2fd", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "flex-end", width: "fit-content", ml: "auto" }}>
                                                 <Typography fontSize={11} color="#1565c0" fontWeight={700} textAlign="right" lineHeight={1.2}>{product.upsellData.message}</Typography>
@@ -485,7 +467,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     </Typography>
                 </Box>
             </Box>
-            <CartEditDrawer open={editDrawerOpen} onClose={() => setEditDrawerOpen(false)} cartProduct={product} />
+            <CartEditDrawer open={editDrawerOpen} onClose={() => setEditDrawerOpen(false)} cartProduct={product} wallet={wallet} address={defaultAddress} voucher={voucherDetails} />
         </>
     );
 };

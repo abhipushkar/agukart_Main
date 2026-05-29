@@ -249,7 +249,7 @@ export const useDrawerProductVariants = (product) => {
                 }
             });
         }
-        console.log("Normalized variants:", allVariants);
+        // console.log("Normalized variants:", allVariants);
         return allVariants;
     }, [product]);
 
@@ -689,14 +689,14 @@ export const useDrawerProductVariants = (product) => {
         if (!(product?.isCombination || product?.combinationData?.length) || !selectedVariants || !Object.keys(selectedVariants).length) {
             return { price: null, quantity: null, priceRange: null, quantityRange: null };
         }
-        console.log("Entered! selectedVariants:", selectedVariants);
+        // console.log("Entered! selectedVariants:", selectedVariants);
         // Check if price and quantity are controlled by combinations
         const isPriceControlled = product?.form_values?.isCheckedPrice === true;
         const isQuantityControlled = product?.form_values?.isCheckedQuantity === true;
 
         const priceControlVariants = priceControllingVariants;
         const quantityControlVariants = quantityControllingVariants;
-        console.log({ isPriceControlled, isQuantityControlled, priceControlVariants, quantityControlVariants });
+        // console.log({ isPriceControlled, isQuantityControlled, priceControlVariants, quantityControlVariants });
 
         const { combinationsMap } = internalCombinationsMap;
         let priceResult = null, quantityResult = null;
@@ -706,12 +706,12 @@ export const useDrawerProductVariants = (product) => {
             // Collect selected attribute IDs for price-controlling variants only
             const priceSelectionIds = [];
             Object.entries(selectedVariants).forEach(([variantName, attrId]) => {
-                console.log("Checking variant for price control:", { variantName, attrId });
+                // console.log("Checking variant for price control:", { variantName, attrId });
                 if (priceControlVariants.includes(variantName)) {
                     priceSelectionIds.push(attrId);
                 }
             });
-            console.log("Price selection IDs:", priceSelectionIds);
+            // console.log("Price selection IDs:", priceSelectionIds);
             // If we have any price-controlling variants selected, try to find price
             if (priceSelectionIds.length) {
                 const priceKey = priceSelectionIds.sort().join(",");
@@ -719,7 +719,7 @@ export const useDrawerProductVariants = (product) => {
                 if (priceCombo && priceCombo.price !== null && priceCombo.isVisible) {
                     priceResult = priceCombo.price;
                 }
-                console.log("Price combo for key", {priceKey, priceCombo, combinationsMap});
+                // console.log("Price combo for key", {priceKey, priceCombo, combinationsMap});
             }
         }
 
@@ -755,7 +755,7 @@ export const useDrawerProductVariants = (product) => {
                 }
             }
         }
-        console.log("Combination results:", { priceResult, quantityResult });
+        // console.log("Combination results:", { priceResult, quantityResult });
 
         return {
             price: priceResult,
