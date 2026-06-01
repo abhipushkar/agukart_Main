@@ -42,7 +42,7 @@ const getProductData = cache(async (product_code) => {
         `${baseUrl}/get-productById?productId=${product_code}`,
         {
             next: {
-                revalidate: 300,
+                revalidate: 5,
             },
         }
     );

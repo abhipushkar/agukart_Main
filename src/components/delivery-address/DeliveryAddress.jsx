@@ -78,7 +78,7 @@ const DeliveryAddress = () => {
   const [currentlimitPage, setCurrentLimitPage] = useState(1);
   const { usercredentials, setUserCredentials, setAddressCount } = useMyProvider();
   const [loading, setLoading] = useState(false);
-  const { getCartItems, state, getCartDetails } = useCart();
+  const { getCartItems, state, cartDetails, getCartDetails } = useCart();
   const [tottalPage, setTottalPage] = useState();
   const [addressIndex, setAddressIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,18 +87,18 @@ const DeliveryAddress = () => {
   const [deleteAddressId, setDeleteAddressId] = useState("");
   const [buttonDisable, setButtonDisable] = useState(false);
   const { token, placeOrderValidate, setPlaceOrderValidate } = useAuth();
-  const [paymentType,setPaymentType] = useState("1");
-  const [voucherDetails,setVoucherDetails] = useState({amount:0,voucherCode:""});
+  const [paymentType, setPaymentType] = useState("1");
+  const [voucherDetails, setVoucherDetails] = useState({ amount: 0, voucherCode: "" });
   const router = useRouter();
   const searchParams = useSearchParams();
-  const ids = searchParams.getAll("id"); 
-  console.log(ids,"rth5rthrthrt")
-  console.log(ids); 
+  const ids = searchParams.getAll("id");
+  console.log(ids, "rth5rthrthrt")
+  console.log(ids);
   const { addToast } = useToasts();
   const handleWalletChange = async (e) => {
     setWallet(e.target.checked);
     const data = !wallet ? "1" : "0";
-    getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount,allAddress[addressIndex]?.country);
+    getCartDetails(data, allAddress[addressIndex]?._id, voucherDetails?.discount, allAddress[addressIndex]?.country);
   };
   useEffect(() => {
     localStorage.setItem("wallet", wallet);
@@ -193,24 +193,24 @@ const DeliveryAddress = () => {
       };
       // const check = await getPostCode(values.pincode, values?.city?.name);
       // if (check) {
-        const res = await postAPIAuth(
-          "user/add-address",
-          param,
-          token,
-          addToast
-        );
-        console.log("ressqwertyu", res);
-        if ((res.status = 200)) {
-          addToast(res?.data?.message, {
-            appearance: "success",
-            autoDismiss: true,
-          });
-          getAddressData();
-          handleClosePopup();
-          setEditAddress(null);
-          setButtonDisable(false);
-          resetForm();
-        }
+      const res = await postAPIAuth(
+        "user/add-address",
+        param,
+        token,
+        addToast
+      );
+      console.log("ressqwertyu", res);
+      if ((res.status = 200)) {
+        addToast(res?.data?.message, {
+          appearance: "success",
+          autoDismiss: true,
+        });
+        getAddressData();
+        handleClosePopup();
+        setEditAddress(null);
+        setButtonDisable(false);
+        resetForm();
+      }
       // } else {
       //   addToast("Please Enter Valid Pin Code", {
       //     appearance: "error",
@@ -336,8 +336,8 @@ const DeliveryAddress = () => {
       const payload = {
         address_id: allAddress[addressIndex]?._id,
         shop_count: ids?.length > 0 ? ids?.length : state?.cart?.length || 1,
-        voucher_id:voucherDetails?._id || null,
-        voucher_discount:voucherDetails?.discount,
+        voucher_id: voucherDetails?._id || null,
+        voucher_discount: voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
       };
       if (ids.length === 1) {
@@ -351,7 +351,7 @@ const DeliveryAddress = () => {
       );
       if (res.status === 200) {
         setUserCredentials(res?.data?.updateUser);
-        setVoucherDetails({discount:0,voucherCode:""});
+        setVoucherDetails({ discount: 0, voucherCode: "" });
         localStorage.removeItem("voucherDetails");
         getCartItems();
         addToast(res.data.message, {
@@ -376,326 +376,342 @@ const DeliveryAddress = () => {
         setWallet(false);
       }
       const data = (wallet == "true") ? "1" : "0";
-      getCartDetails(data,allAddress[addressIndex]?._id,voucherDetails?.discount,allAddress[addressIndex]?.country);
+      getCartDetails(data, allAddress[addressIndex]?._id, voucherDetails?.discount, allAddress[addressIndex]?.country);
     }
-  }, [token,allAddress,addressIndex]);
-   useEffect(()=>{
-      const data = localStorage.getItem("voucherDetails");
-      if(data){
-        const voucherDetails = JSON.parse(data);
-        const updatedVoucherDetails = {
-          ...voucherDetails,
-          discount: parseInt(voucherDetails.discount, 10)
-        };
-        setVoucherDetails(updatedVoucherDetails);
-      }
-    },[]);
+  }, [token, allAddress, addressIndex]);
+  useEffect(() => {
+    const data = localStorage.getItem("voucherDetails");
+    if (data) {
+      const voucherDetails = JSON.parse(data);
+      const updatedVoucherDetails = {
+        ...voucherDetails,
+        discount: parseInt(voucherDetails.discount, 10)
+      };
+      setVoucherDetails(updatedVoucherDetails);
+    }
+  }, []);
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
-  0);
+    0);
   return (
     <>
       <Box p={5}>
-         <Grid container justifyContent="center" spacing={3} sx={{ px: 2, py: 4 }}>
-      <Grid item xs={12} md={10}>
-        <Grid container spacing={4}>
-          {/* LEFT SIDE - Address List */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="h5" fontWeight={600} mb={2}>
-              Choose Delivery Address
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={handleClickPopup}
-              sx={{ mb: 3, borderRadius: 20, textTransform: "none" }}
-            >
-              + Add New Address
-            </Button>
-            <FormControl fullWidth>
-              <RadioGroup
-                defaultValue={0}
-                aria-labelledby="demo-controlled-radio-buttons-group"
-                name="controlled-radio-buttons-group"
-              >
-                {allAddress.map((address, i) => {
-                  return (
-                    <Grid
-                      key={address._id}
-                      container
-                      spacing={2}
-                      mb={2}
-                      alignItems="flex-start"
-                    >
-                      <Grid item lg={4} md={4} xs={12}>
-                        <Box sx={{ display: "flex" }}>
-                          <FormControlLabel
-                            onChange={(e) => {
-                              setAddressIndex(+e.target.value);
-                            }}
-                            value={i}
-                            sx={{
-                              alignItems: "flex-start",
-                              marginRight: "4px",
-                            }}
-                            control={<Radio sx={{ padding: "0 9px" }} />}
-                          />
-                          <Box>
-                            {address.default === "1" && (
-                              <Typography sx={{ mb: 1 }}>
-                                <span
-                                  style={{
-                                    borderRadius: "30px",
-                                    background: "#efefef",
-                                    fontSize: "14px",
-                                    padding: "5px 16px",
+        <Grid container justifyContent="center" spacing={3} sx={{ px: 2, py: 4 }}>
+          <Grid item xs={12} md={10}>
+            <Grid container spacing={4}>
+              {/* LEFT SIDE - Address List */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="h5" fontWeight={600} mb={2}>
+                  Choose Delivery Address
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={handleClickPopup}
+                  sx={{ mb: 3, borderRadius: 20, textTransform: "none" }}
+                >
+                  + Add New Address
+                </Button>
+                <FormControl fullWidth>
+                  <RadioGroup
+                    defaultValue={0}
+                    aria-labelledby="demo-controlled-radio-buttons-group"
+                    name="controlled-radio-buttons-group"
+                  >
+                    {allAddress.map((address, i) => {
+                      return (
+                        <Grid
+                          key={address._id}
+                          container
+                          spacing={2}
+                          mb={2}
+                          alignItems="flex-start"
+                        >
+                          <Grid item lg={4} md={4} xs={12}>
+                            <Box sx={{ display: "flex" }}>
+                              <FormControlLabel
+                                onChange={(e) => {
+                                  setAddressIndex(+e.target.value);
+                                }}
+                                value={i}
+                                sx={{
+                                  alignItems: "flex-start",
+                                  marginRight: "4px",
+                                }}
+                                control={<Radio sx={{ padding: "0 9px" }} />}
+                              />
+                              <Box>
+                                {address.default === "1" && (
+                                  <Typography sx={{ mb: 1 }}>
+                                    <span
+                                      style={{
+                                        borderRadius: "30px",
+                                        background: "#efefef",
+                                        fontSize: "14px",
+                                        padding: "5px 16px",
+                                      }}
+                                    >
+                                      Default
+                                    </span>
+                                  </Typography>
+                                )}
+                                <Typography
+                                  sx={{ textTransform: "capitalize" }}
+                                  fontWeight={500}
+                                  fontSize="16px"
+                                >
+                                  {address.first_name} {address.last_name}
+                                </Typography>
+                                <Typography fontWeight={500} fontSize="16px">
+                                  {address.city} {address.pincode}
+                                </Typography>
+                                <Typography fontWeight={500} fontSize="16px">
+                                  {address.state}
+                                </Typography>
+                                <Typography fontWeight={500} fontSize="16px">
+                                  {address.country}
+                                </Typography>
+                                <Typography fontWeight={500} fontSize="16px">
+                                  {address.mobile}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item lg={4} md={4} xs={12}>
+                            <Box
+                              width={"300px"}
+                              display={"flex"}
+                              flexDirection={"column"}
+                              mt={{ xs: 2, md: 0 }}
+                            >
+                              <Box
+                                mt={1}
+                                display="flex"
+                                justifyContent="center"
+                                gap={4}
+                              >
+                                <Button
+                                  onClick={() => {
+                                    editHandler(address);
                                   }}
                                 >
-                                  Default
-                                </span>
-                              </Typography>
-                            )}
-                            <Typography
-                              sx={{ textTransform: "capitalize" }}
-                              fontWeight={500}
-                              fontSize="16px"
+                                  Edit
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    setDeleteAddressPopup(true);
+                                    setDeleteAddressId(address._id);
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <React.Fragment>
+                            <Dialog
+                              open={deleteAddressPopup}
+                              aria-labelledby="alert-dialog-title"
+                              aria-describedby="alert-dialog-description"
                             >
-                              {address.first_name} {address.last_name}
-                            </Typography>
-                            <Typography fontWeight={500} fontSize="16px">
-                              {address.city} {address.pincode}
-                            </Typography>
-                            <Typography fontWeight={500} fontSize="16px">
-                              {address.state}
-                            </Typography>
-                            <Typography fontWeight={500} fontSize="16px">
-                              {address.country}
-                            </Typography>
-                            <Typography fontWeight={500} fontSize="16px">
-                              {address.mobile}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item lg={4} md={4} xs={12}>
-                        <Box
-                          width={"300px"}
-                          display={"flex"}
-                          flexDirection={"column"}
-                          mt={{ xs: 2, md: 0 }}
-                        >
-                          <Box
-                            mt={1}
-                            display="flex"
-                            justifyContent="space-between"
-                          >
-                            <Button
-                              onClick={() => {
-                                editHandler(address);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                setDeleteAddressPopup(true);
-                                setDeleteAddressId(address._id);
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <React.Fragment>
-                        <Dialog
-                          open={deleteAddressPopup}
-                          aria-labelledby="alert-dialog-title"
-                          aria-describedby="alert-dialog-description"
-                        >
-                          <DialogTitle id="alert-dialog-title">
-                            Are you sure? you want to delete this address
-                          </DialogTitle>
-                          <DialogActions>
-                            <Button
-                              onClick={() => setDeleteAddressPopup(false)}
-                            >
-                              No
-                            </Button>
-                            <Button
-                              autoFocus
-                              onClick={() =>
-                                deleteAddressHandler(deleteAddressId)
-                              }
-                            >
-                              Yes
-                            </Button>
-                          </DialogActions>
-                        </Dialog>
-                      </React.Fragment>
-                    </Grid>
-                  );
-                })}
-              </RadioGroup>
-            </FormControl>
-            <Dialog open={deleteAddressPopup}>
-              <DialogTitle>Are you sure you want to delete this address?</DialogTitle>
-              <DialogActions>
-                <Button onClick={() => setDeleteAddressPopup(false)}>No</Button>
-                <Button autoFocus onClick={() => deleteAddressHandler(deleteAddressId)}>
-                  Yes
-                </Button>
-              </DialogActions>
-            </Dialog>
-            <Typography mt={2} variant="body2" color="text.secondary">
-              By choosing “Dispatch here,” you agree to our Privacy Policy and may receive order confirmation on SMS or WhatsApp.
-            </Typography>
-          </Grid>
-          {/* RIGHT SIDE - Order Summary + Payment */}
-          <Grid item xs={12} md={6}>
-            <Typography variant="h5" fontWeight={600} mb={2}>
-              Order Summary
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 2 }}>
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    {token && (
-                      <TableRow>
-                        <TableCell>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={wallet}
-                                onChange={handleWalletChange}
-                              />
-                            }
-                            label="Use Wallet Balance"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          {currency?.symbol}
-                          {(usercredentials?.wallet_balance * currency?.rate).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    <TableRow>
-                      <TableCell>({totalItems} Items) Total</TableCell>
-                      <TableCell align="right">
-                        {currency?.symbol}
-                        {(state?.total * currency?.rate).toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Shop Discount</TableCell>
-                      <TableCell align="right">
-                        -{currency?.symbol}
-                        {(state?.shopDiscount * currency?.rate).toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                    { 
-                      state?.voucherDiscount > 0 && <TableRow>
-                        <TableCell>Voucher Discount</TableCell>
-                        <TableCell align="right">
-                          - {currency?.symbol}
-                          {(state?.voucherDiscount * currency?.rate).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    }
-                    <TableRow>
-                      <TableCell>Sub total</TableCell>
-                      <TableCell align="right">
-                        {currency?.symbol}
-                        {(state?.subTotal * currency?.rate).toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Delivery</TableCell>
-                      <TableCell align="right">
-                        {currency?.symbol}
-                        {(state?.delivery * currency?.rate).toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                    {token && (
-                      <TableRow>
-                        <TableCell>Wallet</TableCell>
-                        <TableCell align="right">
-                          -{currency?.symbol}
-                          {(state?.walletAmount * currency?.rate).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    <TableRow>
-                      <TableCell>
-                        <Typography fontWeight={600}>
-                          Total ({totalItems} items)
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography fontWeight={600}>
-                          {currency?.symbol}
-                          {(state?.superTotal * currency?.rate).toFixed(2)}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-            {state.cart.length > 0 && (
-              <Box mb={3}>
-                <Typography color="text.secondary" fontSize={13}>
-                  Local taxes included. Additional duties and{" "}
-                  <Link component={NextLink} href="/" underline="hover">
-                    taxes may apply
-                  </Link>
+                              <DialogTitle id="alert-dialog-title">
+                                Are you sure? you want to delete this address
+                              </DialogTitle>
+                              <DialogActions>
+                                <Button
+                                  onClick={() => setDeleteAddressPopup(false)}
+                                >
+                                  No
+                                </Button>
+                                <Button
+                                  autoFocus
+                                  onClick={() =>
+                                    deleteAddressHandler(deleteAddressId)
+                                  }
+                                >
+                                  Yes
+                                </Button>
+                              </DialogActions>
+                            </Dialog>
+                          </React.Fragment>
+                        </Grid>
+                      );
+                    })}
+                  </RadioGroup>
+                </FormControl>
+                <Dialog open={deleteAddressPopup}>
+                  <DialogTitle>Are you sure you want to delete this address?</DialogTitle>
+                  <DialogActions>
+                    <Button onClick={() => setDeleteAddressPopup(false)}>No</Button>
+                    <Button autoFocus onClick={() => deleteAddressHandler(deleteAddressId)}>
+                      Yes
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+                <Typography mt={2} variant="body2" color="text.secondary">
+                  By choosing “Dispatch here,” you agree to our Privacy Policy and may receive order confirmation on SMS or WhatsApp.
                 </Typography>
-              </Box>
-            )}
-            <FormLabel component="legend" sx={{ mb: 1 }}>
-              Select Payment Method
-            </FormLabel>
-            <RadioGroup
-              row
-              value={paymentType}
-              onChange={(e) => setPaymentType(e.target.value)}
-            >
-              <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
-              <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
-            </RadioGroup>
-            {paymentType === "1" && (
-              <Button
-                fullWidth
-                onClick={orderConfirmation}
-                endIcon={loading ? <CircularProgress size={15} /> : ""}
-                disabled={loading}
-                sx={{
-                  mt: 2,
-                  fontSize: "18px",
-                  background: "#000",
-                  color: "#fff",
-                  borderRadius: "30px",
-                  padding: "10px",
-                  "&:hover": { background: "#222" },
-                }}
-              >
-                Place Order
-              </Button>
-            )}
-            {paymentType === "2" && (
-              <Box mt={2}>
-                <PayPalScriptProvider options={initialOptions}>
-                  <Checkout
-                    cartData={state.cart}
-                    selectedAddress={allAddress[addressIndex]}
-                    currencyCode="USD"
-                  />
-                </PayPalScriptProvider>
-              </Box>
-            )}
+              </Grid>
+              {/* RIGHT SIDE - Order Summary + Payment */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="h5" fontWeight={600} mb={2}>
+                  Order Summary
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 2 }}>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableBody>
+                        {token && (
+                          <TableRow>
+                            <TableCell>
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={wallet}
+                                    onChange={handleWalletChange}
+                                  />
+                                }
+                                label="Use Wallet Balance"
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              {currency?.symbol}
+                              {(usercredentials?.wallet_balance * currency?.rate).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        <TableRow>
+                          <TableCell>({totalItems} Items) Total</TableCell>
+                          <TableCell align="right">
+                            {currency?.symbol}
+                            {(cartDetails?.subTotal * currency?.rate).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Shop Discount</TableCell>
+                          <TableCell align="right">
+                            -{currency?.symbol}
+                            {(cartDetails?.discount * currency?.rate).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                        {
+                          cartDetails?.couponDiscount > 0 && <TableRow>
+                            <TableCell>Coupon Discount</TableCell>
+                            <TableCell align="right">
+                              - {currency?.symbol}
+                              {(cartDetails?.couponDiscount * currency?.rate).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        }
+                        {
+                          cartDetails?.voucherDiscount > 0 && <TableRow>
+                            <TableCell>Voucher Discount</TableCell>
+                            <TableCell align="right">
+                              - {currency?.symbol}
+                              {(cartDetails?.voucherDiscount * currency?.rate).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        }
+                        <TableRow>
+                          <TableCell>Sub total</TableCell>
+                          <TableCell align="right">
+                            {currency?.symbol}
+                            {((cartDetails?.netAmount - cartDetails?.delivery) * currency?.rate).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Delivery</TableCell>
+                          <TableCell align="right">
+                            {currency?.symbol}
+                            {(cartDetails?.delivery * currency?.rate).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                        {token && (
+                          <TableRow>
+                            <TableCell>Wallet</TableCell>
+                            <TableCell align="right">
+                              -{currency?.symbol}
+                              {(cartDetails?.walletAmount * currency?.rate).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        <TableRow>
+                          <TableCell>
+                            <Typography fontWeight={600}>
+                              Total ({totalItems} items)
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography fontWeight={600}>
+                              {currency?.symbol}
+                              {(cartDetails?.grandTotal * currency?.rate).toFixed(2)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Paper>
+                {state.cart.length > 0 && (
+                  <Box mb={3}>
+                    <Typography color="text.secondary" fontSize={13}>
+                      Local taxes included. Additional duties and{" "}
+                      <Link component={NextLink} href="/" underline="hover">
+                        taxes may apply
+                      </Link>
+                    </Typography>
+                  </Box>
+                )}
+                <FormLabel component="legend" sx={{ mb: 1 }}>
+                  Select Payment Method
+                </FormLabel>
+                <RadioGroup
+                  row
+                  value={paymentType}
+                  onChange={(e) => setPaymentType(e.target.value)}
+                >
+                  <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
+                  <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
+                </RadioGroup>
+                {paymentType === "1" && (
+                  <Button
+                    fullWidth
+                    onClick={orderConfirmation}
+                    endIcon={loading ? <CircularProgress size={15} /> : ""}
+                    disabled={loading || !cartDetails.status}
+                    sx={{
+                      mt: 2,
+                      fontSize: "18px",
+                      background: "#000",
+                      color: "#fff",
+                      borderRadius: "30px",
+                      padding: "10px",
+                      "&:hover": {
+                        background: "#222",
+                      },
+                      "&.Mui-disabled": {
+                        background: "#F3F4F6",
+                        color: "#6B7280",
+                      }
+                    }}
+                  >
+                    Place Order
+                  </Button>
+                )}
+                {paymentType === "2" && (
+                  <Box mt={2}>
+                    <PayPalScriptProvider options={initialOptions}>
+                      <Checkout
+                        cartData={state.cart}
+                        selectedAddress={allAddress[addressIndex]}
+                        currencyCode="USD"
+                      />
+                    </PayPalScriptProvider>
+                  </Box>
+                )}
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
-      </Grid>
-    </Grid>
       </Box>
       {/* popupForm */}
       <Box>

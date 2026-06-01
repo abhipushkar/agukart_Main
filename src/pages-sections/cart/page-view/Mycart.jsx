@@ -59,7 +59,7 @@ const Mycart = () => {
   const [snackOpen, setSnackOpen] = React.useState(false);
   const [wallet, setWallet] = useState(false);
   const { token, setPlaceOrderValidate } = useAuth();
-  const { state, getCartDetails, getCartItems } = useCart();
+  const { state, getCartDetails, getCartItems, cartDetails, setCartDetails } = useCart();
   const [checkCustomizationSelect, setCheckCustomizationSelect] =
     useState(false);
   const [isShippingAvailable, setIsShippingAvailable] = useState(false);
@@ -165,121 +165,9 @@ const Mycart = () => {
   }, [state.cart, token]);
 
   // Calculate global totals using the same logic as SingleVendorCart to support Stacked/Exclusive coupons
-  const derivedCartTotals = useMemo(() => {
-    let globalItemTotal = 0;
-    let globalShopDiscount = 0;
-    let globalCouponDiscount = 0;
 
-    if (!state?.cart)
-      return { itemTotal: 0, shopDiscount: 0, couponDiscount: 0, subTotal: 0 };
 
-    state.cart.forEach((cart) => {
-      const totalShopProductQty = cart?.products?.reduce(
-        (acc, item) => acc + item?.qty,
-        0,
-      );
 
-      // Calculate Total Shop Value (Gross) for validation
-      const totalShopValue = cart?.products?.reduce((acc, item) => {
-        const price = +item.original_price || +item.real_price || 0;
-        return acc + price * (item?.qty || 0);
-      }, 0);
-
-      const isCouponApplied = cart?.coupon_status;
-      const couponValues = cart?.vendor_coupon || {};
-      const isSynced =
-        couponValues?.isSynced || couponValues?.coupon_data?.isSynced || false;
-
-      let vendorCalculatedShopValue = 0;
-      let vendorOriginalShopValue = 0;
-
-      cart.products.forEach((product) => {
-        const variantPrice =
-          +product.original_price || +product.real_price || 0;
-
-        // 1. Find Best Promotion
-        let bestPromotion = null;
-        const validPromotions =
-          product?.promotionalOfferData?.filter((promo) => {
-            if (promo.promotion_type === "qty_per_product")
-              return promo.qty <= product.qty;
-            if (promo.promotion_type === "amount")
-              return promo.offer_amount <= totalShopValue;
-            if (promo.promotion_type === "qty_total_shop")
-              return promo.qty <= totalShopProductQty;
-            return false;
-          }) || [];
-
-        if (validPromotions.length > 0) {
-          bestPromotion = validPromotions.reduce((prev, current) => {
-            const prevFinalPrice = calculatePriceAfterDiscount(
-              prev.offer_type,
-              prev.discount_amount,
-              variantPrice,
-            );
-            const currentFinalPrice = calculatePriceAfterDiscount(
-              current.offer_type,
-              current.discount_amount,
-              variantPrice,
-            );
-            return variantPrice - currentFinalPrice >
-              variantPrice - prevFinalPrice
-              ? current
-              : prev;
-          });
-        }
-
-        // 2. Logic for isSynced (Exclusive vs Stacked)
-        let finalPrice = variantPrice;
-
-        if (isCouponApplied && isSynced) {
-          // Exclusive: Remove promo
-          finalPrice = variantPrice;
-        } else {
-          // Stacked or No Coupon: Apply promo
-          if (bestPromotion) {
-            finalPrice = calculatePriceAfterDiscount(
-              bestPromotion.offer_type,
-              bestPromotion.discount_amount,
-              variantPrice,
-            );
-          }
-        }
-
-        vendorCalculatedShopValue += finalPrice * product.qty;
-        vendorOriginalShopValue += variantPrice * product.qty;
-      });
-
-      const vendorPromotionDiscount =
-        vendorOriginalShopValue - vendorCalculatedShopValue;
-      // Coupon discount comes from backend cart usually, but we should use it if available
-      const vendorCouponDiscount = cart?.discountAmount || 0;
-
-      globalItemTotal += vendorOriginalShopValue;
-      globalShopDiscount += vendorPromotionDiscount;
-      globalCouponDiscount += vendorCouponDiscount;
-    });
-
-    // If no items, fallback to 0 or state default
-    return {
-      itemTotal: globalItemTotal,
-      shopDiscount: globalShopDiscount,
-      couponDiscount: globalCouponDiscount,
-      subTotal: globalItemTotal - globalShopDiscount - globalCouponDiscount,
-    };
-  }, [state.cart]);
-
-  const cartValue = useMemo(() => {
-    return state?.cart?.reduce((acc, vendor) => {
-      return (
-        acc +
-        vendor.products.reduce((sum, p) => {
-          const price = +p.original_price || +p.real_price || 0;
-          return sum + price * p.qty;
-        }, 0)
-      );
-    }, 0);
-  }, [state.cart]);
 
   const [confirmation, setconfirmation] = React.useState(false);
 
@@ -561,15 +449,15 @@ const Mycart = () => {
   }, [token]);
 
 
-  useEffect(() => {
-    if (!voucherDetails?.voucherCode) return;
+  // useEffect(() => {
+  //   if (!voucherDetails?.voucherCode) return;
 
-    clearTimeout(debounceRef.current);
+  //   clearTimeout(debounceRef.current);
 
-    debounceRef.current = setTimeout(() => {
-      revalidateVoucher();
-    }, 400);
-  }, [cartValue]);
+  //   debounceRef.current = setTimeout(() => {
+  //     revalidateVoucher();
+  //   }, 400);
+  // }, [cartValue]);
 
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
@@ -787,9 +675,7 @@ const Mycart = () => {
                               <TableCell align="right">
                                 <Typography fontSize={17} component="div">
                                   {currency?.symbol}
-                                  {(
-                                    derivedCartTotals.itemTotal * currency?.rate
-                                  ).toFixed(2)}
+                                  {(currency?.rate * cartDetails?.subTotal).toFixed(2)}
                                 </Typography>
                               </TableCell>
                             </TableRow>
@@ -816,13 +702,13 @@ const Mycart = () => {
                                 <Typography fontSize={17} component="div">
                                   - {currency?.symbol}
                                   {(
-                                    derivedCartTotals.shopDiscount *
+                                    cartDetails?.discount *
                                     currency?.rate
                                   ).toFixed(2)}
                                 </Typography>
                               </TableCell>
                             </TableRow>
-                            {derivedCartTotals.couponDiscount > 0 && (
+                            {cartDetails?.couponDiscount > 0 && (
                               <TableRow>
                                 <TableCell>
                                   <Typography
@@ -837,14 +723,13 @@ const Mycart = () => {
                                   <Typography fontSize={17} component="div">
                                     - {currency?.symbol}
                                     {(
-                                      derivedCartTotals.couponDiscount *
-                                      currency?.rate
+                                      cartDetails?.couponDiscount * currency?.rate
                                     ).toFixed(2)}
                                   </Typography>
                                 </TableCell>
                               </TableRow>
                             )}
-                            {state?.voucherDiscount > 0 && (
+                            {cartDetails?.voucherDiscount > 0 && (
                               <TableRow>
                                 <TableCell>
                                   <Typography
@@ -859,7 +744,7 @@ const Mycart = () => {
                                   <Typography fontSize={17} component="div">
                                     - {currency?.symbol}
                                     {(
-                                      state?.voucherDiscount * currency?.rate
+                                      cartDetails?.voucherDiscount * currency?.rate
                                     ).toFixed(2)}
                                   </Typography>
                                 </TableCell>
@@ -990,15 +875,13 @@ const Mycart = () => {
                                   fontWeight={600}
                                   component="div"
                                 >
-                                  Sub total
+                                  Delivery
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
                                 <Typography fontSize={17} component="div">
                                   {currency?.symbol}
-                                  {(
-                                    derivedCartTotals.subTotal * currency?.rate
-                                  ).toFixed(2)}
+                                  {(cartDetails?.delivery * currency?.rate).toFixed(2)}
                                 </Typography>
                               </TableCell>
                             </TableRow>
@@ -1009,15 +892,15 @@ const Mycart = () => {
                                   fontWeight={600}
                                   component="div"
                                 >
-                                  Delivery
+                                  Sub total
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
                                 <Typography fontSize={17} component="div">
                                   {currency?.symbol}
-                                  {(state?.delivery * currency?.rate).toFixed(
-                                    2,
-                                  )}
+                                  {(
+                                    currency?.rate * cartDetails?.netAmount
+                                  ).toFixed(2)}
                                 </Typography>
                               </TableCell>
                             </TableRow>
@@ -1111,12 +994,7 @@ const Mycart = () => {
                                   component="div"
                                 >
                                   {currency?.symbol}
-                                  {(
-                                    (derivedCartTotals.subTotal +
-                                      (state?.delivery || 0) +
-                                      (state?.walletAmount || 0) -
-                                      (state?.voucherDiscount || 0)) *
-                                    currency?.rate
+                                  {(currency?.rate * cartDetails?.grandTotal
                                   ).toFixed(2)}
                                 </Typography>
                               </TableCell>
@@ -1217,7 +1095,7 @@ const Mycart = () => {
                         aria-describedby="alert-dialog-description"
                       >
                         <DialogTitle id="alert-dialog-title">
-                          Are Want To Proceed To Checkout Page
+                          Do You Want To Proceed To Checkout Page?
                         </DialogTitle>
                         <DialogActions>
                           <Button onClick={handleClose}>Disagree</Button>

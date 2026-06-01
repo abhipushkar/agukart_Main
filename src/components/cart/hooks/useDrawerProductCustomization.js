@@ -62,7 +62,7 @@ export const useDrawerProductCustomization = (product) => {
     const errors = {};
     let isValid = true;
 
-    const customizations = product?.availableCustomization?.customizations || [];
+    const customizations = product?.availableCustomization?.customizations || product?.customizationData?.customizations || [];
     customizations.forEach((customization) => {
       const isRequired = customization.isCompulsory === "true";
       if (!isRequired) return;
@@ -86,7 +86,7 @@ export const useDrawerProductCustomization = (product) => {
 
   const checkInputMinValue = () => {
     let hasError = false;
-    const customizations = product?.availableCustomization?.customizations || [];
+    const customizations = product?.availableCustomization?.customizations || product?.customizationData?.customizations || [];
     Object.entries(customizationText || {}).forEach(([label, { value, min, max }]) => {
       const customField = customizations.find(c => c.label === label);
       if (customField && value.length < min) {

@@ -41,7 +41,7 @@ export const resolveCartPricing = (product, cartItem = null) => {
     // Add this at the beginning of the function
     if (product?.combinationData?.length && selectedValues.length === 0 && !product?.variants?.length) {
         // No internal variants selected - return base product price
-        return (+product?.sale_price || +product?.real_price || 0) + customizationPrice;
+        return (+product?.real_price || 0) + customizationPrice;
     }
 
     // Internal variants

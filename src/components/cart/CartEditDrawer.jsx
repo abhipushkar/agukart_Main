@@ -8,6 +8,7 @@ import {
     CircularProgress,
     Divider,
     Button,
+    Card,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
@@ -34,10 +35,10 @@ import DrawerQuantitySelector from "./DrawerQuantitySelector";
 import { postAPIAuth, getAPIAuth } from "utils/__api__/ApiServies";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 
-const CartEditDrawer = ({ open, onClose, cartProduct }) => {
+const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher }) => {
     const { addToast } = useToasts();
     const { token } = useAuth();
-    const { state, dispatch } = useCart();
+    const { state, dispatch, getCartDetails, getCartItems } = useCart();
     const { currency } = useCurrency();
 
     const [loading, setLoading] = useState(false);
@@ -96,6 +97,9 @@ const CartEditDrawer = ({ open, onClose, cartProduct }) => {
             );
             if (res?.data?.data) {
                 const product = res.data.data;
+                if (product.customizationData && !product.availableCustomization) {
+                    product.availableCustomization = product.customizationData;
+                }
                 const productMedia = [];
                 if (product.image && Array.isArray(product.image)) {
                     product.image.forEach((img) => {
@@ -157,8 +161,8 @@ const CartEditDrawer = ({ open, onClose, cartProduct }) => {
                     },
                 }}
             >
-                <Box sx={{ height: "100%", overflowY: "auto", bgcolor: "#fff" }}>
-                    <Box sx={{ p: 2 }}>
+                <Box sx={{ height: "100%", bgcolor: "#fff" }}>
+                    <Box sx={{ px: 2 }}>
                         {loading ? (
                             <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
                                 <CircularProgress />
@@ -174,12 +178,17 @@ const CartEditDrawer = ({ open, onClose, cartProduct }) => {
                                 onClose={onClose}
                                 token={token}
                                 dispatch={dispatch}
+                                getCartDetails={getCartDetails}
+                                getCartItems={getCartItems}
                                 addToast={addToast}
                                 currency={currency}
                                 onHoverImage={handleHoverImage}
                                 onHoverOut={handleHoverOut}
                                 hoveredImage={hoveredImage}
                                 onProductChange={handleProductChange}
+                                wallet={wallet}
+                                voucher={voucher}
+                                address={address}
                             />
                         ) : (
                             <Typography>Product not found</Typography>
@@ -208,7 +217,12 @@ const CartEditContent = ({
     onHoverImage,
     onHoverOut,
     hoveredImage,
-    onProductChange
+    onProductChange,
+    wallet,
+    voucher,
+    address,
+    getCartDetails,
+    getCartItems
 }) => {
     // Drawer‑simplified variant hook
     const {
@@ -576,9 +590,10 @@ const CartEditContent = ({
             addToast("Please select all required options", { appearance: "error" });
             return;
         }
-        if (product.customize === "Yes") {
-            if (!validateCustomization()) {
-                addToast("Please complete all required customizations", { appearance: "error" });
+        const hasCustomizations = product?.availableCustomization?.customizations?.length > 0;
+        if (hasCustomizations) {
+            const validationResult = validateCustomization();
+            if (!validationResult) {
                 setIsExpanded(true);
                 return;
             }
@@ -603,6 +618,7 @@ const CartEditContent = ({
             variants: [],
             customize: product.customize,
             customizationData: [],
+            shipping_id: cartItem.shipping_id,
         };
 
         // Handle parent variants (from normalizeVariantData)
@@ -743,12 +759,10 @@ const CartEditContent = ({
             await postAPIAuth("user/delete-cart", { cart_id: cartItem.cart_id });
             const res = await postAPIAuth("user/add-to-cart", payload);
             if (res.status === 200) {
-                const cartRes = await getAPIAuth("user/cart-list");
-                if (cartRes.status === 200) {
-                    dispatch({ type: "INIT_CART", payload: cartRes.data.result });
-                    addToast("Cart updated successfully", { appearance: "success" });
-                    onClose();
-                }
+                await getCartItems(address?._id);
+                const data = wallet ? "1" : "0";
+                await getCartDetails(data, address?._id, voucher?.discount);
+                onClose()
             }
         } catch (error) {
             console.error(error);
@@ -765,111 +779,115 @@ const CartEditContent = ({
     }, [selectedVariants]);
 
     return (
-        <Box>
-            <DrawerImageGallery
-                media={combinedMedia}
-                selectedImage={selectedImage}
-                onImageSelect={setSelectedImage}
-                hoveredImage={hoveredImage}
-            />
-            <Divider sx={{ my: 2 }} />
-            <Typography sx={{ fontWeight: 600, fontSize: "16px", mb: 1 }}>
-                {product.product_title.replace(/<[^>]*>/g, "")}
-            </Typography>
-
-            <DrawerProductPricing
-                price={price}
-                originalPrice={originalPrice}
-                currency={currency}
-                isCombination={product.isCombination}
-                plusToggle={plusToggle}
-                bestPromotion={bestPromotion}
-                quantity={quantity}
-            />
-
-            {stock > 0 && stock <= 10 && (
-                <Typography variant="caption" sx={{ color: "#d32f2f", display: "block", mb: 1 }}>
-                    Only {stock} left!
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%", justifyContent: "space-between" }}>
+            <Box>
+                <DrawerImageGallery
+                    media={combinedMedia}
+                    selectedImage={selectedImage}
+                    onImageSelect={setSelectedImage}
+                    hoveredImage={hoveredImage}
+                />
+            </Box>
+            <Box sx={{ overflowY: "auto", maxHeight: "calc(100vh - 400px)", px: 1 }}>
+                <Typography sx={{ fontWeight: 600, fontSize: "16px", mb: 1 }}>
+                    {product.product_title.replace(/<[^>]*>/g, "")}
                 </Typography>
-            )}
 
-            {/* Render all variants (parent + internal) using normalizeVariantData */}
-            {allVariants.filter(v => v.id && typeof v.id === 'string' && v.id !== 'undefined').map(variant => (
-                <DrawerVariantSelector
-                    key={`${variant.id}-${product._id}`}
-                    variant={variant}
-                    selectedValue={selectedVariants[variant.id]}
-                    selectedVariants={selectedVariants}
-                    onChange={handleVariantChangeWithNavigation}
-                    onHover={(attrId) => {
-                        handleVariantHover(attrId);
-                        // Update gallery hover image
-                        const attr = variant.attributes.find(a => a.id === attrId);
-                        if (attr?.images?.[0]) onHoverImage({ url: attr.images[0], source: "variant" });
-                    }}
-                    onHoverOut={() => {
-                        handleVariantHoverOut();
-                        onHoverOut();
-                    }}
-                    error={errors[variant.id]}
+                <DrawerProductPricing
+                    price={price}
+                    originalPrice={originalPrice}
                     currency={currency}
-                    filterVariantAttributes={filterVariantAttributes}
-                    isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
-                    calculateAttributeData={calculateAttributeData}
-                    productMainImage={product.image}
-                    form_values={product.form_values}
+                    isCombination={product.isCombination}
+                    plusToggle={plusToggle}
+                    bestPromotion={bestPromotion}
+                    quantity={quantity}
                 />
-            ))}
 
-            {product.customize === "Yes" && (
-                <DrawerCustomization
-                    customizationData={product.customizationData}
-                    selectedDropdowns={selectedDropdowns}
-                    customizationText={customizationText}
-                    onDropdownChange={handleDropdownChange}
-                    onTextChange={handleTextChange}
-                    validationErrors={validationErrors}
-                    currency={currency}
-                    onOptionHover={(opt) => {
-                        if (opt.main_images?.length) onHoverImage({ url: opt.main_images[0], source: "customization" });
-                    }}
-                    onOptionHoverOut={onHoverOut}
-                    isExpanded={isExpanded}
-                    setIsExpanded={setIsExpanded}
+                {stock > 0 && stock <= 10 && (
+                    <Typography variant="caption" sx={{ color: "#d32f2f", display: "block", mb: 1 }}>
+                        Only {stock} left!
+                    </Typography>
+                )}
+
+                {/* Render all variants (parent + internal) using normalizeVariantData */}
+                {allVariants.filter(v => v.id && typeof v.id === 'string' && v.id !== 'undefined').map(variant => (
+                    <DrawerVariantSelector
+                        key={`${variant.id}-${product._id}`}
+                        variant={variant}
+                        selectedValue={selectedVariants[variant.id]}
+                        selectedVariants={selectedVariants}
+                        onChange={handleVariantChangeWithNavigation}
+                        onHover={(attrId) => {
+                            handleVariantHover(attrId);
+                            // Update gallery hover image
+                            const attr = variant.attributes.find(a => a.id === attrId);
+                            if (attr?.images?.[0]) onHoverImage({ url: attr.images[0], source: "variant" });
+                        }}
+                        onHoverOut={() => {
+                            handleVariantHoverOut();
+                            onHoverOut();
+                        }}
+                        error={errors[variant.id]}
+                        currency={currency}
+                        filterVariantAttributes={filterVariantAttributes}
+                        isAttributeCombinationSoldOut={isAttributeCombinationSoldOut}
+                        calculateAttributeData={calculateAttributeData}
+                        productMainImage={product.image}
+                        form_values={product.form_values}
+                    />
+                ))}
+
+                {product.customize === "Yes" && (
+                    <DrawerCustomization
+                        customizationData={product.customizationData}
+                        selectedDropdowns={selectedDropdowns}
+                        customizationText={customizationText}
+                        onDropdownChange={handleDropdownChange}
+                        onTextChange={handleTextChange}
+                        validationErrors={validationErrors}
+                        currency={currency}
+                        onOptionHover={(opt) => {
+                            if (opt.main_images?.length) onHoverImage({ url: opt.main_images[0], source: "customization" });
+                        }}
+                        onOptionHoverOut={onHoverOut}
+                        isExpanded={isExpanded}
+                        setIsExpanded={setIsExpanded}
+                        productMainImage={product.image}
+                    />
+                )}
+
+                <DrawerQuantitySelector
+                    quantity={quantity}
+                    stock={stock}
+                    onQuantityChange={setQuantity}
+                    disabled={product.isCombination && !areAllInternalVariantsSelected()}
+                    showVariantWarning={product.isCombination && !areAllInternalVariantsSelected()}
+                    isCombination={product.isCombination}
+                    variantSelected={areAllInternalVariantsSelected()}
                 />
-            )}
 
-            <DrawerQuantitySelector
-                quantity={quantity}
-                stock={stock}
-                onQuantityChange={setQuantity}
-                disabled={product.isCombination && !areAllInternalVariantsSelected()}
-                showVariantWarning={product.isCombination && !areAllInternalVariantsSelected()}
-                isCombination={product.isCombination}
-                variantSelected={areAllInternalVariantsSelected()}
-            />
-
-            <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-                <Button
-                    fullWidth
-                    onClick={handleSave}
-                    disabled={saving || stock === 0}
-                    sx={{
-                        bgcolor: "#000",
-                        color: "#fff",
-                        borderRadius: "24px",
-                        textTransform: "none",
-                        "&:hover": {
-                            bgcolor: "#111",
-                        },
-                    }}
-                >
-                    {saving ? "Updating..." : "Save Changes"}
-                </Button>
-                <Button variant="outlined" fullWidth onClick={onClose} sx={{ textTransform: "none", borderRadius: "24px", }}
-                >
-                    Cancel
-                </Button>
+                <Box sx={{ display: "flex", gap: 2 , mb: 2}}>
+                    <Button
+                        fullWidth
+                        onClick={handleSave}
+                        disabled={saving || stock === 0}
+                        sx={{
+                            bgcolor: "#000",
+                            color: "#fff",
+                            borderRadius: "24px",
+                            textTransform: "none",
+                            "&:hover": {
+                                bgcolor: "#111",
+                            },
+                        }}
+                    >
+                        {saving ? "Updating..." : "Save Changes"}
+                    </Button>
+                    <Button variant="outlined" fullWidth onClick={onClose} sx={{ textTransform: "none", borderRadius: "24px", }}
+                    >
+                        Cancel
+                    </Button>
+                </Box>
             </Box>
         </Box>
     );

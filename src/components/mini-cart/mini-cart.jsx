@@ -112,7 +112,7 @@ export default function MiniCart({ toggleSidenav }) {
 
   const getTotalPrice = () => {
     return cartList?.reduce((total, cartItem) => {
-      return total + cartItem?.products?.reduce((acc, product) => acc + product?.sale_price * product?.qty, 0);
+      return total + cartItem?.products?.reduce((acc, product) => acc + product?.line_total, 0);
     }, 0);
   };
 
