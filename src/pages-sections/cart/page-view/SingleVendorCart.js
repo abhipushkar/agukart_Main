@@ -507,16 +507,14 @@ const SingleVendorCart = ({
             coupon_code: cart.vendor_coupon.coupon_data.coupon_code,
             vendor_id: cart?.vendor_id,
           };
+          console.log("Validating coupon with payload:", payload);
           const res = await postAPIAuth("user/check-coupon-for-product", payload);
-          // add sanity checks
-          if (res.status !== 200) {
-            await postAPIAuth("user/remove-coupon-for-product", payload);
-            const data = wallet ? "1" : "0";
-            getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-            addToast("Coupon removed as it is no longer valid", { appearance: "warning", autoDismiss: true });
-          }
         } catch (error) {
           console.error("Coupon validation failed:", error);
+          if(error?.response?.status === 400) {
+            handleRemove(); // Remove invalid coupon
+            addToast("Coupon removed as it is no longer valid", { appearance: "warning", autoDismiss: true });
+          }
         }
       };
 
@@ -585,9 +583,10 @@ const SingleVendorCart = ({
       >
         <Typography
           component="div"
-          display={{ lg: "flex", md: "flex", xs: "block" }}
+          display={"flex"}
           justifyContent={"space-between"}
           alignItems={"center"}
+          mb={2}
         >
           <Typography
             component="div"
@@ -644,9 +643,10 @@ const SingleVendorCart = ({
                 md: "16px",
                 xs: "12px",
               },
+              p:0
             }}
           >
-            <Button onClick={() => setOpenContact(true)}>
+            <Button onClick={() => setOpenContact(true)} p={0} sx={{ p:0 }}>
               Contact shop
             </Button>
           </Typography>
@@ -965,7 +965,7 @@ const SingleVendorCart = ({
                     },
                   }}
                 >
-                  <Box>
+                  <Box maxWidth={"100%"}>
                     <Typography fontSize={17} color={"#000"}>
                       Estimated delivery:
                     </Typography>
@@ -975,8 +975,13 @@ const SingleVendorCart = ({
                       sx={{
                         borderBottom: "1px dashed gray",
                         width: {
-                          xs: "auto",
+                          xs: "100%", 
                           md: "397px",
+                        },
+                        maxWidth: "100%",
+                        '& .MuiSelect-icon': {
+                          zIndex: 1,
+                          backgroundColor: 'white',
                         },
                       }}
                     >

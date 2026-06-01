@@ -1095,7 +1095,7 @@ const Mycart = () => {
                         aria-describedby="alert-dialog-description"
                       >
                         <DialogTitle id="alert-dialog-title">
-                          Are Want To Proceed To Checkout Page
+                          Do You Want To Proceed To Checkout Page?
                         </DialogTitle>
                         <DialogActions>
                           <Button onClick={handleClose}>Disagree</Button>

@@ -457,9 +457,16 @@ export default function CartProvider({ children }) {
       );
 
       if (res?.data?.status) {
-        setCartDetails(res.data.data);
+        const data = res.data.data;
+        data.status = res.data.status || false;
+        console.log("CartDetails:", data, res.data);
+        setCartDetails(data);
       } else {
         dispatch({ type: "CALCULATION", payload: res.data.data });
+        const data = res.data.data;
+        data.status = res.data.status || false;
+        console.log("CartDetails:", data, res.data);
+        setCartDetails(data);
         addToast(res?.data?.message, {
           appearance: "error",
           autoDismiss: true,
