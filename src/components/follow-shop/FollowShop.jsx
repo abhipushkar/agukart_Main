@@ -36,7 +36,8 @@ export default function FollowShop(props) {
     try {
       setShowloading(true);
       const res = await getAPIAuth("user/get-follow-vendor");
-      console.log(res, "this sis res of wishlist");
+      console.log("API Full Response:", res.data);
+      console.log("First Item:", res.data.data[0]);
       if (res.status === 200) {
         const myArr = res.data.data.map((obj) => {
           return { ...obj, base_url: res.data.base_url };
@@ -101,13 +102,13 @@ export default function FollowShop(props) {
         ) : (
           // </Box>
           folowVendor?.map((item) => (
-            <Grid item lg={3} md={4} sm={6} xs={12} key={item.id}>
+            <Grid item lg={12} md={14} sm={6} xs={12} key={item.id}>
               <ProductCard1
                 product={item}
                 getWishlistProduct={getFollowVendor}
                 id={item.vendor_id}
-                title={item.vendor_name}
-                imgUrl={item?.shop_icon}
+                title={item.shop_name}
+                imgUrl={item?.shop_banner}
                 product_id={item._id}
                 vendorSlug={item.slug}
               />
