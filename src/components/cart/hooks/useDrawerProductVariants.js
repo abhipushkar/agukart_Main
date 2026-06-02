@@ -33,6 +33,9 @@ export const useDrawerProductVariants = (product) => {
                         }
                     }
                 }
+                if(field === 'prices' && product?.form_values?.isCheckedPrice === true && product?.variations_data.length === 1) {
+                    return [product.variations_data[0].name] || []; 
+                }
             }
             return [];
         },
@@ -722,7 +725,7 @@ export const useDrawerProductVariants = (product) => {
                 // console.log("Price combo for key", {priceKey, priceCombo, combinationsMap});
             }
         }
-
+        // console.log("test", {isQuantityControlled, quantityControlVariants, selectedVariants});
         // Get quantity from combinations - find ANY combination that matches selected quantity-controlling variants
         if (isQuantityControlled && quantityControlVariants.length) {
             // Collect selected attribute IDs for quantity-controlling variants only
@@ -732,7 +735,7 @@ export const useDrawerProductVariants = (product) => {
                     quantitySelectionIds.push(attrId);
                 }
             });
-
+            // console.log("Quantity selection IDs:", { quantitySelectionIds, selectedVariants, quantityControlVariants });
             // If we have any quantity-controlling variants selected, try to find quantity
             if (quantitySelectionIds.length) {
                 const quantityKey = quantitySelectionIds.sort().join(",");

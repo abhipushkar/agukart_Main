@@ -339,6 +339,7 @@ const DeliveryAddress = () => {
         voucher_id: voucherDetails?._id || null,
         voucher_discount: voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
+        coupon_vendor_ids: state?.cart?.filter(vendor => vendor.coupon_status === true)?.map(vendor => vendor.vendor_id) || [],
       };
       if (ids.length === 1) {
         payload.vendor_id = ids[0];
