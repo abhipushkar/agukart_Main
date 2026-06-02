@@ -339,6 +339,11 @@ const CartEditContent = ({
         setStock(calculateStock());
     }, [calculateStock]);
 
+    // reset quantity to 1 if selectedVariants changes
+    useEffect(() => {
+        setQuantity(1);
+    }, [selectedVariants]);
+
 
     // Combine all variants (parent + internal) for rendering
     const allVariants = normalizeVariantData();
@@ -512,32 +517,6 @@ const CartEditContent = ({
         return () => clearTimeout(timer);
     }, [product, cartItem]); // Note: prefillFromCart not in dependencies to prevent re-runs // Note: prefillFromCart, handleDropdownChange, handleTextChange NOT in dependencies
 
-
-    // // DEBUG: Log cart item data when drawer opens
-    // useEffect(() => {
-    //     if (!product || !cartItem) return;
-
-    //     // console.log("========== CART PREFILL DEBUG ==========");
-    //     // console.log("1. Cart Item:", {
-    //         cart_id: cartItem.cart_id,
-    //         variants: cartItem.variants,
-    //         variantData: cartItem.variantData,
-    //         variantAttributeData: cartItem.variantAttributeData,
-    //         customizationData: cartItem.customizationData,
-    //         customize: cartItem.customize,
-    //         product_id: cartItem.product_id
-    //     });
-
-    //     // console.log("2. Product Data:", {
-    //         product_id: product._id,
-    //         isCombination: product.isCombination,
-    //         hasParentId: !!product.parent_id,
-    //         product_variants: product.product_variants?.map(v => v.variant_name),
-    //         variant_id: product.variant_id?.length,
-    //         variant_attribute_id: product.variant_attribute_id?.length,
-    //         customizationData: product.customizationData
-    //     });
-    // }, [product, cartItem]);
 
     // Wrapper for variant change to handle parent variant navigation
     const handleVariantChangeWithNavigation = useCallback(async (variantId, value) => {

@@ -448,6 +448,43 @@ const Mycart = () => {
     }
   }, [token]);
 
+  // add an effect to remove if >1 coupons applied and remove coupon with smaller discountAmount
+  // useEffect(async () => {
+  //   try {
+  //     const cartlist = state?.cart || [];
+  //     const couponsCount = cartlist.reduce((count, vendorCart) => count + (vendorCart.coupon_status ? 1 : 0), 0);
+  //     const isAnyCouponAlreadyApplied = cartlist?.some(vendorCart => vendorCart.coupon_status === true);
+  //     if (isAnyCouponAlreadyApplied && couponsCount > 1) {
+  //       // find vendor with smallest discountAmount and remove their coupon
+  //       console.log("entered effect")
+  //       let minDiscount = Infinity;
+  //       let vendorIdToRemove = null;
+  //       cartlist.forEach(vendorCart => {
+  //         if (vendorCart.coupon_status && vendorCart.discountAmount < minDiscount) {
+  //           minDiscount = vendorCart.discountAmount;
+  //           vendorIdToRemove = vendorCart.vendor_id;
+  //         }
+  //       });
+  //       const vendor = cartlist.find(v => v.vendor_id === vendorIdToRemove);
+  //       if (vendorIdToRemove) {
+  //         const payload = {
+  //           coupon_code: vendor?.vendor_coupon?.coupon_data?.coupon_code,
+  //           vendor_id: vendorIdToRemove,
+  //         };
+  //         const res = await postAPIAuth("user/remove-coupon-for-product", payload)
+  //         if (res.status === 200) {
+  //           addToast("Multiple coupons detected. The applied coupon has been removed to ensure only one coupon is active per order.", {
+  //             appearance: "error",
+  //             autoDismiss: true,
+  //           });
+  //         }
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.log("Error validating coupons:", error);
+  //   }
+  // }, []);
+
 
   // useEffect(() => {
   //   if (!voucherDetails?.voucherCode) return;

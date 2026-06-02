@@ -54,6 +54,7 @@ import { useLocation } from "contexts/location_context";
 export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }) {
   const router = useRouter();
   const { getCartDetails, getCartItems, state } = useCart();
+  console.log(state, "state in checkout popup")
   const { currency } = useCurrency();
   const { token } = useAuth();
   const { usercredentials } = useMyProvider();
@@ -281,6 +282,20 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
     if (!token) {
       return router.push("/login");
     }
+    const cartList = state?.cart || [];
+    const couponsCount = cartList.reduce((count, vendorCart) => count + (vendorCart.coupon_status ? 1 : 0), 0);
+    const isAnyCouponAlreadyApplied = cartList?.some(vendorCart => vendorCart.coupon_status === true);
+    if (isAnyCouponAlreadyApplied && couponsCount >= 1) {
+      const message = "Only one coupon can be applied per order. Please remove the existing coupon before applying a new one.";
+      setError(message);
+      // Clear after 5 seconds
+      setTimeout(() => { setError(""); }, 5000);
+      // addToast(message, {
+      //   appearance: "error",
+      //   autoDismiss: true,
+      // });
+      return;
+    }
     try {
       const payload = {
         coupon_code: formValues?.coupon_code,
@@ -297,6 +312,9 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         // Refresh cart details after applying coupon with discount amount
         const discountAmount = res.data.couponAmount || res.data.discountAmount || 0;
         await getVendorCartDetails(discountAmount);
+        getCartItems(defaultAddress?._id);
+        const data = wallet ? "1" : "0";
+        getCartDetails(data, defaultAddress?._id, voucherDetails?.discount || voucherDetails?.amount || 0);
         setError("");
         addToast(res?.data?.message, {
           appearance: "success",
@@ -331,6 +349,9 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
 
         // Refresh cart details after removing coupon (discount = 0)
         await getVendorCartDetails(0);
+        getCartItems(defaultAddress?._id);
+        const data = wallet ? "1" : "0";
+        getCartDetails(data, defaultAddress?._id, voucherDetails?.discount || voucherDetails?.amount || 0);
         setFormValues({ coupon_code: "" });
         setIsOpen(false); // Close the accordion
         addToast(res?.data?.message, {
@@ -348,6 +369,22 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
       });
     }
   };
+
+  // add an effect to remove if >1 coupons applied and remove coupon with smaller discountAmount
+  useEffect(() => {
+    if (couponStatus) {
+      const cart = state?.cart || [];
+      const couponsCount = cart.reduce((count, vendorCart) => count + (vendorCart.coupon_status ? 1 : 0), 0);
+      const isAnyCouponAlreadyApplied = cart?.some(vendorCart => vendorCart.coupon_status === true);
+      if (isAnyCouponAlreadyApplied && couponsCount > 1) {
+        handleRemoveCoupon();
+        addToast("Multiple coupons detected. The applied coupon has been removed to ensure only one coupon is active per order.", {
+          appearance: "error",
+          autoDismiss: true,
+        });
+      }
+    }
+  }, []);
 
   const handleSubmit = async (values, resetForm) => {
     const { countryCode, phoneNumber } = splitCountryCode(values?.phone);
