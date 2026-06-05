@@ -195,21 +195,23 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       Array.isArray(product?.promotionData) &&
       product?.promotionData.length > 0
     ) {
-      const promotion = product.promotionData.reduce((best, promotion) => {
-        if (!promotion.qty || promotion.qty === null) return best;
+      // const promotion = product.promotionData.reduce((best, promotion) => {
+      //   if (!promotion.qty || promotion.qty === null) return best;
 
-        if (
-          !best ||
-          best.qty === null ||
-          promotion.qty < best.qty ||
-          (promotion.qty === best.qty &&
-            promotion.discount_amount > best.discount_amount)
-        ) {
-          return promotion;
-        }
+      //   if (
+      //     !best ||
+      //     best.qty === null ||
+      //     promotion.qty < best.qty ||
+      //     (promotion.qty === best.qty &&
+      //       promotion.discount_amount > best.discount_amount)
+      //   ) {
+      //     return promotion;
+      //   }
 
-        return best;
-      }, null);
+      //   return best;
+      // }, null);
+
+      const promotion = product.currentPromotion || {};
 
       const nextPromotion = product.promotionData.reduce((next, promotion) => {
         if (
@@ -229,7 +231,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
         return next;
       }, null);
       setPromotion(promotion);
-      setNextPromotion(nextPromotion);
+      setNextPromotion(product?.nextPromotion || nextPromotion || {});
     }
   }, [product]);
 
@@ -321,20 +323,20 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               }}
             >
               <img
-                alt="image"
-                src={imageBaseUrl + product?.image[0]}
+                alt={product?.altText?.[0] || product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 8).join(" ") || "Product Image"}
+                src={imageBaseUrl + (product?.edited_image || product?.image[0])}
                 style={{
                   objectFit: "contain",
                   width: "100%",
                   height: "100%",
                   objectFit: "contain",
-                  transformOrigin: "center center",
-                  ...(() => {
-                    const { x, y, scale } = clampPan(product?.zoom || {});
-                    return {
-                      transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
-                    };
-                  })(),
+                  // transformOrigin: "center center",
+                  // ...(() => {
+                  //   const { x, y, scale } = clampPan(product?.zoom || {});
+                  //   return {
+                  //     transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
+                  //   };
+                  // })(),
                 }}
               />
             </Box>
@@ -595,8 +597,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                   }}
                 >
                   {promotion?.offer_type == "flat"
-  ? `${currency?.symbol}${promotion?.discount_amount} off`
-  : `${promotion?.discount_amount}% off`}
+                    ? `${currency?.symbol}${promotion?.discount_amount} off`
+                    : `${promotion?.discount_amount}% off`}
                 </Typography>
               )}
           </FlexBox>
@@ -634,7 +636,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           )}
 
           {/* Next Promotion - Only show when it exists */}
-          {shouldShowNextPromotion && (
+          {product?.nextPromotion && product?.promotionLabel && (
             <Typography
               sx={{
                 fontSize: "11px",
@@ -642,12 +644,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 mt: 0.5,
               }}
             >
-              Eligible orders get{" "}
-              {nextPromotion?.offer_type == "flat"
-                ? `${currency?.symbol}${nextPromotion?.discount_amount}`
-                : `${nextPromotion?.discount_amount}%`}{" "}
-              off when you buy{" "}
-              {nextPromotion?.qty != 0 ? nextPromotion?.qty : ""} items
+              {product?.promotionLabel}
             </Typography>
           )}
         </Box>

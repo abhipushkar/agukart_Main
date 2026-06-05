@@ -603,7 +603,7 @@ const Mycart = () => {
 
           <Container py={5} sx={{ padding: "30px 0" }}>
             <Grid container spacing={4}>
-              <Grid item lg={8} md={7} xs={12}>
+              <Grid item lg={totalItems > 0 ? 8 : 12} md={totalItems > 0 ? 7 : 12} xs={12}>
                 <Box sx={{ padding: "18px" }}>
                   {state?.cart?.length === 0 ? (
                     <Box
@@ -641,8 +641,13 @@ const Mycart = () => {
                   )}
                 </Box>
               </Grid>
-              <Grid item lg={4} md={5} xs={12}>
-                <Box>
+              {state.cart.length > 0 && (
+              <Grid item lg={4} md={5} xs={12} sx={{ position: 'sticky', top: '20px' }}>{/* Order Summary Section is still not sticky make it sticky! */}
+                <Box 
+                sx={{
+                  position: 'sticky',
+                  top: '10px',
+                }}>
                   <Typography component="div">
                     <Box pt={1}>
                       <TableContainer
@@ -1008,7 +1013,7 @@ const Mycart = () => {
                                   <Typography fontSize={17} component="div">
                                     -{currency?.symbol}
                                     {(
-                                      state?.walletAmount * currency?.rate
+                                      cartDetails?.walletAmount * currency?.rate
                                     ).toFixed(2)}
                                   </Typography>
                                 </TableCell>
@@ -1181,7 +1186,7 @@ const Mycart = () => {
                     )}
                   </Typography>
                 </Box>
-              </Grid>
+              </Grid>)}
             </Grid>
           </Container>
         </>

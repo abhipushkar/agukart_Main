@@ -22,6 +22,7 @@ import { validateCartItem } from "../utils/validateCartItem";
 import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
 import { resolveCartPricing } from "../utils/resolveCartPricing";
 import CartEditDrawer from "components/cart/CartEditDrawer";
+import useMyProvider from "hooks/useMyProvider";
 
 const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true }) => {
     const { addToast } = useToasts();
@@ -30,6 +31,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     const [stock, setStock] = useState(0);
     const { token } = useAuth();
     const { dispatch, getCartDetails, getCartItems, state, updateCartRecoveryState, clearCartRecoveryState, setCartPendingUpdate } = useCart();
+    const { saveProductForLater } = useMyProvider();
     const [nextPromotion, setNextPromotion] = useState({});
     const [reconciliationSnapshot, setReconciliationSnapshot] = useState(null);
     const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -115,7 +117,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
         let bestPromotion = product?.appliedPromotion;
         let finalPrice = variantPrice;
-        
+
         if (cart?.coupon_status && isSynced) {
             finalPrice = variantPrice;
         } else if (bestPromotion) {
@@ -223,34 +225,26 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
         }
     };
 
-    const addToWishlistHandler = async () => {
+    const saveForLaterHandler = async () => {
         if (!token) {
             router.push("/login");
         } else {
             try {
-                const variantPrice = calculateVariantPrice();
-                const payload = {
-                    product_id: product?.product_id,
-                    price: variantPrice,
-                    original_price: variantPrice,
-                    isCombination: product?.isCombination,
-                    variant_id: product?.variant_id || [],
-                    variant_attribute_id: product?.variant_attribute_id || [],
-                    variants: product?.variants || []
-                };
-                const res = await postAPIAuth("user/add-delete-wishlist", payload);
+                const res = await saveProductForLater(product?.cart_id);
                 if (res.status === 200) {
-                    const cartRes = await removeItemHandler();
-                    if (cartRes) addToast("Product added to wishlist", { appearance: "success", autoDismiss: true });
+                    getCartItems(defaultAddress?._id);
+                    const data = wallet ? "1" : "0";
+                    getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+                    addToast("Product saved for later", { appearance: "success", autoDismiss: true });
                 }
             } catch (error) {
-                console.log("Error adding to wishlist:", error);
-                addToast("Failed to add to wishlist. Please try again.", { appearance: "error", autoDismiss: true });
+                console.log("Error saving product for later:", error);
+                addToast("Failed to save product for later. Please try again.", { appearance: "error", autoDismiss: true });
             }
         }
     };
 
-    const handleEditProduct = () => router.push(`/product/${product?.slug}/${product?.product_code}`);
+    // const handleEditProduct = () => router.push(`/product/${product?.slug}/${product?.product_code}`);
     const handleOpenEditDrawer = () => setEditDrawerOpen(true);
 
     useEffect(() => {
@@ -351,7 +345,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             <p>Shop the sale</p>
                                         </>
                                     )}
-                                    {isVariantSelectionIncomplete && (
+                                    {/* {isVariantSelectionIncomplete && (
                                         <Box sx={{
                                             backgroundColor: "#ffe5e5", border: "1px solid #ffcccc", color: "#d32f2f",
                                             padding: "16px", borderRadius: "8px", textAlign: "center", display: "flex",
@@ -360,25 +354,27 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                             <ErrorOutlineIcon sx={{ fontSize: 24 }} />
                                             <Typography variant="body1" sx={{ fontWeight: 500 }}>Choose a variant</Typography>
                                         </Box>
-                                    )}
+                                    )} */}
                                     {!displayValidation.valid && !hasRecoveredInvalidState && (
-    <Box sx={{
-    background: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#fff3cd" : "#ffe5e5",
-    border: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "1px solid #ffeeba" : "1px solid #ffcccc",
-    color: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#856404" : "#d32f2f",
-    padding: "10px", borderRadius: "8px", marginBottom: "12px", marginTop: "8px", cursor: "pointer"
-}} onClick={handleOpenEditDrawer}>
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <ErrorOutlineIcon sx={{ fontSize: 18, cursor: "pointer" }} onClick={handleOpenEditDrawer} />
-        <Typography fontSize={13}>{validationMessage}</Typography>
-    </Box>
-    {shouldOpenEditDrawer && (
-        <Typography fontSize={12} sx={{ mt: 0.5, textDecoration: "underline" }}>
-            Click to edit
-        </Typography>
-    )}
-</Box>
-)}
+                                        <Box
+                                            sx={{
+                                                background: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#fff3cd" : "#ffe5e5",
+                                                border: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "1px solid #ffeeba" : "1px solid #ffcccc",
+                                                color: caseType === "PRICE_CHANGED" || caseType === "CUSTOMIZATION_PRICE_CHANGED" ? "#856404" : "#d32f2f",
+                                                padding: "10px", borderRadius: "8px", marginBottom: "12px", marginTop: "8px", cursor: "pointer"
+                                            }}
+                                            onClick={handleOpenEditDrawer}>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                <ErrorOutlineIcon sx={{ fontSize: 20, cursor: "pointer" }} onClick={handleOpenEditDrawer} />
+                                                <Typography fontSize={13}>{validationMessage}</Typography>
+                                            </Box>
+                                            {shouldOpenEditDrawer && (
+                                                <Typography fontSize={12} sx={{ mt: 0.5, textDecoration: "underline" }}>
+                                                    Click to edit
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    )}
                                     {displayValidation.type === "OUT_OF_STOCK" && (
                                         <Typography component="div" sx={{ color: "#bc1111" }} pt={2}>
                                             {(!product?.status || product?.isDeleted) ? "Currently Unavailable" : "Sold Out"}
@@ -403,7 +399,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                 {showButtons && (
                                     <Typography component="div" mt={2} display={"flex"} gap={1}>
                                         <Button variant="contained" onClick={() => setEditDrawerOpen(true)} sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: "pointer" }}>Edit</Button>
-                                        <Button onClick={addToWishlistHandler} variant="contained" sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: isVariantSelectionIncomplete ? "not-allowed" : "pointer", opacity: isVariantSelectionIncomplete ? 0.5 : 1 }} disabled={isVariantSelectionIncomplete}>Save for later</Button>
+                                        <Button onClick={saveForLaterHandler} variant="contained" sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: isVariantSelectionIncomplete ? "not-allowed" : "pointer", opacity: isVariantSelectionIncomplete ? 0.5 : 1 }} disabled={isVariantSelectionIncomplete}>Save for later</Button>
                                         <Button variant="contained" onClick={removeItemHandler} sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px" }}>Remove</Button>
                                     </Typography>
                                 )}
@@ -417,7 +413,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                 <Typography component="div" display={"flex"}>
                                     <Typography component="div" flexGrow={1} flexBasis={"100%"} maxWidth={"100%"} textAlign={"right"}
                                         sx={{ flexDirection: "column", display: "flex", alignItems: { xs: "start", md: "end" }, justifyContent: { xs: "flex-start", md: "flex-end" } }}>
-                                        
+
                                         {product?.appliedPromotion && (
                                             <Box sx={{
                                                 display: "inline-block", backgroundColor: "#00C853", color: "#fff", borderRadius: "4px",
@@ -430,13 +426,13 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 </Typography>
                                             </Box>
                                         )}
-                                        
+
                                         {cart?.coupon_status && (cart?.vendor_coupon?.isSynced || cart?.vendor_coupon?.coupon_data?.isSynced) && (
                                             <Box sx={{ display: "inline-block", backgroundColor: "#2196f3", color: "#fff", borderRadius: "4px", padding: "4px 8px", fontSize: "12px", fontWeight: "bold", marginBottom: "4px", width: "fit-content" }}>
                                                 COUPON APPLIED
                                             </Box>
                                         )}
-                                        
+
                                         {/* Current Price - Discounted */}
                                         <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
                                             {currency?.symbol}{(displayPrice * Number(displayQuantity || 0) * currency?.rate).toFixed(2)}
@@ -457,7 +453,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                                 ({currency?.symbol}{(displayPrice * currency?.rate).toFixed(2)} each)
                                             </Typography>
                                         )}
-                                        
+
                                         {product?.upsellData && (
                                             <Box sx={{ mt: 1, p: "4px 8px", backgroundColor: "#e3f2fd", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "flex-end", width: "fit-content", ml: "auto" }}>
                                                 <Typography fontSize={11} color="#1565c0" fontWeight={700} textAlign="right" lineHeight={1.2}>{product.upsellData.message}</Typography>

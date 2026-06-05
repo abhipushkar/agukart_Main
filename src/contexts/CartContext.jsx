@@ -450,6 +450,7 @@ export default function CartProvider({ children }) {
   }, []);
 
   const getCartDetails = async (wallet, address_id, discount, country) => {
+    if (!token) return;
     try {
       const res = await getAPIAuth(
         `user/getCartDetails?wallet=${wallet}&address_id=${address_id ?? ""}&country=${country ?? location.countryName}&voucher_discount=${discount}`,

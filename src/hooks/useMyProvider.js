@@ -9,7 +9,13 @@ const useMyProvider = () => {
     setAddressCount,
     products,
     setProducts,
-    getUserDetail
+    savedProducts,
+    setSavedProducts,
+    getUserDetail,
+    getSavedProducts,
+    saveProductForLater,
+    deleteSavedProduct,
+    moveSavedProductToCart
   } = useContext(MyContext);
 
   return {
@@ -19,7 +25,13 @@ const useMyProvider = () => {
     setAddressCount,
     products,
     setProducts,
-    getUserDetail
+    savedProducts,
+    setSavedProducts,
+    getUserDetail,
+    getSavedProducts,
+    saveProductForLater,
+    deleteSavedProduct,
+    moveSavedProductToCart
   };
 };
 
