@@ -15,13 +15,14 @@ export const resolveCartPricing = (product, cartItem = null) => {
         return (+product?.real_price || 0) + resolveCartCustomizationPrice(product, cartItem || product);
     }
 
+    const customizationPrice = resolveCartCustomizationPrice(product, cartItem || product);
 
     // Get price controlling variant from form_values
     const priceControllingVariant = product?.form_values?.prices;
     const isPriceControlled = product?.form_values?.isCheckedPrice === true;
     if (!priceControllingVariant && !isPriceControlled) {
         // Fallback to product price
-        return (+product?.real_price || 0) + resolveCartCustomizationPrice(product, cartItem || product);
+        return (+product?.real_price || 0) + customizationPrice;
     }
 
     // Build selected values from current selections
@@ -61,7 +62,7 @@ export const resolveCartPricing = (product, cartItem = null) => {
     );
 
     if (!priceGroup) {
-        return (+product?.real_price || 0) + resolveCartCustomizationPrice(product, cartItem || product);
+        return (+product?.real_price || 0) + customizationPrice;
     }
 
     // Find matching price combination
@@ -76,7 +77,6 @@ export const resolveCartPricing = (product, cartItem = null) => {
     }
 
     const basePrice = foundPrice !== null ? foundPrice : (+product?.real_price || 0);
-    const customizationPrice = resolveCartCustomizationPrice(product, cartItem || product);
 
     return basePrice + customizationPrice;
 };

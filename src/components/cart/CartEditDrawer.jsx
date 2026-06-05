@@ -597,7 +597,7 @@ const CartEditContent = ({
             variants: [],
             customize: product.customize,
             customizationData: [],
-            shipping_id: cartItem.shipping_id,
+            shipping_id: cartItem.shipping_id || product.shipping_templates._id,
         };
 
         // Handle parent variants (from normalizeVariantData)

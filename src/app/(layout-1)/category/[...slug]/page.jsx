@@ -13,7 +13,7 @@ const getCategoryData = cache(async (slugPath) => {
     `${baseURL}/get-category?slug=${slugPath}`,
     {
       next: {
-        revalidate: 300,
+        revalidate: 10,
       },
     }
   );
@@ -28,7 +28,7 @@ const getBreadcrumbData = cache(async (slugPath) => {
     `${baseURL}/get-category-by-slug/${slugPath}`,
     {
       next: {
-        revalidate: 300,
+        revalidate: 10,
       },
     }
   );
@@ -43,7 +43,7 @@ const getInitialProducts = cache(async (categoryId) => {
     `${baseURL}/get-product?categoryId=${categoryId}&page=1&limit=64`,
     {
       next: {
-        revalidate: 60,
+        revalidate: 10,
       },
     }
   );
