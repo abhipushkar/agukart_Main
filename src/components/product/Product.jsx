@@ -13,13 +13,11 @@ import { useRouter } from "next/navigation";
 import React, { useRef } from "react";
 import { useEffect } from "react";
 import { useState } from "react";
-import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import { useCurrency } from "contexts/CurrencyContext";
 import styled from "@emotion/styled";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import { getTimeLeftText } from "components/getTimeLeftText/getTimeLeftText";
 import { PlayCircle } from "@mui/icons-material";
-import { TOKEN_NAME } from "constant";
 
 const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const videoRef = useRef(null);
@@ -27,12 +25,10 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const [promotion, setPromotion] = useState({});
   const [nextPromotion, setNextPromotion] = useState({});
   const router = useRouter();
-  const { usercredentials } = useMyProvider();
+  const { usercredentials, wishlistProductIds, addDeleteWishlistProduct } = useMyProvider();
   const { token } = useAuth();
   const [price, setPrice] = useState(0);
   const [originalPrice, setOriginalPrice] = useState(0);
-  const [wishlistIdArr, setWishlistIdArr] = useState([]);
-  const [toggleWishlist, setToggleWishlist] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseEnter = () => {
@@ -48,39 +44,15 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
     objectFit: "cover",
     height: "100%",
   }));
-
-  useEffect(() => {
-    if (token && wishlistIdArr.length > 0) {
-      const isMatch = wishlistIdArr.some((id) => id === product?._id);
-      setToggleWishlist(isMatch);
-    } else {
-      setToggleWishlist(false);
-    }
-  }, [token, wishlistIdArr]);
-
-  const getWishList = async () => {
-    const key = localStorage.getItem(TOKEN_NAME);
-    if (!token || !key) {
-      return;
-    }
-    try {
-      const res = await getAPIAuth("user/get-wishlist");
-      if (res.status === 200) {
-        const data = res.data.wishlist.map((item) => {
-          return item.product_id._id;
-        });
-        setWishlistIdArr(data);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const toggleWishlist = Boolean(wishlistProductIds?.[product?._id]);
+  console.log(wishlistProductIds);
 
   const handleWishlist = async (e) => {
     e.stopPropagation(); // Prevent navigation when clicking wishlist
     e.preventDefault(); // Also prevent Link navigation
     if (!token) {
       router.push("/login");
+      return;
     }
     const payload = {
       product_id: product?._id,
@@ -91,20 +63,11 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       variant_attribute_id: [],
     };
     try {
-      const res = await postAPIAuth("user/add-delete-wishlist", payload);
-      if (res.status === 200) {
-        getWishList();
-      }
+      await addDeleteWishlistProduct(payload);
     } catch (error) {
       console.error(error);
     }
   };
-
-  useEffect(() => {
-    if (token) {
-      getWishList();
-    }
-  }, [token]);
 
   useEffect(() => {
     const hasCombinations =

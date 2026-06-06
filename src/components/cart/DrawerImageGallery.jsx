@@ -76,7 +76,7 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
         {displayImageUrl && (
           <img
             src={normalizeImageUrl(displayImageUrl)}
-            alt={displayImageUrl.slice(0,10)}
+            alt={displayImageUrl.slice(0, 10)}
             style={{
               maxWidth: "100%",
               maxHeight: 280,
@@ -93,7 +93,18 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           steps={media.length}
           position="static"
           activeStep={activeStep}
-          sx={{ bgcolor: "transparent", p: 1, color:"black" }}
+          sx={{
+            bgcolor: "transparent",
+            p: 1,
+            '& .MuiMobileStepper-dot': {
+              backgroundColor: '#ccc',
+              width: 8,
+              height: 8,
+            },
+            '& .MuiMobileStepper-dotActive': {
+              backgroundColor: '#d98392',
+            },
+          }}
           nextButton={
             <IconButton
               size="small"
@@ -121,11 +132,30 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           sx={{
             display: "flex",
             gap: 1,
-            mt: 1,
+            my: 1,
             overflowX: "auto",
             pb: 1,
-            "&::-webkit-scrollbar": { height: 4 },
-            "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 2 },
+            scrollbarWidth: "thin", // For Firefox
+            "&::-webkit-scrollbar": {
+              height: 4,
+              backgroundColor: "transparent",
+            },
+            "&::-webkit-scrollbar-track": {
+              backgroundColor: "transparent",
+              marginTop: "2px",
+              marginBottom: "2px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "#eeeeee",
+              borderRadius: 2,
+            },
+            "&:hover::-webkit-scrollbar": {
+              height: 6,
+              backgroundColor: "#e7e7e7",
+            },
+            "&:hover::-webkit-scrollbar-thumb": {
+              backgroundColor: "#e3e3e39c",
+            },
           }}
         >
           {media.map((item, idx) => (
@@ -136,16 +166,16 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
                 width: 50,
                 height: 50,
                 flexShrink: 0,
-                border: activeStep === idx ? "2px solid #D23F57" : "1px solid #e0e0e0",
+                border: activeStep === idx ? "2px solid #c9576aa2" : "1px solid #e0e0e0",
                 borderRadius: 1,
                 overflow: "hidden",
                 cursor: "pointer",
-                "&:hover": { borderColor: "#D23F57" },
+                "&:hover": { borderColor: "#ed5f77" },
               }}
             >
               <img
                 src={normalizeImageUrl(item.url)}
-                alt={item.url.slice(0,10)}
+                alt={item.url.slice(0, 10)}
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             </Box>

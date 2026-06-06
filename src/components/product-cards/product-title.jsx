@@ -10,7 +10,7 @@ export default function ProductTitle({
   vendorSlug,
   product_id
 }) {
-  return <Link href={pathname == "/profile/follow-shop" ? `/store/${vendorSlug}` : `/products/${product_id}`}>
+  return <Link href={pathname == "/profile/follow-shop" ? `/store/${vendorSlug}` : `/product/${product_id.slug}/${product_id.product_code}`}>
     <H3 mb={1} ellipsis title={title} fontSize={14} fontWeight={600} className="title" color="text.secondary">
       {title}
     </H3>

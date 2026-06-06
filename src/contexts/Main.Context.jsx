@@ -15,6 +15,8 @@ const MainProvider = ({ children }) => {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [savedProducts, setSavedProducts] = useState([]);
+  const [wishlistProducts, setWishlistProducts] = useState([]);
+  const [wishlistLoaded, setWishlistLoaded] = useState(false);
   const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
   const getUserDetail = async () => {
@@ -104,12 +106,74 @@ const MainProvider = ({ children }) => {
     }
   };
 
+  const getWishlistProducts = async (forceRefresh = false) => {
+    if (!token) {
+      setWishlistProducts([]);
+      setWishlistLoaded(false);
+      return [];
+    }
+
+    if (wishlistLoaded && !forceRefresh) {
+      return wishlistProducts;
+    }
+
+    try {
+      const res = await getAPIAuth("user/get-wishlist", token);
+      const wishlistData = res?.data?.wishlist || [];
+
+      const normalizedWishlist = Array.isArray(wishlistData) ? wishlistData : [];
+
+      setWishlistProducts(normalizedWishlist);
+      setWishlistLoaded(true);
+
+      return normalizedWishlist;
+    } catch (error) {
+      console.log("error getting wishlist products", error);
+      setWishlistProducts([]);
+      setWishlistLoaded(false);
+      return [];
+    }
+  };
+
+  const addDeleteWishlistProduct = async (payload) => {
+    if (!token) return null;
+
+    try {
+      const res = await postAPIAuth("user/add-delete-wishlist", payload, token);
+      if (res?.status === 200) {
+        await getWishlistProducts(true);
+      }
+      return res;
+    } catch (error) {
+      console.log("error adding or deleting wishlist product", error);
+      throw error;
+    }
+  };
+
+  const wishlistProductIds = wishlistProducts?.reduce((acc, item) => {
+    const productId =
+      item?.product_id?._id ||
+      item?.product_id ||
+      item?._id ||
+      item?.id;
+
+    if (productId) {
+      acc[productId] = true;
+    }
+
+    return acc;
+  }, {});
+  console.log("wishlistProductIds",wishlistProductIds);
+
   useEffect(() => {
     if(token){
       getUserDetail();
       getSavedProducts();
+      getWishlistProducts();
     } else {
       setSavedProducts([]);
+      setWishlistProducts([]);
+      setWishlistLoaded(false);
     }
   }, [token])
 
@@ -135,11 +199,17 @@ const MainProvider = ({ children }) => {
       setProducts,
       savedProducts,
       setSavedProducts,
+      wishlistProducts,
+      setWishlistProducts,
+      wishlistLoaded,
+      wishlistProductIds,
       getUserDetail,
       getSavedProducts,
       saveProductForLater,
       deleteSavedProduct,
-      moveSavedProductToCart
+      moveSavedProductToCart,
+      getWishlistProducts,
+      addDeleteWishlistProduct
     }}>
       {children}
     </MyContext.Provider>

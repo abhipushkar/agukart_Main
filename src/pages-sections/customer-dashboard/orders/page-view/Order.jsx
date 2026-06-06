@@ -468,6 +468,23 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
             {/* Shop section - using items array */}
             {items.length > 0 && (
               <Box>
+                {items.map(product => {
+                  console.log("orderproduct",product);
+                  return (
+                    <Product
+                      key={product?._id}
+                      baseUrl={baseUrl}
+                      shopBaseUrl={shopBaseUrl}
+                      SetOpenPopup={SetOpenPopup}
+                      setReviewId={setReviewId}
+                      setVendorId={setVendorId}
+                      order={order}
+                      product={product}
+                      setReviewProduct={setReviewProduct}
+                      handleOpenReview={handleOpenReview}
+                    />
+                  );
+                })}
                 {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <H4 sx={{color:'grey'}}>Shop name : { items[0]?.vendorData?.shop_name || 'Unknown'}</H4>
                   <Box
@@ -479,13 +496,15 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                     }}
                   />
                 </Box> */}
-                {items.map((product, index) => {
+                {/* {items.map((orderItem, index) => {
+                  const product = orderItem.productData;
                   const review = localReviews[product._id];
                   const reply = localReplies[product._id];
                   const buyerNote = localBuyerNotes[product._id];
                   const isHidden = hiddenReviews[product._id];
                   const isLocked = lockedReviews[product._id];
                   const hasReview = review?.submitted;
+                  
                   if (isHidden && hasReview) {
                     return (
                       <Box key={product?._id} sx={{ display: "flex", justifyContent: "flex-end", py: 3, borderBottom: index !== items.length - 1 ? "1px solid #ececec" : "none" }}>
@@ -517,7 +536,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                         },
                       }}
                     >
-                      {/* LEFT PRODUCT */}
+                      
                       <Box
                         sx={{
                           width: {
@@ -528,7 +547,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                           gap: 2,
                         }}
                       >
-                        {/* IMAGE */}
+                        
                         <Box
                           sx={{
                             width: 95,
@@ -554,20 +573,17 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                             }}
                           />
                         </Box>
-                        {/* PRODUCT INFO */}
+                       
                         <Box>
                           <Typography
                             sx={{
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: 500,
                               lineHeight: 1.5,
                               color: "#2b2b2b",
                             }}
                           >
-                            {product?.product_name?.replace(
-                              /<\/?[^>]+(>|$)/g,
-                              ""
-                            )}
+                            {product?.product_title?.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim()}
                           </Typography>
                           <Typography
                             sx={{
@@ -596,7 +612,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                             Qty : {product?.quantity}
                           </Typography>
 
-                          {/* BUTTONS */}
+                          
                           <Box
                             sx={{
                               display: "flex",
@@ -646,92 +662,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                           </Box>
                         </Box>
                       </Box>
-                      {/* RIGHT REVIEW */}
-                      {/* RIGHT REVIEW */}
-<Box sx={{ flex: 1 }}>
-  {!hasReview ? (
-    <Box sx={{ bgcolor: "#f8f7f3", borderRadius: 2, p: 3, border: "1px solid #ece8dc", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
-      <Typography fontSize={14} color="text.secondary">You haven't reviewed this item yet.</Typography>
-    </Box>
-  ) : (
-    <Box sx={{ bgcolor: "#f8f7f3", borderRadius: 2, p: 2, border: "1px solid #ece8dc" }}>
-      {/* Stars */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography fontWeight={600} fontSize={15}>Your Review</Typography>
-          <Typography sx={{ color: "#000", letterSpacing: 1, fontSize: 16 }}>
-            {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
-          </Typography>
-        </Box>
-        {review.recommend !== null && (
-          <Typography fontSize={12} sx={{ bgcolor: review.recommend ? "#e8f5e9" : "#fce4ec", color: review.recommend ? "#2e7d32" : "#c62828", px: 1.5, py: 0.3, borderRadius: 10 }}>
-            {review.recommend ? "✓ Recommended" : "✕ Not recommended"}
-          </Typography>
-        )}
-      </Box>
-      {/* Sub ratings */}
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 1.5 }}>
-        {[
-          { label: "Item Quality", val: review.itemQuality },
-          { label: "Delivery", val: review.delivery },
-          { label: "Customer Service", val: review.customerService },
-        ].map(({ label, val }) => (
-          <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Typography fontSize={12} color="text.secondary">{label}:</Typography>
-            <Rating value={val} readOnly size="small" sx={{ fontSize: 14 }} />
-          </Box>
-        ))}
-      </Box>
-      {/* Photos */}
-      {review.photoUrls?.length > 0 && (
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
-          {review.photoUrls.map((url, i) => (
-            <Box key={i} sx={{ width: 72, height: 72, borderRadius: 1, overflow: "hidden", border: "1px solid #ddd" }}>
-              <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </Box>
-          ))}
-        </Box>
-      )}
-      {/* Review text */}
-      <Typography sx={{ color: "#4d4d4d", fontSize: 14, lineHeight: 1.6 }}>{review.review}</Typography>
-      {/* Edit review */}
-      <Typography
-        onClick={() => !isLocked && handleOpenEditReview(product)}
-        sx={{ mt: 1.5, color: isLocked ? "#b5b5b5" : "#666", fontSize: 13, textDecoration: "underline", cursor: isLocked ? "not-allowed" : "pointer", width: "fit-content", opacity: isLocked ? 0.6 : 1, pointerEvents: isLocked ? "none" : "auto" }}
-      >
-        Edit review
-      </Typography>
-      {/* Seller Reply */}
-      {reply && (
-        <Box sx={{ mt: 2, bgcolor: "#fff", border: "1px solid #ececec", borderRadius: 2, p: 2 }}>
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            <Box sx={{ width: 42, height: 42, borderRadius: "50%", bgcolor: "#f1641e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
-              {items[0]?.vendorData?.shop_name?.[0] || "S"}
-            </Box>
-            <Box>
-              <Typography fontWeight={600} fontSize={14}>
-                {reply.seller}
-                <Typography component="span" sx={{ color: "#666", fontWeight: 400, ml: 1 }}>responded on {reply.date}</Typography>
-              </Typography>
-              <Typography sx={{ mt: 1, color: "#555", fontSize: 14 }}>{reply.message}</Typography>
-            </Box>
-          </Box>
-        </Box>
-      )}
-      {/* Note to Buyer */}
-      {buyerNote && (
-        <Box sx={{ mt: 2, bgcolor: "#fff8e1", border: "1px solid #f1d58a", borderRadius: 2, p: 2 }}>
-          <Typography sx={{ fontSize: 13, color: "#8a6d1d", lineHeight: 1.6 }}>
-            <strong>Note to Buyer:</strong> {buyerNote}
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  )}
-</Box>
                     </Box>
                   );
-                })}
+                })} */}
               </Box>
             )}
           </Box>
@@ -755,7 +688,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h6" fontWeight={500}>
-{reviewStep === 0 && (isEditMode ? 'Edit Your Review' : 'Leave a Review')}
+            {reviewStep === 0 && (isEditMode ? 'Edit Your Review' : 'Leave a Review')}
             {reviewStep === 1 && 'Great! Tell us more...'}
             {reviewStep === 2 && 'Extra credit: add a photo!'}
           </Typography>
@@ -773,15 +706,18 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                 display: 'flex',
                 gap: 2,
                 alignItems: 'center',
-                p: 2,
+                p: 0.5,
                 bgcolor: 'grey.50',
                 borderRadius: 2,
-                mb: 3
+                mb: 3,
+                height: 200,
+                width:'100%'
               }}>
                 <Box
                   sx={{
-                    width: 500,
-                    height: 130,
+                    minWidth: 200,
+                    height: '100%',
+                    maxWidth: '40%',
                     borderRadius: 2,
                     overflow: 'hidden',
                     // 🔥 highlight styles
@@ -798,22 +734,16 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       transform: 'scale(1.03)',
                     }
                   }}
-                >
-                  <img
-                    src={reviewProduct?.image?.[0]
-                      ? `${baseUrl}/${reviewProduct.image[0]}`
+                  component={'img'}
+                  src={reviewProduct?.image?.[0]
+                      ? `${baseUrl}/${reviewProduct.edited_image || reviewProduct.image[0]}`
                       : ""}
                     alt=""
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain'
-                    }}
-                  />
+                >
                 </Box>
                 <Box textAlign="left">
                   <Typography fontSize={16} fontWeight={600}>
-                    {reviewProduct?.product_name?.replace(/<\/?[^>]+(>|$)/g, "")}
+                    {reviewProduct?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
                   </Typography>
                   <Typography fontSize={13} color="text.secondary">
                     {items[0]?.vendorData?.shop_name}
@@ -958,35 +888,35 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               )}
               {/* 🔥 IMAGES BELOW (same screen jaisa flow) */}
               {(reviewData.photoUrls?.length > 0 || reviewData.photos.length > 0) && (
-  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-    {/* Purani saved photos */}
-    {reviewData.photoUrls?.map((url, i) => (
-      <Box key={`old-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
-        <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-        <IconButton
-          size="small"
-          onClick={() => setReviewData(p => ({ ...p, photoUrls: p.photoUrls.filter((_, idx) => idx !== i) }))}
-          sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
-        >
-          <CloseIcon sx={{ fontSize: 12 }} />
-        </IconButton>
-      </Box>
-    ))}
-    {/* Naye photos */}
-    {reviewData.photos.map((photo, i) => (
-      <Box key={`new-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
-        <img src={URL.createObjectURL(photo)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-        <IconButton
-          size="small"
-          onClick={() => setReviewData(p => ({ ...p, photos: p.photos.filter((_, idx) => idx !== i) }))}
-          sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
-        >
-          <CloseIcon sx={{ fontSize: 12 }} />
-        </IconButton>
-      </Box>
-    ))}
-  </Box>
-)}
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+                  {/* Purani saved photos */}
+                  {reviewData.photoUrls?.map((url, i) => (
+                    <Box key={`old-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
+                      <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                      <IconButton
+                        size="small"
+                        onClick={() => setReviewData(p => ({ ...p, photoUrls: p.photoUrls.filter((_, idx) => idx !== i) }))}
+                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
+                      >
+                        <CloseIcon sx={{ fontSize: 12 }} />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  {/* Naye photos */}
+                  {reviewData.photos.map((photo, i) => (
+                    <Box key={`new-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
+                      <img src={URL.createObjectURL(photo)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                      <IconButton
+                        size="small"
+                        onClick={() => setReviewData(p => ({ ...p, photos: p.photos.filter((_, idx) => idx !== i) }))}
+                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
+                      >
+                        <CloseIcon sx={{ fontSize: 12 }} />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           )}
           {/* STEP 4 - Success */}
@@ -1032,26 +962,26 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               sx={{ bgcolor: '#000', color: '#fff', borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#333' } }}
               onClick={() => {
                 if (reviewStep === 0) {
-  if (!reviewData.rating) {
-    addToast("Please give a rating", { appearance: "error", autoDismiss: true });
-    return;
-  }
-  setReviewStep(1);
-  return;
-}
+                  if (!reviewData.rating) {
+                    addToast("Please give a rating", { appearance: "error", autoDismiss: true });
+                    return;
+                  }
+                  setReviewStep(1);
+                  return;
+                }
                 if (reviewStep === 1) {
-  if (!reviewData.itemQuality || !reviewData.delivery || !reviewData.review) {
-    addToast("Please fill all fields", { appearance: "error", autoDismiss: true });
-    return;
-  }
-  setReviewStep(2);
-  return;
-}
-if (reviewStep === 2) {
-  submitReviewHandler();
-  return;
-}
-setReviewStep(s => s + 1);
+                  if (!reviewData.itemQuality || !reviewData.delivery || !reviewData.review) {
+                    addToast("Please fill all fields", { appearance: "error", autoDismiss: true });
+                    return;
+                  }
+                  setReviewStep(2);
+                  return;
+                }
+                if (reviewStep === 2) {
+                  submitReviewHandler();
+                  return;
+                }
+                setReviewStep(s => s + 1);
               }}
             >
               {reviewStep === 2 ? (reviewData.photos.length > 0 ? 'Submit photo' : 'Skip') : 'Next'}

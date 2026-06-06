@@ -67,7 +67,7 @@ const DrawerQuantitySelector = ({
         </Typography>
       )}
 
-      {stock === 0 && (
+      {stock === 0 && !showVariantWarning && (
         <Typography variant="caption" sx={{ color: "#d32f2f", mt: 0.5, display: "block" }}>
           Out of stock
         </Typography>

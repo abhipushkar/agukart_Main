@@ -39,14 +39,13 @@ import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import useMyProvider from "hooks/useMyProvider";
 import ProductRating from "components/ProductRating/ProductRating";
 import ProductPricing from "components/ProductPricing/ProductPricing";
-import { TOKEN_NAME } from "constant";
 const MyproductDetails = ({ res }) => {
   // Hooks and Context
   const { currency } = useCurrency();
   const searchParams = useSearchParams();
   const { addToast } = useToasts();
   const { token } = useAuth();
-  const { usercredentials } = useMyProvider();
+  const { usercredentials, wishlistProductIds, addDeleteWishlistProduct } = useMyProvider();
   const { state, dispatch } = useCart();
   const router = useRouter();
   // State
@@ -59,8 +58,6 @@ const MyproductDetails = ({ res }) => {
   const [originalPrice, setOriginalPrice] = useState(0);
   const [stock, setStock] = useState(0);
   const [vendorDetail, setVendorDetail] = useState(null);
-  const [wishlistIdArr, setWishlistIdArr] = useState([]);
-  const [toggleWishlist, setToggleWishlist] = useState(false);
   const [bestPromotion, setBestPromotion] = useState({});
   const [nextPromotion, setNextPromotion] = useState({});
   const [plusToggle, setPlusToggle] = useState(false);
@@ -516,21 +513,8 @@ const MyproductDetails = ({ res }) => {
     [normalizeVariantData]
   );
 
-  const getWishList = async () => {
-    const key = localStorage.getItem(TOKEN_NAME)
-    if (!token || !key) { return; }
-    try {
-      const res = await getAPIAuth("user/get-wishlist");
-      if (res.status === 200) {
-        const wishlistIdArr = res.data.wishlist.map((product) => {
-          return product.product_id._id;
-        });
-        setWishlistIdArr(wishlistIdArr);
-      }
-    } catch (error) {
-      console.error("Error fetching wishlist:", error);
-    }
-  };
+  const toggleWishlist = Boolean(wishlistProductIds?.[myproduct?._id]);
+  console.log("wishlistProductIds",wishlistProductIds);
   const getVendorDetailBySlug = async () => {
     if (!myproduct?.vendor_details?.slug) return;
     try {
@@ -557,17 +541,8 @@ const MyproductDetails = ({ res }) => {
   useEffect(() => {
     if (token && myproduct) {
       getVendorDetailBySlug();
-      getWishList();
     }
   }, [myproduct, token]);
-  useEffect(() => {
-    if (token && wishlistIdArr.length > 0 && myproduct) {
-      const isMatch = wishlistIdArr.some((id) => id === myproduct?._id);
-      setToggleWishlist(isMatch);
-    } else {
-      setToggleWishlist(false);
-    }
-  }, [token, wishlistIdArr, myproduct]);
   // Price Calculation
   useEffect(() => {
     if (!myproduct) return;
@@ -1261,9 +1236,8 @@ const MyproductDetails = ({ res }) => {
         variant_id: [],
         variant_attribute_id: [],
       };
-      const res = await postAPIAuth("user/add-delete-wishlist", payload);
+      const res = await addDeleteWishlistProduct(payload);
       if (res.status === 200) {
-        await getWishList();
         addToast(
           toggleWishlist
             ? "Product removed from wishlist"
