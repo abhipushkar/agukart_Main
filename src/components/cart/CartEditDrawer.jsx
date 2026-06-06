@@ -161,8 +161,8 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher }
                     },
                 }}
             >
-                <Box sx={{ height: "100%", bgcolor: "#fff" }}>
-                    <Box sx={{ px: 2 }}>
+                <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#fff" }}>
+                    <Box sx={{ px: 2, flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                         {loading ? (
                             <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
                                 <CircularProgress />
@@ -260,8 +260,8 @@ const CartEditContent = ({
     } = useDrawerProductCustomization(product);
 
     const [quantity, setQuantity] = useState(cartItem?.qty || 1);
-    const [price, setPrice] = useState(0);
-    const [originalPrice, setOriginalPrice] = useState(0);
+    const [price, setPrice] = useState(product?.finalPrice || product?.originalPrice || 0);
+    const [originalPrice, setOriginalPrice] = useState(product?.originalPrice || 0);
     const [stock, setStock] = useState(0);
     const [bestPromotion, setBestPromotion] = useState({});
     const [plusToggle, setPlusToggle] = useState(false);
@@ -319,7 +319,7 @@ const CartEditContent = ({
             );
         }
 
-        setPrice(finalPrice);
+        setPrice(finalPrice ? finalPrice : (product?.finalPrice || product?.originalPrice));
         setOriginalPrice(basePrice + customizeDropdownPrice + customizeTextPrice);
         setPlusToggle(product.isCombination && !areAllInternalVariantsSelected());
     }, [
@@ -753,13 +753,13 @@ const CartEditContent = ({
 
 
     // Debug: Monitor selectedVariants changes
-    useEffect(() => {
-        // console.log("selectedVariants CHANGED:", selectedVariants);
-    }, [selectedVariants]);
+    // useEffect(() => {
+    //     console.log("selectedVariants CHANGED:", selectedVariants);
+    // }, [selectedVariants]);   
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100%", justifyContent: "space-between" }}>
-            <Box>
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+            <Box sx={{ flexShrink: 0 }}>
                 <DrawerImageGallery
                     media={combinedMedia}
                     selectedImage={selectedImage}
@@ -767,7 +767,7 @@ const CartEditContent = ({
                     hoveredImage={hoveredImage}
                 />
             </Box>
-            <Box sx={{ overflowY: "auto", maxHeight: "calc(100vh - 400px)", px: 1 }}>
+            <Box sx={{ flex: 1, overflowY: "auto", px: 1, minHeight: 0 }}>
                 <Typography sx={{ fontWeight: 600, fontSize: "16px", mb: 1 }}>
                     {product.product_title.replace(/<[^>]*>/g, "")}
                 </Typography>
@@ -845,7 +845,7 @@ const CartEditContent = ({
                     variantSelected={areAllInternalVariantsSelected()}
                 />
 
-                <Box sx={{ display: "flex", gap: 2 , mb: 2}}>
+                <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                     <Button
                         fullWidth
                         onClick={handleSave}

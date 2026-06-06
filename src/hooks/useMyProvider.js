@@ -11,11 +11,17 @@ const useMyProvider = () => {
     setProducts,
     savedProducts,
     setSavedProducts,
+    wishlistProducts,
+    setWishlistProducts,
+    wishlistLoaded,
+    wishlistProductIds,
     getUserDetail,
     getSavedProducts,
     saveProductForLater,
     deleteSavedProduct,
-    moveSavedProductToCart
+    moveSavedProductToCart,
+    getWishlistProducts,
+    addDeleteWishlistProduct,
   } = useContext(MyContext);
 
   return {
@@ -27,11 +33,17 @@ const useMyProvider = () => {
     setProducts,
     savedProducts,
     setSavedProducts,
+    wishlistProducts,
+    setWishlistProducts,
+    wishlistLoaded,
+    wishlistProductIds,
     getUserDetail,
     getSavedProducts,
     saveProductForLater,
     deleteSavedProduct,
-    moveSavedProductToCart
+    moveSavedProductToCart,
+    getWishlistProducts,
+    addDeleteWishlistProduct,
   };
 };
 

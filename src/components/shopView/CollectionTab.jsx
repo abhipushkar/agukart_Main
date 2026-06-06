@@ -27,7 +27,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import useAuth from "hooks/useAuth";
-import { getAPI, getAPIAuth, postAPI } from "utils/__api__/ApiServies";
+import { getAPI, postAPI } from "utils/__api__/ApiServies";
 import useCart from "hooks/useCart";
 import useMyProvider from "hooks/useMyProvider";
 import { useCallback, useEffect, useState } from "react";
@@ -54,8 +54,6 @@ const SORT_OPTIONS = [
   },
 ];
 const CollectionTab = ({
-  wishListProducts,
-  getWishListProducts,
   vendor_id,
   vendorDetail,
   vendorCategories,
@@ -84,20 +82,6 @@ const CollectionTab = ({
   const handleChangeSortBy = useCallback((v) => setSortBy(v), []);
   console.log({ storeProducts });
   console.log({ stores });
-  const toggleWishList = async (id) => {
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    try {
-      const res = await getAPIAuth(`user/add-delete-wishlist/${id}`, token);
-      if (res.status === 200) {
-        getWishListProducts();
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
   const addToCartHandler = (product) => {
     if (!token) {
       dispatch({

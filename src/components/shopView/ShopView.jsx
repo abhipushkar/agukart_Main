@@ -15,7 +15,6 @@ import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import XIcon from "@mui/icons-material/X";
 import PinterestIcon from "@mui/icons-material/Pinterest";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -36,7 +35,6 @@ import HomeTab from "./HomeTab";
 import { useToasts } from "react-toast-notifications";
 import UseScrollToHash from "./UseScrollToHash";
 import { Carousel } from "components/carousel";
-import { TOKEN_NAME } from "constant";
 
 const ShopView = () => {
   UseScrollToHash();
@@ -46,7 +44,6 @@ const ShopView = () => {
   const [announcementShowMore, setAnnouncementShowMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const { usercredentials } = useMyProvider();
-  const [wishListProducts, setWishlistProducts] = useState([]);
 
   const [vendorDetail, setVendorDetail] = useState(null);
   const [followed, setFollowed] = useState(false);
@@ -137,35 +134,9 @@ const ShopView = () => {
       console.log(error);
     }
   };
-  const getWishListProducts = async () => {
-    const key = localStorage.getItem(TOKEN_NAME);
-    if (!token || !key) {
-      return;
-    }
-    try {
-      const res = await getAPIAuth(`user/get-wishlist`, token);
-
-      console.log(res);
-      if (res.status === 200) {
-        const wishListArr = res.data.wishlist.map((product) => {
-          return product.product_id._id;
-        });
-        setWishlistProducts(wishListArr);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   useEffect(() => {
     getVendorDetail();
     getVendorProductCategory();
-  }, [pathname]);
-
-  useEffect(() => {
-    if (token) {
-      getWishListProducts();
-    }
   }, [pathname]);
 
   const toggelFollowShopHandler = async () => {
@@ -956,8 +927,6 @@ backgroundColor: '#ececec',
 
                   <Grid item xs={12} id="collection">
                     <CollectionTab
-                      getWishListProducts={getWishListProducts}
-                      wishListProducts={wishListProducts}
                       vendor_id={vendorDetail?._id}
                       vendorDetail={vendorDetail}
                       vendorCategories={vendorCategories?.[0]}

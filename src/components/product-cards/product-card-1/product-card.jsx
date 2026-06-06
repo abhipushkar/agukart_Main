@@ -25,7 +25,7 @@ import Typography from "@mui/material/Typography";
 // STYLED COMPONENTS
 
 import { ImageWrapper, ContentWrapper, StyledBazaarCard } from "./styles";
-import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
+import { postAPIAuth } from "utils/__api__/ApiServies";
 import useAuth from "hooks/useAuth";
 import useCart from "hooks/useCart";
 import React, { useState } from "react";
@@ -33,6 +33,7 @@ import { Dialog, DialogActions, DialogTitle } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
+import useMyProvider from "hooks/useMyProvider";
 
 // ========================================================
 
@@ -51,10 +52,10 @@ export default function ProductCard1({
   title,
   imgUrl,
   rating = 5,
+  ratingCount,
   hideRating,
   hoverEffect,
   showProductSize,
-  getWishlistProduct,
   vendorSlug,
 }) {
   const {
@@ -70,6 +71,7 @@ export default function ProductCard1({
   const { addToast } = useToasts();
   const router = useRouter();
   const { token } = useAuth();
+  const { addDeleteWishlistProduct } = useMyProvider();
   const [openRemoveWishList, setRemoveWishList] = useState(false);
   const [openAddToCart, setOpenAddToCart] = useState(false);
   const pathname = usePathname();
@@ -95,10 +97,7 @@ export default function ProductCard1({
       variant_attribute_id: variant_attribute_id
     }
     try {
-      const res = await postAPIAuth("user/add-delete-wishlist", payload);
-      if (res.status === 200) {
-        getWishlistProduct();
-      }
+      await addDeleteWishlistProduct(payload);
     } catch (error) {
       console.log(error);
     }
@@ -136,9 +135,6 @@ export default function ProductCard1({
       const res = await postAPIAuth(`user/follow-vendor`, {
         vendorId: id,
       });
-      if (res.status === 200) {
-        getWishlistProduct();
-      }
       console.log(res);
     } catch (error) {
       console.log(error);
@@ -184,7 +180,7 @@ export default function ProductCard1({
           aria-labelledby="alert-dialog-title"
         >
           <DialogTitle id="alert-dialog-title">
-            Are you want to add this item to cart
+            Are you sure you want to add this item to cart?
           </DialogTitle>
           <DialogActions>
             <Button onClick={() => setOpenAddToCart(false)}>No</Button>
@@ -286,7 +282,7 @@ export default function ProductCard1({
               </Button>
             </Typography>
 
-            <Link href={`/products/${product_id}`}>
+            <Link href={`/product/${product.product_id.slug}/${product.product_id.product_code}`}>
               <LazyImage
                 priority
                 src={imgUrl}
@@ -336,14 +332,20 @@ export default function ProductCard1({
             handleCloseDialog={toggleDialog}
             product={{ title, price, id, product_id, slug, imgGroup: [imgUrl, imgUrl] }}
           />
-
+          <Box px={1}>
+            <ProductTitle pathname={pathname} title={title} product_id={product.product_id} vendorSlug={vendorSlug} />
+          </Box>
           <ContentWrapper sx={{ alignItems: "flex-end" }}>
             <Box flex="1 1 0" minWidth="0px" mr={1}>
-              <ProductTitle pathname={pathname} title={title} product_id={product_id} vendorSlug={vendorSlug} />
+              <Box display={'flex'}>
               <Rating size="small" value={rating} color="warn" readOnly />
+              {ratingCount > 0 && (
+                <Span color="lightgray" mb={1} display="block">({ratingCount})</Span>
+              )}
               {showProductSize && (
                 <Span color="grey.600" mb={1} display="block">Liter</Span>
               )}
+              </Box>
               <ProductPrice salePrice={price} originalPrice={original_price} />
             </Box>
             <Button

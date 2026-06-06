@@ -173,6 +173,7 @@ export default function LoginCartButtons({ toggleDialog, toggleSidenav }) {
                   <Link href="/profile" passHref legacyBehavior>
                     <ListItemButton
                       component="a"
+                      onClick={handleCloseUserMenu}
                       sx={{
                         backgroundColor: "#e6f3ff", 
                         py: 2,
@@ -219,7 +220,7 @@ export default function LoginCartButtons({ toggleDialog, toggleSidenav }) {
                   usercredentials?.designation_id != "4" && <>
                     <MenuItem style={{ padding: "0" }}>
                       <Link href="/profile/orders" passHref>
-                        <ListItemButton component="a">
+                        <ListItemButton component="a" onClick={handleCloseUserMenu}>
                           <ListItemIcon>
                             <DescriptionIcon />
                           </ListItemIcon>
@@ -228,15 +229,15 @@ export default function LoginCartButtons({ toggleDialog, toggleSidenav }) {
                       </Link>
                     </MenuItem>
 
-                    <MenuItem style={{ padding: "0" }}>
-                      <Link href="/profile/wish-list" passHref>
-                        <ListItemButton component="a">
+                    <MenuItem style={{ padding: "0" }} component="a" href="/profile/wish-list" passHref>
+                      {/* <Link href="/profile/wish-list" passHref> */}
+                        <ListItemButton component="a" onClick={handleCloseUserMenu}>
                           <ListItemIcon>
                             <MessageIcon />
                           </ListItemIcon>
                           <ListItemText>WishList</ListItemText>
                         </ListItemButton>
-                      </Link>
+                      {/* </Link> */}
                     </MenuItem>
                   </>
                 }

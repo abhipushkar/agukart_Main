@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Grid from "@mui/material/Grid";
 import Favorite from "@mui/icons-material/Favorite";
 import ProductCard1 from "components/product-cards/product-card-1";
@@ -10,23 +10,29 @@ import ProductCard1 from "components/product-cards/product-card-1";
 import Pagination from "../pagination";
 import DashboardHeader from "../dashboard-header";
 import useAuth from "hooks/useAuth";
-import { getAPIAuth } from "utils/__api__/ApiServies";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
-import { TOKEN_NAME } from "constant";
+import useMyProvider from "hooks/useMyProvider";
 // ==================================================================
 
 // ==================================================================
 export default function WishListPageView(props) {
   const router = useRouter();
-  const [products, setProducts] = useState([]);
   const [showLoading, setShowloading] = useState(true);
   const params = useSearchParams();
   let queryPage = params.get("page");
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
-  const {token} = useAuth();
+  const { token } = useAuth();
+  const { wishlistProducts, getWishlistProducts } = useMyProvider();
+  const limit = 16;
+
+  const products = useMemo(() => {
+    const currentPage = Number(page) || 1;
+    const start = (currentPage - 1) * limit;
+    return (wishlistProducts || []).slice(start, start + limit);
+  }, [wishlistProducts, page]);
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -35,21 +41,15 @@ export default function WishListPageView(props) {
     router.push(`${window.location.pathname}?${currentParams.toString()}`);
   };
 
-  const getWishlistProduct = async () => {
-    const key = localStorage.getItem(TOKEN_NAME);
-    if(!token || !key){ return;}
+  const loadWishlistProducts = async () => {
+    if (!token) {
+      setShowloading(false);
+      return;
+    }
     try {
       setShowloading(true);
-      const res = await getAPIAuth(`user/get-wishlist?page=${page}&limit=16`);
-      console.log(res, "this sis res of wishlist");
-      if (res.status === 200) {
-        const myArr = res.data.wishlist.map((obj) => {
-          return { ...obj, base_url: res.data.base_url };
-        });
-        setProducts(myArr);
-        setTotalPages(res?.data?.pagination?.totalPages || 1);
-        setShowloading(false);
-      }
+      const wishlistData = await getWishlistProducts();
+      setTotalPages(Math.max(1, Math.ceil((wishlistData?.length || 0) / limit)));
     } catch (error) {
       setShowloading(false);
       console.log(error);
@@ -58,11 +58,19 @@ export default function WishListPageView(props) {
     }
   };
 
-  console.log(products, "thhthhth");
+  useEffect(() => {
+    loadWishlistProducts();
+  }, [token]);
 
   useEffect(() => {
-    getWishlistProduct();
-  }, [page]);
+    setTotalPages(Math.max(1, Math.ceil(((wishlistProducts || []).length) / limit)));
+  }, [wishlistProducts]);
+
+  useEffect(() => {
+    if (Number(page) > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <Fragment>
@@ -73,17 +81,16 @@ export default function WishListPageView(props) {
             <>
               {[...Array(16)].map((_, index) => (
                 <Grid key={index} item xs={6} md={4} lg={3}>
-                  <ProductCardShimmer  />
+                  <ProductCardShimmer />
                 </Grid>
               ))}
             </>
-          ):(
+          ) : (
             products.length > 0 ? (
               products?.map((item) => (
                 <Grid item lg={3} md={4} sm={6} xs={12} key={item.id}>
                   <ProductCard1
                     product={item}
-                    getWishlistProduct={getWishlistProduct}
                     product_id={item?.product_id?._id}
                     id={item?._id}
                     slug={item?.product_id?.product_title.replace(
@@ -99,8 +106,9 @@ export default function WishListPageView(props) {
                     isCombination={item?.isCombination}
                     variant_id={item?.variant_id}
                     variant_attribute_id={item?.variant_attribute_id}
-                    rating={item?.rating}
-                    imgUrl={`${item?.base_url}${item?.product_id?.image[0]}`}
+                    rating={item?.product_id?.rating}
+                    ratingCount={item?.product_id?.reviewCount}
+                    imgUrl={`${item?.base_url || "https://api.agukart.com/uploads/product/"}${item?.product_id?.image[0]}`}
                   />
                 </Grid>
               ))
@@ -109,8 +117,9 @@ export default function WishListPageView(props) {
                 sx={{
                   display: "flex",
                   justifyContent: "center",
+                  alignItems: "center",
+                  height: {md:"50vh" , xs: "30vh"},
                   width: "100%",
-                  gap: "10px",
                 }}
               >
                 <Typography variant="h6">No product found in Wishlist</Typography>

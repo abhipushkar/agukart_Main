@@ -5,15 +5,12 @@ import React, { useState } from "react";
 import MessagePopup from "./MessagePopup";
 import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
-const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product, setReviewProduct }) => {
+const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product, setReviewProduct, handleOpenReview }) => {
   console.log({ order, product, shopBaseUrl, baseUrl }, "DFhrtfyhrthjrthrt");
   const router = useRouter();
   const { addToast } = useToasts();
   const { currency } = useCurrency();
   const [openMessagePopup, SetMessageOpenPopup] = useState(false);
-  const handleClickPopup = () => {
-    SetOpenPopup(true);
-  };
   const handleMessageClickPopup = () => {
     SetMessageOpenPopup(true);
   };
@@ -115,7 +112,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
               >
                 <Button
                   onClick={() =>
-                    router.push(product.productData.product_code?`/product/${product.product_id}`:`/products/${product.product_id}`) //old order fallback
+                    router.push(product.productData.product_code ? `/product/${product.product_id}` : `/products/${product.product_id}`) //old order fallback
                   }
                   variant="contained"
                   size="small"
@@ -173,21 +170,17 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                 product.delivery_status == "Delivered" && (
                   <Button
                     onClick={() => {
-  if (product.ratingStatus) {
-    addToast("Product review have already given", {
-      appearance: "error",
-      autoDismiss: true,
-    });
-    return;
-  }
-  setReviewId(product?._id);
-  setVendorId(product?.vendor_id);
-  setReviewProduct({
-    image: product?.productData?.image,
-    product_name: product?.productData?.product_title
-  });
-  handleClickPopup();
-}}
+                      if (product.ratingStatus) {
+                        addToast("Product review have already given", {
+                          appearance: "error",
+                          autoDismiss: true,
+                        });
+                        return;
+                      }
+                      setReviewId(product?._id);
+                      setVendorId(product?.vendor_id);
+                      handleOpenReview(product?.productData);
+                    }}
                     variant="contained"
                     sx={{
                       background: "#fff",
@@ -203,6 +196,81 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
             </Typography>
           </Box>
         </Grid>
+        {/* <Box sx={{ flex: 1 }}>
+          {!hasReview ? (
+            <Box sx={{ bgcolor: "#f8f7f3", borderRadius: 2, p: 3, border: "1px solid #ece8dc", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
+              <Typography fontSize={14} color="text.secondary">You haven't reviewed this item yet.</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ bgcolor: "#f8f7f3", borderRadius: 2, p: 2, border: "1px solid #ece8dc" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography fontWeight={600} fontSize={15}>Your Review</Typography>
+                  <Typography sx={{ color: "#000", letterSpacing: 1, fontSize: 16 }}>
+                    {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                  </Typography>
+                </Box>
+                {review.recommend !== null && (
+                  <Typography fontSize={12} sx={{ bgcolor: review.recommend ? "#e8f5e9" : "#fce4ec", color: review.recommend ? "#2e7d32" : "#c62828", px: 1.5, py: 0.3, borderRadius: 10 }}>
+                    {review.recommend ? "✓ Recommended" : "✕ Not recommended"}
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 1.5 }}>
+                {[
+                  { label: "Item Quality", val: review.itemQuality },
+                  { label: "Delivery", val: review.delivery },
+                  { label: "Customer Service", val: review.customerService },
+                ].map(({ label, val }) => (
+                  <Box key={label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography fontSize={12} color="text.secondary">{label}:</Typography>
+                    <Rating value={val} readOnly size="small" sx={{ fontSize: 14 }} />
+                  </Box>
+                ))}
+              </Box>
+              {review.photoUrls?.length > 0 && (
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
+                  {review.photoUrls.map((url, i) => (
+                    <Box key={i} sx={{ width: 72, height: 72, borderRadius: 1, overflow: "hidden", border: "1px solid #ddd" }}>
+                      <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              <Typography sx={{ color: "#4d4d4d", fontSize: 14, lineHeight: 1.6 }}>{review.review}</Typography>
+        
+              <Typography
+                onClick={() => !isLocked && handleOpenEditReview(product)}
+                sx={{ mt: 1.5, color: isLocked ? "#b5b5b5" : "#666", fontSize: 13, textDecoration: "underline", cursor: isLocked ? "not-allowed" : "pointer", width: "fit-content", opacity: isLocked ? 0.6 : 1, pointerEvents: isLocked ? "none" : "auto" }}
+              >
+                Edit review
+              </Typography>
+              {reply && (
+                <Box sx={{ mt: 2, bgcolor: "#fff", border: "1px solid #ececec", borderRadius: 2, p: 2 }}>
+                  <Box sx={{ display: "flex", gap: 1.5 }}>
+                    <Box sx={{ width: 42, height: 42, borderRadius: "50%", bgcolor: "#f1641e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
+                      {items[0]?.vendorData?.shop_name?.[0] || "S"}
+                    </Box>
+                    <Box>
+                      <Typography fontWeight={600} fontSize={14}>
+                        {reply.seller}
+                        <Typography component="span" sx={{ color: "#666", fontWeight: 400, ml: 1 }}>responded on {reply.date}</Typography>
+                      </Typography>
+                      <Typography sx={{ mt: 1, color: "#555", fontSize: 14 }}>{reply.message}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              {buyerNote && (
+                <Box sx={{ mt: 2, bgcolor: "#fff8e1", border: "1px solid #f1d58a", borderRadius: 2, p: 2 }}>
+                  <Typography sx={{ fontSize: 13, color: "#8a6d1d", lineHeight: 1.6 }}>
+                    <strong>Note to Buyer:</strong> {buyerNote}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box> */}
       </Grid>
       <MessagePopup
         vendorName={product?.vendor_name}
@@ -222,4 +290,4 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
     </>
   );
 };
-export default Product;3
+export default Product; 3
