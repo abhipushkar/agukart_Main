@@ -18,6 +18,7 @@ import PinterestIcon from "@mui/icons-material/Pinterest";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import { FlexBox } from "components/flex-box";
 
 import CollectionTab from "./CollectionTab";

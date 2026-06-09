@@ -35,7 +35,7 @@ import DrawerQuantitySelector from "./DrawerQuantitySelector";
 import { postAPIAuth, getAPIAuth } from "utils/__api__/ApiServies";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 
-const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher }) => {
+const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, addParentCart }) => {
     const { addToast } = useToasts();
     const { token } = useAuth();
     const { state, dispatch, getCartDetails, getCartItems } = useCart();
@@ -189,6 +189,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher }
                                 wallet={wallet}
                                 voucher={voucher}
                                 address={address}
+                                addParentCart={addParentCart}
                             />
                         ) : (
                             <Typography>Product not found</Typography>
@@ -222,7 +223,8 @@ const CartEditContent = ({
     voucher,
     address,
     getCartDetails,
-    getCartItems
+    getCartItems,
+    addParentCart
 }) => {
     // Drawer‑simplified variant hook
     const {
@@ -739,8 +741,7 @@ const CartEditContent = ({
             const res = await postAPIAuth("user/add-to-cart", payload);
             if (res.status === 200) {
                 await getCartItems(address?._id);
-                const data = wallet ? "1" : "0";
-                await getCartDetails(data, address?._id, voucher?.discount);
+                addParentCart();
                 onClose()
             }
         } catch (error) {

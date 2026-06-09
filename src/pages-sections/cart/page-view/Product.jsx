@@ -24,7 +24,7 @@ import { resolveCartPricing } from "../utils/resolveCartPricing";
 import CartEditDrawer from "components/cart/CartEditDrawer";
 import useMyProvider from "hooks/useMyProvider";
 
-const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true }) => {
+const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true, addParentCart }) => {
     const { addToast } = useToasts();
     const router = useRouter();
     const { currency } = useCurrency();
@@ -466,7 +466,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                     </Typography>
                 </Box>
             </Box>
-            <CartEditDrawer open={editDrawerOpen} onClose={() => setEditDrawerOpen(false)} cartProduct={product} wallet={wallet} address={defaultAddress} voucher={voucherDetails} />
+            <CartEditDrawer open={editDrawerOpen} onClose={() => setEditDrawerOpen(false)} cartProduct={product} wallet={wallet} address={defaultAddress} voucher={voucherDetails} addParentCart={addParentCart} />
         </>
     );
 };

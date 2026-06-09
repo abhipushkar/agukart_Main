@@ -660,6 +660,7 @@ const SingleVendorCart = ({
             wallet={wallet}
             defaultAddress={defaultAddress}
             voucherDetails={voucherDetails}
+            addParentCart={addParentCart}
           />
         ))}
         <Box>
