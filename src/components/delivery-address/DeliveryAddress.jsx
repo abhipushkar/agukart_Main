@@ -330,10 +330,12 @@ const DeliveryAddress = () => {
       console.log("errorr", error);
     }
   };
-  const orderConfirmation = async () => {
+  const orderConfirmation = async (paymentType = "cod", paymentStatus = "pending", paypalOrderId = null, paypalCaptureId = null) => {
     try {
       setLoading(true);
       const payload = {
+        payment_type: paymentType,
+        payment_status: paymentStatus,
         address_id: allAddress[addressIndex]?._id,
         shop_count: ids?.length > 0 ? ids?.length : state?.cart?.length || 1,
         voucher_id: voucherDetails?._id || null,
@@ -341,6 +343,10 @@ const DeliveryAddress = () => {
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
         coupon_vendor_ids: state?.cart?.filter(vendor => vendor.coupon_status === true)?.map(vendor => vendor.vendor_id) || [],
       };
+      if (paymentType === "paypal") {
+        payload.paypal_order_id = paypalOrderId;
+        payload.paypal_capture_id = paypalCaptureId;
+      }
       if (ids.length === 1) {
         payload.vendor_id = ids[0];
       }
@@ -394,6 +400,9 @@ const DeliveryAddress = () => {
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
     0);
+
+  const checkoutDisabled = !cartDetails || !cartDetails?.status;
+
   return (
     <>
       <Box p={5}>
@@ -678,7 +687,7 @@ const DeliveryAddress = () => {
                     fullWidth
                     onClick={orderConfirmation}
                     endIcon={loading ? <CircularProgress size={15} /> : ""}
-                    disabled={loading || !cartDetails.status}
+                    disabled={loading || checkoutDisabled}
                     sx={{
                       mt: 2,
                       fontSize: "18px",
@@ -704,7 +713,11 @@ const DeliveryAddress = () => {
                       <Checkout
                         cartData={state.cart}
                         selectedAddress={allAddress[addressIndex]}
-                        currencyCode="USD"
+                        currencyCode={currency.code}
+                        cartDetails={cartDetails}
+                        orderConfirmation={orderConfirmation}
+                        token={token}
+                        addToast={addToast}
                       />
                     </PayPalScriptProvider>
                   </Box>

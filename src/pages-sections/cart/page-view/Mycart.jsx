@@ -48,7 +48,7 @@ import { useLocation } from "../../../contexts/location_context";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { CountryModal } from "./country_modal";
 import { Sell } from "@mui/icons-material";
-import { validateCartItem } from "../utils/validateCartItem";
+import { validateCartItem, getCartCheckoutErrorMessage } from "../utils/validateCartItem";
 import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
 
 const Mycart = () => {
@@ -87,6 +87,7 @@ const Mycart = () => {
   const router = useRouter();
 
   const debounceRef = useRef(null);
+  const cartSubTotal = cartDetails?.subTotal ?? 0;
 
   // Check if cart has only one vendor
   const isSingleVendor = state?.cart?.length === 1;
@@ -219,7 +220,7 @@ const Mycart = () => {
       // No address_id needed in cart page
       getCartDetails(walletdata, null, voucherDetails?.discount);
     }
-  }, [token, wallet, voucherDetails?.discount]);
+  }, [token, wallet]);
 
   const handleApply = async () => {
     if (!token) {
@@ -267,17 +268,19 @@ const Mycart = () => {
     }
   };
 
-  const handleRemove = async () => {
+  const handleRemove = async (toast = true) => {
     setVoucherDetails({ discount: 0, voucherCode: "" });
     setFormValues({ voucher_code: "" });
     localStorage.removeItem("voucherDetails");
     const walletdata = wallet ? "1" : "0";
     // No address_id needed in cart page
     getCartDetails(walletdata, null, 0);
-    addToast("Voucher removed successfully", {
-      appearance: "success",
-      autoDismiss: true,
-    });
+    if (toast){
+      addToast("Voucher removed successfully", {
+        appearance: "success",
+        autoDismiss: true,
+      });
+    }
   };
 
   // Store Coupon Functions - Only for single vendor
@@ -386,11 +389,11 @@ const Mycart = () => {
 
         if (discount <= 0) {
           // Voucher no longer valid
-          handleRemove();
           addToast("Voucher removed because cart no longer meets requirements", {
             appearance: "warning",
             autoDismiss: true,
           });
+          handleRemove(false);
         } else {
           setVoucherDetails((prev) => ({
             ...prev,
@@ -448,7 +451,7 @@ const Mycart = () => {
     }
   }, [token]);
 
-  // add an effect to remove if >1 coupons applied and remove coupon with smaller discountAmount
+  // effect to remove if more than 1 coupons applied and remove coupon with smaller discountAmount
   // useEffect(async () => {
   //   try {
   //     const cartlist = state?.cart || [];
@@ -486,41 +489,51 @@ const Mycart = () => {
   // }, []);
 
 
-  // useEffect(() => {
-  //   if (!voucherDetails?.voucherCode) return;
+  useEffect(() => {
+    if (!voucherDetails?.voucherCode) return;
 
-  //   clearTimeout(debounceRef.current);
+    clearTimeout(debounceRef.current);
 
-  //   debounceRef.current = setTimeout(() => {
-  //     revalidateVoucher();
-  //   }, 400);
-  // }, [cartValue]);
+    debounceRef.current = setTimeout(() => {
+      revalidateVoucher();
+    }, 400);
+  }, [cartSubTotal]);
 
   const totalItems = state?.cart.reduce((sum, vendor) =>
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
     0);
 
-  const hasInvalidCartItems =
-    state?.cart?.some(vendor =>
+  const checkoutValidation = useMemo(() => {
+    for (const vendor of state?.cart || []) {
+      for (const product of vendor?.products || []) {
 
-      vendor?.products?.some(product => {
+        const identity = buildCartItemIdentity(product);
+        const pendingQuantity = state?.cartRecoveryState?.[identity]?.quantity;
+        const validation = validateCartItem(product, { pendingQuantity });
 
-        const identity =
-          buildCartItemIdentity(product);
+        if (validation.disableCheckout) {
+          return {
+            valid: false,
+            disableCheckout: true,
+            message: validation.message,
+            type: validation.type,
+            product
+          };
+        }
+      }
+    }
 
-        const pendingQuantity =
-          state?.cartRecoveryState?.[
-            identity
-          ]?.quantity;
+    return {
+      valid: true,
+      disableCheckout: false,
+      message: "",
+      type: null,
+      product: null
+    };
 
-        const validation =
-          validateCartItem(product, {
-            pendingQuantity
-          });
+  }, [state?.cart, state?.cartRecoveryState]);
 
-        return validation.disableCheckout;
-      })
-    );
+  const errorMsg = getCartCheckoutErrorMessage(checkoutValidation)
 
   return (
     <>
@@ -635,6 +648,7 @@ const Mycart = () => {
                           defaultAddress={null} // No address needed in cart page
                           voucherDetails={voucherDetails}
                           isSingleVendor={isSingleVendor}
+                          validationMsg={errorMsg}
                         />
                       );
                     })
@@ -1055,7 +1069,7 @@ const Mycart = () => {
                             isStockAvailable ||
                             isDeleteProduct ||
                             isAvailable ||
-                            hasInvalidCartItems
+                            checkoutValidation.disableCheckout
                           }
                           variant="contained"
                           sx={{
@@ -1075,16 +1089,16 @@ const Mycart = () => {
 
                         {/* Disable Reasons */}
                         <Box mt={2}>
-                          {checkCustomizationSelect && (
+                          {errorMsg && (
                             <Typography
                               color="error"
                               variant="body2"
                               sx={{ mb: 0.5 }}
                             >
-                              • Please complete customization for all items.
+                              • {errorMsg}
                             </Typography>
                           )}
-                          {isShippingAvailable && (
+                          {isShippingAvailable && !errorMsg && (
                             <Typography
                               color="error"
                               variant="body2"
@@ -1094,7 +1108,7 @@ const Mycart = () => {
                               in your cart.
                             </Typography>
                           )}
-                          {isStockAvailable && (
+                          {/* {isStockAvailable && (
                             <Typography
                               color="error"
                               variant="body2"
@@ -1122,7 +1136,7 @@ const Mycart = () => {
                             >
                               • Some items are currently unavailable/inactive.
                             </Typography>
-                          )}
+                          )} */}
                         </Box>
                       </Typography>
                     ) : (
