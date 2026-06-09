@@ -3,7 +3,7 @@ import useAuth from "hooks/useAuth";
 import { postAPIAuth } from "utils/__api__/ApiServies";
 import { useToasts } from "react-toast-notifications";
 
-const Checkout = ({ cartData, selectedAddress, currencyCode, cartDetails, orderConfirmation, token: tokenProp, addToast: addToastProp }) => {
+const Checkout = ({ cartData, selectedAddress, currencyCode, cartDetails, orderConfirmation, token: tokenProp, addToast: addToastProp, disabled }) => {
 
   const [{ isPending }] = usePayPalScriptReducer();
   const { token: authToken } = useAuth();
@@ -18,7 +18,7 @@ const Checkout = ({ cartData, selectedAddress, currencyCode, cartDetails, orderC
         <div style={{ marginTop: 20 }}>
           <PayPalButtons
             style={{ layout: "vertical" }}
-
+            disabled={disabled}
             createOrder={async () => {
 
               const items = [];
