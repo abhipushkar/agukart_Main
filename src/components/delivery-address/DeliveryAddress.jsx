@@ -718,6 +718,7 @@ const DeliveryAddress = () => {
                         orderConfirmation={orderConfirmation}
                         token={token}
                         addToast={addToast}
+                        disabled={checkoutDisabled}
                       />
                     </PayPalScriptProvider>
                   </Box>
