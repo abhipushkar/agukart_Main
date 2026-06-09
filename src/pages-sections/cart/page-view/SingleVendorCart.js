@@ -77,6 +77,7 @@ const SingleVendorCart = ({
   defaultAddress,
   voucherDetails,
   isSingleVendor,
+  validationMsg
 }) => {
   const router = useRouter();
   const { currency } = useCurrency();

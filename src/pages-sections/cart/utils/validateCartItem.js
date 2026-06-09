@@ -221,3 +221,37 @@ export const validateCartItem = (product, options = {}) => {
         resolvedState: state,
     };
 };
+
+
+// Helper to get simple error message
+export const getCartCheckoutErrorMessage = (validation) => {
+  if (validation.valid) return null;
+  
+  switch (validation.type) {
+    case "VARIANT_SELECTION_REQUIRED":
+        return "Your Cart items need variant selection";
+    case "PARENT_VARIANT_REMOVED":
+    // case "COMBINATION_REMOVED":
+        
+    case "CUSTOMIZATION_REMOVED":
+        return "Your cart selection is either removed or no longer available";
+    case "CUSTOMIZATION_INCOMPLETE":
+      return "Some items in your cart need your attention. Please edit them.";
+    // case "PRICE_CHANGED":
+        
+    case "CUSTOMIZATION_PRICE_CHANGED":
+      return "Prices have changed for some items. Please review your cart.";
+    case "OUT_OF_STOCK":
+      return "Some items are out of stock. Please remove them to proceed.";
+    // case "PRODUCT_DELETED":
+        
+    // case "PRODUCT_INACTIVE":
+        
+    case "PRODUCT_UNAVAILABLE":
+      return "Some items are no longer available. Please remove them.";
+    case "QUANTITY_EXCEEDS_STOCK":
+      return "Quantity exceeds available stock for some items. Please adjust.";
+    default:
+      return "Please review your cart before checkout.";
+  }
+};
