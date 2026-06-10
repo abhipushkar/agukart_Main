@@ -682,10 +682,15 @@ const DeliveryAddress = () => {
                   <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
                   <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
                 </RadioGroup>
+                {cartDetails.error && (
+                  <Typography color={"red"} fontSize={12}>
+                    {cartDetails.error}
+                  </Typography>
+                )}
                 {paymentType === "1" && (
                   <Button
                     fullWidth
-                    onClick={orderConfirmation}
+                    onClick={()=>orderConfirmation("cod", "pending")}
                     endIcon={loading ? <CircularProgress size={15} /> : ""}
                     disabled={loading || checkoutDisabled}
                     sx={{
@@ -713,7 +718,8 @@ const DeliveryAddress = () => {
                       <Checkout
                         cartData={state.cart}
                         selectedAddress={allAddress[addressIndex]}
-                        currencyCode={currency.code}
+                        currencyCode={"USD"}
+                        rate={currency?.rate}
                         cartDetails={cartDetails}
                         orderConfirmation={orderConfirmation}
                         token={token}
