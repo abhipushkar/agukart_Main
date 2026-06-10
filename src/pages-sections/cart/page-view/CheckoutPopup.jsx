@@ -74,6 +74,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   const [allAddress, setAllAddress] = useState([]);
   console.log({ defaultAddress, allAddress });
   const [buttonDisable, setButtonDisable] = useState(false);
+  const [checkoutDisabled, setCheckoutDisabled] = useState(false);
   const [editAddress, setEditAddress] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [vendorCartDetails, setVendorCartDetails] = useState({});
@@ -85,11 +86,15 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
     coupon_code: cart?.vendor_coupon?.coupon_data?.coupon_code || "",
   });
   const [error, setError] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
   const [isOpen, setIsOpen] = useState(cart?.coupon_status === true);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponStatus, setCouponStatus] = useState(cart?.coupon_status || false);
   const [couponDiscount, setCouponDiscount] = useState(cart?.discountAmount || 0);
   const { location } = useLocation();
+  
+  const totalItems = cart.products.reduce((total, product) => total + product.qty, 0);
+
 
   const handleCouponChange = (e) => {
     const { name, value } = e.target;
@@ -101,7 +106,8 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   };
 
   const initialOptions = {
-    "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
+    "client-id": "Adp4wynJ83t9uJa6Nfr7z1gNpaz8KgNKCDCJBFihYhVDII2XeB-Q-doPyCjraqC0VkyelBhVR8GVNP7N",
+    // "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
     currency: "USD",
     intent: "capture",
   };
@@ -117,7 +123,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
       if (res.status == 200) {
         setAllAddress(res?.data?.addresses);
         setDefaultAddress(
-          res?.data?.addresses?.find((item) => item.default == "1")
+          res?.data?.addresses?.find((item) => item.default == "1") || res?.data?.addresses[0]
         );
       }
     } catch (error) {
@@ -143,17 +149,17 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
     }
     try {
       const res = await getAPIAuth(
-        `user/getVendorCartDetails/${vendor_id}?address_id=${defaultAddress?._id || ""}&discount=${discountAmount}`,
+        `user/getVendorCartDetails/${vendor_id}?address_id=${defaultAddress?._id || ""}&discount=${discountAmount}&wallet=${wallet?1:0}`,
         token
       );
       if (res.data.status) {
         setVendorCartDetails(res?.data?.data);
+        setCheckoutDisabled(false);
+        setCheckoutError("");
       } else {
         setVendorCartDetails(res?.data?.data);
-        addToast(res?.data?.message, {
-          appearance: "error",
-          autoDismiss: true,
-        });
+        setCheckoutError(res?.data?.message);
+        setCheckoutDisabled(true);
       }
     } catch (error) {
       console.log("error", error);
@@ -187,11 +193,11 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
   useEffect(() => {
     if (token) {
       const fetchData = async () => {
-        await getVendorCartDetails();
+        await getVendorCartDetails(couponDiscount);
       };
       fetchData();
     }
-  }, [defaultAddress, token]);
+  }, [defaultAddress, token, totalItems]);
 
   const getStateData = async () => {
     try {
@@ -316,18 +322,18 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         const data = wallet ? "1" : "0";
         getCartDetails(data, defaultAddress?._id, voucherDetails?.discount || voucherDetails?.amount || 0);
         setError("");
-        addToast(res?.data?.message, {
-          appearance: "success",
-          autoDismiss: true,
-        });
+        // addToast(res?.data?.message, {
+        //   appearance: "success",
+        //   autoDismiss: true,
+        // });
       }
     } catch (error) {
       setCouponLoading(false);
       setCouponStatus(false);
-      addToast(error?.response?.data.message || error, {
-        appearance: "error",
-        autoDismiss: true,
-      });
+      // addToast(error?.response?.data.message || error, {
+      //   appearance: "error",
+      //   autoDismiss: true,
+      // });
       setError(error?.response?.data.message);
     }
   };
@@ -378,10 +384,14 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
       const isAnyCouponAlreadyApplied = cart?.some(vendorCart => vendorCart.coupon_status === true);
       if (isAnyCouponAlreadyApplied && couponsCount > 1) {
         handleRemoveCoupon();
-        addToast("Multiple coupons detected. The applied coupon has been removed to ensure only one coupon is active per order.", {
-          appearance: "error",
-          autoDismiss: true,
-        });
+        // addToast("Multiple coupons detected. The applied coupon has been removed to ensure only one coupon is active per order.", {
+        //   appearance: "error",
+        //   autoDismiss: true,
+        // });
+        const message = "Multiple coupons detected. The applied coupon has been removed to ensure only one coupon is active per order.";
+        setError(message);
+      // Clear after 5 seconds
+      setTimeout(() => { setError(""); }, 5000);
       }
     }
   }, []);
@@ -469,15 +479,22 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
     return currentPage - 1;
   }
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (paymentType = "cod", paymentStatus = "pending", paypalOrderId = null, paypalCaptureId = null) => {
     try {
+      console.log("paymentType:", paymentType);
       const payload = {
+        payment_type: paymentType,
+        payment_status: paymentStatus,
         address_id: defaultAddress?._id,
         vendor_id: vendor_id,
         shop_count: state?.cart?.length || 1,
         voucher_id: voucherDetails?._id || null,
         voucher_discount: voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
+      }
+      if (paymentType === "paypal") {
+        payload.paypal_order_id = paypalOrderId;
+        payload.paypal_capture_id = paypalCaptureId;
       }
       setLoading(true);
       const res = await postAPIAuth(
@@ -486,7 +503,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         token
       );
       console.log("ressqwertyu", res);
-      if ((res.status = 200)) {
+      if ((res.status === 200)) {
         setLoading(false);
         addToast(res?.data?.message, {
           appearance: "success",
@@ -495,7 +512,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         localStorage.removeItem("voucherDetails");
         router.push(`/order-confirmation?order-id=${res.data.orderId}`);
         onClose();
-        getCartItems(location.countryName);
+        getCartItems();
         getCartDetails();
       }
     } catch (error) {
@@ -508,8 +525,6 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
     }
   }
 
-  const totalItems = cart.products.reduce((total, product) => total + product.qty, 0);
-  console.log("items", totalItems);
 
   return (
     <>
@@ -1064,14 +1079,20 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                           <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
                         </RadioGroup>
 
+                        {checkoutError && (
+                          <Typography color={"red"} fontSize={12}>
+                            {checkoutError}
+                          </Typography>
+                        )}
                         {paymentType === "1" && (
+                          
                           <Button
                             endIcon={loading ? <CircularProgress size={15} /> : ""}
-                            disabled={loading ? true : false}
+                            disabled={loading || checkoutDisabled}
                             fullWidth
                             variant="contained"
-                            sx={{ borderRadius: 2 }}
-                            onClick={handlePlaceOrder}
+                            sx={{ borderRadius: 2, my:2 }}
+                            onClick={()=>handlePlaceOrder("cod", "pending")}
                           >
                             Submit order
                           </Button>
@@ -1080,7 +1101,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                         {paymentType === "2" && (
                           <div style={{ marginTop: "16px" }}>
                             <PayPalScriptProvider options={initialOptions}>
-                              <Checkout />
+                              <Checkout  currencyCode={"USD"} vendorTotal={vendorCartDetails?.netAmount} disabled={checkoutDisabled} handlePlaceOrder={handlePlaceOrder}/>
                             </PayPalScriptProvider>
                           </div>
                         )}

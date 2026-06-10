@@ -50,13 +50,12 @@ const Checkout = ({ cartData, selectedAddress, currencyCode, cartDetails, orderC
               });
 
               const total = cartDetails.grandTotal || itemTotal + cartDetails.delivery;
-
               const payload = {
                 currency_code: currencyCode,
                 amount: {
                   // item_total: (cartDetails.grandTotal-cartDetails.delivery).toFixed(2),
                   // shipping: cartDetails.delivery.toFixed(2),
-                  total: cartDetails.grandTotal.toFixed(2)
+                  total: Number(cartDetails.grandTotal).toFixed(2)
                 },
                 // items,
                 // shipping: {
