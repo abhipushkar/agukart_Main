@@ -138,25 +138,81 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     });
     SetOpenPopup(true);
   };
+
   const submitReviewHandler = async () => {
     try {
-      const newPhotoUrls = reviewData.photos.map((file) => URL.createObjectURL(file));
-      const savedReview = {
-        rating: reviewData.rating,
-        recommend: reviewData.recommend,
-        itemQuality: reviewData.itemQuality,
-        delivery: reviewData.delivery,
-        customerService: reviewData.customerService,
-        review: reviewData.review,
-        photoUrls: [...(reviewData.photoUrls || []), ...newPhotoUrls],
-        submitted: true,
-      };
-      setLocalReviews((prev) => ({ ...prev, [reviewProduct._id]: savedReview }));
-      setReviewStep(3);
+      // Create FormData object
+      const formData = new FormData();
+      
+      // Append review data
+      formData.append("delivery_rating", reviewData.delivery.toString());
+      formData.append("item_rating", reviewData.itemQuality.toString());
+      formData.append("additional_comment", reviewData.review);
+      formData.append("recommended", reviewData.recommend ? "true" : "false");
+      formData.append("saleDetailId", reviewId);
+      formData.append("vendor_id", vendorId);
+      formData.append("customer_service_rating", reviewData.customerService.toString());
+      formData.append("rating", reviewData.rating.toString());
+      
+      // Append images if any
+      if (reviewData.photos && reviewData.photos.length > 0) {
+        reviewData.photos.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
+      
+      // If you also need to send existing photo URLs (if editing)
+      if (reviewData.photoUrls && reviewData.photoUrls.length > 0 && isEditMode) {
+        reviewData.photoUrls.forEach((url) => {
+          formData.append("existing_photos", url);
+        });
+      }
+      
+      // Make the API call using postAPIAuthFormData
+      const res = await postAPIAuthFormData(
+        "user/sendRating",
+        formData,
+        token,
+        addToast
+      );
+      
+      if (res.status === 200) {
+        const savedReview = {
+          rating: reviewData.rating,
+          recommend: reviewData.recommend,
+          itemQuality: reviewData.itemQuality,
+          delivery: reviewData.delivery,
+          customerService: reviewData.customerService,
+          review: reviewData.review,
+          photoUrls: [...(reviewData.photoUrls || []), ...reviewData.photos.map(file => URL.createObjectURL(file))],
+          submitted: true,
+        };
+        
+        setLocalReviews((prev) => ({ ...prev, [reviewProduct._id]: savedReview }));
+        setReviewStep(3);
+        
+        // Reset form data after successful submission
+        setReviewId("");
+        setVendorId("");
+        
+        // Refresh orders if needed
+        const dateRange = getDateRange(filterOrders);
+        getAllOrders(dateRange.pastDate, dateRange.currentDate);
+        
+        addToast(isEditMode ? "Review updated successfully" : "Review submitted successfully", {
+          appearance: "success",
+          autoDismiss: true,
+        });
+      }
     } catch (error) {
-      addToast("Something went wrong", { appearance: "error", autoDismiss: true });
+      console.error("Error submitting review:", error);
+      addToast(error?.response?.data?.message || "Something went wrong", { 
+        appearance: "error", 
+        autoDismiss: true 
+      });
     }
   };
+
   const [isFollowing, setIsFollowing] = useState(false);
   const handleFollow = async () => {
     try {
