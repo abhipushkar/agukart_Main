@@ -178,6 +178,11 @@ export default function OrdersPageView() {
     console.log({ dateRange });
     getAllOrders(dateRange.pastDate, dateRange.currentDate);
   }, [filterOrders, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterOrders]);
+
   const handlePageChange = (event, value) => {
     setPage(value);
   };
@@ -295,6 +300,7 @@ export default function OrdersPageView() {
                     lg: "0",
                     md: "0",
                     sm: "12px",
+                    xs: "12px",
                   },
                 }}
               >
@@ -420,7 +426,7 @@ export default function OrdersPageView() {
       {/* {orders.map(order => <OrderRow order={order} key={order.id} />)} */}
       {/* ORDERS PAGINATION */}
       {allOrders.length > 0 ? (
-        <Pagination count={totalPages} onChange={handlePageChange} />
+        <Pagination page={page} count={totalPages} onChange={handlePageChange} />
       ) : (
         ""
       )}

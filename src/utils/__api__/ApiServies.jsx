@@ -139,3 +139,26 @@ export const postAPIFormData = async (url, params, tokenInit) => {
     throw error;
   }
 };
+
+export const putAPIAuthFormData = async (url, params, tokenInit, addToast) => {
+  const bURL = baseURL;
+  const token = localStorage.getItem(TOKEN_NAME);
+  try {
+    const response = await axios.put(`${bURL}/${url}`, params, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${tokenInit ? tokenInit : token}`,
+      },
+    });
+    return response;
+  } catch (error) {
+    if (addToast) {
+      addToast(error?.response?.data?.message, {
+        appearance: "error",
+        autoDismiss: true,
+      });
+    }
+    console.log("error=>", error);
+    throw error;
+  }
+};
