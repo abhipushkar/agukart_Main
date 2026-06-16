@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating, Stack } from "@mui/material";
+import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating, Stack, Dialog, DialogActions, DialogContent, Card } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -7,7 +7,6 @@ import { useCurrency } from "contexts/CurrencyContext";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import Dialog from "@mui/material/Dialog";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Checkbox from "@mui/material/Checkbox";
 import TextField from "@mui/material/TextField";
@@ -15,11 +14,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useToasts } from "react-toast-notifications";
 import Product from "./Product";
 import useAuth from "hooks/useAuth";
-import { postAPIAuth, postAPIAuthFormData } from "utils/__api__/ApiServies";
+import { postAPIAuth, postAPIAuthFormData, putAPIAuthFormData } from "utils/__api__/ApiServies";
 import TrackingPopup from "./TrackingPopup";
 import Link from "next/link";
 import MessagePopup from "./MessagePopup";
 import IconButton from "@mui/material/IconButton";
+import LightPopover from "components/TooltipPopover/LightPopover";
+
 const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const router = useRouter();
   const { token } = useAuth();
@@ -40,43 +41,39 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     customerService: 0,
     review: '',
     photos: [],
-    photoUrls: []
+    photoUrls: [],
+    existingImageNames: []
   });
   const { currency } = useCurrency();
   const parentSale = order?.parentSale || order;
   const items = order?.items || [];
-  const [localReviews, setLocalReviews] = useState({});
-  const [localReplies, setLocalReplies] = useState({});
-  const [localBuyerNotes, setLocalBuyerNotes] = useState({});
-  const [hiddenReviews, setHiddenReviews] = useState({});
-  const [lockedReviews, setLockedReviews] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [reviewProduct, setReviewProduct] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
+
+
   const handleClosePopup = () => {
+    // Refresh orders only when dialog fully closes
+    const dateRange = getDateRange(filterOrders);
+    if (reviewStep === 3) {
+      getAllOrders(dateRange.pastDate, dateRange.currentDate);
+    }
     setReviewId("");
     setVendorId("");
     SetOpenPopup(false);
     setOpenTracking(false);
-    setReviewStep(0); // reset step
-    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [], photoUrls: [] });
+    setReviewStep(0);
+    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [], photoUrls: [], existingImageNames: [] });
     setIsEditMode(false);
     setReviewProduct(null);
   };
+
   const handleMessageClosePopup = () => {
     setMessageOpenPopup(false);
   };
-  const LightTooltip = styled(({ className, ...props }) => (
-    <Tooltip {...props} classes={{ popper: className }} />
-  ))(({ theme }) => ({
-    [`& .${tooltipClasses.tooltip}`]: {
-      backgroundColor: theme.palette.common.white,
-      color: "rgba(0, 0, 0, 0.87)",
-      boxShadow: theme.shadows[1],
-      fontSize: 11,
-    },
-  }));
+
   const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -113,103 +110,136 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
       .required("Comments are required")
       .min(5, "Comment should be at least 5 characters"),
   });
+
   const handleOpenReview = (product) => {
     setReviewProduct(product);
     setIsEditMode(false);
     setReviewStep(0);
-    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [], photoUrls: [] });
+    setReviewData({ rating: 0, recommend: null, itemQuality: 0, delivery: 0, customerService: 0, review: '', photos: [], photoUrls: [], existingImageNames: [] });
     SetOpenPopup(true);
   };
+
   const handleOpenEditReview = (product) => {
-    const existing = localReviews[product._id];
-    if (!existing) return;
-    setReviewProduct(product);
+    // Get the review data from the product's ratingData
+    const existingReview = product?.ratingData?.[0];
+    if (!existingReview) {
+      addToast("No review found to edit", { appearance: "error", autoDismiss: true });
+      return;
+    }
+
+    setReviewProduct(product?.productData || product);
+    setReviewId(existingReview._id); // This should be the rating_id
+    setVendorId(product?.vendor_id);
     setIsEditMode(true);
     setReviewStep(0);
     setReviewData({
-      rating: existing.rating || 0,
-      recommend: existing.recommend ?? null,
-      itemQuality: existing.itemQuality || 0,
-      delivery: existing.delivery || 0,
-      customerService: existing.customerService || 0,
-      review: existing.review || '',
+      rating: existingReview.rating || 0,
+      recommend: existingReview.recommended ?? null,
+      itemQuality: existingReview.item_rating || 0,
+      delivery: existingReview.delivery_rating || 0,
+      customerService: existingReview.customer_service_rating || 0,
+      review: existingReview.additional_comment || '',
       photos: [],
-      photoUrls: existing.photoUrls || [],
+      photoUrls: existingReview.images?.map(img => `https://api.agukart.com/uploads/ratings/${img}`) || [],
+      existingImageNames: existingReview.images || [] // Store original image names for deletion tracking
     });
     SetOpenPopup(true);
   };
 
   const submitReviewHandler = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
-      // Create FormData object
       const formData = new FormData();
-      
-      // Append review data
-      formData.append("delivery_rating", reviewData.delivery.toString());
-      formData.append("item_rating", reviewData.itemQuality.toString());
-      formData.append("additional_comment", reviewData.review);
-      formData.append("recommended", reviewData.recommend ? "true" : "false");
-      formData.append("saleDetailId", reviewId);
-      formData.append("vendor_id", vendorId);
-      formData.append("customer_service_rating", reviewData.customerService.toString());
-      formData.append("rating", reviewData.rating.toString());
-      
-      // Append images if any
-      if (reviewData.photos && reviewData.photos.length > 0) {
-        reviewData.photos.forEach((file) => {
-          formData.append("images", file);
-        });
-      }
-      
-      // If you also need to send existing photo URLs (if editing)
-      if (reviewData.photoUrls && reviewData.photoUrls.length > 0 && isEditMode) {
-        reviewData.photoUrls.forEach((url) => {
-          formData.append("existing_photos", url);
-        });
-      }
-      
-      // Make the API call using postAPIAuthFormData
-      const res = await postAPIAuthFormData(
-        "user/sendRating",
-        formData,
-        token,
-        addToast
-      );
-      
-      if (res.status === 200) {
-        const savedReview = {
-          rating: reviewData.rating,
-          recommend: reviewData.recommend,
-          itemQuality: reviewData.itemQuality,
-          delivery: reviewData.delivery,
-          customerService: reviewData.customerService,
-          review: reviewData.review,
-          photoUrls: [...(reviewData.photoUrls || []), ...reviewData.photos.map(file => URL.createObjectURL(file))],
-          submitted: true,
-        };
-        
-        setLocalReviews((prev) => ({ ...prev, [reviewProduct._id]: savedReview }));
-        setReviewStep(3);
-        
-        // Reset form data after successful submission
-        setReviewId("");
-        setVendorId("");
-        
-        // Refresh orders if needed
-        const dateRange = getDateRange(filterOrders);
-        getAllOrders(dateRange.pastDate, dateRange.currentDate);
-        
-        addToast(isEditMode ? "Review updated successfully" : "Review submitted successfully", {
-          appearance: "success",
-          autoDismiss: true,
-        });
+
+      if (isEditMode) {
+        // EDIT MODE - use rating_id
+        formData.append("rating_id", reviewId);
+        formData.append("rating", reviewData.rating.toString());
+        formData.append("customer_service_rating", reviewData.customerService.toString());
+        formData.append("delivery_rating", reviewData.delivery.toString());
+        formData.append("item_rating", reviewData.itemQuality.toString());
+        formData.append("additional_comment", reviewData.review);
+        formData.append("recommended", reviewData.recommend ? "true" : "false");
+
+        // Send existing images that are kept
+        if (reviewData.existingImageNames && reviewData.existingImageNames.length > 0) {
+          reviewData.existingImageNames.forEach((imgName, i) => {
+            formData.append(`existingImages[${i}]`, imgName);
+          });
+        }
+
+        // Send new images
+        if (reviewData.photos && reviewData.photos.length > 0) {
+          reviewData.photos.forEach((file) => {
+            formData.append("images", file);
+          });
+        }
+
+        const res = await putAPIAuthFormData(
+          `user/editRating/${reviewId}`,
+          formData,
+          token,
+          addToast
+        );
+
+        if (res.status === 200) {
+
+          setReviewStep(3);
+          // Reset form data after successful submission
+          setReviewId("");
+          setVendorId("");
+          
+          addToast("Review updated successfully", {
+            appearance: "success",
+            autoDismiss: true,
+          });
+        }
+      } else {
+        // CREATE MODE (existing code)
+        formData.append("delivery_rating", reviewData.delivery.toString());
+        formData.append("item_rating", reviewData.itemQuality.toString());
+        formData.append("additional_comment", reviewData.review);
+        formData.append("recommended", reviewData.recommend ? "true" : "false");
+        formData.append("saleDetailId", reviewId);
+        formData.append("vendor_id", vendorId);
+        formData.append("customer_service_rating", reviewData.customerService.toString());
+        formData.append("rating", reviewData.rating.toString());
+
+        if (reviewData.photos && reviewData.photos.length > 0) {
+          reviewData.photos.forEach((file) => {
+            formData.append("images", file);
+          });
+        }
+
+        const res = await postAPIAuthFormData(
+          "user/sendRating",
+          formData,
+          token,
+          addToast
+        );
+
+        if (res.status === 200) {
+
+          setReviewStep(3);
+          // Reset form data after successful submission
+          setReviewId("");
+          setVendorId("");
+          addToast("Review submitted successfully", {
+            appearance: "success",
+            autoDismiss: true,
+          });
+        }
       }
     } catch (error) {
       console.error("Error submitting review:", error);
-      addToast(error?.response?.data?.message || "Something went wrong", { 
-        appearance: "error", 
-        autoDismiss: true 
+      addToast(error?.response?.data?.message || "Something went wrong", {
+        appearance: "error",
+        autoDismiss: true
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -246,13 +276,13 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     ? null : (items?.[0]?.refund_status || parentSale?.refund_status)
   return (
     <>
-      <Box key={order.sub_order_id || order._id} mb={2}>
+      <Box key={order.sub_order_id || order._id} mb={2} component={Card} borderRadius={{ xs: "10px", md: "12px" }}>
         <TrackingPopup
           open={openTracking}
           onClose={handleClosePopup}
           order={order}
         />
-        <Box border={"1px solid"} borderRadius={{ xs: "10px", md: "12px" }} borderColor={"#e4e4e484"}>
+        <Box border={"1px solid"} borderRadius={{ xs: "10px", md: "12px" }} borderColor={"#d5d5d584"}>
           <Grid
             container
             p={1}
@@ -403,47 +433,25 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                     Order # {order.sub_order_id}
                   </Typography>
                   <Box>
-                    <LightTooltip
+                    <LightPopover
                       title={
                         <Box>
-                          <Typography
-                            fontSize={"16px"}
-                            sx={{ textTransform: "capitalize" }}
-                            fontWeight={600}
-                          >
-                            {parentSale?.userName}
-                          </Typography>
-                          <Typography fontSize={"16px"}>
-                            {parentSale?.address_line1}
-                          </Typography>
-                          <Typography fontSize={"16px"}>
-                            {parentSale?.address_line2 ? parentSale?.address_line2 : ""}
-                          </Typography>
-                          <Typography fontSize={"16px"}>
-                            {parentSale?.city} {parentSale?.state} {parentSale?.pincode}
-                          </Typography>
-                          <Typography fontSize={"16px"}>
-                            {parentSale?.country}
-                          </Typography>
+                          <Typography fontSize={16} fontWeight={600}>{parentSale?.userName}</Typography>
+                          <Typography fontSize={16}>{parentSale?.address_line1}</Typography>
+                          {parentSale?.address_line2 && <Typography fontSize={16}>{parentSale?.address_line2}</Typography>}
+                          <Typography fontSize={16}>{parentSale?.city} {parentSale?.state} {parentSale?.pincode}</Typography>
+                          <Typography fontSize={16}>{parentSale?.country}</Typography>
                         </Box>
                       }
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: .5 }}>
                         <span>Ship to :</span>
-                        <Typography
-                          fontSize={15}
-                          fontWeight={500}
-                          sx={{
-                            color: "#ad1414",
-                            cursor: "pointer",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {" "}{parentSale?.userName}
+                        <Typography fontSize={15} fontWeight={500} sx={{ color: "#ad1414", textTransform: "capitalize" }}>
+                          {parentSale?.userName}
                         </Typography>
                         <ArrowDropDownIcon />
                       </Box>
-                    </LightTooltip>
+                    </LightPopover>
                   </Box>
                   <Typography
                     component="div"
@@ -479,37 +487,27 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       }}
                       component="div"
                     >
-                      <LightTooltip
+                      <LightPopover
                         title={
-                          <Box>
-                            <Button
-                              onClick={() => {
-                                addToast("Please Wait", {
-                                  appearance: "success",
-                                  autoDismiss: true,
-                                });
-                              }}
-                            >
-                              Printable order summary
-                            </Button>
-                          </Box>
+                          <Button
+                            onClick={() =>
+                              addToast("Please Wait", {
+                                appearance: "success",
+                                autoDismiss: true,
+                              })
+                            }
+                          >
+                            Printable order summary
+                          </Button>
                         }
                       >
                         <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Typography
-                            fontSize={15}
-                            fontWeight={500}
-                            sx={{
-                              color: "#ad1414",
-                              cursor: "pointer",
-                              textTransform: "capitalize",
-                            }}
-                          >
+                          <Typography fontSize={15} fontWeight={500} sx={{ color: "#ad1414", textTransform: "capitalize" }}>
                             invoice
                           </Typography>
                           <ArrowDropDownIcon />
                         </Box>
-                      </LightTooltip>
+                      </LightPopover>
                     </Typography>
                   </Typography>
                 </Box>
@@ -525,7 +523,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
             {items.length > 0 && (
               <Box>
                 {items.map(product => {
-                  console.log("orderproduct",product);
+                  console.log("orderproduct", product);
                   return (
                     <Product
                       key={product?._id}
@@ -538,189 +536,11 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       product={product}
                       setReviewProduct={setReviewProduct}
                       handleOpenReview={handleOpenReview}
+                      handleOpenEditReview={handleOpenEditReview}
                     />
                   );
                 })}
-                {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <H4 sx={{color:'grey'}}>Shop name : { items[0]?.vendorData?.shop_name || 'Unknown'}</H4>
-                  <Box
-                    sx={{
-                      flexGrow: 1,
-                      height: '1px',
-                      backgroundColor: '#e0e0e0',
-                      ml: 2,
-                    }}
-                  />
-                </Box> */}
-                {/* {items.map((orderItem, index) => {
-                  const product = orderItem.productData;
-                  const review = localReviews[product._id];
-                  const reply = localReplies[product._id];
-                  const buyerNote = localBuyerNotes[product._id];
-                  const isHidden = hiddenReviews[product._id];
-                  const isLocked = lockedReviews[product._id];
-                  const hasReview = review?.submitted;
-                  
-                  if (isHidden && hasReview) {
-                    return (
-                      <Box key={product?._id} sx={{ display: "flex", justifyContent: "flex-end", py: 3, borderBottom: index !== items.length - 1 ? "1px solid #ececec" : "none" }}>
-                        <Box sx={{ width: "100%", maxWidth: 520, bgcolor: "#f8f7f3", border: "1px solid #ece8dc", borderRadius: 2, p: 2 }}>
-                          <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-                            <Box sx={{ width: 42, height: 42, borderRadius: "50%", bgcolor: "#f1641e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>
-                              {items[0]?.vendorData?.shop_name?.[0] || "S"}
-                            </Box>
-                            <Typography sx={{ color: "#666", fontSize: 14 }}>This review has been hidden by admin.</Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                    );
-                  }
-                  return (
-                    <Box
-                      key={product?._id}
-                      sx={{
-                        display: "flex",
-                        gap: 3,
-                        py: 3,
-                        borderBottom:
-                          index !== items.length - 1
-                            ? "1px solid #ececec"
-                            : "none",
-                        flexDirection: {
-                          xs: "column",
-                          md: "row",
-                        },
-                      }}
-                    >
-                      
-                      <Box
-                        sx={{
-                          width: {
-                            xs: "100%",
-                            md: "45%",
-                          },
-                          display: "flex",
-                          gap: 2,
-                        }}
-                      >
-                        
-                        <Box
-                          sx={{
-                            width: 95,
-                            height: 95,
-                            borderRadius: 2,
-                            overflow: "hidden",
-                            border: "1px solid #e5e5e5",
-                            bgcolor: "#fafafa",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <img
-                            src={
-                              product?.image?.[0]
-                                ? `${baseUrl}/${product.image[0]}`
-                                : ""
-                            }
-                            alt=""
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </Box>
-                       
-                        <Box>
-                          <Typography
-                            sx={{
-                              fontSize: 16,
-                              fontWeight: 500,
-                              lineHeight: 1.5,
-                              color: "#2b2b2b",
-                            }}
-                          >
-                            {product?.product_title?.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim()}
-                          </Typography>
-                          <Typography
-                            sx={{
-                              mt: 1,
-                              color: "#777",
-                              fontSize: 15,
-                            }}
-                          >
-                            Materials: Sterling silver
-                          </Typography>
-                          <Typography
-                            sx={{
-                              color: "#777",
-                              fontSize: 15,
-                            }}
-                          >
-                            Ring Size (US size): 10
-                          </Typography>
-                          <Typography
-                            sx={{
-                              color: "#444",
-                              fontSize: 15,
-                              mt: 0.3,
-                            }}
-                          >
-                            Qty : {product?.quantity}
-                          </Typography>
 
-                          
-                          <Box
-                            sx={{
-                              display: "flex",
-                              gap: 1,
-                              mt: 2,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <Button
-                              sx={{
-                                bgcolor: "#f7efcf",
-                                color: "#222",
-                                borderRadius: "30px",
-                                px: 2,
-                                textTransform: "none",
-                                fontSize: 14,
-                                "&:hover": {
-                                  bgcolor: "#f1e4b2",
-                                },
-                              }}
-                            >
-                              Buy it Again
-                            </Button>
-                            <Button
-                              sx={{
-                                bgcolor: "#f7efcf",
-                                color: "#222",
-                                borderRadius: "30px",
-                                px: 2,
-                                textTransform: "none",
-                                fontSize: 14,
-                                "&:hover": {
-                                  bgcolor: "#f1e4b2",
-                                },
-                              }}
-                            >
-                              Help With Item
-                            </Button>
-                            {!hasReview && (
-                              <Button
-                                onClick={() => handleOpenReview(product)}
-                                sx={{ bgcolor: "#222", color: "#fff", borderRadius: "30px", px: 2, textTransform: "none", fontSize: 14, "&:hover": { bgcolor: "#444" } }}
-                              >
-                                Leave a Review
-                              </Button>
-                            )}
-                          </Box>
-                        </Box>
-                      </Box>
-                    </Box>
-                  );
-                })} */}
               </Box>
             )}
           </Box>
@@ -733,27 +553,45 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
         maxWidth="md"
         sx={{
           ".MuiPaper-root": {
+            height: "600px",
+            maxHeight: "80vh",
             minHeight: "520px",
             width: { xs: "calc(100% - 24px)", md: "650px" },
             maxWidth: "500px",
             margin: { xs: "12px", sm: "32px" },
-            borderRadius: "12px"
+            borderRadius: "12px",
+            display: "flex",
+            flexDirection: "column"
           }
         }}
       >
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
           <Typography variant="h6" fontWeight={500}>
             {reviewStep === 0 && (isEditMode ? 'Edit Your Review' : 'Leave a Review')}
             {reviewStep === 1 && 'Great! Tell us more...'}
             {reviewStep === 2 && 'Extra credit: add a photo!'}
+            {reviewStep === 3 && 'Review Submitted!'}
           </Typography>
           <IconButton size="small" onClick={handleClosePopup}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
-        {/* Body */}
-        <Box sx={{ p: 2.5 }}>
+
+        {/* Body - Scrollable */}
+        <Box sx={{
+          p: 2.5,
+          flex: 1,
+          overflowY: 'auto',
+          // For WebKit browsers (Chrome, Safari, newer Edge)
+          '&::-webkit-scrollbar': {
+            width: '0px',
+            background: 'transparent',
+            display: 'none'
+          },
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
           {/* STEP 1 */}
           {reviewStep === 0 && (
             <Box sx={{ textAlign: 'center' }}>
@@ -767,7 +605,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                 borderRadius: 2,
                 mb: 3,
                 height: 200,
-                width:'100%'
+                width: '100%'
               }}>
                 <Box
                   sx={{
@@ -776,7 +614,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                     maxWidth: '40%',
                     borderRadius: 2,
                     overflow: 'hidden',
-                    // 🔥 highlight styles
                     border: '2.0px solid #e0e0e0',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
                     bgcolor: '#fafafa',
@@ -784,7 +621,6 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     transition: 'all 0.2s ease',
-                    // 🔥 hover effect (premium feel)
                     '&:hover': {
                       boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
                       transform: 'scale(1.03)',
@@ -792,11 +628,10 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   }}
                   component={'img'}
                   src={reviewProduct?.image?.[0]
-                      ? `${baseUrl}/${reviewProduct.edited_image || reviewProduct.image[0]}`
-                      : ""}
-                    alt=""
-                >
-                </Box>
+                    ? `${baseUrl}/${reviewProduct.edited_image || reviewProduct.image[0]}`
+                    : ""}
+                  alt=""
+                />
                 <Box textAlign="left">
                   <Typography fontSize={16} fontWeight={600}>
                     {reviewProduct?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
@@ -808,19 +643,19 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               </Box>
               {/* Rating */}
               <Typography fontSize={14} mb={1}>
-                Your review rating *
+                Your review rating<strong>*</strong>
+                {reviewData.rating > 0 && (
+                  <Typography component={"span"} mt={1} ml={1} fontSize={14} fontWeight={600}>
+                    {['', 'Disappointed', 'Not a fan', "It's okay", 'Like it', 'Love it'][reviewData.rating]}
+                  </Typography>
+                )}
               </Typography>
               <Rating
                 size="large"
                 value={reviewData.rating}
                 onChange={(_, v) => setReviewData(p => ({ ...p, rating: v }))}
-                sx={{ fontSize: 40 }}   // 🔥 BIG STARS
+                sx={{ fontSize: 40 }}
               />
-              {reviewData.rating > 0 && (
-                <Typography mt={1} fontSize={14}>
-                  {['', 'Disappointed', 'Not a fan', "It's okay", 'Like it', 'Love it'][reviewData.rating]}
-                </Typography>
-              )}
               {/* Recommend */}
               <Typography mt={3} mb={1} fontSize={14}>
                 Would you recommend this item?
@@ -838,7 +673,12 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                       borderColor: reviewData.recommend === val ? '#000' : 'divider',
                       bgcolor: reviewData.recommend === val ? '#000' : 'transparent',
                       color: reviewData.recommend === val ? '#fff' : 'text.primary',
-                      fontSize: 15
+                      fontSize: 15,
+                      ':hover': {
+                        borderColor: reviewData.recommend === val ? '#000' : 'divider',
+                        bgcolor: reviewData.recommend === val ? '#000' : 'transparent',
+                        color: reviewData.recommend === val ? '#fff' : 'text.primary',
+                      }
                     }}
                   >
                     {val ? '✓ Yes' : '✕ No'}
@@ -847,6 +687,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               </Box>
             </Box>
           )}
+
           {/* STEP 2 */}
           {reviewStep === 1 && (
             <Box>
@@ -877,124 +718,177 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               </Typography>
             </Box>
           )}
-          {/* STEP 3 - Photo Upload */}
+
+          {/* STEP 3 - Photo Upload with Multiple Images */}
           {reviewStep === 2 && (
-            <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-              {/* LEFT TEXT */}
-              <Box sx={{ flex: 1 }}>
-                <Typography fontSize={18} fontWeight={500} mb={1}>
-                  Extra credit: add a photo!
-                </Typography>
-                <Typography fontSize={14} color="text.secondary">
-                  Show your appreciation <br />
-                  and inspire the <br />
-                  community! <span style={{ fontSize: 13 }}>(optional)</span>
-                </Typography>
-              </Box>
-              {/* RIGHT UPLOAD BOX */}
-              {reviewData.photos.length < 4 && (
-                <Button
-                  component="label"
-                  sx={{
-                    width: 220,
-                    height: 220,
-                    border: '1px solid #ddd',
-                    borderRadius: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1.5,
-                    bgcolor: '#fafafa',
-                    textTransform: 'none',
-                    '&:hover': {
-                      bgcolor: '#f2f2f2'
-                    }
-                  }}
-                >
-                  {/* 🔥 YOUR DOWNLOADED ICON */}
-                  <img
-                    src="/icons/camera.png"
-                    alt="upload"
-                    style={{
-                      width: 60,
-                      height: 60,
-                      objectFit: 'contain',
-                      opacity: 0.8
-                    }}
-                  />
-                  <Typography fontSize={14} color="text.secondary">
-                    Click to upload an image
+            <Box>
+              {/* HEADER + UPLOAD BUTTON - Same Row */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2, minHeight: "50px" }}>
+                {/* LEFT TEXT */}
+                <Box sx={{ flex: 1 }}>
+                  <Typography fontSize={16} fontWeight={600} mb={0.5}>
+                    {reviewData.photos.length + (reviewData.existingImageNames?.length || 0) < 5 ? "Extra credit: add a photo!" : "Great! You've added 5 images."}
                   </Typography>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={e => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setReviewData(p => ({
-                          ...p,
-                          photos: [...p.photos, file]
-                        }));
+                  <Typography fontSize={13} color="text.secondary">
+                    Show your appreciation and inspire the community! (optional)
+                  </Typography>
+                </Box>
+
+                {/* UPLOAD BUTTON */}
+                {reviewData.photos.length + (reviewData.existingImageNames?.length || 0) < 5 && (
+                  <Button
+                    component="label"
+                    sx={{
+                      minWidth: 100,
+                      height: 200,
+                      width: 200,
+                      border: '2px dashed #ddd',
+                      borderRadius: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 0.5,
+                      bgcolor: '#fafafa',
+                      textTransform: 'none',
+                      flexShrink: 0,
+                      '&:hover': {
+                        bgcolor: '#f2f2f2',
+                        borderColor: '#999'
                       }
                     }}
-                  />
-                </Button>
-              )}
-              {/* 🔥 IMAGES BELOW (same screen jaisa flow) */}
+                  >
+                    <img
+                      src="/icons/camera.png"
+                      alt="upload"
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: 'contain',
+                        opacity: 0.8
+                      }}
+                    />
+                    <Typography fontSize={11} color="text.secondary">
+                      Upload
+                    </Typography>
+                    <Typography fontSize={10} color="text.secondary">
+                      ({reviewData.photos.length + (reviewData.existingImageNames?.length || 0)}/5)
+                    </Typography>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      hidden
+                      onChange={e => {
+                        const files = Array.from(e.target.files || []);
+                        const remaining = 5 - (reviewData.photos.length + (reviewData.existingImageNames?.length || 0));
+                        const newFiles = files.slice(0, remaining);
+                        setReviewData(p => ({
+                          ...p,
+                          photos: [...p.photos, ...newFiles]
+                        }));
+                      }}
+                    />
+                  </Button>
+                )}
+              </Box>
+
+              {/* IMAGES GRID - 2×3 Below header & button */}
               {(reviewData.photoUrls?.length > 0 || reviewData.photos.length > 0) && (
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-                  {/* Purani saved photos */}
-                  {reviewData.photoUrls?.map((url, i) => (
-                    <Box key={`old-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
-                      <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                      <IconButton
-                        size="small"
-                        onClick={() => setReviewData(p => ({ ...p, photoUrls: p.photoUrls.filter((_, idx) => idx !== i) }))}
-                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
-                      >
-                        <CloseIcon sx={{ fontSize: 12 }} />
-                      </IconButton>
-                    </Box>
-                  ))}
-                  {/* Naye photos */}
-                  {reviewData.photos.map((photo, i) => (
-                    <Box key={`new-${i}`} sx={{ width: 90, height: 90, borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd', position: 'relative' }}>
-                      <img src={URL.createObjectURL(photo)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                      <IconButton
-                        size="small"
-                        onClick={() => setReviewData(p => ({ ...p, photos: p.photos.filter((_, idx) => idx !== i) }))}
-                        sx={{ position: 'absolute', top: 2, right: 2, bgcolor: 'black', color: '#fff', width: 20, height: 20 }}
-                      >
-                        <CloseIcon sx={{ fontSize: 12 }} />
-                      </IconButton>
-                    </Box>
-                  ))}
+                <Box sx={{ mt: 2 }}>
+                  <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 1.5,
+                    gridAutoRows: 'auto'
+                  }}>
+                    {/* Existing saved photos */}
+                    {reviewData.photoUrls?.map((url, i) => (
+                      <Box key={`old-${i}`} sx={{ position: 'relative', aspectRatio: '1/1', borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd' }}>
+                        <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            // Remove from photoUrls
+                            const newPhotoUrls = reviewData.photoUrls.filter((_, idx) => idx !== i);
+                            // Remove corresponding image name from existingImageNames
+                            const newExistingImageNames = reviewData.existingImageNames.filter((_, idx) => idx !== i);
+                            setReviewData(p => ({
+                              ...p,
+                              photoUrls: newPhotoUrls,
+                              existingImageNames: newExistingImageNames
+                            }));
+                          }}
+                          sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}
+                        >
+                          <CloseIcon sx={{ fontSize: 12 }} />
+                        </IconButton>
+                      </Box>
+                    ))}
+                    {/* Newly added photos */}
+                    {reviewData.photos.map((photo, i) => (
+                      <Box key={`new-${i}`} sx={{ position: 'relative', aspectRatio: '1/1', borderRadius: 2, overflow: 'hidden', border: '1px solid #ddd' }}>
+                        <img src={URL.createObjectURL(photo)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                        <IconButton
+                          size="small"
+                          onClick={() => setReviewData(p => ({ ...p, photos: p.photos.filter((_, idx) => idx !== i) }))}
+                          sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', width: 22, height: 22, '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}
+                        >
+                          <CloseIcon sx={{ fontSize: 12 }} />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
               )}
             </Box>
           )}
+
           {/* STEP 4 - Success */}
           {reviewStep === 3 && (
-            <Box sx={{ textAlign: 'center', py: 3 }}>
-              <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: '#E1F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2, fontSize: 28 }}>✓</Box>
-              <Typography variant="h6" fontWeight={500} mb={1}>Thanks for your review!</Typography>
-              <Typography fontSize={14} color="text.secondary" mb={2}>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 300,
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                bgcolor: '#E1F5EE',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 2,
+                fontSize: 40,
+                color: '#2E7D64'
+              }}>
+                ✓
+              </Box>
+              <Typography variant="h6" fontWeight={500} mb={1}>
+                Thanks for your review!
+              </Typography>
+              <Typography fontSize={14} color="text.secondary" mb={3}>
                 Follow <strong>{items[0]?.vendorData?.shop_name}</strong> for updates and special offers.
               </Typography>
               <Button
                 onClick={handleFollow}
                 variant="outlined"
                 startIcon={
-                  <span style={{ color: isFollowing ? 'red' : '#999', fontSize: 14 }}>
+                  <span style={{ color: isFollowing ? '#E91E63' : '#999', fontSize: 16 }}>
                     ♥
                   </span>
                 }
                 sx={{
                   borderRadius: 20,
                   textTransform: 'none',
-                  borderColor: isFollowing ? '#000' : 'divider'
+                  borderColor: isFollowing ? '#E91E63' : 'divider',
+                  px: 3,
+                  py: 1
                 }}
               >
                 {isFollowing ? "Following" : "Follow"}
@@ -1002,20 +896,49 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
             </Box>
           )}
         </Box>
-        {/* Footer */}
+
+        {/* Footer with DialogActions */}
         {reviewStep < 3 && (
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button onClick={() => setReviewStep(s => s - 1)} sx={{ visibility: reviewStep === 0 ? 'hidden' : 'visible', color: 'text.secondary', textTransform: 'none' }}>
+          <DialogActions sx={{
+            p: 2,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            justifyContent: 'space-between',
+            flexShrink: 0
+          }}>
+            <Button
+              onClick={() => setReviewStep(s => s - 1)}
+              sx={{
+                visibility: reviewStep === 0 ? 'hidden' : 'visible',
+                color: 'text.secondary',
+                textTransform: 'none'
+              }}
+            >
               Back
             </Button>
+
+            {/* Stepper Bars */}
             <Box sx={{ display: 'flex', gap: 0.75 }}>
               {[0, 1, 2].map(i => (
-                <Box key={i} sx={{ width: 20, height: 3, borderRadius: 1, bgcolor: i === reviewStep ? 'text.primary' : 'divider' }} />
+                <Box key={i} sx={{
+                  width: 24,
+                  height: 3,
+                  borderRadius: 1.5,
+                  bgcolor: i === reviewStep ? '#000' : '#e0e0e0'
+                }} />
               ))}
             </Box>
+
             <Button
               variant="contained"
-              sx={{ bgcolor: '#000', color: '#fff', borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#333' } }}
+              disabled={isSubmitting}
+              sx={{
+                bgcolor: '#000',
+                color: '#fff',
+                borderRadius: 2,
+                textTransform: 'none',
+                '&:hover': { bgcolor: '#333' }
+              }}
               onClick={() => {
                 if (reviewStep === 0) {
                   if (!reviewData.rating) {
@@ -1040,9 +963,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                 setReviewStep(s => s + 1);
               }}
             >
-              {reviewStep === 2 ? (reviewData.photos.length > 0 ? 'Submit photo' : 'Skip') : 'Next'}
+              {reviewStep === 2 ? (reviewData.photos.length > 0 ? `Submit ${reviewData.photos.length + reviewData.existingImageNames?.length} photo${reviewData.photos.length > 1 ? 's' : ''}` : 'Skip') : 'Next'}
             </Button>
-          </Box>
+          </DialogActions>
         )}
       </Dialog>
       <MessagePopup
