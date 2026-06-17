@@ -23,12 +23,15 @@ import {
 } from '@mui/material';
 import {
     ChevronRight as ChevronRightIcon,
+    ChevronLeft as ChevronLeftIcon,
     ExpandMore as ExpandMoreIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
 import moment from 'moment';
-import { useMediaQuery } from '@mui/material';
+import { useMediaQuery, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import HtmlRenderer from 'components/HtmlRender/HtmlRenderer';
 import DeliveryAndReturnPolicy from '../DeliveryAndReturnPolicy/DeliveryAndReturnPolicy';
+import Link from 'next/link';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Spec helpers (unchanged)
@@ -197,77 +200,12 @@ const ProductSpecifications = ({ product }) => {
         </>
     );
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// Dummy Data
-// ─────────────────────────────────────────────────────────────────────────────
-const dummyShopReviews = [
-    {
-        _id: 's1', user_name: 'Priya S.', user_image: 'https://i.pravatar.cc/40?img=1',
-        item_rating: 5, additional_comment: 'Absolutely gorgeous ring! The moonstone shimmers beautifully in the light. Packaging was also very nice and the delivery was super fast.',
-        recommended: true, createdAt: '2023-11-23T10:00:00Z',
-        photos: ['https://picsum.photos/seed/r1/120/120', 'https://picsum.photos/seed/r2/120/120', 'https://picsum.photos/seed/r3/120/120'],
-        seller_reply: { shop_name: 'SilverCraft', shop_image: 'https://i.pravatar.cc/40?img=50', replied_on: '2023-11-24T10:00:00Z', message: 'Thank you Priya, so happy you liked it.' },
-        purchased_item: { title: 'Wildflower print, botanical print, Wild flowers print, Nature print of meadow of wild flowers in watercolor, Flower picture, instant download', image: 'https://picsum.photos/seed/p1/80/80' },
-    },
-    {
-        _id: 's2', user_name: 'Neha V.', user_image: 'https://i.pravatar.cc/40?img=5',
-        item_rating: 4, additional_comment: 'Loved the ring! Quality is great. Delivery took a bit longer than expected but worth it.',
-        recommended: true, createdAt: '2023-11-23T08:30:00Z',
-        photos: [],
-        seller_reply: null,
-        purchased_item: { title: 'Rainbow Moonstone Ring, 925 Sterling Silver, Gemstone Ring, Oval Moonstone Jewlery', image: 'https://picsum.photos/seed/p2/80/80' },
-    },
-    {
-        _id: 's3', user_name: 'Rohit M.', user_image: 'https://i.pravatar.cc/40?img=12',
-        item_rating: 3, additional_comment: 'Ring is okay but the stone color was slightly different from photos. Overall decent quality.',
-        recommended: false, createdAt: '2023-10-15T14:20:00Z',
-        photos: ['https://picsum.photos/seed/r4/120/120'],
-        seller_reply: { shop_name: 'SilverCraft', shop_image: 'https://i.pravatar.cc/40?img=50', replied_on: '2023-10-16T09:00:00Z', message: 'We are sorry to hear that. Please reach out and we will make it right!' },
-        purchased_item: { title: 'Silver Moonstone Pendant Necklace, Handmade Jewelry', image: 'https://picsum.photos/seed/p3/80/80' },
-    },
-    {
-        _id: 's4', user_name: 'Anjali S.', user_image: 'https://i.pravatar.cc/40?img=9',
-        item_rating: 5, additional_comment: 'Perfect gift for my sister! She absolutely loved it. The craftsmanship is excellent.',
-        recommended: true, createdAt: '2023-09-28T11:00:00Z',
-        photos: ['https://picsum.photos/seed/r5/120/120', 'https://picsum.photos/seed/r6/120/120'],
-        seller_reply: null,
-        purchased_item: { title: 'Rainbow Moonstone Ring, 925 Sterling Silver', image: 'https://picsum.photos/seed/p4/80/80' },
-    },
-    {
-        _id: 's5', user_name: 'Kavita J.', user_image: 'https://i.pravatar.cc/40?img=20',
-        item_rating: 4, additional_comment: 'Beautiful ring, good quality silver. Delivery was a bit slow but product is great.',
-        recommended: true, createdAt: '2023-09-10T09:15:00Z',
-        photos: [],
-        seller_reply: null,
-        purchased_item: { title: 'Moonstone Earrings, 925 Sterling Silver, Handmade Jewelry', image: 'https://picsum.photos/seed/p5/80/80' },
-    },
-];
 
-const dummyItemReviews = [
-    {
-        _id: 'i1', user_name: 'Simran K.', user_image: 'https://i.pravatar.cc/40?img=25',
-        item_rating: 5, additional_comment: 'The ring is even more beautiful in person. Fits perfectly, love the moonstone!',
-        recommended: true, createdAt: '2024-01-05T10:00:00Z',
-        photos: ['https://picsum.photos/seed/ir1/120/120'],
-        seller_reply: null,
-        purchased_item: { title: 'Rainbow Moonstone Ring, 925 Sterling Silver', image: 'https://picsum.photos/seed/ip1/80/80' },
-    },
-    {
-        _id: 'i2', user_name: 'Divya R.', user_image: 'https://i.pravatar.cc/40?img=30',
-        item_rating: 4, additional_comment: 'Great quality, fast shipping. Would recommend to anyone looking for a moonstone ring.',
-        recommended: true, createdAt: '2023-12-20T08:00:00Z',
-        photos: [],
-        seller_reply: { shop_name: 'SilverCraft', shop_image: 'https://i.pravatar.cc/40?img=50', replied_on: '2023-12-21T10:00:00Z', message: 'Thank you so much Divya! We appreciate your kind words.' },
-        purchased_item: { title: 'Rainbow Moonstone Ring, 925 Sterling Silver', image: 'https://picsum.photos/seed/ip2/80/80' },
-    },
-];
-
-const REVIEWS_PER_PAGE = 2;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ReviewCard - Etsy style
 // ─────────────────────────────────────────────────────────────────────────────
-const ReviewCard = ({ review }) => (
+const ReviewCard = ({ review, openImageDialog }) => (
     <Box sx={{ borderBottom: '1px solid #e5e5e5', py: 3 }}>
         {/* Main layout */}
         <Box
@@ -278,7 +216,7 @@ const ReviewCard = ({ review }) => (
 
             {/* Left avatar */}
             <Avatar
-                src={review.user_image}
+                src={"https://api.agukart.com/uploads/profileImage/" + review.user_image}
                 sx={{ width: 42, height: 42, flexShrink: 0 }}
             />
 
@@ -322,8 +260,9 @@ const ReviewCard = ({ review }) => (
                             <Box
                                 key={i}
                                 component="img"
-                                src={photo}
+                                src={"https://api.agukart.com/uploads/ratings/" + photo}
                                 alt=""
+                                onClick={() => openImageDialog(review.photos, i)}
                                 sx={{
                                     width: { xs: 90, sm: 120, md: 140 },
                                     height: { xs: 90, sm: 120, md: 140 },
@@ -341,7 +280,7 @@ const ReviewCard = ({ review }) => (
 
                 {/* Rating */}
                 <Rating
-                    value={review.item_rating}
+                    value={review.rating}
                     readOnly
                     size="small"
                     sx={{ mb: 1 }}
@@ -358,7 +297,7 @@ const ReviewCard = ({ review }) => (
                 </Typography>
 
                 {/* Seller reply */}
-                {review.seller_reply && (
+                {review.seller_reply?.message && (
                     <Box
                         sx={{
                             display: 'flex',
@@ -371,9 +310,23 @@ const ReviewCard = ({ review }) => (
                         }}
                     >
                         <Avatar
-                            src={review.seller_reply.shop_image}
-                            sx={{ width: 32, height: 32 }}
-                        />
+                            src={"https://api.agukart.com/uploads/shop-icon/" + review.seller_reply.shop_image}
+                            sx={{
+                                width: 42,
+                                height: 42,
+                                bgcolor: "#fff",
+                                color: "#000",
+                                fontFamily: "Constantia, serif",
+                                fontSize: 28,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                border: "2px solid",
+                                borderColor: "divider",
+                                fontSmooth: "anti-aliased"
+                            }}
+                        >
+                            A
+                        </Avatar>
 
                         <Box>
                             <Typography fontSize={13}>
@@ -401,7 +354,7 @@ const ReviewCard = ({ review }) => (
                                 color="#444"
                                 mt={0.5}
                             >
-                                {review.seller_reply.message}
+                                {review.seller_reply?.message}
                             </Typography>
                         </Box>
                     </Box>
@@ -414,10 +367,14 @@ const ReviewCard = ({ review }) => (
                         alignItems="center"
                         gap={1.5}
                         mt={1}
+                        component={Link}
+                        href={`/product/${review.purchased_item.slug}/${review.purchased_item.product_code}`}
+                        passHref
+                        sx={{ '&:hover': { textDecoration: "underline" } }}
                     >
                         <Box
                             component="img"
-                            src={review.purchased_item.image}
+                            src={"https://api.agukart.com/uploads/product/" + review.purchased_item.image}
                             alt=""
                             sx={{
                                 width: { xs: 52, md: 64 },
@@ -438,7 +395,7 @@ const ReviewCard = ({ review }) => (
                                 overflow: 'hidden',
                             }}
                         >
-                            {review.purchased_item.title}
+                            {review.purchased_item.title.replace(/<[^>]*>/g, '')}
                         </Typography>
                     </Box>
                 )}
@@ -450,11 +407,11 @@ const ReviewCard = ({ review }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 // Photos From Reviews
 // ─────────────────────────────────────────────────────────────────────────────
-const PhotosFromReviews = ({ reviews }) => {
-    const allPhotos = reviews.flatMap(r => r.photos || []);
+const PhotosFromReviews = ({ allPhotos, openImageDialog }) => {
     const scrollRef = React.useRef(null);
 
-    if (allPhotos.length === 0) return null;
+    if (allPhotos?.length === 0) return null;
+    // console.log(typeof allPhotos, allPhotos, "review data")
 
     return (
         <Box mt={4} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, p: 2 }}>
@@ -464,12 +421,13 @@ const PhotosFromReviews = ({ reviews }) => {
                     ref={scrollRef}
                     sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}
                 >
-                    {allPhotos.map((photo, i) => (
+                    {allPhotos?.map((photo, i) => (
                         <Box
-                            key={i}
+                            key={photo._id}
                             component="img"
-                            src={photo}
+                            src={"https://api.agukart.com/uploads/ratings/" + photo.image}
                             alt=""
+                            onClick={() => openImageDialog(allPhotos.map(p => p.image), i)}
                             sx={{
                                 width: { xs: 100, sm: 130, md: 150 },
                                 height: { xs: 100, sm: 130, md: 150 }, objectFit: 'cover', borderRadius: 1, flexShrink: 0, cursor: 'pointer', '&:hover': { opacity: 0.85 }
@@ -477,7 +435,7 @@ const PhotosFromReviews = ({ reviews }) => {
                         />
                     ))}
                 </Box>
-                {allPhotos.length > 4 && (
+                {allPhotos?.length > 4 && (
                     <IconButton
                         onClick={() => scrollRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
                         sx={{ position: 'absolute', right: -12, top: '50%', transform: 'translateY(-50%)', background: '#fff', border: '1px solid #ddd', width: 32, height: 32, '&:hover': { background: '#f5f5f5' } }}
@@ -493,42 +451,32 @@ const PhotosFromReviews = ({ reviews }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductReviews
 // ─────────────────────────────────────────────────────────────────────────────
-const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'SilverCraft' }) => {
-    const itemReviews = propReviews?.length > 0 ? propReviews : dummyItemReviews;
-    const shopReviews = dummyShopReviews;
+const ProductReviews = ({ reviewData, page, setPage, reviewType, setReviewType, openImageDialog }) => {
+    const currentReviews = reviewData?.reviews || [];
+    const totalPages = reviewData?.pagination?.pages;
 
-    const [activeTab, setActiveTab] = useState(0);
-    const [page, setPage] = useState(1);
-
-    const currentReviews = activeTab === 0 ? shopReviews : itemReviews;
-    const totalPages = Math.ceil(currentReviews.length / REVIEWS_PER_PAGE);
-    const paginatedReviews = currentReviews.slice((page - 1) * REVIEWS_PER_PAGE, page * REVIEWS_PER_PAGE);
-
-    const avgRating = currentReviews.length > 0
-        ? (currentReviews.reduce((s, r) => s + r.item_rating, 0) / currentReviews.length).toFixed(1)
-        : 0;
+    const avgRating = reviewType === "shop" ? reviewData?.summary?.shopRatingAvg : reviewData?.summary?.itemRatingAvg;
     const scrollToReviews = () => {
         const el = document.getElementById('reviews');
         if (!el) return;
         const top = el.getBoundingClientRect().top + window.scrollY - 49;
         window.scrollTo({ top, behavior: 'smooth' });
     };
-    const handleTabChange = (_, newVal) => { setActiveTab(newVal); setPage(1); scrollToReviews(); };
-
+    const handleTabChange = (_, newVal) => { setReviewType(newVal); setPage(1); scrollToReviews(); };
 
     return (
         <Box>
             {/* Overall rating header */}
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                <Typography fontSize={22} fontWeight={600}>
-                    {currentReviews.length.toLocaleString()} reviews
+                <Typography fontSize={21} fontWeight={500}>
+                    {reviewData?.pagination?.total} reviews
                 </Typography>
                 <Rating value={parseFloat(avgRating)} precision={0.1} readOnly size="medium" />
             </Box>
 
             {/* Shop / Item tabs */}
             <Tabs
-                value={activeTab}
+                value={reviewType}
                 onChange={handleTabChange}
                 sx={{
                     borderBottom: '1px solid #e5e5e5',
@@ -542,33 +490,35 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
                         <Box display="flex" alignItems="center" gap={0.8}>
                             Reviews for this shop
                             <Box component="span" sx={{ background: '#f0f0f0', borderRadius: '12px', px: 1, py: 0.2, fontSize: 13, fontWeight: 400 }}>
-                                {shopReviews.length}
+                                {reviewData?.summary?.shopReviewCount}
                             </Box>
                         </Box>
                     }
+                    value={"shop"}
                 />
                 <Tab
                     label={
                         <Box display="flex" alignItems="center" gap={0.8}>
                             Reviews for this item
                             <Box component="span" sx={{ background: '#f0f0f0', borderRadius: '12px', px: 1, py: 0.2, fontSize: 13, fontWeight: 400 }}>
-                                {itemReviews.length}
+                                {reviewData?.summary?.itemReviewCount}
                             </Box>
                         </Box>
                     }
+                    value={"item"}
                 />
             </Tabs>
 
             {/* Review cards */}
             <Box>
-                {paginatedReviews.map(review => (
-                    <ReviewCard key={review._id} review={review} />
+                {currentReviews?.map(review => (
+                    <ReviewCard key={review._id} review={review} openImageDialog={openImageDialog} />
                 ))}
 
-                {paginatedReviews.length === 0 && (
+                {currentReviews?.length === 0 && (
                     <Box sx={{ py: 6, textAlign: 'center', color: '#888' }}>
                         <Typography fontSize={15}>
-                            No reviews yet for this {activeTab === 0 ? 'shop' : 'item'}.
+                            No reviews yet for this {reviewType}.
                         </Typography>
                     </Box>
                 )}
@@ -594,7 +544,7 @@ const ProductReviews = ({ reviews: propReviews, productTitle, shopName = 'Silver
             )}
 
             {/* Photos from reviews */}
-            <PhotosFromReviews reviews={currentReviews} />
+            <PhotosFromReviews allPhotos={reviewData?.reviewPhotos || []} openImageDialog={openImageDialog} />
         </Box>
     );
 };
@@ -611,7 +561,7 @@ const ExpandableDescription = ({ children }) => {
         <Box>
             <Box
             >
-            {children}
+                {children}
             </Box>
         </Box>
     );
@@ -619,9 +569,12 @@ const ExpandableDescription = ({ children }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductTabs
 // ─────────────────────────────────────────────────────────────────────────────
-const ProductTabs = ({ product }) => {
-    const [activeTab, setActiveTab] = React.useState('description');
+const ProductTabs = ({ product, reviewData, reviewType, setReviewType, page, setPage }) => {
     const [openAccordion, setOpenAccordion] = React.useState(null);
+    const [activeSection, setActiveSection] = useState("description");
+    const [open, setOpen] = useState(false);
+    const [dialogImages, setDialogImages] = useState([]);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
     const scrollToSection = (id) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -638,7 +591,7 @@ const ProductTabs = ({ product }) => {
             ...(product?.tabs || []).map((_, index) => `custom-tab-${index}`),
         ];
         const observer = new IntersectionObserver(
-            entries => entries.forEach(e => { if (e.isIntersecting) setActiveTab(e.target.id); }),
+            entries => entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }),
             { threshold: 0.4 }
         );
         sections.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
@@ -647,13 +600,36 @@ const ProductTabs = ({ product }) => {
 
     const tabStyle = (tabName) => ({
         cursor: 'pointer', fontWeight: 400, fontSize: { xs: '13px', md: '15px' },
-        color: activeTab === tabName ? '#d32f2f' : '#222',
-        borderBottom: activeTab === tabName ? '2px solid #d32f2f' : '2px solid transparent',
+        color: activeSection === tabName ? '#d32f2f' : '#222',
+        borderBottom: activeSection === tabName ? '2px solid #d32f2f' : '2px solid transparent',
         pb: '12px', transition: 'color 0.2s, border-bottom 0.2s', flexShrink: 0,
         '&:hover': {                          // ✅ ADD KARO
             color: '#d32f2f',
         },
     });
+
+    const handleImageDialogOpen = (images, index = 0) => {
+        setDialogImages(images);
+        setActiveImageIndex(index);
+        setOpen(true);
+    };
+
+    const handleImageDialogClose = () => {
+        setOpen(false);
+        setDialogImages([]);
+    }
+
+    const handlePrev = () => {
+        setActiveImageIndex(prev =>
+            prev === 0 ? dialogImages.length - 1 : prev - 1
+        );
+    };
+
+    const handleNext = () => {
+        setActiveImageIndex(prev =>
+            prev === dialogImages.length - 1 ? 0 : prev + 1
+        );
+    };
 
     return (
         <Box py={2} sx={{ padding: '0 0', m: 'auto', maxWidth: '1550px' }}>
@@ -662,32 +638,22 @@ const ProductTabs = ({ product }) => {
                     <Box>
                         {/* Sticky Tab Nav */}
                         <Box
-    sx={{
-        display: { xs: 'none', md: 'flex' },
-        alignItems: 'center',
-
+                            sx={{
+                                display: { xs: 'none', md: 'flex' },
+                                alignItems: 'center',
                                 gap: { xs: 2.5, md: 5 },
-
                                 pt: { xs: 1.5, md: 2.5 },
                                 pb: 0,
-
                                 px: { xs: 2, sm: 3, md: 10 },
-
                                 borderBottom: '1px solid #e5e5e5',
-
                                 overflowX: 'auto',
                                 overflowY: 'hidden',
-
                                 whiteSpace: 'nowrap',
-
                                 position: 'sticky',
                                 top: 0,
-
                                 background: '#fff',
                                 zIndex: 10,
-
                                 scrollbarWidth: 'none',
-
                                 '&::-webkit-scrollbar': {
                                     display: 'none',
                                 },
@@ -713,122 +679,125 @@ const ProductTabs = ({ product }) => {
                             ))}
                         </Box>
                         {/* Mobile Accordion Tabs */}
- {/* Mobile Accordion Tabs */}
-<Box sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}>
+                        <Box sx={{ display: { xs: 'block', md: 'none' }, mt: 2 }}>
 
-    {/* Description */}
-    <Accordion
-        expanded={openAccordion === 'description'}
-        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'description' : null)}
-    >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={600}>Description</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-            <HtmlRenderer html={product?.description || ''} />
-            <Box display="flex" justifyContent="center" mt={2}>
-                <Button variant="outlined" size="small"
-                    onClick={() => setOpenAccordion(null)}
-                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                >
-                    Show Less
-                </Button>
-            </Box>
-        </AccordionDetails>
-    </Accordion>
+                            {/* Description */}
+                            <Accordion
+                                expanded={openAccordion === 'description'}
+                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'description' : null)}
+                            >
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography fontWeight={600}>Description</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <HtmlRenderer html={product?.description || ''} />
+                                    <Box display="flex" justifyContent="center" mt={2}>
+                                        <Button variant="outlined" size="small"
+                                            onClick={() => setOpenAccordion(null)}
+                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                                        >
+                                            Show Less
+                                        </Button>
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
 
-    {/* Specifications */}
-    <Accordion
-        expanded={openAccordion === 'specifications'}
-        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'specifications' : null)}
-    >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={600}>Product Specifications & Details</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-            <ProductSpecifications product={product} />
-            <Box display="flex" justifyContent="center" mt={2}>
-                <Button variant="outlined" size="small"
-                    onClick={() => setOpenAccordion(null)}
-                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                >
-                    Show Less
-                </Button>
-            </Box>
-        </AccordionDetails>
-    </Accordion>
+                            {/* Specifications */}
+                            <Accordion
+                                expanded={openAccordion === 'specifications'}
+                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'specifications' : null)}
+                            >
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography fontWeight={600}>Product Specifications & Details</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <ProductSpecifications product={product} />
+                                    <Box display="flex" justifyContent="center" mt={2}>
+                                        <Button variant="outlined" size="small"
+                                            onClick={() => setOpenAccordion(null)}
+                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                                        >
+                                            Show Less
+                                        </Button>
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
 
-    {/* Reviews */}
-    <Accordion
-        expanded={openAccordion === 'reviews'}
-        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'reviews' : null)}
-    >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={600}>Reviews</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-            <ProductReviews
-                reviews={product?.rating || []}
-                productTitle={product?.product_title}
-                shopName={product?.shop_name || 'SilverCraft'}
-            />
-            <Box display="flex" justifyContent="center" mt={2}>
-                <Button variant="outlined" size="small"
-                    onClick={() => setOpenAccordion(null)}
-                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                >
-                    Show Less
-                </Button>
-            </Box>
-        </AccordionDetails>
-    </Accordion>
+                            {/* Reviews */}
+                            <Accordion
+                                expanded={openAccordion === 'reviews'}
+                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'reviews' : null)}
+                            >
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography fontWeight={600}>Reviews</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <ProductReviews
+                                        reviews={product?.rating || []}
+                                        productTitle={product?.product_title}
+                                        shopName={product?.shop_name || 'SilverCraft'}
+                                        reviewData={reviewData}
+                                        page={page} setPage={setPage}
+                                        reviewType={reviewType} setReviewType={setReviewType}
+                                        openImageDialog={handleImageDialogOpen}
+                                    />
+                                    <Box display="flex" justifyContent="center" mt={2}>
+                                        <Button variant="outlined" size="small"
+                                            onClick={() => setOpenAccordion(null)}
+                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                                        >
+                                            Show Less
+                                        </Button>
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
 
-    {/* Shipping */}
-    <Accordion
-        expanded={openAccordion === 'shipping'}
-        onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'shipping' : null)}
-    >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={600}>Shipping and Return Policies</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-            <DeliveryAndReturnPolicy product={product} />
-            <Box display="flex" justifyContent="center" mt={2}>
-                <Button variant="outlined" size="small"
-                    onClick={() => setOpenAccordion(null)}
-                    sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                >
-                    Show Less
-                </Button>
-            </Box>
-        </AccordionDetails>
-    </Accordion>
+                            {/* Shipping */}
+                            <Accordion
+                                expanded={openAccordion === 'shipping'}
+                                onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? 'shipping' : null)}
+                            >
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography fontWeight={600}>Shipping and Return Policies</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <DeliveryAndReturnPolicy product={product} />
+                                    <Box display="flex" justifyContent="center" mt={2}>
+                                        <Button variant="outlined" size="small"
+                                            onClick={() => setOpenAccordion(null)}
+                                            sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                                        >
+                                            Show Less
+                                        </Button>
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
 
-    {/* Custom Tabs */}
-    {(product?.tabs || []).map((tab, index) => (
-        <Accordion
-            key={index}
-            expanded={openAccordion === `custom-${index}`}
-            onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? `custom-${index}` : null)}
-        >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={600}>{tab?.title}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-                <HtmlRenderer html={tab?.description || ''} />
-                <Box display="flex" justifyContent="center" mt={2}>
-                    <Button variant="outlined" size="small"
-                        onClick={() => setOpenAccordion(null)}
-                        sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
-                    >
-                        Show Less
-                    </Button>
-                </Box>
-            </AccordionDetails>
-        </Accordion>
-    ))}
+                            {/* Custom Tabs */}
+                            {(product?.tabs || []).map((tab, index) => (
+                                <Accordion
+                                    key={index}
+                                    expanded={openAccordion === `custom-${index}`}
+                                    onChange={(_, isExpanded) => setOpenAccordion(isExpanded ? `custom-${index}` : null)}
+                                >
+                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                        <Typography fontWeight={600}>{tab?.title}</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                        <HtmlRenderer html={tab?.description || ''} />
+                                        <Box display="flex" justifyContent="center" mt={2}>
+                                            <Button variant="outlined" size="small"
+                                                onClick={() => setOpenAccordion(null)}
+                                                sx={{ textTransform: 'none', borderRadius: '30px', px: 3, fontWeight: 600 }}
+                                            >
+                                                Show Less
+                                            </Button>
+                                        </Box>
+                                    </AccordionDetails>
+                                </Accordion>
+                            ))}
 
-</Box>
+                        </Box>
 
                         {/* Content */}
                         <Box
@@ -837,14 +806,14 @@ const ProductTabs = ({ product }) => {
                             }}
                         >
                             <Box
-    id="description"
-    mb={6}
-    pt={3}
-    sx={{
-        display: { xs: 'none', md: 'block' },
-        pr: { xs: 0, md: 15 },
-    }}
->
+                                id="description"
+                                mb={6}
+                                pt={3}
+                                sx={{
+                                    display: { xs: 'none', md: 'block' },
+                                    pr: { xs: 0, md: 15 },
+                                }}
+                            >
                                 <Typography
                                     sx={{
                                         fontSize: { xs: '22px', md: '30px' },
@@ -859,32 +828,36 @@ const ProductTabs = ({ product }) => {
                                 </ExpandableDescription>
                             </Box>
 
-                            <Box 
-                            id="specifications" 
-                            mb={6}
-                            sx={{ display: { xs: 'none', md: 'block' } }}
+                            <Box
+                                id="specifications"
+                                mb={6}
+                                sx={{ display: { xs: 'none', md: 'block' } }}
                             >
                                 <Typography variant="h5" mb={2}>Product Specifications & Details</Typography>
                                 <ProductSpecifications product={product} />
                             </Box>
 
-                            <Box 
-                            id="reviews" 
-                            mb={6}
-                            sx={{ display: { xs: 'none', md: 'block' } }}
+                            <Box
+                                id="reviews"
+                                mb={6}
+                                sx={{ display: { xs: 'none', md: 'block' } }}
                             >
-                                <Typography variant="h5" mb={2}>Reviews</Typography>
+                                <Typography variant="h5" mb={2} fontWeight={600}>Reviews</Typography>
                                 <ProductReviews
                                     reviews={product?.rating || []}
                                     productTitle={product?.product_title}
                                     shopName={product?.shop_name || 'SilverCraft'}
+                                    reviewData={reviewData}
+                                    page={page} setPage={setPage}
+                                    reviewType={reviewType} setReviewType={setReviewType}
+                                    openImageDialog={handleImageDialogOpen}
                                 />
                             </Box>
 
-                            <Box 
-                            id="shipping" 
-                            mb={6}
-                            sx={{ display: { xs: 'none', md: 'block' } }}
+                            <Box
+                                id="shipping"
+                                mb={6}
+                                sx={{ display: { xs: 'none', md: 'block' } }}
                             >
 
                                 <Typography variant="h5" mb={2}>Shipping and Return Policies</Typography>
@@ -909,6 +882,277 @@ const ProductTabs = ({ product }) => {
                     </Box>
                 </Grid>
             </Grid>
+            <Dialog
+                open={open}
+                onClose={handleImageDialogClose}
+                maxWidth="lg"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        width: { xs: "90vw", sm: "80vw", md: "60vw", lg: "60vw" },
+                        maxWidth: "1000px",
+                        height: { xs: "70vh", sm: "90vh", md: "90vh", lg: "90vh" },
+                        maxHeight: "900px",
+                        borderRadius: 4,
+                        overflow: "hidden",
+                        position: "relative",
+                        bgcolor: "#e6e6e6",
+                        boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+                    },
+                }}
+            >
+
+                <DialogTitle>
+                    {/* Close Button - Top Right */}
+                    <IconButton
+                        onClick={handleImageDialogClose}
+                        sx={{
+                            position: "absolute",
+                            top: 20,
+                            right: 20,
+                            zIndex: 20,
+                            color: "rgba(255,255,255,0.8)",
+                            bgcolor: "rgba(0,0,0,0.4)",
+                            backdropFilter: "blur(8px)",
+                            transition: "all 0.2s",
+                            width: 38,
+                            height: 38,
+                            "&:hover": {
+                                bgcolor: "rgba(0,0,0,0.7)",
+                                color: "#fff",
+                                transform: "scale(1.05)",
+                            },
+                            "& .MuiSvgIcon-root": {
+                                fontSize: 20,
+                            },
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+
+                    {/* Counter - Top Left */}
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            top: 20,
+                            left: 24,
+                            zIndex: 20,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                        }}
+                    >
+                        <Typography
+                            sx={{
+                                fontSize: 13,
+                                fontWeight: 500,
+                                color: "rgba(255,255,255,0.7)",
+                                bgcolor: "rgba(0,0,0,0.4)",
+                                backdropFilter: "blur(8px)",
+                                px: 2,
+                                py: 0.75,
+                                borderRadius: 20,
+                                letterSpacing: "0.3px",
+                            }}
+                        >
+                            {activeImageIndex + 1} of {dialogImages.length}
+                        </Typography>
+                    </Box>
+
+                </DialogTitle>
+
+                {/* Navigation Buttons */}
+                {dialogImages.length > 1 && (
+                    <>
+                        {/* Previous Button */}
+                        <IconButton
+                            onClick={handlePrev}
+                            sx={{
+                                position: "absolute",
+                                left: 24,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                zIndex: 20,
+                                bgcolor: "rgba(92, 92, 92, 0.18)",
+                                backdropFilter: "blur(8px)",
+                                color: "#fff",
+                                width: {
+                                    xs: 40,
+                                    sm: 48,
+                                    md: 56,
+                                },
+                                height: {
+                                    xs: 40,
+                                    sm: 48,
+                                    md: 56,
+                                },
+                                transition: "all 0.25s ease",
+                                border: "1px solid rgba(255,255,255,0.15)",
+                                "&:hover": {
+                                    bgcolor: "rgba(202, 202, 202, 0.25)",
+                                    transform: "translateY(-50%) scale(1.08)",
+                                    borderColor: "rgba(255,255,255,0.3)",
+                                },
+                                "&:active": {
+                                    transform: "translateY(-50%) scale(0.95)",
+                                },
+                            }}
+                        >
+                            <ChevronLeftIcon sx={{ fontSize: { xs: 24, sm: 28, md: 32, } }} />
+                        </IconButton>
+
+                        {/* Next Button */}
+                        <IconButton
+                            onClick={handleNext}
+                            sx={{
+                                position: "absolute",
+                                right: 24,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                zIndex: 20,
+                                bgcolor: "rgba(92, 92, 92, 0.18)",
+                                backdropFilter: "blur(8px)",
+                                color: "#fff",
+                                width: {
+                                    xs: 40,
+                                    sm: 48,
+                                    md: 56,
+                                },
+                                height: {
+                                    xs: 40,
+                                    sm: 48,
+                                    md: 56,
+                                },
+                                transition: "all 0.25s ease",
+                                border: "1px solid rgba(255,255,255,0.15)",
+                                "&:hover": {
+                                    bgcolor: "rgba(202,202,202,0.25)",
+                                    transform: "translateY(-50%) scale(1.08)",
+                                    borderColor: "rgba(255,255,255,0.3)",
+                                },
+                                "&:active": {
+                                    transform: "translateY(-50%) scale(0.95)",
+                                },
+                            }}
+                        >
+                            <ChevronRightIcon sx={{ fontSize: { xs: 24, sm: 28, md: 32, } }} />
+                        </IconButton>
+                    </>
+                )}
+
+                {/* Main Image Area */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: "calc(90% - 120px)",
+                        px: { xs: 2, sm: 4 },
+                        pt: { xs: 4, sm: 5 },
+                        pb: 2,
+                        position: "relative",
+                    }}
+                >
+                    <Box
+                        component="img"
+                        src={`https://api.agukart.com/uploads/ratings/${dialogImages[activeImageIndex]}`}
+                        alt={`Product image ${activeImageIndex + 1}`}
+                        sx={{
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            width: "auto",
+                            height: "auto",
+                            objectFit: "contain",
+                            borderRadius: 2,
+                            boxShadow: "0 4px 30px rgba(0,0,0,0.3)",
+                            transition: "all 0.3s ease",
+                            userSelect: "none",
+                            WebkitUserDrag: "none",
+                        }}
+                    />
+                </Box>
+
+                {/* Thumbnail Strip - Bottom */}
+                {dialogImages.length > 1 && (
+                    <DialogActions
+                        sx={{
+                            display: "flex", justifyContent: "center"
+                        }}
+                    >
+
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 1.5,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                px: { xs: 2, sm: 4 },
+                                py: 1,
+                                overflowX: "auto",
+                                overflowY: "hidden",
+                                "&::-webkit-scrollbar": {
+                                    height: 4,
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                    bgcolor: "rgba(255,255,255,0.2)",
+                                    borderRadius: 10,
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                    bgcolor: "transparent",
+                                },
+                                position: "relative",
+                                zIndex: 5,
+                            }}
+                        >
+                            {dialogImages.map((img, index) => (
+                                <Box
+                                    key={index}
+                                    onClick={() => setActiveImageIndex(index)}
+                                    sx={{
+                                        width: 80,
+                                        height: 80,
+                                        minWidth: 80,
+                                        flexShrink: 0,
+                                        borderRadius: 2,
+                                        overflow: "hidden",
+                                        cursor: "pointer",
+                                        position: "relative",
+                                        border: index === activeImageIndex
+                                            ? "3px solid #cb9090"
+                                            : "2px solid rgba(255,255,255,0.15)",
+                                        opacity: index === activeImageIndex ? 1 : 0.5,
+                                        transition: "all 0.1s ease",
+                                        transform: index === activeImageIndex
+                                            ? "scale(1.02)"
+                                            : "scale(1)",
+                                        "&:hover": {
+                                            opacity: 1,
+                                            transform: "scale(1.02)",
+                                            borderColor: "rgba(224, 168, 168, 0.4)",
+                                        },
+                                        "&:active": {
+                                            transform: "scale(0.98)",
+                                        },
+                                    }}
+                                >
+                                    <Box
+                                        component="img"
+                                        src={`https://api.agukart.com/uploads/ratings/${img}`}
+                                        alt={`Thumbnail ${index + 1}`}
+                                        sx={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                            display: "block",
+                                        }}
+                                    />
+                                </Box>
+                            ))}
+                        </Box>
+                    </DialogActions>
+                )}
+
+            </Dialog>
         </Box>
     );
 };
