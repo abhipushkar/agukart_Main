@@ -34,11 +34,12 @@ import SimilarProducts from "./SimilarProducts/SimilarProducts";
 import ShopProducts from "./ShopProducts/ShopProducts";
 import ReportItem from "./ReportItem";
 // Services
-import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
+import { getAPI, getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import useMyProvider from "hooks/useMyProvider";
 import ProductRating from "components/ProductRating/ProductRating";
 import ProductPricing from "components/ProductPricing/ProductPricing";
+import { limit } from "firebase/firestore";
 const MyproductDetails = ({ res }) => {
   // Hooks and Context
   const { currency } = useCurrency();
@@ -66,6 +67,9 @@ const MyproductDetails = ({ res }) => {
   const [hoveredCustomizationImage, setHoveredCustomizationImage] =
     useState(null);
   const pathname = useParams();
+  const [reviewData, setReviewData] = useState({});
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewType, setReviewType] = useState("shop");   // "item" || "shop"
 
   // Ref to track if we've already initialized variants from URL params
   const urlInitializedRef = useRef(false);
@@ -312,10 +316,10 @@ const MyproductDetails = ({ res }) => {
     calculateProductStock,
   ]);
   const handleCustomizationOptionHover = (option) => {
-    if (option.main_images.length > 0) {
+    if (option.main_images.filter(Boolean).length > 0) {
       setHoveredCustomizationImage({
         type: "hover-preview",
-        url: option.main_images[0],
+        url: option.main_images.filter(Boolean)?.[0],
         source: "customization",
         optionName: option.optionName,
       });
@@ -514,7 +518,7 @@ const MyproductDetails = ({ res }) => {
   );
 
   const toggleWishlist = Boolean(wishlistProductIds?.[myproduct?._id]);
-  console.log("wishlistProductIds",wishlistProductIds);
+  console.log("wishlistProductIds", wishlistProductIds);
   const getVendorDetailBySlug = async () => {
     if (!myproduct?.vendor_details?.slug) return;
     try {
@@ -679,6 +683,36 @@ const MyproductDetails = ({ res }) => {
     // Update URL without page reload
     window.history.replaceState({ path: newUrl }, "", newUrl);
   }, [selectedVariants, myproduct, searchParams, getVariantTypeByIdentifier]);
+
+
+  //effect to fetch review data 
+  useEffect(() => {
+    if (!myproduct) {
+      return;
+    }
+    const getProductReviews = async (product_id, vendor_id) => {
+      try {
+        const baseurl = '/product-reviews';
+        const queryPayload = {
+          product_id,
+          vendor_id,
+          review_type: reviewType,
+          page: reviewPage,
+          limit: 10
+        }
+        const url = `${baseurl}?${new URLSearchParams(queryPayload).toString()}`;
+        const res = await getAPI(url);
+        if (res.status === 200) {
+          setReviewData(res.data);
+          console.log("review data", res.data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    getProductReviews(myproduct._id, myproduct.vendor_id._id);
+  }, [myproduct, reviewPage, reviewType]);
+
 
   // Check if there are dependent internal variants (combined pricing)
   const hasDependentInternalVariants = useMemo(() => {
@@ -1283,29 +1317,40 @@ const MyproductDetails = ({ res }) => {
       sx={{
         width: "100%",
         overflowX: "auto",
+        overflowY: "hidden",
         whiteSpace: "nowrap",
-        justifyContent: "center",
-        display: { xs: "none", md: "flex" },
-        paddingLeft: { xs: "94px", md: 1 },
-        paddingRight: { xs: "25px", md: 1 },
-        pt: 0.2,
+        scrollbarWidth: "none",
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
+        py: {xs: 1, md: 0.25},
       }}
     >
       <Box
         sx={{
-          display: "inline-flex",
-          alignItems: "center",
+          display: "flex",
           justifyContent: "center",
           minWidth: "max-content",
+
+          px: {
+            xs: "25px",
+            md: 1,
+          },
         }}
       >
         <Breadcrumbs
           separator={<ChevronRightIcon fontSize="small" />}
           aria-label="breadcrumb"
+          sx={{
+            "& .MuiBreadcrumbs-ol": {
+              flexWrap: "nowrap",
+            },
+          }}
         >
           <Link href="/" color="inherit">
             Homepage
           </Link>
+
           {myproduct?.categories?.map((item) => (
             <Link
               key={item._id}
@@ -1662,7 +1707,7 @@ const MyproductDetails = ({ res }) => {
         </Grid>
       </Container>
       {/* Product Tabs */}
-      <ProductTabs product={myproduct} />
+      <ProductTabs product={myproduct} reviewData={reviewData} page={reviewPage} setPage={setReviewPage} reviewType={reviewType} setReviewType={setReviewType} />
       {/* Related Products */}
       {/* <SimilarProducts product_id={pathname.productId || myproduct?._id} /> */}
       {/* <ShopProducts product_id={pathname.productId || myproduct?._id} /> */}

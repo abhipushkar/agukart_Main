@@ -584,7 +584,7 @@ const DropdownCustomization = ({
 
   const handleOptionHover = (option) => {
     setHoveredOption(option);
-    if (onOptionHover && option.preview_image) {
+    if (onOptionHover && option.main_images.filter(Boolean).length > 0) {
       onOptionHover(option);
     }
   };

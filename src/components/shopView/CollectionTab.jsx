@@ -163,179 +163,195 @@ const CollectionTab = ({
   return (
     <>
       <Box
-  mt={1}
-  mb={2}
-  sx={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 2,
-  }}
->
-  {/* SEARCH */}
-  <Box
-    sx={{
-      flex: 1,
-      background: "#f7f7f7",
-      border: "1.5px solid #d6d6d6",
-      borderRadius: "14px",
-      px: 1.5,
-      height: "44px",
-      display: "flex",
-      alignItems: "center",
-    }}
-  >
-    <InputBase
-      placeholder="Search products..."
-      inputProps={{ "aria-label": "search" }}
-      sx={{
-        flex: 1,
-        fontSize: "14px",
-      }}
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-    />
+        mt={1}
+        mb={2}
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        {/* SEARCH */}
+        <Box
+          sx={{
+            flex: { xs: 1 },
+            maxWidth: { md: "500px" },
+            ml: { md: "auto" },
+            background: "#f7f7f7",
+            border: "1.5px solid #d6d6d6",
+            borderRadius: "14px",
+            px: 1.5,
+            height: "44px",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <InputBase
+            placeholder="Search products..."
+            inputProps={{ "aria-label": "search" }}
+            sx={{
+              flex: 1,
+              fontSize: "14px",
+            }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-    <SearchIcon sx={{ fontSize: "20px", color: "#666" }} />
-  </Box>
+          <SearchIcon sx={{ fontSize: "20px", color: "#666" }} />
+        </Box>
 
-  {/* DESKTOP SORT */}
-  <Box
-    sx={{
-      display: { xs: "none", md: "flex" },
-      alignItems: "center",
-      gap: 1,
-    }}
-  >
-    <Typography
-      color="grey.600"
-      sx={{
-        whiteSpace: "nowrap",
-      }}
-    >
-      Sort by:
-    </Typography>
+        {/* DESKTOP SORT */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "flex" },
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Typography
+            color="grey.600"
+            sx={{
+              whiteSpace: "nowrap",
+            }}
+          >
+            Sort by:
+          </Typography>
 
-    <TextField
-      select
-      size="small"
-      value={sortBy}
-      variant="outlined"
-      onChange={(e) => handleChangeSortBy(e.target.value)}
-      sx={{
-        minWidth: 170,
-        bgcolor: "#fff",
-        borderRadius: "10px",
-        ".MuiOutlinedInput-notchedOutline": {
-          border: "1px solid #d6d6d6",
-        },
-      }}
-    >
-      {SORT_OPTIONS.map((item) => (
-        <MenuItem key={item.value} value={item.value}>
-          {item.label}
-        </MenuItem>
-      ))}
-    </TextField>
-  </Box>
-</Box>
-      <Grid container spacing={3}>
+          <TextField
+            select
+            size="small"
+            value={sortBy}
+            variant="outlined"
+            onChange={(e) => handleChangeSortBy(e.target.value)}
+            sx={{
+              minWidth: 170,
+              bgcolor: "#fff",
+              borderRadius: "10px",
+              ".MuiOutlinedInput-notchedOutline": {
+                border: "1px solid #d6d6d6",
+              },
+            }}
+          >
+            {SORT_OPTIONS.map((item) => (
+              <MenuItem key={item.value} value={item.value}>
+                {item.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      </Box>
+      <Grid container spacing={3} sx={{ overflow: "visible" }}>
         <Grid item lg={2.5} md={3.5} xs={12}>
-          <Box sx={{ pr: { lg: 2, md: 2, xs: 0 } }}>
+          <Box
+            sx={{
+              position: "sticky",
+              top: 80, // Adjust based on your header height
+              alignSelf: "flex-start",
+              height: "fit-content",
+              maxHeight: "calc(100vh - 100px)", // Prevents overflow
+              overflowY: "auto", // Adds scroll if content is too tall
+              pr: {
+                lg: 2,
+                md: 2,
+                xs: 0,
+              },
+            }}
+          >
             <Box
-  sx={{
-    display: { xs: "flex", md: "none" },
-    alignItems: "center",
-    gap: 1.2,
-    mb: 1.5,
-  }}
->
-  <Select
-    value={selectedStoreId}
-    onChange={(e) => {
-      const value = e.target.value;
-      const currentParams = new URLSearchParams(window.location.search);
-      currentParams.set("store_id", value);
-      router.push(
-        `${window.location.pathname}?${currentParams.toString()}#collection`
-      );
-      setSelectedStoreId(value);
-    }}
-    sx={{
-      flex: 1,
-      borderRadius: "14px",
-      height: "44px",
-      bgcolor: "#fff",
-      border: "1.5px solid #d6d6d6",
-      "& .MuiSelect-select": {
-        fontSize: "14px",
-        py: 1.2,
-      },
-      "& fieldset": {
-        border: "none",
-      },
-    }}
-    displayEmpty
-  >
-    <MenuItem value="all">All ({stores?.length ?? 0})</MenuItem>
-    {stores?.map((store) => (
-      <MenuItem key={store._id} value={store._id}>
-        {store?.store_name?.charAt(0)?.toUpperCase() +
-          store?.store_name?.slice(1)?.toLowerCase()}
-      </MenuItem>
-    ))}
-  </Select>
+              sx={{
+                display: { xs: "flex", md: "none" },
+                alignItems: "center",
+                gap: 1.2,
+                mb: 1.5,
+              }}
+            >
+              <Select
+                value={selectedStoreId}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const currentParams = new URLSearchParams(window.location.search);
+                  currentParams.set("store_id", value);
+                  router.push(
+                    `${window.location.pathname}?${currentParams.toString()}#collection`
+                  );
+                  setSelectedStoreId(value);
+                }}
+                sx={{
+                  flex: 1,
+                  borderRadius: "14px",
+                  height: "44px",
+                  bgcolor: "#fff",
+                  border: "1.5px solid #d6d6d6",
+                  "& .MuiSelect-select": {
+                    fontSize: "14px",
+                    py: 1.2,
+                  },
+                  "& fieldset": {
+                    border: "none",
+                  },
+                }}
+                displayEmpty
+              >
+                <MenuItem value="all">All ({stores?.length ?? 0})</MenuItem>
+                {stores?.map((store) => (
+                  <MenuItem key={store._id} value={store._id}>
+                    {store?.store_name?.charAt(0)?.toUpperCase() +
+                      store?.store_name?.slice(1)?.toLowerCase()}
+                  </MenuItem>
+                ))}
+              </Select>
 
-  <Box sx={{ position: "relative" }}>
-  <IconButton
-    onClick={() => setShowSortMenu((prev) => !prev)}
-    sx={{
-      border: "1.5px solid #d6d6d6",
-borderRadius: "12px",
-height: "44px",
-width: "44px",
-      bgcolor: "#fff",
-    }}
-  >
-    <SortIcon sx={{ fontSize: "22px", color: "#555" }} />
-  </IconButton>
+              <Box sx={{ position: "relative" }}>
+                <IconButton
+                  onClick={() => setShowSortMenu((prev) => !prev)}
+                  sx={{
+                    border: "1.5px solid #d6d6d6",
+                    borderRadius: "12px",
+                    height: "44px",
+                    width: "44px",
+                    bgcolor: "#fff",
+                  }}
+                >
+                  <SortIcon sx={{ fontSize: "22px", color: "#555" }} />
+                </IconButton>
 
-  {showSortMenu && (
-  <Box
-    sx={{
-      display: { xs: "block", md: "none" },
-      position: "absolute",
-      top: "52px",
-      right: 0,
-      width: "180px",
-      bgcolor: "#fff",
-      border: "1px solid #e0e0e0",
-      borderRadius: "12px",
-      boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
-      zIndex: 20,
-      p: 1,
-    }}
-  >
-    <TextField
-      select
-      fullWidth
-      size="small"
-      value={sortBy}
-      onChange={(e) => {
-        handleChangeSortBy(e.target.value);
-        setShowSortMenu(false);
-      }}
-    >
-      {SORT_OPTIONS.map((item) => (
-        <MenuItem key={item.value} value={item.value}>
-          {item.label}
-        </MenuItem>
-      ))}
-    </TextField>
-  </Box>
-)}
-</Box>
-</Box>
+                {showSortMenu && (
+                  <Box
+                    sx={{
+                      display: { xs: "block", md: "none" },
+                      position: "absolute",
+                      top: "52px",
+                      right: 0,
+                      width: "180px",
+                      bgcolor: "#fff",
+                      border: "1px solid #e0e0e0",
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+                      zIndex: 20,
+                      p: 1,
+                    }}
+                  >
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      value={sortBy}
+                      onChange={(e) => {
+                        handleChangeSortBy(e.target.value);
+                        setShowSortMenu(false);
+                      }}
+                    >
+                      {SORT_OPTIONS.map((item) => (
+                        <MenuItem key={item.value} value={item.value}>
+                          {item.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Box>
+                )}
+              </Box>
+            </Box>
             <List
               sx={{
                 borderRight: { md: "1px solid #d6d6d6", xs: "none" },
