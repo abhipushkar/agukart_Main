@@ -246,7 +246,7 @@ const CollectionTab = ({
           <Box
             sx={{
               position: "sticky",
-              top: 80, // Adjust based on your header height
+              top: 0, // Adjust based on your header height
               alignSelf: "flex-start",
               height: "fit-content",
               maxHeight: "calc(100vh - 100px)", // Prevents overflow
