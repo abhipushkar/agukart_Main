@@ -296,7 +296,7 @@ const ShopView = () => {
       {loading ? (
         <VendorProfileShimmer />
       ) : Object.values(vendorDetail || {}).length > 0 ? (
-        <Box sx={{overflowX:"hidden"}}>
+        <Box sx={{ overflow: "visible" }}>
           <Box
             sx={{
               position: "relative",
@@ -424,8 +424,8 @@ const ShopView = () => {
               />
             )}
           </Box>
-         <SectionCreator
-  px={{ xs: 0, md: 0 }} py={vendorDetail.shop_banner.length > 1 ? 0: 1} mb={0}>
+          <SectionCreator
+            px={{ xs: 0, md: 0 }} py={vendorDetail.shop_banner.length > 1 ? 0 : 1} mb={0} sx={{ overflow: "visible" }}>
             <Box
               container
               pb={3}
@@ -461,267 +461,267 @@ const ShopView = () => {
                       md: "800px", // desktop and up
                     },
                     flexDirection: "row",
-alignItems: "flex-start",
-gap: 1.5,
+                    alignItems: "flex-start",
+                    gap: 1.5,
                   }}
                 >
                   <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-  <img
-  alt="banner"
-  style={{ 
-  height: "92px", 
-  width: "92px",
-  minWidth: "92px",
-  objectFit: "cover",
-  borderRadius: "14px",
-  border: "1px solid #e5e5e5",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.08)"
-}}
-  src={vendorDetail?.shop_icon}
-/>
-  {/* Stars below icon - mobile only */}
-  <Box sx={{ 
-    display: { xs: "flex", md: "none" }, 
-    mt: 0.5 
-  }}>
-    <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-    <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-    <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-    <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-    <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-  </Box>
-</Box>
+                    <img
+                      alt="banner"
+                      style={{
+                        height: "92px",
+                        width: "92px",
+                        minWidth: "92px",
+                        objectFit: "cover",
+                        borderRadius: "14px",
+                        border: "1px solid #e5e5e5",
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.08)"
+                      }}
+                      src={vendorDetail?.shop_icon}
+                    />
+                    {/* Stars below icon - mobile only */}
+                    <Box sx={{
+                      display: { xs: "flex", md: "none" },
+                      mt: 0.5
+                    }}>
+                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
+                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
+                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
+                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
+                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
+                    </Box>
+                  </Box>
                   <Typography
-  component="div"
-  sx={{
-    width: "100%",
-    ml: { xs: 1, md: 2 },
-    flex: 1,
-    minWidth: 0,
-  }}
->
-  {/* Top row: name + stars */}
-  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
-    <Typography
-  variant="h6"
-  sx={{
-    fontSize: { lg: "22px", md: "20px", xs: "18px" },
-    fontWeight: 700,
-    letterSpacing: "0.2px",
-    lineHeight: 1.3,
-    color: "#222",
+                    component="div"
+                    sx={{
+                      width: "100%",
+                      ml: { xs: 1, md: 2 },
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {/* Top row: name + stars */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontSize: { lg: "22px", md: "20px", xs: "18px" },
+                          fontWeight: 700,
+                          letterSpacing: "0.2px",
+                          lineHeight: 1.3,
+                          color: "#222",
 
-    display: "-webkit-box",
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: "vertical",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    wordBreak: "break-word",
-  }}
->
-  {vendorDetail?.shop_name}
-</Typography>
-  </Box>
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {vendorDetail?.shop_name}
+                      </Typography>
+                    </Box>
 
-  {/* Shop title */}
-  <Typography
-  sx={{
-    fontSize: "14px",
-    fontWeight: 600,
-    color: "#444",
-    mt: 0.3,
-  }}
->
-  {vendorDetail?.shop_title}
-</Typography>
+                    {/* Shop title */}
+                    <Typography
+                      sx={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#444",
+                        mt: 0.3,
+                      }}
+                    >
+                      {vendorDetail?.shop_title}
+                    </Typography>
 
-  {/* Address */}
-  <Typography
-  sx={{
-    fontSize: "13px",
-    color: "#777",
-    mt: 0.4,
-    lineHeight: 1.4,
-  }}
->
-    {vendorDetail?.shop_address}
-  </Typography>
+                    {/* Address */}
+                    <Typography
+                      sx={{
+                        fontSize: "13px",
+                        color: "#777",
+                        mt: 0.4,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {vendorDetail?.shop_address}
+                    </Typography>
 
-  {/* Icons row - only mobile */}
-  {/* Icons + Announcement row - mobile */}
-<Box
-  sx={{
-    mt: 0,
-    mb: 0,
-    display: { xs: "flex", md: "none" },
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 1,
-    mt: 0.5,
-    width: "100%",
-  }}
->
+                    {/* Icons row - only mobile */}
+                    {/* Icons + Announcement row - mobile */}
+                    <Box
+                      sx={{
+                        mt: 0,
+                        mb: 0,
+                        display: { xs: "flex", md: "none" },
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1,
+                        mt: 0.5,
+                        width: "100%",
+                      }}
+                    >
 
-{vendorDetail?.shop_announcement?.trim() && (
-      <Box
-        onClick={() => {
-  if (window.innerWidth < 900) {
-    setOpenAnnouncementModal(true);
-  } else {
-    setAnnouncementShowMore((prev) => !prev);
-  }
-}}
-        sx={{
-          background: "#fff",
-          borderRadius: "20px",
-          px: 1.5,
-          py: 0.3,
-          cursor: "pointer",
-          flexShrink: 0,
-          border: "1px solid #e0e0e0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      >
-        <Typography fontSize="12px">
-          Announcement
-        </Typography>
-      </Box>
-    )}
+                      {vendorDetail?.shop_announcement?.trim() && (
+                        <Box
+                          onClick={() => {
+                            if (window.innerWidth < 900) {
+                              setOpenAnnouncementModal(true);
+                            } else {
+                              setAnnouncementShowMore((prev) => !prev);
+                            }
+                          }}
+                          sx={{
+                            background: "#fff",
+                            borderRadius: "20px",
+                            px: 1.5,
+                            py: 0.3,
+                            cursor: "pointer",
+                            flexShrink: 0,
+                            border: "1px solid #e0e0e0",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          <Typography fontSize="12px">
+                            Announcement
+                          </Typography>
+                        </Box>
+                      )}
 
-  {/* RIGHT SIDE ICONS */}
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      gap: 1,
-    }}
-  >
-    {/* Heart + count */}
-    <Box
-      onClick={toggelFollowShopHandler}
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 0.3,
-        background: followed ? "#fff0f0" : "#fff",
-        borderRadius: "20px",
-        px: 1,
-        py: 0.3,
-        cursor: "pointer",
-        border: followed
-          ? "1px solid #ffcdd2"
-          : "1px solid #e0e0e0",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-      }}
-    >
-      {followed ? (
-        <FavoriteIcon
-          sx={{ fontSize: "16px", color: "red" }}
-        />
-      ) : (
-        <FavoriteBorderIcon sx={{ fontSize: "16px" }} />
-      )}
+                      {/* RIGHT SIDE ICONS */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        {/* Heart + count */}
+                        <Box
+                          onClick={toggelFollowShopHandler}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.3,
+                            background: followed ? "#fff0f0" : "#fff",
+                            borderRadius: "20px",
+                            px: 1,
+                            py: 0.3,
+                            cursor: "pointer",
+                            border: followed
+                              ? "1px solid #ffcdd2"
+                              : "1px solid #e0e0e0",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          {followed ? (
+                            <FavoriteIcon
+                              sx={{ fontSize: "16px", color: "red" }}
+                            />
+                          ) : (
+                            <FavoriteBorderIcon sx={{ fontSize: "16px" }} />
+                          )}
 
-      <Typography fontSize="12px">
-        {vendorDetail?.followersCount || "0"}
-      </Typography>
-    </Box>
+                          <Typography fontSize="12px">
+                            {vendorDetail?.followersCount || "0"}
+                          </Typography>
+                        </Box>
 
-    {/* Share */}
-    <Box
-      onClick={() => setOpenModal(true)}
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#fff",
-        borderRadius: "50%",
-        width: "34px",
-        height: "34px",
-        cursor: "pointer",
-        border: "1px solid #e0e0e0",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-      }}
-    >
-      <IosShareIcon sx={{ fontSize: "16px" }} />
-    </Box>
+                        {/* Share */}
+                        <Box
+                          onClick={() => setOpenModal(true)}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#fff",
+                            borderRadius: "50%",
+                            width: "34px",
+                            height: "34px",
+                            cursor: "pointer",
+                            border: "1px solid #e0e0e0",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          <IosShareIcon sx={{ fontSize: "16px" }} />
+                        </Box>
 
-    {/* Mail */}
-    <Box
-      onClick={handleClickPopup}
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#fff",
-        borderRadius: "50%",
-        width: "34px",
-        height: "34px",
-        cursor: "pointer",
-        border: "1px solid #e0e0e0",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-      }}
-    >
-      <MailOutlineIcon sx={{ fontSize: "16px" }} />
-    </Box>
-  </Box>
-</Box>
+                        {/* Mail */}
+                        <Box
+                          onClick={handleClickPopup}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#fff",
+                            borderRadius: "50%",
+                            width: "34px",
+                            height: "34px",
+                            cursor: "pointer",
+                            border: "1px solid #e0e0e0",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          <MailOutlineIcon sx={{ fontSize: "16px" }} />
+                        </Box>
+                      </Box>
+                    </Box>
 
-  {/* Desktop stars + follow button (unchanged) */}
-  <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1, mt: 1 }}>
-    <StarIcon sx={{ fontSize: "20px" }} />
-    <StarIcon sx={{ fontSize: "20px" }} />
-    <StarIcon sx={{ fontSize: "20px" }} />
-    <StarIcon sx={{ fontSize: "20px" }} />
-    <StarIcon sx={{ fontSize: "20px" }} />
-  </Box>
-  <Box mt={1.5} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
-    <Button
-      onClick={toggelFollowShopHandler}
-      sx={{
-        background: "#222",
-border: "1px solid #222",
-borderRadius: "999px",
-padding: "8px 22px",
-color: "#fff",
-fontWeight: 600,
-textTransform: "none",
-boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-"&:hover": {
-  background: "#000",
-}
-      }}
-    >
-      {isWishlist ? <FavoriteIcon sx={{ color: "red" }} /> : <FavoriteBorderIcon sx={{ marginRight: "6px" }} />}
-      {isWishlist ? "Following" : "Follow"}
-    </Button>
-    <Button onClick={() => setOpenModal(true)} sx={{
-      zIndex: "99", background: "#fff", boxShadow: "0 0 3px #696969",
-      borderRadius: "50%", height: "30px", width: "30px",
-      alignItems: "center", justifyContent: "center",
-      "&:hover": { background: "#fff", boxShadow: "0 0 4px #000" },
-    }}>
-      <IosShareIcon sx={{ width: "19px", height: "19px" }} />
-    </Button>
-  </Box>
-</Typography>
+                    {/* Desktop stars + follow button (unchanged) */}
+                    <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1, mt: 1 }}>
+                      <StarIcon sx={{ fontSize: "20px" }} />
+                      <StarIcon sx={{ fontSize: "20px" }} />
+                      <StarIcon sx={{ fontSize: "20px" }} />
+                      <StarIcon sx={{ fontSize: "20px" }} />
+                      <StarIcon sx={{ fontSize: "20px" }} />
+                    </Box>
+                    <Box mt={1.5} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
+                      <Button
+                        onClick={toggelFollowShopHandler}
+                        sx={{
+                          background: "#222",
+                          border: "1px solid #222",
+                          borderRadius: "999px",
+                          padding: "8px 22px",
+                          color: "#fff",
+                          fontWeight: 600,
+                          textTransform: "none",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                          "&:hover": {
+                            background: "#000",
+                          }
+                        }}
+                      >
+                        {isWishlist ? <FavoriteIcon sx={{ color: "red" }} /> : <FavoriteBorderIcon sx={{ marginRight: "6px" }} />}
+                        {isWishlist ? "Following" : "Follow"}
+                      </Button>
+                      <Button onClick={() => setOpenModal(true)} sx={{
+                        zIndex: "99", background: "#fff", boxShadow: "0 0 3px #696969",
+                        borderRadius: "50%", height: "30px", width: "30px",
+                        alignItems: "center", justifyContent: "center",
+                        "&:hover": { background: "#fff", boxShadow: "0 0 4px #000" },
+                      }}>
+                        <IosShareIcon sx={{ width: "19px", height: "19px" }} />
+                      </Button>
+                    </Box>
+                  </Typography>
                 </Box>
               </Box>
               {vendorDetail?.shop_announcement && (
-  <Box
-    mb={{ lg: "0", md: "0", xs: "16px" }}
-    sx={{
-      paddingTop: "0",
-      width: {
-        xs: "100%",
-        md: "492px",
-      },
-      display: {
-        xs: "none", // 👈 mobile pe hide, desktop pe dikhega
-        md: "block",
-      },
-    }}
-  >
+                <Box
+                  mb={{ lg: "0", md: "0", xs: "16px" }}
+                  sx={{
+                    paddingTop: "0",
+                    width: {
+                      xs: "100%",
+                      md: "492px",
+                    },
+                    display: {
+                      xs: "none", // 👈 mobile pe hide, desktop pe dikhega
+                      md: "block",
+                    },
+                  }}
+                >
                   <Box sx={{ textAlign: "center" }}>
                     <Typography fontWeight={600} fontSize={18}>
                       Announcement
@@ -755,9 +755,9 @@ boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
                     md: "10%", // desktop and up
                   },
                   display: {
-  xs: "none", // 👈 block se none karo
-  md: "flex",
-},
+                    xs: "none", // 👈 block se none karo
+                    md: "flex",
+                  },
                   flexDirection: {
                     md: "column",
                   },
@@ -782,11 +782,11 @@ boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
                     alt="banner"
                     style={{
                       height: "92px",
-width: "92px",
+                      width: "92px",
                       objectFit: "cover",
                       borderRadius: "50%",
                       border: "1px solid #ddd",
-boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+                      boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
                     }}
                     src={vendorDetail?.vendor_image}
                   />
@@ -817,21 +817,21 @@ boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
             <Box
               mb={0}
               sx={{
-                position: "sticky",
-top: 0,
-zIndex: 99,
-background: "#fff",
-py: 0.3,
-                width: "100%",
+                position: {xs: "sticky", sm: "sticky", md: "static", lg: "static"},
+                top: {xs: 0, sm: 0},
+                zIndex: 99,
+                background: "#fff",
+                py: {xs: 0.8, sm: 0.8, md: 0.3, lg: 0.3},
+                width: {xs: "100%", sm: "100%", md: "70%", lg: "73%"},
                 display: { lg: "flex", md: "flex", xs: "block" },
                 alignItems: "center",
                 marginTop: {
                   xs: 0,
-                  md: announcementShowMore ? "8px" : "-30px", //adjustment made to push tabs in same row as follow button but below See More 
+                  md: announcementShowMore ? "8px" : "-58px", //adjustment made to push tabs in same row as follow button but below See More 
                 },
                 marginLeft: {
                   xs: 0,
-                  md: "24%",
+                  md: "26%",
                 },
                 gap: {
                   xs: 0,
@@ -849,55 +849,55 @@ py: 0.3,
                   <Grid item xs={12} sx={{ padding: "0 !important" }}>
                     <Box sx={{ width: "100%" }}>
                       <FlexBox
-  gap={{ xs: 0, md: 2 }}
-  sx={{
-    flexWrap: "wrap",
-    justifyContent: {
-      xs: "space-between",
-      sm: "space-around",
-      md: "flex-start",
-    },
-  }}
->
-  {["home", "collection", "reviews", "about", "shop-policies"].map((id) => (
-    <Typography
-      key={id}
-      onClick={() => scrollToSection(id)}
-      sx={{
-        cursor: "pointer",
-        fontWeight: 600,
-fontSize: "15px",
-pb: 0.4,
-color: "#555",
-transition: "all .2s ease",
-position: "relative",
-borderBottom:
-  id === "home"
-    ? "2px solid #000"
-    : "2px solid transparent",
-"&:hover": { borderBottom: "2px solid #000" },
-"&::after": {
-  content: '""',
-  position: "absolute",
-  left: 0,
-  bottom: 0,
-  width: id === "home" ? "100%" : "0%",
-  height: "2px",
-  background: "#000",
-  transition: "0.3s",
-},
-"&:hover::after": {
-  width: "100%",
-},
-        borderBottom: "2px solid transparent",
-        "&:hover": { borderBottom: "2px solid #000" },
-        textTransform: "capitalize",
-      }}
-    >
-      {id === "shop-policies" ? "Policies" : id.charAt(0).toUpperCase() + id.slice(1)}
-    </Typography>
-  ))}
-</FlexBox>
+                        gap={{ xs: 0, md: 2 }}
+                        sx={{
+                          flexWrap: "wrap",
+                          justifyContent: {
+                            xs: "space-between",
+                            sm: "space-around",
+                            md: "flex-start",
+                          },
+                        }}
+                      >
+                        {["home", "collection", "reviews", "about", "shop-policies"].map((id) => (
+                          <Typography
+                            key={id}
+                            onClick={() => scrollToSection(id)}
+                            sx={{
+                              cursor: "pointer",
+                              fontWeight: 600,
+                              fontSize: "15px",
+                              pb: 0.4,
+                              color: "#555",
+                              transition: "all .2s ease",
+                              position: "relative",
+                              borderBottom:
+                                id === "home"
+                                  ? "2px solid #000"
+                                  : "2px solid transparent",
+                              "&:hover": { borderBottom: "2px solid #000" },
+                              "&::after": {
+                                content: '""',
+                                position: "absolute",
+                                left: 0,
+                                bottom: 0,
+                                width: id === "home" ? "100%" : "0%",
+                                height: "2px",
+                                background: "#000",
+                                transition: "0.3s",
+                              },
+                              "&:hover::after": {
+                                width: "100%",
+                              },
+                              borderBottom: "2px solid transparent",
+                              "&:hover": { borderBottom: "2px solid #000" },
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {id === "shop-policies" ? "Policies" : id.charAt(0).toUpperCase() + id.slice(1)}
+                          </Typography>
+                        ))}
+                      </FlexBox>
                     </Box>
                   </Grid>
                 </Grid>
@@ -907,9 +907,10 @@ borderBottom:
               sx={{
                 flexGrow: 1,
                 height: '1px',
-backgroundColor: '#ececec',
-                position: "relative",
-                top: -22
+                backgroundColor: '#e0e0e0',
+                position: {xs: "sticky", sm: "sticky", md: "relative", lg: "relative"},
+                top: {xs: 40, sm: 40, md: 5, lg: 5},
+                zIndex: 99
               }}
             />
             <Box>
@@ -967,133 +968,133 @@ backgroundColor: '#ececec',
             />
           </div>
           <div>
-  <Modal
-    open={openAnnouncementModal}
-    onClose={() => setOpenAnnouncementModal(false)}
-  >
-    <Box
-      sx={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "92%",
-        maxWidth: "430px",
-        bgcolor: "#fff",
-        borderRadius: "24px",
-        overflow: "hidden",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.18)",
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "1px solid #f1f1f1",
-          background:
-            "linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)",
-        }}
-      >
-        <Box>
-          <Typography
-            sx={{
-              fontSize: "18px",
-              fontWeight: 700,
-              color: "#111",
-              letterSpacing: "0.2px",
-            }}
-          >
-            📢 Announcement
-          </Typography>
+            <Modal
+              open={openAnnouncementModal}
+              onClose={() => setOpenAnnouncementModal(false)}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "92%",
+                  maxWidth: "430px",
+                  bgcolor: "#fff",
+                  borderRadius: "24px",
+                  overflow: "hidden",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.18)",
+                }}
+              >
+                {/* Header */}
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #f1f1f1",
+                    background:
+                      "linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)",
+                  }}
+                >
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontSize: "18px",
+                        fontWeight: 700,
+                        color: "#111",
+                        letterSpacing: "0.2px",
+                      }}
+                    >
+                      📢 Announcement
+                    </Typography>
 
-          <Typography
-            sx={{
-              fontSize: "12px",
-              color: "#777",
-              mt: 0.3,
-            }}
-          >
-            Latest update from this shop
-          </Typography>
-        </Box>
+                    <Typography
+                      sx={{
+                        fontSize: "12px",
+                        color: "#777",
+                        mt: 0.3,
+                      }}
+                    >
+                      Latest update from this shop
+                    </Typography>
+                  </Box>
 
-        <Button
-          onClick={() => setOpenAnnouncementModal(false)}
-          sx={{
-            minWidth: "unset",
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "#fff",
-            border: "1px solid #e5e5e5",
-            color: "#222",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            "&:hover": {
-              background: "#f7f7f7",
-            },
-          }}
-        >
-          <CloseIcon sx={{ fontSize: "18px" }} />
-        </Button>
-      </Box>
+                  <Button
+                    onClick={() => setOpenAnnouncementModal(false)}
+                    sx={{
+                      minWidth: "unset",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: "#fff",
+                      border: "1px solid #e5e5e5",
+                      color: "#222",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      "&:hover": {
+                        background: "#f7f7f7",
+                      },
+                    }}
+                  >
+                    <CloseIcon sx={{ fontSize: "18px" }} />
+                  </Button>
+                </Box>
 
-      {/* Content */}
-      <Box
-        sx={{
-          px: 3,
-          py: 3,
-          maxHeight: "60vh",
-          overflowY: "auto",
-        }}
-      >
-        <Typography
-          sx={{
-            fontSize: "14px",
-            color: "#444",
-            lineHeight: 1.9,
-            whiteSpace: "pre-line",
-          }}
-        >
-          {vendorDetail?.shop_announcement}
-        </Typography>
-      </Box>
+                {/* Content */}
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 3,
+                    maxHeight: "60vh",
+                    overflowY: "auto",
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: "14px",
+                      color: "#444",
+                      lineHeight: 1.9,
+                      whiteSpace: "pre-line",
+                    }}
+                  >
+                    {vendorDetail?.shop_announcement}
+                  </Typography>
+                </Box>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          borderTop: "1px solid #f1f1f1",
-          display: "flex",
-          justifyContent: "flex-end",
-          background: "#fafafa",
-        }}
-      >
-        <Button
-          onClick={() => setOpenAnnouncementModal(false)}
-          sx={{
-            textTransform: "none",
-            background: "#111",
-            color: "#fff",
-            px: 3,
-            py: 0.3,
-            borderRadius: "999px",
-            fontWeight: 600,
-            "&:hover": {
-              background: "#000",
-            },
-          }}
-        >
-          Got it
-        </Button>
-      </Box>
-    </Box>
-  </Modal>
-</div>
+                {/* Footer */}
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 2,
+                    borderTop: "1px solid #f1f1f1",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    background: "#fafafa",
+                  }}
+                >
+                  <Button
+                    onClick={() => setOpenAnnouncementModal(false)}
+                    sx={{
+                      textTransform: "none",
+                      background: "#111",
+                      color: "#fff",
+                      px: 3,
+                      py: 0.3,
+                      borderRadius: "999px",
+                      fontWeight: 600,
+                      "&:hover": {
+                        background: "#000",
+                      },
+                    }}
+                  >
+                    Got it
+                  </Button>
+                </Box>
+              </Box>
+            </Modal>
+          </div>
           <div>
             <Modal
               open={openModal}
