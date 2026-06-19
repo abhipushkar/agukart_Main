@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -13,6 +12,7 @@ import SimilarProducts from "pages-sections/product-details/page-view/SimilarPro
 import ShopProducts from "pages-sections/product-details/page-view/ShopProducts/ShopProducts";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+export const dynamic = "force-dynamic";
 
 /* =========================================================
    HELPERS
@@ -37,22 +37,18 @@ const normalizeKeywords = (keywords) => {
    CACHED PRODUCT FETCH
 ========================================================= */
 
-const getProductData = cache(async (product_code) => {
-    const res = await fetch(
-        `${baseUrl}/get-productById?productId=${product_code}`,
-        {
-            next: {
-                revalidate: 5,
-            },
-        }
-    );
-
-    if (!res.ok) {
-        return null;
+const getProductData = async (product_code) => {
+  const res = await fetch(
+    `${baseUrl}/get-productById?productId=${product_code}`,
+    {
+      cache: "no-store",
     }
+  );
 
-    return res.json();
-});
+  if (!res.ok) return null;
+
+  return res.json();
+};
 
 /* =========================================================
    SEO METADATA

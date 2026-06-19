@@ -1227,7 +1227,12 @@ const MyproductDetails = ({ res }) => {
         }
       }
     } catch (error) {
+      const errorMsg = error.response.data.message;
       console.error("Error adding to cart:", error);
+      addToast(errorMsg, {
+        appearance: "error",
+        autoDismiss: true,
+      });
     }
   };
   const getVariantData = () => {
@@ -1323,7 +1328,7 @@ const MyproductDetails = ({ res }) => {
         "&::-webkit-scrollbar": {
           display: "none",
         },
-        py: {xs: 1, md: 0.25},
+        py: { xs: 1, md: 0.25 },
       }}
     >
       <Box

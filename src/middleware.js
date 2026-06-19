@@ -29,9 +29,7 @@ export async function middleware(request) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/product/${slug}/${product_code}`,
           {
-            next: {
-              revalidate: 300,
-            },
+            cache: "no-store",
           }
         );
 
@@ -63,7 +61,7 @@ export async function middleware(request) {
         `${process.env.NEXT_PUBLIC_BASE_URL}/${slugPath}`,
         {
           next: {
-            revalidate: 300,
+            revalidate: 10,
           },
         }
       );
@@ -95,7 +93,7 @@ export async function middleware(request) {
           `${process.env.NEXT_PUBLIC_BASE_URL}/store/${slug}`,
           {
             next: {
-              revalidate: 300,
+              revalidate: 10,
             },
           }
         );

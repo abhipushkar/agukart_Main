@@ -50,6 +50,7 @@ import { CountryModal } from "./country_modal";
 import { Sell } from "@mui/icons-material";
 import { validateCartItem, getCartCheckoutErrorMessage } from "../utils/validateCartItem";
 import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
+import { productQuantityMap } from "../utils/buildCombinationIdentity";
 
 const Mycart = () => {
   const { currency } = useCurrency();
@@ -503,13 +504,20 @@ const Mycart = () => {
     sum + vendor.products.reduce((total, product) => total + product.qty, 0),
     0);
 
+  const quantityMap = useMemo(() => {
+    if (!state?.cart) return null;
+    const products = state?.cart.flatMap(vendor => vendor.products);
+    console.log(productQuantityMap(products), "qtymap");
+    return productQuantityMap(products);
+  }, [state?.cart]);
+
   const checkoutValidation = useMemo(() => {
     for (const vendor of state?.cart || []) {
       for (const product of vendor?.products || []) {
 
         const identity = buildCartItemIdentity(product);
         const pendingQuantity = state?.cartRecoveryState?.[identity]?.quantity;
-        const validation = validateCartItem(product, { pendingQuantity });
+        const validation = validateCartItem(product, { pendingQuantity, quantityMap });
 
         if (validation.disableCheckout) {
           return {
@@ -649,6 +657,7 @@ const Mycart = () => {
                           voucherDetails={voucherDetails}
                           isSingleVendor={isSingleVendor}
                           validationMsg={errorMsg}
+                          quantityMap={quantityMap}
                         />
                       );
                     })

@@ -1,6 +1,7 @@
 // utils/validateCartItem.js
 import { resolveCartItemState } from "./resolveCartItemState";
 import { resolveCartStock } from "./resolveCartStock";
+import { buildCombinationIdentity } from "./buildCombinationIdentity";
 
 /**
  * Validates a cart item against current product data.
@@ -10,7 +11,8 @@ import { resolveCartStock } from "./resolveCartStock";
  * @returns {Object} Validation result
  */
 export const validateCartItem = (product, options = {}) => {
-    const { pendingQuantity, cartItem } = options;
+    const { pendingQuantity, cartItem, quantityMap } = options;
+
     const state = resolveCartItemState(product, cartItem || product);
     const pendingQty = pendingQuantity !== undefined && pendingQuantity !== null && pendingQuantity !== ""
         ? +pendingQuantity
@@ -138,14 +140,14 @@ export const validateCartItem = (product, options = {}) => {
     if (state.priceChangeType !== "none") {
         const isCombinationPriceChange = state.caseType === "COMBINATION_PRICE_CHANGED";
         const isCustomizationPriceChange = state.caseType === "CUSTOMIZATION_PRICE_CHANGED";
-        
+
         let message = "This item's price has changed. Please review.";
         if (isCombinationPriceChange) {
             message = "The price of this variation has changed. Please review.";
         } else if (isCustomizationPriceChange) {
             message = "The price of your customizations has changed. Please review.";
         }
-        
+
         return {
             valid: false,
             type: "PRICE_CHANGED",
@@ -177,7 +179,7 @@ export const validateCartItem = (product, options = {}) => {
     // --- 9. Stock validation (combination or main) ---
     const stockState = resolveCartStock(product);
     const currentStock = stockState.latestStock;
-    
+
     if (currentStock <= 0) {
         return {
             valid: false,
@@ -191,7 +193,7 @@ export const validateCartItem = (product, options = {}) => {
             resolvedState: state,
         };
     }
-    
+
     // --- 10. Quantity exceeds stock ---
     const effectiveQuantity = pendingQty !== undefined ? pendingQty : (+product?.qty || 0);
     if (effectiveQuantity > currentStock) {
@@ -203,6 +205,28 @@ export const validateCartItem = (product, options = {}) => {
             shouldResetQuantity: true,
             allowQuantitySelection: true,
             disableCheckout: false,
+            openEditDrawer: false,
+            resolvedState: state,
+        };
+    }
+
+    // --- 11. Aggregated quantity across identical variants exceeds stock ---
+    console.log("qtymap", quantityMap, currentStock);
+    let totalQuantity = 0;
+    if (quantityMap) {
+        const variantIdentity = buildCombinationIdentity(product);
+        totalQuantity = quantityMap[variantIdentity] || 0;
+    }
+
+    if (quantityMap && totalQuantity > currentStock) {
+        return {
+            valid: false,
+            type: "AGGREGATED_QUANTITY_EXCEEDS_STOCK",
+            caseType: "AGGREGATED_QUANTITY_EXCEEDS_STOCK",
+            message: `Total quantity (${totalQuantity}) for this variant exceeds available stock (${currentStock}). Please reduce quantity.`,
+            shouldResetQuantity: true,
+            allowQuantitySelection: true,
+            disableCheckout: true,
             openEditDrawer: false,
             resolvedState: state,
         };
@@ -225,33 +249,35 @@ export const validateCartItem = (product, options = {}) => {
 
 // Helper to get simple error message
 export const getCartCheckoutErrorMessage = (validation) => {
-  if (validation.valid) return null;
-  
-  switch (validation.type) {
-    case "VARIANT_SELECTION_REQUIRED":
-        return "Your Cart items need variant selection";
-    case "PARENT_VARIANT_REMOVED":
-    // case "COMBINATION_REMOVED":
-        
-    case "CUSTOMIZATION_REMOVED":
-        return "Your cart selection is either removed or no longer available";
-    case "CUSTOMIZATION_INCOMPLETE":
-      return "Some items in your cart need your attention. Please edit them.";
-    // case "PRICE_CHANGED":
-        
-    case "CUSTOMIZATION_PRICE_CHANGED":
-      return "Prices have changed for some items. Please review your cart.";
-    case "OUT_OF_STOCK":
-      return "Some items are out of stock. Please remove them to proceed.";
-    // case "PRODUCT_DELETED":
-        
-    // case "PRODUCT_INACTIVE":
-        
-    case "PRODUCT_UNAVAILABLE":
-      return "Some items are no longer available. Please remove them.";
-    case "QUANTITY_EXCEEDS_STOCK":
-      return "Quantity exceeds available stock for some items. Please adjust.";
-    default:
-      return "Please review your cart before checkout.";
-  }
+    if (validation.valid) return null;
+
+    switch (validation.type) {
+        case "VARIANT_SELECTION_REQUIRED":
+            return "Your Cart items need variant selection";
+        case "PARENT_VARIANT_REMOVED":
+        // case "COMBINATION_REMOVED":
+
+        case "CUSTOMIZATION_REMOVED":
+            return "Your cart selection is either removed or no longer available";
+        case "CUSTOMIZATION_INCOMPLETE":
+            return "Some items in your cart need your attention. Please edit them.";
+        // case "PRICE_CHANGED":
+
+        case "CUSTOMIZATION_PRICE_CHANGED":
+            return "Prices have changed for some items. Please review your cart.";
+        case "OUT_OF_STOCK":
+            return "Some items are out of stock. Please remove them to proceed.";
+        // case "PRODUCT_DELETED":
+
+        // case "PRODUCT_INACTIVE":
+
+        case "PRODUCT_UNAVAILABLE":
+            return "Some items are no longer available. Please remove them.";
+        case "QUANTITY_EXCEEDS_STOCK":
+            return "Quantity exceeds available stock for some items. Please adjust.";
+        case "AGGREGATED_QUANTITY_EXCEEDS_STOCK":
+            return "Total quantity across multiple items exceeds stock. Please reduce quantity.";
+        default:
+            return "Please review your cart before checkout.";
+    }
 };
