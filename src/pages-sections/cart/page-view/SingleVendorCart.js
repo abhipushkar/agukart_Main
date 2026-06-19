@@ -33,6 +33,7 @@ import CheckoutPopup from "./CheckoutPopup";
 import { useLocation } from "../../../contexts/location_context"; // Adjust path as needed
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import MessagePopup from "./MessagePopup";
+import { productQuantityMap } from "../utils/buildCombinationIdentity";
 
 const DELIVERY_STORAGE_KEY = "persisted_delivery_options";
 
@@ -77,7 +78,8 @@ const SingleVendorCart = ({
   defaultAddress,
   voucherDetails,
   isSingleVendor,
-  validationMsg
+  validationMsg,
+  quantityMap
 }) => {
   const router = useRouter();
   const { currency } = useCurrency();
@@ -486,7 +488,7 @@ const SingleVendorCart = ({
     }
   }, [deliveryOption]);
 
-  // Add this useEffect after other useEffects (around line 300-320)
+
   const previousCartIdRef = useRef();
   const previousProductsHashRef = useRef();
 
@@ -512,7 +514,7 @@ const SingleVendorCart = ({
           const res = await postAPIAuth("user/check-coupon-for-product", payload);
         } catch (error) {
           console.error("Coupon validation failed:", error);
-          if(error?.response?.status === 400) {
+          if (error?.response?.status === 400) {
             handleRemove(); // Remove invalid coupon
             addToast("Coupon removed as it is no longer valid", { appearance: "warning", autoDismiss: true });
           }
@@ -644,10 +646,10 @@ const SingleVendorCart = ({
                 md: "16px",
                 xs: "12px",
               },
-              p:0
+              p: 0
             }}
           >
-            <Button onClick={() => setOpenContact(true)} p={0} sx={{ p:0 }}>
+            <Button onClick={() => setOpenContact(true)} p={0} sx={{ p: 0 }}>
               Contact shop
             </Button>
           </Typography>
@@ -661,6 +663,7 @@ const SingleVendorCart = ({
             defaultAddress={defaultAddress}
             voucherDetails={voucherDetails}
             addParentCart={addParentCart}
+            quantityMap={quantityMap}
           />
         ))}
         <Box>
@@ -977,7 +980,7 @@ const SingleVendorCart = ({
                       sx={{
                         borderBottom: "1px dashed gray",
                         width: {
-                          xs: "100%", 
+                          xs: "100%",
                           md: "397px",
                         },
                         maxWidth: "100%",

@@ -24,7 +24,7 @@ import { resolveCartPricing } from "../utils/resolveCartPricing";
 import CartEditDrawer from "components/cart/CartEditDrawer";
 import useMyProvider from "hooks/useMyProvider";
 
-const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true, addParentCart }) => {
+const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showButtons = true, addParentCart, quantityMap }) => {
     const { addToast } = useToasts();
     const router = useRouter();
     const { currency } = useCurrency();
@@ -81,7 +81,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 caseType: null
             };
         }
-        return validateCartItem(product, { pendingQuantity: localQuantity, cartItem: product });
+        return validateCartItem(product, { pendingQuantity: localQuantity, cartItem: product, quantityMap });
     }, [product, localQuantity, isPendingUpdate]);
 
     const hasRecoveredInvalidState = useMemo(() => {
@@ -176,16 +176,14 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
 
             setCartPendingUpdate(cartIdentity, true);
             const res = await postAPIAuth("user/add-to-cart", payload);
-            if (res.status === 200) {
-                getCartItems(defaultAddress?._id);
-                const data = wallet ? "1" : "0";
-                getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
-                clearCartRecoveryState(cartIdentity);
-                setCartPendingUpdate(cartIdentity, false);
-            }
         } catch (error) {
             console.error("Error updating cart:", error);
-            addToast("Failed to update cart. Please try again.", { appearance: "error", autoDismiss: true });
+            addToast(error.response?.data?.message, { appearance: "error", autoDismiss: true });
+        } finally {
+            getCartItems(defaultAddress?._id);
+            const data = wallet ? "1" : "0";
+            getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
+            clearCartRecoveryState(cartIdentity);
             setCartPendingUpdate(cartIdentity, false);
         }
     };
