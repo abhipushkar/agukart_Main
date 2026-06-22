@@ -682,9 +682,9 @@ const DeliveryAddress = () => {
                   <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
                   <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
                 </RadioGroup>
-                {cartDetails.error && (
+                {cartDetails?.error && (
                   <Typography color={"red"} fontSize={12}>
-                    {cartDetails.error}
+                    {cartDetails?.error}
                   </Typography>
                 )}
                 {paymentType === "1" && (
