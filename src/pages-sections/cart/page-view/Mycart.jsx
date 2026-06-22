@@ -665,7 +665,7 @@ const Mycart = () => {
                 </Box>
               </Grid>
               {state.cart.length > 0 && (
-              <Grid item lg={4} md={5} xs={12} sx={{ position: 'sticky', top: '20px' }}>{/* Order Summary Section is still not sticky make it sticky! */}
+              <Grid item lg={4} md={5} xs={12} sx={{ position: 'sticky', top: '20px' }}>
                 <Box 
                 sx={{
                   position: 'sticky',

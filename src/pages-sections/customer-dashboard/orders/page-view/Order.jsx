@@ -274,6 +274,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
     ? { tracking: false, status: "Shipped" } : { tracking: true, status: (items?.[0]?.delivery_status || parentSale?.delivery_status) };
   const refundStatus = (items?.[0]?.refund_status || parentSale?.refund_status) === "none"
     ? null : (items?.[0]?.refund_status || parentSale?.refund_status)
+
+  const subOrderTotal = items.reduce((total, item) => total + item.amount, items[0].shippingAmount);
+
   return (
     <>
       <Box key={order.sub_order_id || order._id} mb={2} component={Card} borderRadius={{ xs: "10px", md: "12px" }}>
@@ -374,8 +377,8 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   >
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
                       <Typography fontSize={14} fontWeight={500}>
-                        Total (change!) {currency?.symbol}
-                        {(order.subtotal * currency?.rate).toFixed(2)}
+                        Total {currency?.symbol}
+                        {(subOrderTotal * currency?.rate).toFixed(2)}
                         {refundStatus && (<span style={{ color: "red" }}>{refundStatus}</span>)}
                       </Typography>
                       <Typography fontSize={14} fontWeight={500}>

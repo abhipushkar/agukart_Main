@@ -7,8 +7,11 @@ const normalize = (value) => String(value || "").trim().toLowerCase();
  */
 
 export const buildCombinationIdentity = (product) => {
-
-    const internalVariants = (product?.variants || []).map(item =>
+    // get qty controlling variants' attributes
+    const isQtyControlled = product?.form_values?.isCheckedQuantity;
+    const controllingVariant = isQtyControlled ? normalize(product?.form_values?.quantities) : "";
+    const filteredVariants = isQtyControlled ? product?.variants.filter(v => controllingVariant.includes(normalize(v.variantName))) : product?.variants;
+    const internalVariants = (filteredVariants || []).map(item =>
         normalize(item?.attributeName)
     );
     return JSON.stringify({
