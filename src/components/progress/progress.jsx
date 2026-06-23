@@ -15,12 +15,23 @@ export default function ProgressBar() {
     });
 
     const handleAnchorClick = event => {
-      const targetUrl = event.currentTarget.href;
-      const currentUrl = location.href;
+        const anchor = event.currentTarget;
+        const isModifiedClick =
+          event.metaKey || // cmd+click
+          event.ctrlKey || // ctrl+click
+          event.shiftKey ||
+          event.altKey ||
+          event.button !== 0; // not left click
 
-      if (targetUrl !== currentUrl) {
-        NProgress.start();
-      }
+        const isNewTab = anchor.target === "_blank";
+
+        if (isModifiedClick || isNewTab) {
+          return;
+        }
+
+        if (anchor.href !== window.location.href) {
+          NProgress.start();
+        }
     };
 
     const handleMutation = () => {
@@ -39,7 +50,8 @@ export default function ProgressBar() {
         return target.apply(thisArg, argArray);
       }
     });
-  });
+  }, []);
+
   return <GlobalStyles styles={{
     "#nprogress": {
       pointerEvents: "none",

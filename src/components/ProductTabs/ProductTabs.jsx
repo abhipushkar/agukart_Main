@@ -889,15 +889,15 @@ const ProductTabs = ({ product, reviewData, reviewType, setReviewType, page, set
                 fullWidth
                 PaperProps={{
                     sx: {
-                        width: { xs: "90vw", sm: "80vw", md: "60vw", lg: "60vw" },
-                        maxWidth: "1000px",
-                        height: { xs: "70vh", sm: "90vh", md: "90vh", lg: "90vh" },
-                        maxHeight: "900px",
-                        borderRadius: 4,
+                        width: { xs: "90vw", sm: "80vw", md: "60vw", lg: "50vw" },
+                        maxWidth: "900px",
+                        height: { xs: "80vh", sm: "85vh", md: "85vh" },
+                        maxHeight: "800px",
+                        borderRadius: 3,
                         overflow: "hidden",
                         position: "relative",
-                        bgcolor: "#e6e6e6",
-                        boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+                        bgcolor: "#f5f0eb",
+                        boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
                     },
                 }}
             >

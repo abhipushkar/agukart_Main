@@ -859,6 +859,10 @@ const CartEditContent = ({
                             "&:hover": {
                                 bgcolor: "#111",
                             },
+                            ":disabled": {
+                                bgcolor: "gray",
+                                color: "#e8e8e8"
+                            }
                         }}
                     >
                         {saving ? "Updating..." : "Save Changes"}

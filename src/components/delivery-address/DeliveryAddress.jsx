@@ -385,7 +385,8 @@ const DeliveryAddress = () => {
       const data = (wallet == "true") ? "1" : "0";
       getCartDetails(data, allAddress[addressIndex]?._id, voucherDetails?.discount, allAddress[addressIndex]?.country);
     }
-  }, [token, allAddress, addressIndex]);
+  }, [token, allAddress, addressIndex, paymentType]);
+
   useEffect(() => {
     const data = localStorage.getItem("voucherDetails");
     if (data) {
@@ -690,7 +691,7 @@ const DeliveryAddress = () => {
                 {paymentType === "1" && (
                   <Button
                     fullWidth
-                    onClick={()=>orderConfirmation("cod", "pending")}
+                    onClick={() => orderConfirmation("cod", "pending")}
                     endIcon={loading ? <CircularProgress size={15} /> : ""}
                     disabled={loading || checkoutDisabled}
                     sx={{

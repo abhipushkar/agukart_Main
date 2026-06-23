@@ -78,7 +78,7 @@ export default function Section3() {
           {topRatedCategory.map((item) => (
             <Grid key={item._id} item xs={12} md={6} lg={4}>
               <Link
-                href={`/category/${item.slug}`}
+                href={`/category/${item.fullSlug}`}
               >
                 <BazaarCard
                   elevation={0}
@@ -107,7 +107,7 @@ export default function Section3() {
           {topRatedCategory.map((item) => (
             <Link
               key={item._id}
-              href={`/category/${item.slug}`}
+              href={`/category/${item.fullSlug}`}
             >
               <BazaarCard
                 elevation={0}
@@ -122,9 +122,9 @@ export default function Section3() {
                 }}
               >
                 <TopCategoriesCard
-                  title={item.title}
-                  imgUrl={item.base_url + item.topRatedImage}
-                  subtitle={item.description}
+                  title={item.topRatedImage.alt}
+                  imgUrl={item.base_url + item.topRatedImage.url}
+                  subtitle={item.description.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim()}
                 />
               </BazaarCard>
             </Link>

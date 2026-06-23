@@ -45,7 +45,7 @@ export default function MobileHeader({ midSlot }) {
   };
   return (
     <Fragment>
-      <FlexBetween width="100%" sx={{ flexDirection: "column", gap: {xs: undefined, sm: 1.5 }}}>
+      <FlexBetween width="100%" sx={{ flexDirection: "column", gap: { sm: 0.5}}}>
         {/* LEFT CONTENT - NAVIGATION ICON BUTTON */}
 
         {/* MIDDLE CONTENT - LOGO */}
@@ -67,7 +67,7 @@ export default function MobileHeader({ midSlot }) {
               justifyContent: "space-between",
               width: "100%",
               position: {xs: "relative", sm: "relative"},
-              top: {xs: 0, sm: 20}
+              top: {xs: 5, sm: 10}
             }}
           >
             <Box>
