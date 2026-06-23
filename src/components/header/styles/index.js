@@ -16,6 +16,9 @@ export const HeaderWrapper = styled("div")(({
 // borderBottom: `1px solid ${theme.palette.grey[200]}`,
   [theme.breakpoints.down("sm")]: {
     height: layoutConstant.mobileHeaderHeight
+  },
+  [theme.breakpoints.down("md")]: {
+    height: layoutConstant.tabletHeaderHeight
   }
 }));
 export const StyledContainer = styled(Container)({

@@ -197,7 +197,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
       };
       fetchData();
     }
-  }, [defaultAddress, token, totalItems]);
+  }, [defaultAddress, token, totalItems, paymentType]);
 
   const getStateData = async () => {
     try {

@@ -45,7 +45,6 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
     height: "100%",
   }));
   const toggleWishlist = Boolean(wishlistProductIds?.[product?._id]);
-  console.log(wishlistProductIds);
 
   const handleWishlist = async (e) => {
     e.stopPropagation(); // Prevent navigation when clicking wishlist

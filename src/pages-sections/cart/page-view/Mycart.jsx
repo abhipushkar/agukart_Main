@@ -441,6 +441,8 @@ const Mycart = () => {
 
   // Initialize cart when component mounts
   useEffect(() => {
+    const authKey = localStorage.getItem("auth_key");
+    if (!authKey) return;
     if (token) {
       setCartLoading(true);
       // No address_id needed for initial cart load

@@ -27,7 +27,7 @@ export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
         position: "relative",
       }}
     >
-      <StyledChip
+      {/* <StyledChip
         style={{
           textTransform: "capitalize",
         }}
@@ -39,7 +39,7 @@ export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
           left: 12,
           color: "white",
         }}
-      />
+      /> */}
 
       <StyledChip
         style={{
@@ -50,6 +50,8 @@ export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
         size="small"
         sx={{
           right: 12,
+          maxWidth: "90%",
+          bgcolor: "#fefefe4f",
         }}
       />
 

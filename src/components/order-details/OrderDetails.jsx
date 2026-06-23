@@ -332,7 +332,7 @@ const OrderDetails = () => {
                         Shipping:
                       </Typography>
                       <Typography width={"50%"} fontWeight={600}>
-                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a, b) => { return a + b?.shippingAmount }, 0) * currency?.rate).toFixed(2)}
+                        {currency?.symbol}{(orderDetail?.delivery * currency?.rate).toFixed(2)}
                       </Typography>
                     </Typography>
                     {
@@ -346,6 +346,21 @@ const OrderDetails = () => {
                           </Typography>
                           <Typography width={"50%"} fontWeight={600}>
                             - {currency?.symbol}{(orderDetail?.voucher_dicount * currency?.rate).toFixed(2)}
+                          </Typography>
+                        </Typography>
+                      )
+                    }
+                    {
+                      orderDetail?.wallet_used > 0 && (
+                        <Typography
+                          component="div"
+                          sx={{ display: "flex", alignItems: "center" }}
+                        >
+                          <Typography width={"50%"} fontWeight={600}>
+                            Wallet Amount:
+                          </Typography>
+                          <Typography width={"50%"} fontWeight={600}>
+                            - {currency?.symbol}{(orderDetail?.wallet_used * currency?.rate).toFixed(2)}
                           </Typography>
                         </Typography>
                       )
@@ -383,7 +398,7 @@ const OrderDetails = () => {
                         Grand Total:
                       </Typography>
                       <Typography width={"50%"} fontWeight={700}>
-                        {currency?.symbol}{(orderDetail?.sales_details?.reduce((a, b) => { return a + (b?.amount - b?.couponDiscountAmount + b?.shippingAmount) }, 0) - orderDetail?.voucher_dicount * currency?.rate).toFixed(2)}
+                        {currency?.symbol}{(orderDetail.net_amount * currency?.rate).toFixed(2)}
                       </Typography>
                     </Typography>
                   </Typography>
@@ -534,7 +549,8 @@ const OrderDetails = () => {
                             fontWeight: "500",
                           }}
                         >
-                          {currency?.symbol}{(product?.productData?.sale_price * currency?.rate).toFixed(2)}
+                          {currency?.symbol}{(product?.amount * currency?.rate).toFixed(2)}
+                          <Typography component="del" variant="del" color="grey"> {currency?.symbol}{(product?.sub_total * currency?.rate).toFixed(2)}</Typography>
                         </Typography>
                       </Typography>
                     </Box>

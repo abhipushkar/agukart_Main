@@ -185,6 +185,7 @@ export default function ProductCategoriesSearchPageView({
 
       if (res.status === 200) {
         setProductList(res.data.data);
+        console.log(res.data.data);
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {

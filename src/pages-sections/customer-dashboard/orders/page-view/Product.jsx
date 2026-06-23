@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
 import LightPopover from "components/TooltipPopover/LightPopover";
 import { Flag as FlagIcon } from "@mui/icons-material";
+import { fontSize } from "theme/typography";
 
 const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product, setReviewProduct, handleOpenReview, handleOpenEditReview }) => {
   console.log({ order, rating: product.ratingData[0], shopBaseUrl, baseUrl }, "DFhrtfyhrthjrthrt");
@@ -55,6 +56,8 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                   WebkitBoxOrient: "vertical",
                   textOverflow: "ellipsis",
                   overflow: "hidden",
+                  cursor: "pointer",
+                  fontSize: {xs: "14px", sm: "16px", md: "18px", lg: "18px"}
                 }}
                 fontWeight={600}
                 onClick={() =>
@@ -349,4 +352,4 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
     </>
   );
 };
-export default Product; 3
+export default Product;

@@ -183,6 +183,13 @@ export default function OrdersPageView() {
     setPage(1);
   }, [filterOrders]);
 
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }, [page]);
+
   const handlePageChange = (event, value) => {
     setPage(value);
   };

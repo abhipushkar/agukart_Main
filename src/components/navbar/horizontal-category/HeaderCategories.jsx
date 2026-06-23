@@ -36,29 +36,63 @@ const HeaderCategories = () => {
     }
   };
   return (
-    <Box sx={{ display: "flex", gap: "16px", marginLeft: "24px" }}>
-      <Button onClick={() => navigation("home")} sx={{ whiteSpace: "nowrap" }}>
-        Home
-      </Button>
-      {cat?.map((cat) => {
-        return (
-          <Button
-            onClick={() => navigation(cat)}
-            key={cat._id}
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            {cat.title}
-          </Button>
-        );
-      })}
-      {usercredentials?.designation_id != "4" && (
-        <Button
-          onClick={() => navigation("gift-card-category")}
-          sx={{ whiteSpace: "nowrap" }}
-        >
-          Gift Card
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 0, // critical in flex layouts
+        overflow: "hidden",
+      }}
+      ml={3}
+    >
+      <Box
+        className="category-scroll"
+        sx={{
+          display: "flex",
+          overflowX: "auto",
+          gap: 2,
+
+          "&::-webkit-scrollbar": {
+            height: "5px",
+          },
+
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "#f1f1f1",
+            borderRadius: "999px",
+          },
+
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#9d9d9d96",
+            borderRadius: "999px",
+          },
+
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "#717171a6",
+          },
+        }}
+      >
+        <Button onClick={() => navigation("home")} sx={{ whiteSpace: "nowrap", flexShrink: 0, }}>
+          Home
         </Button>
-      )}
+        {cat?.map((cat) => {
+          return (
+            <Button
+              onClick={() => navigation(cat)}
+              key={cat._id}
+              sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+            >
+              {cat.title}
+            </Button>
+          );
+        })}
+        {usercredentials?.designation_id != "4" && (
+          <Button
+            onClick={() => navigation("gift-card-category")}
+            sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+          >
+            Gift Card
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 };

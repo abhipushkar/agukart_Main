@@ -1,5 +1,5 @@
 // components/Cart/DrawerImageGallery.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Box, Card, IconButton, MobileStepper, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -7,6 +7,7 @@ import { normalize } from "path";
 
 const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage }) => {
   const [activeStep, setActiveStep] = useState(selectedImage || 0);
+  const touchStartX = useRef(0);
 
   // Sync external selectedImage prop without causing loops
   useEffect(() => {
@@ -72,6 +73,19 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           alignItems: "center",
           justifyContent: "center",
         }}
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0].clientX;
+        }}
+        onTouchEnd={(e) => {
+          const touchEndX = e.changedTouches[0].clientX;
+          const diff = touchStartX.current - touchEndX;
+          if (diff > 50 && activeStep < media.length - 1) {
+            handleNext(); // swipe left
+          }
+          if (diff < -50 && activeStep > 0) {
+            handleBack(); // swipe right
+          }
+        }}
       >
         {displayImageUrl && (
           <img
@@ -102,7 +116,7 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
               height: 8,
             },
             '& .MuiMobileStepper-dotActive': {
-              backgroundColor: '#d98392',
+              backgroundColor: '#eb7589',
             },
           }}
           nextButton={
