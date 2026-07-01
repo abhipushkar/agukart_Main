@@ -492,6 +492,9 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
         voucher_discount: voucherDetails?.discount,
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
       }
+      if(voucherDetails?._id){
+        payload.voucherBreakdown = JSON.parse(localStorage.getItem("voucherDetails")).voucherDetails;
+      }
       if (paymentType === "paypal") {
         payload.paypal_order_id = paypalOrderId;
         payload.paypal_capture_id = paypalCaptureId;
@@ -1020,25 +1023,15 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                             </>
                           )}
 
-                          {/* 4. Wallet */}
-                          <Grid item xs={8}>
-                            <Typography>Wallet:</Typography>
-                          </Grid>
-                          <Grid item xs={4}>
-                            <Typography align="right" color="success.main">
-                              - {currency?.symbol}{((vendorCartDetails?.walletAmount) * currency?.rate).toFixed(2)}
-                            </Typography>
-                          </Grid>
-
                           {/* 5. Sub Total: Net Payable before Delivery */}
-                          <Grid item xs={8}>
+                          {/* <Grid item xs={8}>
                             <Typography>Sub Total:</Typography>
                           </Grid>
                           <Grid item xs={4}>
                             <Typography align="right">
                               {currency?.symbol}{(((vendorCartDetails?.netAmount || 0) - (vendorCartDetails?.delivery || 0)) * currency?.rate).toFixed(2)}
                             </Typography>
-                          </Grid>
+                          </Grid> */}
 
                           {/* 6. Delivery */}
                           <Grid item xs={8}>
@@ -1047,6 +1040,16 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                           <Grid item xs={4}>
                             <Typography align="right">
                               {currency?.symbol}{((vendorCartDetails?.delivery) * currency?.rate).toFixed(2)}
+                            </Typography>
+                          </Grid>
+
+                          {/* 4. Wallet */}
+                          <Grid item xs={8}>
+                            <Typography>Wallet:</Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography align="right" color="success.main">
+                              - {currency?.symbol}{((vendorCartDetails?.walletAmount) * currency?.rate).toFixed(2)}
                             </Typography>
                           </Grid>
 
@@ -1069,7 +1072,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                         </Grid>
                       </Box>
                       <div>
-                        <FormLabel component="legend">Select Payment Method</FormLabel>
+                        {!(wallet && vendorCartDetails?.netAmount === 0)&&(<><FormLabel component="legend">Select Payment Method</FormLabel>
                         <RadioGroup
                           row
                           value={paymentType}
@@ -1077,7 +1080,7 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                         >
                           <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
                           <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
-                        </RadioGroup>
+                        </RadioGroup></>)}
 
                         {checkoutError && (
                           <Typography color={"red"} fontSize={12}>
@@ -1092,7 +1095,12 @@ export default function CheckoutPopup({ cart, wallet, open, onClose, vendor_id }
                             fullWidth
                             variant="contained"
                             sx={{ borderRadius: 2, my:2 }}
-                            onClick={()=>handlePlaceOrder("cod", "pending")}
+                            onClick={()=>{
+                              if(wallet && vendorCartDetails?.netAmount === 0){
+                                handlePlaceOrder("wallet", "completed");
+                              }
+                              else handlePlaceOrder("cod", "pending")}
+                            }
                           >
                             Submit order
                           </Button>

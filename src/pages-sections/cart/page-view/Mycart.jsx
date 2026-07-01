@@ -247,6 +247,7 @@ const Mycart = () => {
             _id: res?.data?.voucherDetails?._id,
             voucherCode: res?.data?.voucherDetails?.claim_code,
             discount: res?.data?.discount,
+            voucherDetails: res?.data?.vendors
           };
           setVoucherDetails(data);
           localStorage.setItem("voucherDetails", JSON.stringify(data));

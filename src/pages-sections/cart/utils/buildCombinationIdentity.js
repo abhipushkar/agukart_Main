@@ -10,7 +10,7 @@ export const buildCombinationIdentity = (product) => {
     // get qty controlling variants' attributes
     const isQtyControlled = product?.form_values?.isCheckedQuantity;
     const controllingVariant = isQtyControlled ? normalize(product?.form_values?.quantities) : "";
-    const filteredVariants = isQtyControlled ? product?.variants.filter(v => controllingVariant.includes(normalize(v.variantName))) : product?.variants;
+    const filteredVariants = isQtyControlled ? product?.variants.filter(v => controllingVariant.includes(normalize(v.variantName))) : [];
     const internalVariants = (filteredVariants || []).map(item =>
         normalize(item?.attributeName)
     );

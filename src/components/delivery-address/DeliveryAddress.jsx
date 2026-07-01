@@ -66,7 +66,7 @@ const DeliveryAddress = () => {
   };
   // modal popup message
   const { currency } = useCurrency();
-  const [wallet, setWallet] = useState(false);
+  const [wallet, setWallet] = useState(() => {if (typeof window === "undefined") return false; return localStorage.getItem("wallet") === "true";});
   const [openPopup, SetOpenPopup] = useState(false);
   const [code, setCountryCode] = useState("in");
   const [getState, setGetState] = useState([]);
@@ -343,6 +343,13 @@ const DeliveryAddress = () => {
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
         coupon_vendor_ids: state?.cart?.filter(vendor => vendor.coupon_status === true)?.map(vendor => vendor.vendor_id) || [],
       };
+      if(voucherDetails?._id){
+        payload.voucherBreakdown = JSON.parse(localStorage.getItem("voucherDetails")).voucherDetails;
+      }
+      if((localStorage.getItem("wallet") == "true" && cartDetails?.grandTotal === 0) || paymentType==='wallet'){
+        payload.payment_status="completed";
+        payload.payment_type="wallet";
+      }
       if (paymentType === "paypal") {
         payload.paypal_order_id = paypalOrderId;
         payload.paypal_capture_id = paypalCaptureId;
@@ -376,13 +383,7 @@ const DeliveryAddress = () => {
   };
   useEffect(() => {
     if (token) {
-      const wallet = localStorage.getItem("wallet");
-      if (wallet == "true") {
-        setWallet(true);
-      } else {
-        setWallet(false);
-      }
-      const data = (wallet == "true") ? "1" : "0";
+      const data = wallet ? "1" : "0";
       getCartDetails(data, allAddress[addressIndex]?._id, voucherDetails?.discount, allAddress[addressIndex]?.country);
     }
   }, [token, allAddress, addressIndex, paymentType]);
@@ -672,7 +673,8 @@ const DeliveryAddress = () => {
                     </Typography>
                   </Box>
                 )}
-                <FormLabel component="legend" sx={{ mb: 1 }}>
+                {cartDetails?.grandTotal > 0 && (<>
+                  <FormLabel component="legend" sx={{ mb: 1 }}>
                   Select Payment Method
                 </FormLabel>
                 <RadioGroup
@@ -713,7 +715,7 @@ const DeliveryAddress = () => {
                     Place Order
                   </Button>
                 )}
-                {paymentType === "2" && (
+                {paymentType === "2" && cartDetails?.grandTotal > 0 && (
                   <Box mt={2}>
                     <PayPalScriptProvider options={initialOptions}>
                       <Checkout
@@ -729,7 +731,31 @@ const DeliveryAddress = () => {
                       />
                     </PayPalScriptProvider>
                   </Box>
-                )}
+                )}</>)}
+                {usercredentials?.wallet_balance >= cartDetails?.netAmount && cartDetails?.walletAmount >= cartDetails?.netAmount && wallet && (
+                  <Button
+                    fullWidth
+                    onClick={() => orderConfirmation("wallet", "completed")}
+                    endIcon={loading ? <CircularProgress size={15} /> : ""}
+                    disabled={loading || checkoutDisabled}
+                    sx={{
+                      mt: 2,
+                      fontSize: "18px",
+                      background: "#000",
+                      color: "#fff",
+                      borderRadius: "30px",
+                      padding: "10px",
+                      "&:hover": {
+                        background: "#222",
+                      },
+                      "&.Mui-disabled": {
+                        background: "#F3F4F6",
+                        color: "#6B7280",
+                      }
+                    }}
+                  >
+                    Place Order
+                  </Button>)}
               </Grid>
             </Grid>
           </Grid>
