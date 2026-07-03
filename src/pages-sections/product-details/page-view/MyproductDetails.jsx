@@ -108,7 +108,7 @@ const MyproductDetails = ({ res }) => {
     try {
       const id = pathname.productId;
       const res = await postAPIAuth("user/add-viewed-products", {
-        product_id: id,
+        product_id: id || res.data._id,
       });
     } catch (error) {
       console.log(error);
