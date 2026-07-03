@@ -1502,7 +1502,7 @@ const VariantButton = ({
           }}
           onMouseEnter={() => !isDisabled && onHover && onHover(attr.id)}
           onMouseLeave={() => !isDisabled && onHoverOut && onHoverOut()}
-          disabled={isDisabled}
+          // disabled={isDisabled}
           sx={{
             flexShrink: 0,
             position: "relative",

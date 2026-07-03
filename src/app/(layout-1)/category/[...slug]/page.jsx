@@ -8,50 +8,44 @@ import { Box, Typography, Chip } from "@mui/material";
 const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
 
-const getCategoryData = cache(async (slugPath) => {
+const getCategoryData = async (slugPath) => {
   const res = await fetch(
     `${baseURL}/get-category?slug=${slugPath}`,
     {
-      next: {
-        revalidate: 10,
-      },
+      cache: "no-store",
     }
   );
 
   if (!res.ok) return null;
 
   return res.json();
-});
+};
 
-const getBreadcrumbData = cache(async (slugPath) => {
+const getBreadcrumbData = async (slugPath) => {
   const res = await fetch(
     `${baseURL}/get-category-by-slug/${slugPath}`,
     {
-      next: {
-        revalidate: 10,
-      },
+      cache: "no-store",
     }
   );
 
   if (!res.ok) return null;
 
   return res.json();
-});
+};
 
-const getInitialProducts = cache(async (categoryId) => {
+const getInitialProducts = async (categoryId) => {
   const res = await fetch(
     `${baseURL}/get-product?categoryId=${categoryId}&page=1&limit=64`,
     {
-      next: {
-        revalidate: 10,
-      },
+      cache: "no-store",
     }
   );
 
   if (!res.ok) return null;
 
   return res.json();
-});
+};
 
 
 export async function generateMetadata({ params }) {

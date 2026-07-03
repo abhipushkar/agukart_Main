@@ -1,13 +1,14 @@
-import { Box, Button, Grid, Typography, Rating, Avatar, Alert } from "@mui/material";
+import { Box, Button, Grid, Typography, Rating, Avatar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import { H2, H3, H4, H6 } from "components/Typography";
 import { useCurrency } from "contexts/CurrencyContext";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import MessagePopup from "./MessagePopup";
 import { useRouter } from "next/navigation";
 import { useToasts } from "react-toast-notifications";
 import LightPopover from "components/TooltipPopover/LightPopover";
-import { Flag as FlagIcon } from "@mui/icons-material";
-import { fontSize } from "theme/typography";
+import { Flag as FlagIcon, Close as CloseIcon, Collections } from "@mui/icons-material";
+import parse from 'html-react-parser'
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup, order, product, setReviewProduct, handleOpenReview, handleOpenEditReview }) => {
   console.log({ order, rating: product.ratingData[0], shopBaseUrl, baseUrl }, "DFhrtfyhrthjrthrt");
@@ -18,12 +19,112 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
   const { addToast } = useToasts();
   const { currency } = useCurrency();
   const [openMessagePopup, SetMessageOpenPopup] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [currentGuide, setCurrentGuide] = useState({});
+  const transformRef = useRef(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const handleMessageClickPopup = () => {
     SetMessageOpenPopup(true);
   };
   const handleMessageClosePopup = () => {
     SetMessageOpenPopup(false);
   };
+
+  const handleImageClick = () => {
+    setImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+    setCurrentImageIndex(0);
+  };
+
+  const getVariantImages = () => {
+    let images = [];
+    console.log(product, "productd")
+    product?.variants.forEach((variant, i) => {
+      const currVariant = product?.productData.product_variants.find(pv => pv.variant_name.trim().toLowerCase() === variant.variantName.trim().toLowerCase());
+      const imageAttr = currVariant.variant_attributes.find(a => a.attribute.trim().toLowerCase() === variant.attributeName.trim().toLowerCase());
+      if (imageAttr && (imageAttr.main_images.filter(Boolean).length || imageAttr.preview_image || imageAttr.thumbnail)) {
+        const currAttrMainImage = imageAttr.edit_main_image || imageAttr.main_images.filter(Boolean)[0] || imageAttr.preview_image || `${baseUrl}/${product?.productData.image[0]}`;
+        const variant_attr_name = variant.variantName + ": " + variant.attributeName;
+        images.push({ name: variant_attr_name, image: currAttrMainImage, thumbnail: imageAttr.thumbnail });
+      }
+    });
+    return images;
+  };
+
+  const getCustomizationImages = () => {
+    let images = [];
+    const customization = product?.customizationData?.[0];
+    if (!customization || product?.customize !== "Yes") {
+      return [];
+    }
+    Object.entries(customization).forEach(([key, value]) => {
+      const mainImage = Array.isArray(value.main_images) ? value.main_images.find(Boolean)
+        : null;
+      if (mainImage || value.edit_main_image || value.preview_image || value.thumbnail) {
+        const custImage = mainImage || value.edit_main_image || value.preview_image || `${baseUrl}/${product?.productData.image[0]}`;
+        images.push({
+          name: `${key}: ${value.value}`,
+          image: custImage,
+          thumbnail: value.thumbnail
+        })
+      }
+    })
+    return images;
+  };
+
+  const mainImages =
+    product?.productData?.image?.map((img) => ({
+      name: "main image",
+      image: `${baseUrl}/${img}`,
+      thumbnail: "",
+    })) ?? [];
+
+  const [firstMainImage, ...remainingMainImages] = mainImages;
+
+  const images = [
+    ...(firstMainImage ? [firstMainImage] : []),
+    ...getVariantImages(),
+    ...getCustomizationImages(),
+    ...remainingMainImages,
+  ];
+
+  const goToNextImage = () => {
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) =>
+        prev === images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const goToPrevImage = () => {
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) =>
+        prev === 0 ? images.length - 1 : prev - 1
+      );
+    }
+  };
+
+
+  const variantHasGuide = (v) => product?.productData.product_variants.find(pv => pv.variant_name === v.variantName).guide || null;
+  const handleGuideClick = (variant) => {
+    const productVariant = product?.productData.product_variants.find(v => v.variant_name === variant.variantName);
+    console.log(productVariant, "pv");
+    const guide = productVariant.guide[0];
+    setCurrentGuide({
+      name: guide.guide_name,
+      file: guide.guide_file,
+      type: guide.guide_type,
+      description: guide.guide_description,
+    });
+    setGuideOpen(true);
+  };
+
+
   return (
     <>
       <Grid
@@ -32,22 +133,46 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
         sx={{ margin: "0", width: "100%", mb: "20px" }}
       >
         <Grid lg={(review || reviewNote) ? 6 : 9} md={(review || reviewNote) ? 6 : 9} xs={12} sx={{ paddingTop: "0" }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Box
-              component="img"
-              src={baseUrl + (product?.productData?.edited_image || product?.productData?.image?.[0])}
-              alt={product?.productData?.product_title}
-              sx={{
-                width: { xs: 70, md: 100 },
-                height: { xs: 70, md: 100 },
-                minWidth: { xs: 70, md: 100 },
-                border: "1px solid #d9d9d9",
-                borderRadius: 1,
-                p: 0,
-                objectFit: "contain",
-                bgcolor: "#fff",
-              }}
-            />
+          <Box sx={{ display: "flex" }}>
+            <Box sx={{
+              position: "relative",
+              display: "inline-block",
+              width: { xs: 70, md: 100 },
+              height: { xs: 70, md: 100 },
+              minWidth: { xs: 70, md: 100 },
+              mt: 1, cursor: 'pointer'
+            }}
+              onClick={handleImageClick}
+            >
+              <Box
+                component="img"
+                src={baseUrl + (product?.productData?.edited_image || product?.productData?.image?.[0])}
+                alt={product?.productData?.product_title}
+                sx={{
+                  border: "1px solid #d9d9d9",
+                  borderRadius: 1,
+                  p: 0,
+                  objectFit: "contain",
+                  bgcolor: "#fff",
+                  width: '100%', height: '100%',
+
+                }}
+              />
+              {images.length > 1 && (
+                <Typography component={'span'}
+                  sx={{
+                    position: "absolute",
+                    bottom: "1px",
+                    right: "1px",
+                    padding: "3px 3px",
+                    borderRadius: "4px",
+                    fontSize: "10px",
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <Collections fontSize='9px' /> {images.length}
+                </Typography>)}
+            </Box>
             <Typography component="div" ml={2}>
               <H3
                 sx={{
@@ -56,50 +181,60 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                   WebkitBoxOrient: "vertical",
                   textOverflow: "ellipsis",
                   overflow: "hidden",
-                  cursor: "pointer",
-                  fontSize: {xs: "14px", sm: "16px", md: "18px", lg: "18px"}
+                  fontSize: { xs: "12px", sm: "14px", md: "16px", lg: "16px" },
+                  cursor: 'pointer',
+                  '&:hover': { textDecoration: 'underline' }
                 }}
                 fontWeight={600}
                 onClick={() =>
                   router.push(product.productData.product_code ? `/product/slug/${product.productData.product_code}` : `/products/${product.product_id}`) //old order fallback
                 }
               >
-                {product?.productData?.product_title?.replace(
-                  /<\/?[^>]+(>|$)/g,
-                  ""
-                )}
+                {product?.productData?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
               </H3>
-              {product?.isCombination && (
-                <>
-                  {product?.variantData?.map((variant, index) => (
-                    <Typography
-                      fontSize={17}
-                      color="gray"
-                      key={`variant-${index}`}
-                    >
-                      {variant?.variant_name}:{" "}
-                      <Typography fontSize={17} component="span">
-                        {product?.variantAttributeData?.[index]
-                          ?.attribute_value || "N/A"}
-                      </Typography>
-                    </Typography>
-                  ))}
-                </>
+
+              {product?.variantData.length > 0 && product?.variantData?.map((variant, index) => (
+                <Typography
+                  fontSize={17}
+                  key={`variant-${index}`}
+                >
+                  {variant?.variant_name} {"  "}:{"  "}
+                  <Typography fontSize={17} fontWeight={500} component="span">
+                    {product?.variantAttributeData?.[index]
+                      ?.attribute_value || "N/A"}
+                  </Typography>
+                </Typography>
+              ))}
+              {product?.variants && product.variants.length > 0 && (
+                product.variants.map((variant, index) => (
+                  <Typography
+                    fontSize={14}
+                    sx={{ color: "#000", pt: 0.5 }}
+                    key={variant._id || index}
+                  >
+                    {variant.variantName}{variantHasGuide(variant) && variantHasGuide(variant)?.[0] && (<Typography component={"span"} color="primary.main" ml={1.5}
+                      onClick={() => handleGuideClick(variant)} sx={{ cursor: "pointer", border: "1px solid rgb(0, 119, 255)", px: 1, borderRadius: 1, fontSize: 12 }} fontWeight={600}
+                    >Guide</Typography>)}{"   "}:{"   "}
+                    <Box component="span" ml={1} fontWeight={500}>
+                      {variant.attributeName}
+                    </Box>
+
+                  </Typography>
+                ))
               )}
               {product?.customize == "Yes" && (
                 <>
                   {product?.customizationData?.map((item, index) => (
                     <div key={index}>
                       {Object.entries(item).map(([key, value]) => (
-                        <div key={key}>
+                        <div key={key} style={{ paddingTop: 4 }}>
                           {typeof value === "object" ? (
                             <div>
-                              {key}:
-                              {`${value?.value} (${currency?.symbol} ${(value?.price * currency?.rate).toFixed(2)})`}
+                              {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{`${value?.value}`}</Box>
                             </div>
                           ) : (
                             <div>
-                              {key}: {value}
+                              {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{value}</Box>
                             </div>
                           )}
                         </div>
@@ -108,7 +243,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                   ))}
                 </>
               )}
-              <Typography fontSize={15}>
+              <Typography fontSize={15} pt={1}>
                 <span style={{ fontWeight: "600" }}>Qty :</span>
                 <span> {product.qty}</span>
               </Typography>
@@ -334,7 +469,141 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
         </Grid>
 
       </Grid>
-      <MessagePopup
+      <Dialog
+        open={imageModalOpen}
+        onClose={closeImageModal}
+        maxWidth="md"
+        fullWidth
+      >
+        <Box sx={{ position: 'relative', padding: 2 }}>
+          <Button
+            onClick={closeImageModal}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1,
+              minWidth: 'auto',
+              padding: '4px'
+            }}
+          >
+            <CloseIcon />
+          </Button>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: "300px" }}>
+            <Button
+              onClick={goToPrevImage}
+              sx={{ minWidth: 'auto', padding: '8px', fontSize: '25px' }}
+            >
+              ‹
+            </Button>
+
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
+              {images[currentImageIndex] && (
+                <>
+                  <img
+                    src={images[currentImageIndex].image}
+                    alt={images[currentImageIndex].image}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "500px",
+                      objectFit: "contain",
+                    }}
+                  />
+
+                  {images[currentImageIndex].thumbnail && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        width: 64,
+                        height: 64,
+                        borderRadius: 1,
+                        overflow: "hidden",
+                        border: "2px solid #fff",
+                        backgroundColor: "#fff",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <img
+                        src={images[currentImageIndex].thumbnail}
+                        alt="Thumbnail"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+
+            <Button
+              onClick={goToNextImage}
+              sx={{ minWidth: 'auto', padding: '8px', fontSize: '25px' }}
+            >
+              ›
+            </Button>
+          </Box>
+
+          {images.length > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2, gap: 5 }}>
+              <Typography variant="body1" fontWeight={500}>
+                {images[currentImageIndex].name}
+              </Typography>
+              <Typography>
+                Image {currentImageIndex + 1} of {images.length}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Dialog>
+
+      {guideOpen && (
+        <Dialog open={guideOpen} onClose={() => setGuideOpen(false)} maxWidth="md" fullWidth sx={{ "& .MuiDialog-paper": { maxWidth: "90vw", maxHeight: "95vh" } }}>
+          <DialogTitle sx={{ m: 0, py: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography>{currentGuide?.name} Guide</Typography>
+            <IconButton onClick={() => setGuideOpen(false)}><CloseIcon /></IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0, overflow: "visible" }}>
+            {currentGuide?.description && <Box sx={{ p: 3, pb: 0 }}>{parse(currentGuide.description)}</Box>}
+            {currentGuide?.file && currentGuide?.type === "image" && (
+              <Box sx={{ width: "100%", height: "85vh", display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                <TransformWrapper ref={transformRef} initialScale={1} minScale={1} maxScale={5} wheel={{ step: 0.2 }} doubleClick={{ disabled: false }} pinch={{ step: 10 }} bg>
+                  <TransformComponent wrapperStyle={{ display: "inline-block", width: "85vw", height: "fit-content", background: "#f2f2f2", "&:hover": { cursor: "grab" } }} contentStyle={{ display: "inline-block" }}>
+                    <img src={currentGuide.file} alt="guide" style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", display: "block" }} />
+                  </TransformComponent>
+                </TransformWrapper>
+              </Box>
+            )}
+            {currentGuide?.file && currentGuide?.type === "video" && <Box sx={{ textAlign: "center", mb: 2 }}><video controls style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "8px" }}><source src={currentGuide.file} type="video/mp4" /></video></Box>}
+            {currentGuide?.file && currentGuide?.type === "document" && <Box sx={{ textAlign: "center", mb: 2 }}><Button variant="contained" href={currentGuide.file} target="_blank">View Guide</Button></Box>}
+            {!currentGuide?.file && !currentGuide?.description && <Typography color="textSecondary" sx={{ textAlign: "center", py: 4 }}>No guide content available</Typography>}
+          </DialogContent>
+          {currentGuide?.file && currentGuide?.type === "image" && (
+            <DialogActions sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button onClick={() => transformRef.current?.zoomIn()} variant="outlined">Zoom +</Button>
+                <Button onClick={() => transformRef.current?.zoomOut()} variant="outlined">Zoom -</Button>
+                <Button onClick={() => transformRef.current?.resetTransform()} variant="outlined">Reset</Button>
+                <Button onClick={() => setGuideOpen(false)} variant="outlined">Close</Button>
+              </Box>
+            </DialogActions>
+          )}
+        </Dialog>
+      )}
+      {openMessagePopup && (<MessagePopup
         vendorName={product?.vendor_name}
         shopName={product?.vendorData?.shop_name}
         shopImage={`${shopBaseUrl}/${product?.vendorData?.shop_icon}`}
@@ -348,7 +617,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
         subOrderId={product?.sub_order_id || order?.sub_order_id}
         baseUrl={baseUrl}
         subOrderProducts={order?.items || []}
-      />
+      />)}
     </>
   );
 };

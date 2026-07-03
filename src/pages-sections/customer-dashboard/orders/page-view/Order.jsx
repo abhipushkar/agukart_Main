@@ -190,7 +190,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
           // Reset form data after successful submission
           setReviewId("");
           setVendorId("");
-          
+
           addToast("Review updated successfully", {
             appearance: "success",
             autoDismiss: true,
@@ -275,7 +275,10 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const refundStatus = (items?.[0]?.refund_status || parentSale?.refund_status) === "none"
     ? null : (items?.[0]?.refund_status || parentSale?.refund_status)
 
-  const subOrderTotal = items.reduce((total, item) => total + item.amount, items[0].shippingAmount);
+  const getGrandTotal = () => {
+    const itemTotal = order.items.reduce((sum, item) => sum += (item.amount - (item.voucherDiscountAmount || 0)), 0);
+    return itemTotal + order?.items?.[0]?.shippingAmount - (order?.items?.[0]?.couponDiscountAmount || 0);
+  };
 
   return (
     <>
@@ -299,120 +302,117 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
             }}
           >
             <Grid item lg={8} md={7} xs={12} sx={{ paddingTop: "0" }}>
-              <Box>
-                <Box
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: { xs: "stretch", md: "flex-start" },
+                  flexWrap: { xs: "wrap", md: "nowrap" },
+                  gap: { xs: 1.5, md: 1 },
+                  p: 0,
+                  m: 0,
+                }}
+              >
+                <Stack
+                  spacing={2}
                   sx={{
-                    display: "flex",
-                    alignItems: { xs: "stretch", md: "flex-start" },
-                    flexWrap: { xs: "wrap", md: "nowrap" },
-                    gap: { xs: 1.5, md: 2 },
+                    width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
+                    minWidth: 0,
                     p: 0,
-                    m: 0,
                   }}
                 >
-                  <Stack
-                    spacing={2}
-                    sx={{
-                      width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
-                      minWidth: 0,
-                      p: 0,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                      <Typography fontSize={14} fontWeight={500}>
-                        Order placed {" "}{formattedDate(date)}
-                      </Typography>
-                      {(items?.[0]?.shipped_date || parentSale?.shipped_date) && (<Typography fontSize={14} fontWeight={500}>
-                        Shipped  {" "}{formattedDate(items?.[0]?.shipped_date || parentSale?.shipped_date) || "—"}
-                      </Typography>)}
-                      {(items?.[0]?.delivered_date || parentSale?.delivered_date) && (<Typography fontSize={14} fontWeight={500}>
-                        Delivered {" "}{formattedDate(items?.[0]?.delivered_date || parentSale?.delivered_date) || "—"}
-                      </Typography>)}
-                    </Box>
-                  </Stack>
-                  <Stack
-                    spacing={1}
-                    sx={{
-                      width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
-                      minWidth: 0,
-                      p: 0,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <Typography fontSize={14} fontWeight={500}>
-                        <span>Status :</span> {deliveryStatus.status}
-                      </Typography>
-                      {deliveryStatus.tracking ? (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          sx={{
-                            marginTop: "10px",
-                            bgcolor: "#404040",
-                            "&:hover": {
-                              bgcolor: "#515151",
-                            },
-                            borderRadius: "30px",
-                            border: "1px solid #000",
-                            width: { xs: "100%", sm: "auto", md: "auto" },
-                            maxWidth: { md: "150px" },
-                            color: "#eee",
-                          }}
-                          onClick={() => setOpenTracking(true)}
-                        >
-                          Track package
-                        </Button>
-                      ) : (
-                        ""
-                      )}
-                    </Box>
-                  </Stack>
-                  <Stack
-                    spacing={1}
-                    sx={{
-                      width: { xs: "100%", sm: "calc(50% - 8px)", md: "33.33%" },
-                      minWidth: 0,
-                      p: 0,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                      <Typography fontSize={14} fontWeight={500}>
-                        Total {currency?.symbol}
-                        {(subOrderTotal * currency?.rate).toFixed(2)}
-                        {refundStatus && (<span style={{ color: "red" }}>{refundStatus}</span>)}
-                      </Typography>
-                      <Typography fontSize={14} fontWeight={500}>
-                        Store name : <Link
-                          href={`/store/${items[0]?.vendorData?.slug}`}
-                          style={{
-                            color: "#3b66cb",
-                            fontSize: "15px",
-                            textDecoration: "none",
-                          }}
-                        >
-                          {items[0]?.vendorData?.shop_name}
-                        </Link>
-                      </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                    <Typography fontSize={14} fontWeight={500}>
+                      Order placed {" "}{formattedDate(date)}
+                    </Typography>
+                    {(items?.[0]?.shipped_date || parentSale?.shipped_date) && (<Typography fontSize={14} fontWeight={500}>
+                      Shipped  {" "}{formattedDate(items?.[0]?.shipped_date || parentSale?.shipped_date) || "—"}
+                    </Typography>)}
+                    {(items?.[0]?.delivered_date || parentSale?.delivered_date) && (<Typography fontSize={14} fontWeight={500}>
+                      Delivered {" "}{formattedDate(items?.[0]?.delivered_date || parentSale?.delivered_date) || "—"}
+                    </Typography>)}
+                  </Box>
+                </Stack>
+                <Stack
+                  spacing={1}
+                  sx={{
+                    width: { xs: "100%", sm: "calc(50% - 8px)", md: "30%" },
+                    minWidth: 0,
+                    p: 0,
+                  }}
+                >
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Typography fontSize={14} fontWeight={500}>
+                      <span>Status :</span> {deliveryStatus.status}
+                    </Typography>
+                    {deliveryStatus.tracking ? (
                       <Button
-                        size="small"
-                        onClick={() => {
-                          setMessageOpenPopup(true);
-                        }}
                         variant="contained"
+                        size="small"
                         sx={{
-                          background: "#fff",
+                          marginTop: "10px",
+                          bgcolor: "#404040",
+                          "&:hover": {
+                            bgcolor: "#515151",
+                          },
                           borderRadius: "30px",
-                          border: "1px solid #252525bd",
+                          border: "1px solid #000",
                           width: { xs: "100%", sm: "auto", md: "auto" },
                           maxWidth: { md: "150px" },
-                          marginBottom: "12px",
+                          color: "#eee",
+                        }}
+                        onClick={() => setOpenTracking(true)}
+                      >
+                        Track package
+                      </Button>
+                    ) : (
+                      ""
+                    )}
+                  </Box>
+                </Stack>
+                <Stack
+                  spacing={1}
+                  sx={{
+                    width: { xs: "100%", sm: "calc(50% - 8px)", md: "36.66%" },
+                    minWidth: 0,
+                    p: 0,
+                  }}
+                >
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                    <Typography display={"flex"} fontSize={14} fontWeight={500}>
+                      <Typography variant="body1" color="initial">Total {currency?.symbol}{(getGrandTotal() * currency?.rate).toFixed(2)}</Typography>
+                      {refundStatus && (<Typography sx={{ color: "red", marginLeft: 2, textTransform: "capitalize" }}>{refundStatus}ly refunded</Typography>)}
+                    </Typography>
+                    <Typography fontSize={14} fontWeight={500}>
+                      Store name : <Link
+                        href={`/store/${items[0]?.vendorData?.slug}`}
+                        style={{
+                          color: "#3b66cb",
+                          fontSize: "15px",
+                          textDecoration: "none",
                         }}
                       >
-                        Message to Seller
-                      </Button>
-                    </Box>
-                  </Stack>
-                </Box>
+                        {items[0]?.vendorData?.shop_name}
+                      </Link>
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setMessageOpenPopup(true);
+                      }}
+                      variant="contained"
+                      sx={{
+                        background: "#fff",
+                        borderRadius: "30px",
+                        border: "1px solid #252525bd",
+                        width: { xs: "100%", sm: "auto", md: "auto" },
+                        maxWidth: { md: "150px" },
+                        marginBottom: "12px",
+                      }}
+                    >
+                      Message to Seller
+                    </Button>
+                  </Box>
+                </Stack>
               </Box>
             </Grid>
             <Grid item lg={4} md={5} xs={12} sx={{ paddingTop: "0" }}>

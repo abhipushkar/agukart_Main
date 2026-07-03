@@ -182,7 +182,7 @@ export default function Navigation() {
   console.log({ usercredentials });
 
   return (
-    <MainContainer>
+    <MainContainer sx={{position: "sticky", top: 0}}>
       {usercredentials?.designation_id == "4" ? (
         <>
           {
