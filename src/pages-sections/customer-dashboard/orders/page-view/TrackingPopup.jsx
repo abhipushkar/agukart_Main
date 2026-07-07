@@ -87,14 +87,16 @@ const TrackingPopup = ({ open, onClose, order }) => {
             minute: '2-digit'
         });
     };
-    const handleTrackClick = (trackingNumber) => {
+    const handleTrackClick = (shipment) => {
         // Open tracking URL if available
-        if (selectedShipment?.service?.tracking_url) {
-            window.open(selectedShipment.service.tracking_url.replace('{tracking_id}', trackingNumber), '_blank');
-        } else {
-            // Default tracking URL - replace with actual logic
-            window.open(`https://track.shipping.com/${trackingNumber}`, '_blank');
-        }
+
+        const url = shipment.deliveryService.supportDirectTracking
+            ? shipment.deliveryService.tracking_url.replace('{tracking_id}', shipment.trackingNumber)
+            : shipment.deliveryService.tracking_url;
+
+        // Opens in a new tab; '_blank' is the standard for new windows/tabs
+        window.open(url, '_blank', 'noopener,noreferrer');
+
     };
     const getLatestShipment = () => {
         return sortedShipments[0];
@@ -136,7 +138,7 @@ const TrackingPopup = ({ open, onClose, order }) => {
             <DialogContent sx={{ p: 3, overflowY: 'auto' }}>
                 <Typography fontSize={18} pt={2}>
                     Order Status: <strong>{deliveryStatus.status}</strong>
-                </Typography> 
+                </Typography>
                 {shipments.length > 0 ? (
                     <Stack spacing={3} pt={2}>
                         {shipments.map((shipment, index) => (
@@ -200,7 +202,7 @@ const TrackingPopup = ({ open, onClose, order }) => {
                                         <Button
                                             size="small"
                                             startIcon={<OpenInNewIcon />}
-                                            onClick={() => handleTrackClick(shipment.trackingNumber)}
+                                            onClick={() => handleTrackClick(shipment)}
                                             sx={{
                                                 textTransform: "none",
                                                 whiteSpace: "nowrap",
