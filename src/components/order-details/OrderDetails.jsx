@@ -21,15 +21,15 @@ import Checkbox from "@mui/material/Checkbox";
 import CloseIcon from "@mui/icons-material/Close";
 import Radio from "@mui/material/Radio";
 import StarIcon from "@mui/icons-material/Star";
-import { Flag as FlagIcon, ExpandMore as ExpandMoreIcon, LocalOffer as LocalOfferIcon } from "@mui/icons-material";
+import { Flag as FlagIcon, ExpandMore as ExpandMoreIcon, LocalOffer as LocalOfferIcon, Collections } from "@mui/icons-material";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import { getAPIAuth } from "utils/__api__/ApiServies";
 import useAuth from "hooks/useAuth";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState, useMemo } from "react";
-import { Alert, CircularProgress, Rating, Avatar, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Accordion, AccordionDetails, AccordionSummary, TextareaAutosize } from "@mui/material";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { Alert, CircularProgress, Rating, Avatar, Accordion, AccordionDetails, AccordionSummary, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import { useToast } from "react-toastify";
 import { useToasts } from "react-toast-notifications";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -42,12 +42,11 @@ import {
   Divider,
   Chip,
   Paper,
-  Card,
-  CardContent,
   useTheme,
   useMediaQuery
 } from "@mui/material";
 import MessagePopup from "pages-sections/customer-dashboard/orders/page-view/MessagePopup";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const invoices = [
   {
@@ -134,6 +133,13 @@ const OrderDetails = () => {
   const [shopBaseUrl, setShopBaseUrl] = useState("https://api.agukart.com/uploads/");
   const [trackOpen, setTrackOpen] = useState(false);
   const [openMessagePopup, setOpenMessagePopup] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [currentGuide, setCurrentGuide] = useState({});
+  const transformRef = useRef(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [product, setImageProduct] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
 
   const getOrderDetail = async () => {
     try {
@@ -298,6 +304,111 @@ const OrderDetails = () => {
     };
   }, [orderDetail]);
 
+
+  const handleImageClick = (product) => {
+    setImageProduct(product);
+    setImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+    setCurrentImageIndex(0);
+    setImageProduct(null);
+  };
+
+  const getVariantImages = () => {
+    if (!product) return [];
+    let images = [];
+    console.log(product, "productd")
+    product?.variants.forEach((variant, i) => {
+      const currVariant = product?.productData.product_variants.find(pv => pv.variant_name.trim().toLowerCase() === variant.variantName.trim().toLowerCase());
+      const imageAttr = currVariant.variant_attributes.find(a => a.attribute.trim().toLowerCase() === variant.attributeName.trim().toLowerCase());
+      if (imageAttr && (imageAttr.main_images.filter(Boolean).length || imageAttr.preview_image || imageAttr.thumbnail)) {
+        const currAttrMainImage = imageAttr.edit_main_image || imageAttr.main_images.filter(Boolean)[0] || imageAttr.preview_image || `${baseUrl}/${product?.productData.image[0]}`;
+        const variant_attr_name = variant.variantName + ": " + variant.attributeName;
+        images.push({ name: variant_attr_name, image: currAttrMainImage, thumbnail: imageAttr.thumbnail });
+      }
+    });
+    return images;
+  };
+
+  const getCustomizationImages = () => {
+    if (!product) return [];
+    let images = [];
+    const customization = product?.customizationData?.[0];
+    if (!customization || product?.customize !== "Yes") {
+      return [];
+    }
+    Object.entries(customization).forEach(([key, value]) => {
+      const mainImage = Array.isArray(value.main_images) ? value.main_images.find(Boolean)
+        : null;
+      if (mainImage || value.edit_main_image || value.preview_image || value.thumbnail) {
+        const custImage = mainImage || value.edit_main_image || value.preview_image || `${baseUrl}/${product?.productData.image[0]}`;
+        images.push({
+          name: `${key}: ${value.value}`,
+          image: custImage,
+          thumbnail: value.thumbnail
+        })
+      }
+    })
+    return images;
+  };
+
+  const mainImages =
+    product?.productData?.image?.map((img) => ({
+      name: "main image",
+      image: `${baseUrl}/${img}`,
+      thumbnail: "",
+    })) ?? [];
+
+  const [firstMainImage, ...remainingMainImages] = mainImages;
+  if (firstMainImage && firstMainImage?.image && product && product?.productData?.edited_image) {
+    firstMainImage.image = `${baseUrl}/${product?.productData?.edited_image}`;
+  }
+  const images = [
+    ...(firstMainImage ? [firstMainImage] : []),
+    ...getVariantImages(),
+    ...getCustomizationImages(),
+    ...remainingMainImages,
+  ];
+
+  const getImageCount = (product) => {
+    const mainCount = product?.productData?.image?.length || 0;
+    const variantCount = getVariantImages(product).length;
+    const customizationCount = getCustomizationImages(product).length;
+    return mainCount + variantCount + customizationCount;
+  };
+
+  const goToNextImage = () => {
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) =>
+        prev === images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const goToPrevImage = () => {
+    if (images.length > 0) {
+      setCurrentImageIndex((prev) =>
+        prev === 0 ? images.length - 1 : prev - 1
+      );
+    }
+  };
+
+  const variantHasGuide = (product, v) => product?.productData.product_variants.find(pv => pv.variant_name === v.variantName).guide || null;
+  const handleGuideClick = (product, variant) => {
+    const productVariant = product?.productData.product_variants.find(v => v.variant_name === variant.variantName);
+    console.log(productVariant, "pv");
+    const guide = productVariant.guide[0];
+    setCurrentGuide({
+      name: guide.guide_name,
+      file: guide.guide_file,
+      type: guide.guide_type,
+      description: guide.guide_description,
+    });
+    setGuideOpen(true);
+  };
+
   return orderDetail === null ? (
     <Box
       sx={{
@@ -315,7 +426,7 @@ const OrderDetails = () => {
     </Box>
   ) : (
     <>
-      <SectionCreator p={3}>
+      <SectionCreator p={{ xs: 1, sm: 2, md: 3, lg: 3 }}>
         <Box mb={4}>
           <Breadcrumbs
             separator={<NavigateNextIcon fontSize="small" />}
@@ -330,10 +441,11 @@ const OrderDetails = () => {
               Order Details
             </Typography>
 
-            <Box display={'flex'} gap={1}>
+            <Box display={'flex'} flexDirection={{ xs: 'column', sm: 'row', md: 'row', lg: 'row' }} gap={1}>
               {orderDetail?.items[0].delivery_status !== "No tracking" && orderDetail?.items[0].order_status === 'completed' && (
                 <Button
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                   sx={{ borderRadius: "30px", borderColor: "#000", color: "#000", px: 3 }}
                   onClick={() => setTrackOpen(true)}
                 >
@@ -343,6 +455,7 @@ const OrderDetails = () => {
               <Button
                 variant="outlined"
                 sx={{ borderRadius: "30px", borderColor: "#000", color: "#000", px: 3 }}
+                size={isMobile ? "small" : "medium"}
                 onClick={() => setOpenMessagePopup(true)}>
                 Help with Order
               </Button>
@@ -385,80 +498,99 @@ const OrderDetails = () => {
             </Grid>
           </Paper>
 
-          {/* Shipping Address */}
-          {/* <Paper elevation={0} sx={{ p: 3, mb: 3, border: "1px solid #e0e0e0", borderRadius: 2, display: 'flex' }}>
-            <Box>
-            </Box>
-            <Box>
-              <Typography fontSize={16} fontWeight={700} mb={1.5}>
-                Shipping Address
-              </Typography>
-              <Typography fontWeight={600} sx={{ textTransform: "capitalize" }}>
-                {orderDetail?.name}
-              </Typography>
-              <Typography>{orderDetail?.address_line1}</Typography>
-              {orderDetail?.address_line2 && <Typography>{orderDetail?.address_line2}</Typography>}
-              <Typography sx={{ textTransform: "uppercase" }}>
-                {orderDetail?.city}, {orderDetail?.state} {orderDetail?.pincode} {orderDetail?.country}
-              </Typography>
-            </Box>
-          </Paper> */}
-
           <Grid container width={"100%"} m={0} py={1} mb={2} spacing={2} component={Paper}>
             <Grid lg={7} md={6} sm={12} xs={12}>
               <Box p={1.5}>
-                <Typography fontSize={18} fontWeight={600}>Order summary</Typography>
-                <Grid container width={"100%"} m={0} spacing={2}>
-                  <Grid lg={7} md={7} sm={7} xs={12}>
-                    <List>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center" }}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>Purchase date:</Typography>
-                        <Typography fontWeight={600} sx={{ width: "70%" }}>{formatDate(orderDetail?.createdAt)}</Typography>
-                      </ListItem>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center" }}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>Ship by:</Typography>
-                        <Typography fontWeight={600} color={"#e2912c"} sx={{ width: "70%" }}>{deliveryDates.minDate} to {deliveryDates.maxDate}</Typography>
-                      </ListItem>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center" }}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>Deliver by:</Typography>
-                        <Typography fontWeight={600} sx={{ width: "70%" }}>{deliveryDates.minDate} to {deliveryDates.maxDate}</Typography>
-                      </ListItem>
-                      {orderDetail.items[0].delivered_date && (<ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center" }}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>Delivered date:</Typography>
-                        <Typography fontWeight={600} sx={{ width: "70%" }}>
-                          {orderDetail?.items?.[0]?.delivered_date ? formatDate(orderDetail.items[0].delivered_date) : "..."}
-                        </Typography>
-                      </ListItem>)}
-                    </List>
-                  </Grid>
-                  <Grid lg={5} md={5} sm={5} xs={12}>
-                    <List>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center" }}>
-                        <Typography fontWeight={500} sx={{}}>Shipping services:</Typography>
-                        <Typography fontWeight={600} sx={{ textTransform: 'capitalize', pl: 1 }}> {shippingName}</Typography>
-                      </ListItem>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center" }}>
-                        <Typography fontSize={14} mt={1}>
-                          Store: <Box fontWeight={600} component={'span'} ml={1}>
-                            <Link
-                              href={`/store/${orderDetail?.vendor?.slug}`}
-                              style={{
-                                color: "#3b66cb",
-                                fontSize: "15px",
-                                textDecoration: "none",
-                              }}
+                <Typography fontSize={18} fontWeight={600}>
+                  Order Status
+                </Typography>
 
-                            >{orderDetail?.vendor.shop_name || "..."}</Link>
-                          </Box>
+                <Grid container width="100%" m={0} spacing={2}>
+                  <Grid lg={7} md={7} sm={7} xs={12}>
+                    <Box mt={1}>
+                      <Box display="flex" alignItems="center" mb={1.5}>
+                        <Typography fontWeight={500} sx={{ width: "30%" }}>
+                          Purchase date:
                         </Typography>
-                      </ListItem>
-                    </List>
+                        <Typography fontWeight={600} sx={{ width: "70%" }}>
+                          {formatDate(orderDetail?.createdAt)}
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" mb={1.5}>
+                        <Typography fontWeight={500} sx={{ width: "30%" }}>
+                          Ship by:
+                        </Typography>
+                        <Typography
+                          fontWeight={600}
+                          color="#e2912c"
+                          sx={{ width: "70%" }}
+                        >
+                          {deliveryDates.minDate} to {deliveryDates.maxDate}
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" mb={1.5}>
+                        <Typography fontWeight={500} sx={{ width: "30%" }}>
+                          Deliver by:
+                        </Typography>
+                        <Typography fontWeight={600} sx={{ width: "70%" }}>
+                          {deliveryDates.minDate} to {deliveryDates.maxDate}
+                        </Typography>
+                      </Box>
+
+                      {orderDetail?.items?.[0]?.delivered_date && (
+                        <Box display="flex" alignItems="center" mb={1.5}>
+                          <Typography fontWeight={500} sx={{ width: "30%" }}>
+                            Delivered date:
+                          </Typography>
+                          <Typography fontWeight={600} sx={{ width: "70%" }}>
+                            {formatDate(orderDetail.items[0].delivered_date)}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Grid>
+
+                  <Grid lg={5} md={5} sm={5} xs={12}>
+                    <Box mt={1}>
+                      <Box display="flex" alignItems="center" mb={1.5}>
+                        <Typography fontWeight={500}>
+                          Shipping services:
+                        </Typography>
+                        <Typography
+                          fontWeight={600}
+                          sx={{ textTransform: "capitalize", pl: 1 }}
+                        >
+                          {shippingName}
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center">
+                        <Typography fontSize={14}>
+                          Store:
+                        </Typography>
+
+                        <Box fontWeight={600} ml={1}>
+                          <Link
+                            href={`/store/${orderDetail?.vendor?.slug}`}
+                            style={{
+                              color: "#3b66cb",
+                              fontSize: "15px",
+                              textDecoration: "none",
+                            }}
+                          >
+                            {orderDetail?.vendor?.shop_name || "..."}
+                          </Link>
+                        </Box>
+                      </Box>
+                    </Box>
                   </Grid>
                 </Grid>
               </Box>
             </Grid>
 
-            <Grid py={2} lg={5} md={6} sm={12} xs={12} sx={{ paddingLeft: { lg: "20px", md: "20px" }, borderLeft: { md: '1px solid #ddd' } }}>
+            <Grid py={2} lg={5} md={6} sm={12} xs={12} sx={{ paddingLeft: { lg: "20px", md: "20px", sm: '10px', xs: '10px' }, borderLeft: { md: '1px solid #ddd' } }}>
               <Box>
                 <Typography fontSize={18} fontWeight={600}>Shipping Address</Typography>
                 <Grid container width={"100%"} m={0} spacing={1}>
@@ -473,16 +605,14 @@ const OrderDetails = () => {
                     </Box>
                   </Grid>
                   <Grid lg={6} md={8} sm={8} xs={12}>
-                    <List>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", paddingBottom: "0" }}>
-                        <Typography fontWeight={501}>Buyer Name:</Typography>
-                        <Typography fontWeight={500} pl={1} color={"green"}>{(orderDetail?.name)}</Typography>
-                      </ListItem>
-                      <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", paddingBottom: "0" }}>
+                    <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", paddingBottom: "0" }}>
+                      <Typography fontWeight={501}>Buyer Name:</Typography>
+                      <Typography fontWeight={500} pl={1} color={"green"}>{(orderDetail?.name)}</Typography>
+                    </ListItem>
+                    <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", paddingBottom: "0" }}>
 
-                        <Typography fontWeight={500}>Buyer Email: {(orderDetail?.email)}</Typography>
-                      </ListItem>
-                    </List>
+                      <Typography fontWeight={500}>Buyer Email: {(orderDetail?.email)}</Typography>
+                    </ListItem>
                   </Grid>
                 </Grid>
               </Box>
@@ -497,7 +627,8 @@ const OrderDetails = () => {
             {orderDetail?.items?.map((product, i) => {
               const productData = product?.productData || {};
               const productTitle = parse(productData.product_title || "");
-              const productImage = productData.image?.[0] || "";
+              const productImage = productData.edited_image || productData.image?.[0];
+              const imageCount = getImageCount(product);
 
               return (
                 <Grid item xs={12} key={product._id}>
@@ -512,8 +643,11 @@ const OrderDetails = () => {
                           bgcolor: "#fafafa",
                           borderRadius: 2,
                           overflow: "hidden",
-                          border: "1px solid #eee"
-                        }}>
+                          border: "1px solid #eee",
+                          cursor: 'pointer'
+                        }}
+                          onClick={() => handleImageClick(product)}
+                        >
                           {productImage ? (
                             <img
                               src={`${baseUrl}${productImage}`}
@@ -541,9 +675,10 @@ const OrderDetails = () => {
                               <Typography color="text.secondary">No image</Typography>
                             </Box>
                           )}
-                          {product?.qty > 1 && (
+                          {imageCount > 1 && (
                             <Chip
-                              label={`x${product.qty}`}
+                              label={`${imageCount}`}
+                              icon={<Collections sx={{ fontSize: 14 }} />}
                               size="small"
                               sx={{
                                 position: "absolute",
@@ -552,7 +687,11 @@ const OrderDetails = () => {
                                 bgcolor: "rgba(0,0,0,0.8)",
                                 color: "#fff",
                                 fontWeight: 600,
-                                fontSize: 12
+                                fontSize: 12,
+                                '&:hover': {
+                                  bgcolor: "rgba(0, 0, 0, 0.66)",
+                                  color: "#fff",
+                                }
                               }}
                             />
                           )}
@@ -584,12 +723,101 @@ const OrderDetails = () => {
                         <Typography variant="body2" sx={{ color: "#666", mt: 0.5 }}>
                           Transaction ID: <Box component="span" ml={1} fontWeight={500}>{product?.item_id}</Box>
                         </Typography>
+                        <Box sx={{ display: { xs: "none", md: "block" } }}>
 
+                          {/* Variants */}
+                          {product?.variantData?.length > 0 && product?.variantData?.map((variant, index) => (
+                            <Typography variant="body2" key={`variant-${index}`} sx={{ mt: 0.5 }}>
+                              {variant?.variant_name}:{" "}
+                              <Box component="span" fontWeight={500} color={'black'}>
+                                {product?.variantAttributes?.[index]?.attribute_value || "N/A"}
+                              </Box>
+                            </Typography>
+                          ))}
+
+                          {product?.variants && product.variants.length > 0 && (
+                            product.variants.map((variant, index) => (
+                              <Typography variant="body2" sx={{ mt: 0.5 }} key={variant._id || index}>
+                                {variant.variantName}{variantHasGuide(product, variant) && variantHasGuide(product, variant)?.[0] && (<Typography component={"span"} color="primary.main" ml={0.5}
+                                  onClick={() => handleGuideClick(product, variant)} sx={{ cursor: "pointer", borderColor: 'primary', border: "1px solid", px: 1, borderRadius: 1, fontSize: 12 }} fontWeight={600}
+                                >Guide</Typography>)} :
+                                <Box component="span" fontWeight={500} ml={1} color={'black'}>
+                                  {variant.attributeName}
+                                </Box>
+                              </Typography>
+                            ))
+                          )}
+
+                          {/* Customizations */}
+                          {product?.customizationData?.length > 0 && (
+                            <Box sx={{ mt: 1 }}>
+                              {product?.customizationData?.map((item, index) => (
+                                <div key={index}>
+                                  {Object.entries(item).map(([key, value]) => (
+                                    <Typography variant="body2" key={key} mt={0.5}>
+                                      {key}: <Box component="span" fontWeight={500} color={'black'}>{typeof value === "object" ? value?.value : value}</Box>
+                                    </Typography>
+                                  ))}
+                                </div>
+                              ))}
+                            </Box>
+                          )}
+
+                          <Box display={'flex'} gap={1}>
+                            <Button
+                              onClick={() => { setMessageProduct(product); setOpenMessagePopup(true); }}
+                              variant="contained"
+                              size="small"
+                              sx={{
+                                bgcolor: "#efe8bd",
+                                borderRadius: "30px",
+                                px: 3,
+                                mt: 1.5,
+                                '&:hover': { bgcolor: "#ebe3b3" }
+                              }}
+                            >
+                              Help with Item
+                            </Button>
+                            {/* Write Review Button */}
+                            {!product?.ratingStatus && product.delivery_status == "Delivered" && (
+
+                              <Button
+                                onClick={() => {
+                                  handleOpenReview(
+                                    product?.productData || product,
+                                    product?.vendor_id,
+                                    product?.vendor_name
+                                  );
+                                }}
+                                variant="contained"
+                                size="small"
+                                sx={{
+                                  bgcolor: "#000",
+                                  color: "#fff",
+                                  borderRadius: "30px",
+                                  px: 3,
+                                  mt: 1.5,
+                                  '&:hover': { bgcolor: "#333" }
+                                }}
+                              >
+                                Write Product review
+                              </Button>
+                            )}
+                          </Box>
+                        </Box>
+                      </Grid>
+
+                      {/* Mobile only grid */}
+                      <Grid
+                        item
+                        xs={12}
+                        sx={{ display: { xs: "block", md: "none" } }}
+                      >
                         {/* Variants */}
                         {product?.variantData?.length > 0 && product?.variantData?.map((variant, index) => (
                           <Typography variant="body2" key={`variant-${index}`} sx={{ mt: 0.5 }}>
                             {variant?.variant_name}:{" "}
-                            <Box component="span" fontWeight={500}>
+                            <Box component="span" fontWeight={500} color={'black'}>
                               {product?.variantAttributes?.[index]?.attribute_value || "N/A"}
                             </Box>
                           </Typography>
@@ -598,8 +826,10 @@ const OrderDetails = () => {
                         {product?.variants && product.variants.length > 0 && (
                           product.variants.map((variant, index) => (
                             <Typography variant="body2" sx={{ mt: 0.5 }} key={variant._id || index}>
-                              {variant.variantName}:{" "}
-                              <Box component="span" fontWeight={500}>
+                              {variant.variantName}{variantHasGuide(product, variant) && variantHasGuide(product, variant)?.[0] && (<Typography component={"span"} color="primary.main" ml={0.5}
+                                onClick={() => handleGuideClick(product, variant)} sx={{ cursor: "pointer", borderColor: 'primary', border: "1px solid", px: 1, borderRadius: 1, fontSize: 12 }} fontWeight={600}
+                              >Guide</Typography>)} :
+                              <Box component="span" fontWeight={500} ml={1} color={'black'}>
                                 {variant.attributeName}
                               </Box>
                             </Typography>
@@ -613,7 +843,7 @@ const OrderDetails = () => {
                               <div key={index}>
                                 {Object.entries(item).map(([key, value]) => (
                                   <Typography variant="body2" key={key} mt={0.5}>
-                                    {key}: <Box component="span" fontWeight={500}>{typeof value === "object" ? value?.value : value}</Box>
+                                    {key}: <Box component="span" fontWeight={500} color={'black'}>{typeof value === "object" ? value?.value : value}</Box>
                                   </Typography>
                                 ))}
                               </div>
@@ -621,19 +851,18 @@ const OrderDetails = () => {
                           </Box>
                         )}
 
-                        <Box display={'flex'} flexDirection={{ xs: 'column', md: 'row' }} gap={1}>
+                        <Box display={'flex'} gap={1}>
                           <Button
                             onClick={() => { setMessageProduct(product); setOpenMessagePopup(true); }}
                             variant="contained"
                             size="small"
                             sx={{
                               bgcolor: "#efe8bd",
-                              
                               borderRadius: "30px",
-                              px: 3,
                               mt: 1.5,
                               '&:hover': { bgcolor: "#ebe3b3" }
                             }}
+                            fullWidth
                           >
                             Help with Item
                           </Button>
@@ -654,10 +883,10 @@ const OrderDetails = () => {
                                 bgcolor: "#000",
                                 color: "#fff",
                                 borderRadius: "30px",
-                                px: 3,
                                 mt: 1.5,
                                 '&:hover': { bgcolor: "#333" }
                               }}
+                              fullWidth
                             >
                               Write Product review
                             </Button>
@@ -669,9 +898,17 @@ const OrderDetails = () => {
                           <ListItem sx={{ padding: "0" }}>
                             <Box pb={1} sx={{ width: "100%", borderBottom: "2px solid #d9d9d9" }}>
                               <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
+                                <Typography color={"#000"} fontSize={15}>Unit Price:</Typography>
+                                <Box color={"#000"} fontSize={15}>${((product?.original_price || 0)).toFixed(2)}</Box>
+                              </Box>
+                              <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
+                                <Typography color={"#000"} fontSize={15}>Qty:</Typography>
+                                <Box color={"#000"} fontSize={15}>{product?.qty || 0}</Box>
+                              </Box>
+                              {product?.qty > 1 && (<Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
                                 <Typography color={"#000"} fontSize={15}>Item subtotal:</Typography>
                                 <Box color={"#000"} fontSize={15}>${((product?.original_price || 0) * (product?.qty || 0)).toFixed(2)}</Box>
-                              </Box>
+                              </Box>)}
                               {product?.promotional_discount > 0 && (
                                 <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
                                   <Typography color={"#32be19"} fontSize={13} sx={{ display: "flex", alignItems: "center" }}>
@@ -1188,6 +1425,140 @@ const OrderDetails = () => {
           <Typography variant="h6">Note to Seller</Typography>
           <TextField id="outlined-multiline" multiline rows={3} variant="outlined" value={orderDetail?.buyer_note || "No buyer notes"} fullWidth InputProps={{ readOnly: true }} />
         </Box>
+        <Dialog
+          open={imageModalOpen}
+          onClose={closeImageModal}
+          maxWidth="md"
+          fullWidth
+        >
+          <Box sx={{ position: 'relative', padding: 2 }}>
+            <Button
+              onClick={closeImageModal}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                zIndex: 1,
+                minWidth: 'auto',
+                padding: '4px'
+              }}
+            >
+              <CloseIcon />
+            </Button>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: "300px" }}>
+              <Button
+                onClick={goToPrevImage}
+                sx={{ minWidth: 'auto', padding: '8px', fontSize: '25px' }}
+              >
+                ‹
+              </Button>
+
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  position: "relative",
+                }}
+              >
+                {images[currentImageIndex] && (
+                  <>
+                    <img
+                      src={images[currentImageIndex].image}
+                      alt={images[currentImageIndex].image}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "500px",
+                        objectFit: "contain",
+                      }}
+                    />
+
+                    {images[currentImageIndex].thumbnail && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          bottom: { xs: 0, sm: 6, md: 12 },
+                          right: { xs: 0, sm: 6, md: 12 },
+                          width: { xs: 40, sm: 60, md: 64 },
+                          height: { xs: 40, sm: 60, md: 64 },
+                          borderRadius: 1,
+                          overflow: "hidden",
+                          border: "2px solid #fff",
+                          backgroundColor: "#fff",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                        }}
+                      >
+                        <img
+                          src={images[currentImageIndex].thumbnail}
+                          alt="Thumbnail"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </>
+                )}
+              </Box>
+
+              <Button
+                onClick={goToNextImage}
+                sx={{ minWidth: 'auto', padding: '8px', fontSize: '25px' }}
+              >
+                ›
+              </Button>
+            </Box>
+
+            {images.length > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2, gap: 5 }}>
+                <Typography variant="body1" fontWeight={500}>
+                  {images[currentImageIndex].name}
+                </Typography>
+                <Typography>
+                  Image {currentImageIndex + 1} of {images.length}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Dialog>
+
+        {guideOpen && (
+          <Dialog open={guideOpen} onClose={() => setGuideOpen(false)} maxWidth="md" fullWidth sx={{ "& .MuiDialog-paper": { maxWidth: "90vw", maxHeight: "95vh" } }}>
+            <DialogTitle sx={{ m: 0, py: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Typography>{currentGuide?.name} Guide</Typography>
+              <IconButton onClick={() => setGuideOpen(false)}><CloseIcon /></IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 0, overflow: "visible" }}>
+              {currentGuide?.description && <Box sx={{ p: 3, pb: 0 }}>{parse(currentGuide.description)}</Box>}
+              {currentGuide?.file && currentGuide?.type === "image" && (
+                <Box sx={{ width: "100%", height: "85vh", display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                  <TransformWrapper ref={transformRef} initialScale={1} minScale={1} maxScale={5} wheel={{ step: 0.2 }} doubleClick={{ disabled: false }} pinch={{ step: 10 }} bg>
+                    <TransformComponent wrapperStyle={{ display: "inline-block", width: "85vw", height: "fit-content", background: "#f2f2f2", "&:hover": { cursor: "grab" } }} contentStyle={{ display: "inline-block" }}>
+                      <img src={currentGuide.file} alt="guide" style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", display: "block" }} />
+                    </TransformComponent>
+                  </TransformWrapper>
+                </Box>
+              )}
+              {currentGuide?.file && currentGuide?.type === "video" && <Box sx={{ textAlign: "center", mb: 2 }}><video controls style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "8px" }}><source src={currentGuide.file} type="video/mp4" /></video></Box>}
+              {currentGuide?.file && currentGuide?.type === "document" && <Box sx={{ textAlign: "center", mb: 2 }}><Button variant="contained" href={currentGuide.file} target="_blank">View Guide</Button></Box>}
+              {!currentGuide?.file && !currentGuide?.description && <Typography color="textSecondary" sx={{ textAlign: "center", py: 4 }}>No guide content available</Typography>}
+            </DialogContent>
+            {currentGuide?.file && currentGuide?.type === "image" && (
+              <DialogActions sx={{ p: 2 }}>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button onClick={() => transformRef.current?.zoomIn()} variant="outlined">Zoom +</Button>
+                  <Button onClick={() => transformRef.current?.zoomOut()} variant="outlined">Zoom -</Button>
+                  <Button onClick={() => transformRef.current?.resetTransform()} variant="outlined">Reset</Button>
+                  <Button onClick={() => setGuideOpen(false)} variant="outlined">Close</Button>
+                </Box>
+              </DialogActions>
+            )}
+          </Dialog>
+        )}
       </SectionCreator>
       <ReviewPopup
         open={reviewPopupOpen}

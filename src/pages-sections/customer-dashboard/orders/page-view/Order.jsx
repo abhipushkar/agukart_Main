@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating, Stack, Dialog, DialogActions, DialogContent, Card } from "@mui/material";
+import { Box, Grid, Typography, Tooltip, tooltipClasses, Rating, Stack, Dialog, DialogActions, Card, useTheme, useMediaQuery } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -53,6 +53,9 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
   const isoString = parentSale?.createdAt;
   const date = new Date(isoString);
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [showMore, setShowMore] = useState(false);
 
   const handleClosePopup = () => {
     // Refresh orders only when dialog fully closes
@@ -282,7 +285,7 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
 
   return (
     <>
-      <Box key={order.sub_order_id || order._id} mb={2} component={Card} borderRadius={{ xs: "10px", md: "12px" }}>
+      <Box key={order.sub_order_id || order._id} mb={2} component={Card} border={{xs: '2px solid', md: '2px solid #d5d5d584'}} borderRadius={{ xs: "10px", md: "12px" }}>
         <TrackingPopup
           open={openTracking}
           onClose={handleClosePopup}
@@ -419,68 +422,72 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: "column",
+                  flexDirection: { xs: 'row', md: "column", lg: "column" },
                   alignItems: {
                     lg: "flex-end",
                     md: "flex-end",
                     xs: "flex-start",
                   },
+                  justifyContent: 'space-between'
                 }}
               >
-                <Box display={"flex"} flexDirection={"column"} gap={1.5} width="100%">
-                  <Typography
-                    fontSize={14}
-                    fontWeight={600}
-                    sx={{ textTransform: "uppercase", wordBreak: "break-word" }}
-                  >
-                    Order # {order.sub_order_id}
-                  </Typography>
-                  <Box>
-                    <LightPopover
-                      title={
-                        <Box>
-                          <Typography fontSize={16} fontWeight={600}>{parentSale?.userName}</Typography>
-                          <Typography fontSize={16}>{parentSale?.address_line1}</Typography>
-                          {parentSale?.address_line2 && <Typography fontSize={16}>{parentSale?.address_line2}</Typography>}
-                          <Typography fontSize={16}>{parentSale?.city} {parentSale?.state} {parentSale?.pincode}</Typography>
-                          <Typography fontSize={16}>{parentSale?.country}</Typography>
-                        </Box>
-                      }
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: .5 }}>
-                        <span>Ship to :</span>
-                        <Typography fontSize={15} fontWeight={500} sx={{ color: "#ad1414", textTransform: "capitalize" }}>
-                          {parentSale?.userName}
-                        </Typography>
-                        <ArrowDropDownIcon />
+                <Box display={"flex"} flexDirection={{ xs: 'row', md: "column", lg: "column" }} justifyContent={'space-between'} gap={1.5} width="100%">
+                <Typography
+                  fontSize={14}
+                  fontWeight={600}
+                  sx={{ textTransform: "uppercase", wordBreak: "break-word" }}
+                >
+                  Order # {order.sub_order_id}
+                </Typography>
+                {!isMobile && (<Box>
+                  <LightPopover
+                    title={
+                      <Box>
+                        <Typography fontSize={16} fontWeight={600}>{parentSale?.userName}</Typography>
+                        <Typography fontSize={16}>{parentSale?.address_line1}</Typography>
+                        {parentSale?.address_line2 && <Typography fontSize={16}>{parentSale?.address_line2}</Typography>}
+                        <Typography fontSize={16}>{parentSale?.city} {parentSale?.state} {parentSale?.pincode}</Typography>
+                        <Typography fontSize={16}>{parentSale?.country}</Typography>
                       </Box>
-                    </LightPopover>
-                  </Box>
-                  <Typography
-                    component="div"
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      rowGap: 1,
-                    }}
+                    }
                   >
-                    <Typography
-                      onClick={() =>
-                        router.push(`/order-details?order-id=${order.order_id}&sub-order-id=${order.sub_order_id}`)
-                      }
-                      component="span"
-                      fontSize={15}
-                      pr={{ xs: 0, sm: 2 }}
-                      fontWeight={500}
-                      sx={{
-                        color: "#ad1414",
-                        cursor: "pointer",
-                        borderRight: { xs: "none", sm: "2px solid #dad9d9" },
-                      }}
-                    >
-                      View order details
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: .5 }}>
+                      <span>Ship to :</span>
+                      <Typography fontSize={15} fontWeight={500} sx={{ color: "#ad1414", textTransform: "capitalize" }}>
+                        {parentSale?.userName}
+                      </Typography>
+                      <ArrowDropDownIcon />
+                    </Box>
+                  </LightPopover>
+                </Box>)}
+                <Typography
+                  component="div"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: 'space-between',
+                    flexWrap: "wrap",
+                    rowGap: 1,
+                  }}
+                >
+                  <Button
+                    onClick={() =>
+                      router.push(`/order-details?order-id=${order.order_id}&sub-order-id=${order.sub_order_id}`)
+                    }
+                    variant="outlined"
+                    size="small"
+                    fontSize={15}
+                    pr={{ xs: 0, sm: 2 }}
+                    fontWeight={500}
+                    sx={{
+                      cursor: "pointer",
+                    }}
+                    color="primary"
+                    borderColor='primary'
+                  >
+                    View order details
+                  </Button>
+                  {!isMobile && (
                     <Typography
                       sx={{
                         marginLeft: { xs: "0px", sm: "10px" },
@@ -512,18 +519,20 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                         </Box>
                       </LightPopover>
                     </Typography>
-                  </Typography>
+                  )}
+                </Typography>
                 </Box>
               </Box>
+
             </Grid>
           </Grid>
-          <Box p={{ xs: 2, sm: 2.5, md: 3 }} sx={{ background: "#fff", borderRadius: "0 0 12px 12px" }}>
+          <Box p={{ xs: 2, sm: 2.5, md: 3 }} sx={{ background: {xs: "#f0f2f2", md: '#fff'}, borderRadius: "0 0 12px 12px" }}>
             <Typography component="div" mb={2}>
               {/* <H2 fontWeight={600}>Delivered 5 july 2024</H2> */}
               {/* <Typography>Package was handed to resident</Typography> */}
             </Typography>
             {/* Shop section - using items array */}
-            {items.length > 0 && (
+            {items.length > 0 && !isMobile && (
               <Box>
                 {items.map(product => {
                   console.log("orderproduct", product);
@@ -544,6 +553,35 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   );
                 })}
 
+              </Box>
+            )}
+            {items.length > 0 && isMobile && (
+              <Box display={'flex'} flexDirection={'column'} alignItems='center'>
+                {(showMore ? items : items.slice(0, 1)).map(product => {
+                  console.log("orderproduct", product);
+                  return (
+                    <Product
+                      key={product?._id}
+                      baseUrl={baseUrl}
+                      shopBaseUrl={shopBaseUrl}
+                      SetOpenPopup={SetOpenPopup}
+                      setReviewId={setReviewId}
+                      setVendorId={setVendorId}
+                      order={order}
+                      product={product}
+                      setReviewProduct={setReviewProduct}
+                      handleOpenReview={handleOpenReview}
+                      handleOpenEditReview={handleOpenEditReview}
+                    />
+                  );
+                })}
+                {items.length > 1 && (
+                  <Button variant="outlined"
+                    endIcon={<ArrowDropDownIcon fontSize="small" />}
+                    onClick={() => setShowMore(prev => !prev)}
+                  >
+                    {showMore ? "See Less" : "See More"}
+                  </Button>)}
               </Box>
             )}
           </Box>
@@ -636,7 +674,14 @@ const Order = ({ baseUrl, shopBaseUrl, filterOrders, getAllOrders, order }) => {
                   alt=""
                 />
                 <Box textAlign="left">
-                  <Typography fontSize={16} fontWeight={600}>
+                  <Typography fontSize={16} fontWeight={600} sx={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}
+                  >
                     {reviewProduct?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
                   </Typography>
                   <Typography fontSize={13} color="text.secondary">

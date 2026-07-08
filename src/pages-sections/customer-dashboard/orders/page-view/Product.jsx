@@ -85,6 +85,9 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
     })) ?? [];
 
   const [firstMainImage, ...remainingMainImages] = mainImages;
+  if (firstMainImage && firstMainImage?.image && product && product?.productData?.edited_image) {
+    firstMainImage.image = `${baseUrl}/${product?.productData?.edited_image}`;
+  }
 
   const images = [
     ...(firstMainImage ? [firstMainImage] : []),
@@ -173,121 +176,220 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                   <Collections fontSize='9px' /> {images.length}
                 </Typography>)}
             </Box>
-            <Typography component="div" ml={2}>
-              <H3
-                sx={{
-                  display: "-webkit-box",
-                  WebkitLineClamp: "2",
-                  WebkitBoxOrient: "vertical",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  fontSize: { xs: "12px", sm: "14px", md: "16px", lg: "16px" },
-                  cursor: 'pointer',
-                  '&:hover': { textDecoration: 'underline' }
-                }}
-                fontWeight={600}
-                onClick={() =>
-                  router.push(product.productData.product_code ? `/product/slug/${product.productData.product_code}` : `/products/${product.product_id}`) //old order fallback
-                }
-              >
-                {product?.productData?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
-              </H3>
-
-              {product?.variantData.length > 0 && product?.variantData?.map((variant, index) => (
-                <Typography
-                  fontSize={17}
-                  key={`variant-${index}`}
-                >
-                  {variant?.variant_name} {"  "}:{"  "}
-                  <Typography fontSize={17} fontWeight={500} component="span">
-                    {product?.variantAttributeData?.[index]
-                      ?.attribute_value || "N/A"}
-                  </Typography>
-                </Typography>
-              ))}
-              {product?.variants && product.variants.length > 0 && (
-                product.variants.map((variant, index) => (
-                  <Typography
-                    fontSize={14}
-                    sx={{ color: "#000", pt: 0.5 }}
-                    key={variant._id || index}
-                  >
-                    {variant.variantName}{variantHasGuide(variant) && variantHasGuide(variant)?.[0] && (<Typography component={"span"} color="primary.main" ml={1.5}
-                      onClick={() => handleGuideClick(variant)} sx={{ cursor: "pointer", border: "1px solid rgb(0, 119, 255)", px: 1, borderRadius: 1, fontSize: 12 }} fontWeight={600}
-                    >Guide</Typography>)}{"   "}:{"   "}
-                    <Box component="span" ml={1} fontWeight={500}>
-                      {variant.attributeName}
-                    </Box>
-
-                  </Typography>
-                ))
-              )}
-              {product?.customize == "Yes" && (
-                <>
-                  {product?.customizationData?.map((item, index) => (
-                    <div key={index}>
-                      {Object.entries(item).map(([key, value]) => (
-                        <div key={key} style={{ paddingTop: 4 }}>
-                          {typeof value === "object" ? (
-                            <div>
-                              {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{`${value?.value}`}</Box>
-                            </div>
-                          ) : (
-                            <div>
-                              {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{value}</Box>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </>
-              )}
-              <Typography fontSize={15} pt={1}>
-                <span style={{ fontWeight: "600" }}>Qty :</span>
-                <span> {product.qty}</span>
-              </Typography>
-              <Box
-                mt={1}
-                display="flex"
-                width={{ xs: "100%", sm: "auto" }}
-                maxWidth={{ xs: "100%", sm: "none" }}
-                flexDirection={{ xs: "column", sm: "row", md: "row" }}
-                gap={2}
-              >
-                <Button
+            <Box>
+              <Box pt={1} pl={2}>
+                <H3
+                  sx={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: "2",
+                    WebkitBoxOrient: "vertical",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    fontSize: { xs: "14px", sm: "14px", md: "16px", lg: "16px" },
+                    cursor: 'pointer',
+                    '&:hover': { textDecoration: 'underline' }
+                  }}
+                  fontWeight={600}
                   onClick={() =>
                     router.push(product.productData.product_code ? `/product/slug/${product.productData.product_code}` : `/products/${product.product_id}`) //old order fallback
                   }
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    background: "#efe8bd",
-                    borderRadius: "30px",
-                    width: { xs: "100%", sm: "130px" },
-                    minWidth: { xs: "100%", sm: "130px" },
-                    textTransform: "none",
-                  }}
                 >
-                  Buy it again
-                </Button>
-                <Button
-                  onClick={handleMessageClickPopup}
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    background: "#efe8bd",
-                    borderRadius: "30px",
-                    width: { xs: "100%", sm: "130px" },
-                    minWidth: { xs: "100%", sm: "130px" },
-                    textTransform: "none",
-                  }}
-                >
-                  Help with order
-                </Button>
+                  {product?.productData?.product_title?.replace(/<\/?[^>]+(>|$)/g, "").replace('&amp;', "&")}
+                </H3>
+                <Typography fontSize={15} pt={1}>
+                  <span style={{ fontWeight: "600" }}>Qty :</span>
+                  <span> {product.qty}</span>
+                </Typography>
               </Box>
-            </Typography>
+              <Box ml={2} display={{xs: 'none', md: 'block'}}>
+
+                {product?.variantData.length > 0 && product?.variantData?.map((variant, index) => (
+                  <Typography
+                    fontSize={17}
+                    key={`variant-${index}`}
+                  >
+                    {variant?.variant_name} {"  "}:{"  "}
+                    <Typography fontSize={17} fontWeight={500} component="span">
+                      {product?.variantAttributeData?.[index]
+                        ?.attribute_value || "N/A"}
+                    </Typography>
+                  </Typography>
+                ))}
+                {product?.variants && product.variants.length > 0 && (
+                  product.variants.map((variant, index) => (
+                    <Typography
+                      fontSize={14}
+                      sx={{ color: "#000", pt: 0.5 }}
+                      key={variant._id || index}
+                    >
+                      {variant.variantName}{variantHasGuide(variant) && variantHasGuide(variant)?.[0] && (<Typography component={"span"} color="primary.main" ml={1.5}
+                        onClick={() => handleGuideClick(variant)} sx={{ cursor: "pointer", borderColor: 'primary', border: "1px solid", px: 1, borderRadius: 1, fontSize: 12 }} fontWeight={600}
+                      >Guide</Typography>)}{"   "}:{"   "}
+                      <Box component="span" ml={1} fontWeight={500}>
+                        {variant.attributeName}
+                      </Box>
+
+                    </Typography>
+                  ))
+                )}
+                {product?.customize == "Yes" && (
+                  <>
+                    {product?.customizationData?.map((item, index) => (
+                      <div key={index}>
+                        {Object.entries(item).map(([key, value]) => (
+                          <div key={key} style={{ paddingTop: 4 }}>
+                            {typeof value === "object" ? (
+                              <div>
+                                {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{`${value?.value}`}</Box>
+                              </div>
+                            ) : (
+                              <div>
+                                {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{value}</Box>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                <Box
+                  mt={1}
+                  display="flex"
+                  width={{ xs: "100%", sm: "auto" }}
+                  maxWidth={{ xs: "100%", sm: "none" }}
+                  gap={2}
+                >
+                  <Button
+                    onClick={() =>
+                      router.push(product.productData.product_code ? `/product/slug/${product.productData.product_code}` : `/products/${product.product_id}`) //old order fallback
+                    }
+                    variant="contained"
+                    size="small"
+                    sx={{
+                      background: "#efe8bd",
+                      borderRadius: "30px",
+                      width: { xs: "100%", sm: "130px" },
+                      minWidth: { xs: "100%", sm: "130px" },
+                      textTransform: "none",
+                    }}
+                  >
+                    Buy it again
+                  </Button>
+                  <Button
+                    onClick={handleMessageClickPopup}
+                    variant="contained"
+                    size="small"
+                    sx={{
+                      background: "#efe8bd",
+                      borderRadius: "30px",
+                      width: { xs: "100%", sm: "130px" },
+                      minWidth: { xs: "100%", sm: "130px" },
+                      textTransform: "none",
+                    }}
+                  >
+                    Help with order
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
           </Box>
+        </Grid>
+
+        {/* mobile only grid */}
+        <Grid
+          item
+          xs={12}
+          sx={{ display: { xs: "block", md: "none" }, paddingLeft: "0 !important", }}
+        >
+          {product?.variantData.length > 0 && product?.variantData?.map((variant, index) => (
+            <Typography
+              fontSize={17}
+              key={`variant-${index}`}
+            >
+              {variant?.variant_name} {"  "}:{"  "}
+              <Typography fontSize={17} fontWeight={500} component="span">
+                {product?.variantAttributeData?.[index]
+                  ?.attribute_value || "N/A"}
+              </Typography>
+            </Typography>
+          ))}
+          {product?.variants && product.variants.length > 0 && (
+            product.variants.map((variant, index) => (
+              <Typography
+                fontSize={14}
+                sx={{ color: "#000", pt: 0.5 }}
+                key={variant._id || index}
+              >
+                {variant.variantName}{variantHasGuide(variant) && variantHasGuide(variant)?.[0] && (<Typography component={"span"} color="primary.main" ml={1.5}
+                  onClick={() => handleGuideClick(variant)} sx={{ cursor: "pointer", borderColor: 'primary', border: "1px solid", px: 1, borderRadius: 1, fontSize: 12 }} fontWeight={600}
+                >Guide</Typography>)}{"   "}:{"   "}
+                <Box component="span" ml={1} fontWeight={500}>
+                  {variant.attributeName}
+                </Box>
+
+              </Typography>
+            ))
+          )}
+          {product?.customize == "Yes" && (
+            <>
+              {product?.customizationData?.map((item, index) => (
+                <div key={index}>
+                  {Object.entries(item).map(([key, value]) => (
+                    <div key={key} style={{ paddingTop: 4 }}>
+                      {typeof value === "object" ? (
+                        <div>
+                          {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{`${value?.value}`}</Box>
+                        </div>
+                      ) : (
+                        <div>
+                          {key}{"  "}:{"  "}<Box component="span" ml={1} fontWeight={500} color={'black'}>{value}</Box>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
+
+          <Box
+            mt={2}
+            display="flex"
+            width={"100%"}
+            gap={2}
+          >
+            <Button
+              onClick={() =>
+                router.push(product.productData.product_code ? `/product/slug/${product.productData.product_code}` : `/products/${product.product_id}`) //old order fallback
+              }
+              variant="contained"
+              size="small"
+              sx={{
+                background: "#efe8bd",
+                borderRadius: "30px",
+                textTransform: "none",
+              }}
+              fullWidth
+            >
+              Buy it again
+            </Button>
+            <Button
+              onClick={handleMessageClickPopup}
+              variant="contained"
+              size="small"
+              sx={{
+                background: "#efe8bd",
+                borderRadius: "30px",
+                textTransform: "none",
+              }}
+              fullWidth
+            >
+              Help with order
+            </Button>
+          </Box>
+
         </Grid>
         <Grid lg={!product.is_reviewed ? 3 : 6} md={!product.is_reviewed ? 3 : 6} xs={12} sx={{ paddingTop: { xs: 1 } }}>
           {!product.is_reviewed ? (<Box
@@ -523,10 +625,10 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                     <Box
                       sx={{
                         position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        width: 64,
-                        height: 64,
+                        bottom: { xs: 0, sm: 6, md: 12 },
+                        right: { xs: 0, sm: 6, md: 12 },
+                        width: { xs: 40, sm: 60, md: 64 },
+                        height: { xs: 40, sm: 60, md: 64 },
                         borderRadius: 1,
                         overflow: "hidden",
                         border: "2px solid #fff",
