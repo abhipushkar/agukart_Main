@@ -276,7 +276,14 @@ const ReviewPopup = ({
                                 alt=""
                             />
                             <Box textAlign="left">
-                                <Typography fontSize={16} fontWeight={600}>
+                                <Typography fontSize={16} fontWeight={600} sx={{
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 4,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                }}
+                                >
                                     {reviewProduct?.product_title?.replace(/<\/?[^>]+(>|$)/g, "")}
                                 </Typography>
                                 <Typography fontSize={13} color="text.secondary">
