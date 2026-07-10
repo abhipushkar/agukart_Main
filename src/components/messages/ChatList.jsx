@@ -7,6 +7,7 @@ import {
   FormControlLabel,
   Grid,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import Link from "next/link";
 import useMyProvider from "hooks/useMyProvider";
@@ -23,6 +24,7 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
+import { useTheme } from "@emotion/react";
 
 const ChatList = ({ chatListProp }) => {
   const { usercredentials } = useMyProvider();
@@ -61,6 +63,10 @@ const ChatList = ({ chatListProp }) => {
   //     date.getFullYear() === today.getFullYear()
   //   );
   // };
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
   const isToday = (timestamp) => {
     const date = new Date(timestamp?.seconds * 1000);
@@ -301,7 +307,11 @@ const ChatList = ({ chatListProp }) => {
                   return (
                     <>
                       <TableRow key={chat.id}>
-                        <TableCell sx={{ border: "none", width: "30px" }}>
+                        <TableCell sx={{
+                          border: "none",
+                          width: { xs: "auto", sm: "30px" },
+                          padding: { xs: "2px 4px", sm: "16px 8px" },
+                        }}>
                           <Typography component="span">
                             <FormControlLabel
                               control={
@@ -310,20 +320,34 @@ const ChatList = ({ chatListProp }) => {
                                   onChange={(e) =>
                                     handleCheckboxChange(e, chat?.id)
                                   }
+                                  size={isMobile ? "small" : "medium"}
+                                  sx={{
+                                    padding: { xs: "4px", sm: "9px" },
+                                  }}
                                 />
                               }
+                              sx={{
+                                marginRight: 0,
+                                marginLeft: { xs: "-4px", sm: "-9px" },
+                              }}
                             />
                           </Typography>
                         </TableCell>
-                        <TableCell sx={{ border: "none" }}>
+
+                        <TableCell sx={{
+                          border: "none",
+                          padding: { xs: "2px 4px", sm: "16px 8px" },
+                          width: { xs: "100%", sm: "auto" },
+                        }}>
                           <Box
                             sx={{
                               display: "flex",
                               alignItems: "center",
                               wordBreak: "break-all",
+                              gap: { xs: 0.5, sm: 2 },
                             }}
                           >
-                            <Typography component="span">
+                            <Typography component="span" sx={{ flexShrink: 0 }}>
                               <Link
                                 href={
                                   chatListProp === "trashData"
@@ -347,21 +371,31 @@ const ChatList = ({ chatListProp }) => {
                                   }
                                   style={{
                                     borderRadius: "50%",
-                                    height: "60px",
-                                    width: "60px",
+                                    height: isMobile ? "36px" : "60px",
+                                    width: isMobile ? "36px" : "60px",
+                                    objectFit: "cover",
                                   }}
                                   alt="Vendor Avatar"
                                 />
                               </Link>
                             </Typography>
-                            <Typography component="div" ml={2}>
+
+                            <Typography component="div" sx={{
+                              flex: 1,
+                              minWidth: 0,
+                              ml: { xs: 0.5, sm: 2 },
+                            }}>
                               <Typography
                                 sx={{
                                   textDecoration: "none",
-                                  fontSize: "16px",
+                                  fontSize: { xs: "13px", sm: "16px" },
                                   fontWeight: "600",
                                   color: "#000",
                                   "&:hover": { textDecoration: "underline" },
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  maxWidth: { xs: "120px", sm: "200px", md: "300px" },
                                 }}
                               >
                                 <Link
@@ -378,21 +412,23 @@ const ChatList = ({ chatListProp }) => {
                                               ? `/messages?slug=${chat.id}&role=admin`
                                               : `/messages/?slug=${chat.id}`
                                   }
+                                  style={{ textDecoration: "none", color: "inherit" }}
                                 >
                                   {vendor?.name ? `${vendor.name} (${vendor?.vendor?.shop_name || "Unknown Vendor"})` : "Agukart"}
                                 </Link>
                               </Typography>
+
                               <Typography
                                 sx={{
                                   textDecoration: "none",
-                                  fontSize: "14px",
-                                  color: "#000",
+                                  fontSize: { xs: "11px", sm: "14px" },
+                                  color: "#5f6368",
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
                                   whiteSpace: "nowrap",
-                                  maxWidth: "200px", // ya jitna width chahiye
+                                  maxWidth: { xs: "120px", sm: "200px", md: "300px" },
                                   "&:hover": { textDecoration: "underline" },
-                                  cursor: "pointer", // hover me pointer dikhe
+                                  cursor: "pointer",
                                 }}
                               >
                                 <Link
@@ -414,6 +450,7 @@ const ChatList = ({ chatListProp }) => {
                                   {lastMessage?.text || "No message available"}
                                 </Link>
                               </Typography>
+
                               {chat?.productId != null && chat?.orderId != null && (
                                 <Link
                                   href={
@@ -431,13 +468,15 @@ const ChatList = ({ chatListProp }) => {
                                   }
                                   style={{
                                     display: "inline-block",
-                                    marginTop: "5px",
+                                    marginTop: isMobile ? "2px" : "5px",
                                     backgroundColor: "#fe8e40",
                                     borderRadius: "20px",
-                                    padding: "10px 15px",
+                                    padding: isMobile ? "2px 8px" : "10px 15px",
                                     color: "black",
                                     textAlign: "center",
                                     textDecoration: "none",
+                                    fontSize: isMobile ? "9px" : "14px",
+                                    fontWeight: isMobile ? "500" : "400",
                                   }}
                                 >
                                   Help Request
@@ -446,12 +485,15 @@ const ChatList = ({ chatListProp }) => {
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell sx={{ border: "none" }}>
+
+                        <TableCell sx={{
+                          border: "none",
+                          padding: { xs: "2px 4px", sm: "16px 8px" },
+                          width: { xs: "auto", sm: "auto" },
+                        }}>
                           {pathname !== "/messages/etsy" && (
                             <Box>
-                              {!isNotification?.length ? (
-                                <></>
-                              ) : (
+                              {isNotification?.length > 0 && (
                                 <Link
                                   href={
                                     chatListProp === "trashData"
@@ -474,11 +516,13 @@ const ChatList = ({ chatListProp }) => {
                                       color: "#fff",
                                       background: "#D23F57",
                                       borderRadius: "50%",
-                                      height: "25px",
-                                      width: "25px",
+                                      height: { xs: "18px", sm: "25px" },
+                                      width: { xs: "18px", sm: "25px" },
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "center",
+                                      fontSize: { xs: "9px", sm: "12px" },
+                                      fontWeight: "600",
                                     }}
                                   >
                                     {isNotification?.length || 0}
@@ -488,68 +532,94 @@ const ChatList = ({ chatListProp }) => {
                             </Box>
                           )}
                         </TableCell>
-                        <TableCell sx={{ border: "none" }}>
-                          <Box>
-                            <Link
-                              href={
-                                chatListProp === "trashData"
-                                  ? `/messages/trash/message?slug=${chat.id}`
-                                  : chatListProp === "inboxMessage"
-                                    ? `/messages/inbox/message?slug=${chat.id}`
-                                    : chatListProp === "sentBox"
-                                      ? `/messages/sent/message?slug=${chat.id}`
-                                      : chatListProp === "unreadMsg"
-                                        ? `/messages/unread/message?slug=${chat.id}`
-                                        : pathname === "/messages/etsy"
-                                          ? `/messages?slug=${chat.id}&role=admin`
-                                          : `/messages/?slug=${chat.id}`
-                              }
-                              sx={{
-                                textDecoration: "none",
-                                color: "#000",
-                                "&:hover": { textDecoration: "underline" },
-                              }}
-                            >
-                              <Typography sx={{ color: "#000" }}>
-                                {lastMessage &&
-                                  isToday(lastMessage?.createdAt, currentTime)}
-                              </Typography>
-                            </Link>
-                            <Typography>
-                              <svg
-                                stroke="currentColor"
-                                fill="currentColor"
-                                strokeWidth="0"
-                                viewBox="0 0 512 512"
-                                height="25px"
-                                width="25px"
-                                xmlns="http://www.w3.org/2000/svg"
+                        <TableCell sx={{
+                          border: "none",
+                          padding: { xs: '8px 12px', sm: '16px 8px' },
+                          width: { xs: '100%', sm: 'auto' },
+                        }}>
+                          <Box sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column-reverse', sm: 'row' },
+                            alignItems: 'center',
+                            justifyContent: { xs: 'space-between', sm: 'flex-end' },
+                            gap: { xs: 1, sm: 2, md :5 },
+                            width: '100%',
+                          }}>
+                            {/* Date/Time and Reply Icon */}
+                            <Box sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                            }}>
+                              <Link
+                                href={
+                                  chatListProp === "trashData"
+                                    ? `/messages/trash/message?slug=${chat.id}`
+                                    : chatListProp === "inboxMessage"
+                                      ? `/messages/inbox/message?slug=${chat.id}`
+                                      : chatListProp === "sentBox"
+                                        ? `/messages/sent/message?slug=${chat.id}`
+                                        : chatListProp === "unreadMsg"
+                                          ? `/messages/unread/message?slug=${chat.id}`
+                                          : pathname === "/messages/etsy"
+                                            ? `/messages?slug=${chat.id}&role=admin`
+                                            : `/messages/?slug=${chat.id}`
+                                }
+                                sx={{
+                                  textDecoration: "none",
+                                  color: "#000",
+                                  "&:hover": { textDecoration: "underline" },
+                                }}
                               >
-                                <path
-                                  fill="none"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="32"
-                                  d="m112 160-64 64 64 64"
-                                ></path>
-                                <path
-                                  fill="none"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="32"
-                                  d="M64 224h294c58.76 0 106 49.33 106 108v20"
-                                ></path>
-                              </svg>
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ border: "none" }}>
-                          {pathname !== "/messages/etsy" && (
-                            <Box>
-                              <div>
+                              </Link>
+                              <Box>
+                                <Typography sx={{ display: 'flex', alignItems: 'center', maxWidth: { xs: "18px", sm: "25px" }, maxHeight: { xs: "18px", sm: "25px" } }}>
+                                  <svg
+                                    stroke="currentColor"
+                                    fill="currentColor"
+                                    strokeWidth="0"
+                                    viewBox="0 0 512 512"
+                                    height={{ xs: "18px", sm: "25px" }}
+                                    width={{ xs: "18px", sm: "25px" }}
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      fill="none"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="32"
+                                      d="m112 160-64 64 64 64"
+                                    ></path>
+                                    <path
+                                      fill="none"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="32"
+                                      d="M64 224h294c58.76 0 106 49.33 106 108v20"
+                                    ></path>
+                                  </svg>
+
+                                </Typography>
+                                <Typography sx={{
+                                  color: "#000",
+                                  fontSize: { xs: "12px", sm: "14px" },
+                                  whiteSpace: "nowrap",
+                                }}>
+                                  {lastMessage &&
+                                    isToday(lastMessage?.createdAt, currentTime)}
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            {/* Pin Icon */}
+                            {pathname !== "/messages/etsy" && (
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 {!chat?.pinnedMsgUser ? (
                                   <PushPinOutlinedIcon
-                                    sx={{ cursor: "pointer" }}
+                                    sx={{
+                                      cursor: "pointer",
+                                      fontSize: { xs: "18px", sm: "20px" },
+                                    }}
                                     onClick={() =>
                                       pinnedMessageHadler(
                                         chat?.id,
@@ -565,12 +635,16 @@ const ChatList = ({ chatListProp }) => {
                                         usercredentials?._id
                                       )
                                     }
-                                    sx={{ cursor: "pointer" }}
+                                    sx={{
+                                      cursor: "pointer",
+                                      fontSize: { xs: "18px", sm: "20px" },
+                                      color: "#1a73e8",
+                                    }}
                                   />
                                 )}
-                              </div>
-                            </Box>
-                          )}
+                              </Box>
+                            )}
+                          </Box>
                         </TableCell>
                       </TableRow>
                     </>

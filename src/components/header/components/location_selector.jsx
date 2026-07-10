@@ -124,7 +124,7 @@ const LocationSelector = () => {
                     }}
                 >
                     <LocationOn sx={{ fontSize: 18, color: "text.secondary", mr: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, width: 180, maxWidth:180, overflow: 'hidden', textOverflow: 'ellipsis',  whiteSpace: 'nowrap',  }}>
                         Deliver to {location.countryName}
                     </Typography>
                     {open ? (

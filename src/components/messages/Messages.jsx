@@ -21,6 +21,7 @@ import WallpaperIcon from "@mui/icons-material/Wallpaper";
 import ChatBox from "./ChatBox";
 import ChatList from "./ChatList";
 import { useSearchParams } from "next/navigation";
+
 const nameSelect = [
   {
     value: "Inbox",
@@ -79,25 +80,29 @@ const Messages = () => {
   const handleSendMessage = () => {
     if (input.trim()) {
       setMessages([...messages, input]);
-      setInput(""); // Clear input field
+      setInput("");
     }
   };
 
   return (
-    <>
-      <Box>
-        {!slug ? (
-          <div>
-            <ChatList />
-          </div>
-        ) : (
-          <div>
-            <ChatBox slug={slug} />
-          </div>
-        )}{" "}
-      </Box>
-
-    </>
+    <Box 
+      sx={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      {!slug ? (
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <ChatList />
+        </Box>
+      ) : (
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <ChatBox />
+        </Box>
+      )}
+    </Box>
   );
 };
 

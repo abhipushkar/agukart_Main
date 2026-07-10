@@ -136,7 +136,7 @@ const MessagePopup = ({
         isNotification: true,
         imageUrls: [],
         productId: p?.productData?._id || null,
-        productLink: `https://agukart.com/products/${p?.productData?._id}`,
+        productLink: `https://agukart.com/product/slug/${p?.productData?.product_code}`,
         productData: {
           productTitle: p?.productData?.product_title || "",
           price: p?.sub_total || 0,
@@ -270,6 +270,7 @@ const MessagePopup = ({
             sale_price: productData?.sub_total,
             product_image: product_image,
             isCombination: productData?.isCombination,
+            variants: productData?.variants,
             variantData: productData?.variantData,
             variantAttributeData: productData?.variantAttributeData,
             customize: productData?.customize,
@@ -283,6 +284,7 @@ const MessagePopup = ({
           sale_price: item?.sub_total,
           product_image: baseUrl + item?.productData?.image?.[0], // adjust if needed
           isCombination: item?.isCombination,
+          variants: productData?.variants,
           variantData: item?.variantData,
           variantAttributeData: item?.variantAttributeData,
           customize: item?.customize,
