@@ -22,6 +22,8 @@ import { HeaderWrapper, StyledContainer } from "./styles";
 import Typography from '@mui/material/Typography';
 import useMyProvider from "hooks/useMyProvider";
 import LocationSelector from "./components/location_selector";
+import IconButton from '@mui/material/IconButton'
+import { Favorite, Message } from "@mui/icons-material";
 // ==============================================================
 
 // ==============================================================
@@ -44,9 +46,17 @@ export default function Header({ isFixed, className, midSlot }) {
       </FlexBox>
       {midSlot}
         <LocationSelector />
-      {
+      {/* {
         usercredentials?.designation_id != "4" &&  <Typography component="div"> <Link href="/affiliate-register" style={{fontWeight:'600',color:'rgba(0, 0, 0, 0.54)'}}>Affiliate registration</Link></Typography>
-      }
+      } */}
+      <FlexBox>
+        <IconButton component={Link} href='/profile/wish-list' aria-label="" sx={{color: "grey.600"}}>
+          <Favorite />
+        </IconButton>
+        <IconButton component={Link} href='/messages' aria-label="" sx={{color: "grey.600"}}>
+          <Message />
+        </IconButton>
+      </FlexBox>
       {/* LOGIN AND CART BUTTON */}
       <LoginCartButtons
         toggleDialog={toggleDialog}

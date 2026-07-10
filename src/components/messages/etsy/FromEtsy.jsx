@@ -61,21 +61,24 @@ const FromEtsy = () => {
   };
 
   return (
-    <>
-      <Box>
-        <Box>
-          {!slug ? (
-            <div>
-              <ChatList chatListProp={"fromEtsy"} />
-            </div>
-          ) : (
-            <div>
-              <ChatBox slug={slug} />
-            </div>
-          )}{" "}
+    <Box 
+      sx={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      {!slug ? (
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <ChatList chatListProp={'fromEtsy'}/>
         </Box>
-      </Box>
-    </>
+      ) : (
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <ChatBox />
+        </Box>
+      )}
+    </Box>
   );
 };
 

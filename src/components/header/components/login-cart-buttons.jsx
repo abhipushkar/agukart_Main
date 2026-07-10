@@ -29,6 +29,7 @@ import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import PersonIcon from "@mui/icons-material/Person";
 import HomeIcon from "@mui/icons-material/Home";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 // MUI ICON COMPONENT
 
@@ -233,7 +234,7 @@ export default function LoginCartButtons({ toggleDialog, toggleSidenav }) {
                       {/* <Link href="/profile/wish-list" passHref> */}
                         <ListItemButton component="a" onClick={handleCloseUserMenu}>
                           <ListItemIcon>
-                            <MessageIcon />
+                            <FavoriteBorderIcon />
                           </ListItemIcon>
                           <ListItemText>WishList</ListItemText>
                         </ListItemButton>

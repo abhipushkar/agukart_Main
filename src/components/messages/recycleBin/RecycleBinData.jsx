@@ -61,22 +61,24 @@ const TrashMessages = () => {
   };
 
   return (
-    <>
-      <Box>
-       
-        <Box>
-          {!slug ? (
-            <div>
-              <ChatList chatListProp={"trashData"} />
-            </div>
-          ) : (
-            <div>
-              <ChatBox slug={slug} />
-            </div>
-          )}{" "}
+   <Box 
+      sx={{ 
+        height: "100%", 
+        display: "flex", 
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      {!slug ? (
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <ChatList chatListProp={'trashData'}/>
         </Box>
-      </Box>
-    </>
+      ) : (
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <ChatBox />
+        </Box>
+      )}
+    </Box>
   );
 };
 
