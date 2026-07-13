@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, createContext } from "react";
+import React, { useEffect, useState, createContext, u } from "react";
 // import { db } from "../../../src/firebase/Firebase";
 import { db } from "../../src/firebase/Firebase";
 import {
@@ -15,7 +15,7 @@ import {
 import useMyProvider from "hooks/useMyProvider";
 import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import useAuth from "hooks/useAuth";
 import { filter } from "lodash";
 
@@ -25,6 +25,7 @@ const ChatContextProvider = ({ children }) => {
   const { usercredentials } = useMyProvider();
 
   const pathname = usePathname();
+  const router = useRouter();
 
   const [checkMessage, setCheckMessage] = useState([]);
   const [showCount, setShowCount] = useState(0);
@@ -139,6 +140,7 @@ const ChatContextProvider = ({ children }) => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
+          router.push('/messages')
           const myDoc = docSnap.data();
 
           const updateArr = myDoc.text.map((msg) => {

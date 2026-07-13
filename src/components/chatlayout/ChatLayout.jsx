@@ -63,7 +63,7 @@ const SidebarButton = styled(Button)(({ theme, active }) => ({
   textTransform: "none",
   fontSize: "14px",
   "&:hover": {
-    background: active ? "#e8f0fe" : "#f1f3f4",
+    background: active ? "#ffdfdf" : "#f1f3f4",
     transform: "translateX(4px)",
   },
   "& .MuiSpan-root": {
