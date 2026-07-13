@@ -62,6 +62,8 @@ const MessageContainer = styled(Box)(({ theme }) => ({
 const MessagesWrapper = styled(Box)(({ theme }) => ({
   flex: 1,
   overflowY: "auto",
+  minHeight: 0, // Critical for flex children
+  height: "100%", // Take full height
   padding: theme.spacing(2),
   [theme.breakpoints.down("sm")]: {
     padding: theme.spacing(1),
@@ -82,16 +84,15 @@ const MessagesWrapper = styled(Box)(({ theme }) => ({
   },
 }));
 
-const MessageBubble = styled(Paper)(({ theme, isOwn }) => ({
+const MessageBubble = styled(Paper)(({ theme, isOwn, images }) => ({
   padding: theme.spacing(1.5),
-  maxWidth: "85%",
-  minWidth: "60px",
+  maxWidth: images > 1 ? "50%" : images === 1 ? "30%" : "85%",
+  minWidth: "100px",
   borderRadius: isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-  backgroundColor: isOwn ? theme.palette.primary.main : "#ffffff",
-  color: isOwn ? "#ffffff" : theme.palette.text.primary,
+  backgroundColor: isOwn ? '#fff' : "#ddd",
   boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
   wordWrap: "break-word",
-  whiteSpace: "pre-line",
+  whiteSpace: "pre-wrap",
   transition: "all 0.2s ease",
   [theme.breakpoints.down("sm")]: {
     maxWidth: "90%",
@@ -754,7 +755,7 @@ const ChatBox = () => {
                         {/* Images */}
                         {/* Combined Message Content */}
                         {(msg.text || msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
-                          <MessageBubble elevation={0} isOwn={isOwn}>
+                          <MessageBubble elevation={0} isOwn={isOwn} images={msg?.attachments?.length}>
                             {/* Images from old format with WhatsApp style */}
 
                             {msg?.imageUrls?.length > 0 && (
@@ -869,13 +870,17 @@ const ChatBox = () => {
                                           handleMediaClick(mediaItems, imageIndex);
                                         }}
                                       >
-                                        <img
+                                        <Box
+                                          component="img"
                                           src={attachment.url}
                                           alt={`attachment-${index}`}
-                                          style={{
+                                          sx={{
                                             width: "100%",
                                             height: "100%",
                                             objectFit: "cover",
+                                            boxShadow: 4,
+                                            border: '2px solid #ddd',
+                                            borderRadius: 2,
                                           }}
                                         />
                                         {isLast && (
@@ -982,12 +987,15 @@ const ChatBox = () => {
 
                             {/* Text Message */}
                             {msg.text && (
+
                               <Typography
                                 sx={{
                                   fontSize: isMobile ? "14px" : "15px",
                                   wordWrap: "break-word",
-                                  whiteSpace: "pre-line",
-                                  color: isOwn ? "#fff" : "inherit",
+                                  whiteSpace: "pre-wrap",
+                                  width: 'fit-content',
+                                  maxWidth: "100%",
+                                  textAlign: "initial",
                                 }}
                               >
                                 {detectLink(msg.text || "")}
@@ -1014,8 +1022,8 @@ const ChatBox = () => {
                                 src={msg?.productData?.imageUrl}
                                 alt="Product"
                                 style={{
-                                  width: 60,
-                                  height: 60,
+                                  width: 100,
+                                  height: 100,
                                   borderRadius: "8px",
                                   objectFit: "cover",
                                 }}
@@ -1181,7 +1189,7 @@ const ChatBox = () => {
                 >
                   {files.some(f => f.type.startsWith('video/')) && 'Max video size: 25MB'}
                   {files.some(f => f.type === 'application/pdf') && 'Max PDF size: 25MB'}
-                  {files.some(f => f.type.startsWith('image/')) && `Max ${files.filter(f => f.type.startsWith('image/')).length} images`}
+                  {files.some(f => f.type.startsWith('image/')) && `Max 10 images`}
                 </Typography>
               )}
 
