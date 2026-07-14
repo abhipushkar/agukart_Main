@@ -28,7 +28,7 @@ import ShopPolicyTab from "./ShopPolicyTab";
 import { usePathname } from "next/navigation";
 import { getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import useAuth from "hooks/useAuth";
-import { ListItemButton, Modal, Skeleton } from "@mui/material";
+import { ListItemButton, Modal, Rating, Skeleton } from "@mui/material";
 import useMyProvider from "hooks/useMyProvider";
 import { useRouter } from "next/navigation";
 import MessagePopup from "./MessagePopup";
@@ -57,6 +57,8 @@ const ShopView = () => {
     `${process.env.NEXT_PUBLIC_WEB_URL}/store/${vendorDetail?.slug}`
   );
   const shareTitle = encodeURIComponent(vendorDetail?.shop_name);
+  const [summary, setSummary] = useState(null);
+
   const copyToClipboard = () => {
     const url = `${process.env.NEXT_PUBLIC_WEB_URL}/store/${vendorDetail?.slug}`;
     navigator.clipboard.writeText(url);
@@ -484,11 +486,7 @@ const ShopView = () => {
                       display: { xs: "flex", md: "none" },
                       mt: 0.5
                     }}>
-                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
-                      <StarIcon sx={{ fontSize: "14px", color: "#f5a623" }} />
+                      <Rating value={summary?.shopRatingAvg || 0} size='small' readOnly/>
                     </Box>
                   </Box>
                   <Typography
@@ -622,9 +620,9 @@ const ShopView = () => {
                             <FavoriteBorderIcon sx={{ fontSize: "16px" }} />
                           )}
 
-                          <Typography fontSize="12px">
+                          {/* <Typography fontSize="12px">
                             {vendorDetail?.followersCount || "0"}
-                          </Typography>
+                          </Typography> */}
                         </Box>
 
                         {/* Share */}
@@ -669,11 +667,7 @@ const ShopView = () => {
 
                     {/* Desktop stars + follow button (unchanged) */}
                     <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1, mt: 1 }}>
-                      <StarIcon sx={{ fontSize: "20px" }} />
-                      <StarIcon sx={{ fontSize: "20px" }} />
-                      <StarIcon sx={{ fontSize: "20px" }} />
-                      <StarIcon sx={{ fontSize: "20px" }} />
-                      <StarIcon sx={{ fontSize: "20px" }} />
+                      <Rating value={summary?.shopRatingAvg || 0} sx={{color: '#000'}} readOnly/>
                     </Box>
                     <Box mt={1.5} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
                       <Button
@@ -937,7 +931,7 @@ const ShopView = () => {
                   </Grid>
 
                   <Grid item xs={12} id="reviews">
-                    <ReviewsTab vendor_id={vendorDetail?._id} />
+                    <ReviewsTab vendor_id={vendorDetail?._id} setSummary={setSummary}/>
                   </Grid>
 
                   <Grid item xs={12} id="about">

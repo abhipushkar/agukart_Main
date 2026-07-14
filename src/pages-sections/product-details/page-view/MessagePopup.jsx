@@ -212,6 +212,7 @@ const MessagePopup = ({
   receiverid,
   vendorImage,
   shopImage,
+  productCode
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -455,7 +456,7 @@ const MessagePopup = ({
     let uploadedFiles = [];
 
     try {
-      const productLink = `${process.env.NEXT_PUBLIC_WEB_URL}/products/${productID}`;
+      const productLink = `https://agukart.com/product/slug/${productCode}`;
       const querySnapshot = await getDocs(collection(db, "chatRooms"));
       const documents = querySnapshot.docs.map((doc) => {
         const docId = doc.id;
@@ -744,6 +745,7 @@ const MessagePopup = ({
                             maxWidth: "85%", // Increased from 100%
                             gap: 1,
                             width: "auto", // Allow it to size based on content
+                            flex: 1
                           }}
                         >
                           {!isOwn && (
@@ -850,7 +852,8 @@ const MessagePopup = ({
                                 )}
 
                                 {/* New Attachments */}
-                                {msg?.attachments?.length > 0 && (
+                                {/* Images Grid */}
+                                {msg?.attachments?.filter(a => a.type === 'image').length > 0 && (
                                   <Box
                                     sx={{
                                       display: "grid",
@@ -860,144 +863,141 @@ const MessagePopup = ({
                                       mb: msg.text ? 1 : 0,
                                     }}
                                   >
-                                    {msg.attachments.slice(0, 4).map((attachment, index) => {
-                                      if (attachment.type === "image") {
-                                        const imageAttachments = msg.attachments.filter(a => a.type === 'image');
-                                        const imageIndex = imageAttachments.indexOf(attachment);
-                                        const isLast = imageIndex === 3 && imageAttachments.length > 4;
-                                        const remainingCount = imageAttachments.length - 4;
+                                    {msg.attachments.filter(a => a.type === 'image').slice(0, 4).map((attachment, index) => {
+                                      const imageAttachments = msg.attachments.filter(a => a.type === 'image');
+                                      const imageIndex = imageAttachments.indexOf(attachment);
+                                      const isLast = imageIndex === 3 && imageAttachments.length > 4;
+                                      const remainingCount = imageAttachments.length - 4;
 
-                                        return (
-                                          <Box
-                                            key={index}
-                                            sx={{
-                                              position: 'relative',
-                                              aspectRatio: '1',
-                                              borderRadius: imageAttachments.length === 1 ? '8px' : '4px',
-                                              overflow: 'hidden',
-                                              cursor: 'pointer',
-                                              gridColumn: imageAttachments.length === 1 ? '1 / -1' : 'auto',
-                                              ...(imageAttachments.length === 3 && imageIndex === 0 && {
-                                                gridRow: '1 / 3',
-                                              }),
+                                      return (
+                                        <Box
+                                          key={index}
+                                          sx={{
+                                            position: 'relative',
+                                            aspectRatio: '1',
+                                            borderRadius: imageAttachments.length === 1 ? '8px' : '4px',
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            gridColumn: imageAttachments.length === 1 ? '1 / -1' : 'auto',
+                                            ...(imageAttachments.length === 3 && imageIndex === 0 && {
+                                              gridRow: '1 / 3',
+                                            }),
+                                          }}
+                                          onClick={() => {
+                                            const mediaItems = getMediaItems(msg);
+                                            const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
+                                            handleMediaClick(mediaItems, imageIndex);
+                                          }}
+                                        >
+                                          <img
+                                            src={attachment.url}
+                                            alt={`attachment-${index}`}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
                                             }}
-                                            onClick={() => {
-                                              const mediaItems = getMediaItems(msg);
-                                              const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
-                                              handleMediaClick(mediaItems, imageIndex);
-                                            }}
-                                          >
-                                            <img
-                                              src={attachment.url}
-                                              alt={`attachment-${index}`}
-                                              style={{
-                                                width: "100%",
-                                                height: "100%",
-                                                objectFit: "cover",
+                                          />
+                                          {isLast && (
+                                            <Box
+                                              sx={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#fff',
+                                                fontSize: '24px',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
                                               }}
-                                            />
-                                            {isLast && (
-                                              <Box
-                                                sx={{
-                                                  position: 'absolute',
-                                                  top: 0,
-                                                  left: 0,
-                                                  right: 0,
-                                                  bottom: 0,
-                                                  backgroundColor: 'rgba(0,0,0,0.5)',
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  color: '#fff',
-                                                  fontSize: '24px',
-                                                  fontWeight: 'bold',
-                                                  cursor: 'pointer',
-                                                }}
-                                                onClick={() => {
-                                                  const mediaItems = getMediaItems(msg);
-                                                  const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
-                                                  handleMediaClick(mediaItems, imageIndex);
-                                                }}
-                                              >
-                                                +{remainingCount}
-                                              </Box>
-                                            )}
-                                          </Box>
-                                        );
-                                      } else if (attachment.type === "video") {
-                                        return (
-                                          <Box
-                                            key={index}
-                                            sx={{
-                                              maxWidth: "300px",
-                                              maxHeight: "300px",
-                                              borderRadius: "8px",
-                                              overflow: "hidden",
-                                              [theme.breakpoints.down("sm")]: {
-                                                maxWidth: "250px",
-                                                maxHeight: "250px",
-                                              },
-                                              cursor: 'pointer',
-                                            }}
-                                            onClick={() => {
-                                              const mediaItems = getMediaItems(msg);
-                                              const videoIndex = mediaItems.findIndex(item => item.url === attachment.url);
-                                              handleMediaClick(mediaItems, videoIndex);
-                                            }}
-                                          >
-                                            <video
-                                              controls
-                                              style={{
-                                                width: "100%",
-                                                height: "100%",
+                                              onClick={() => {
+                                                const mediaItems = getMediaItems(msg);
+                                                const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
+                                                handleMediaClick(mediaItems, imageIndex);
                                               }}
                                             >
-                                              <source src={attachment.url} />
-                                              Your browser does not support the video tag.
-                                            </video>
-                                          </Box>
-                                        );
-                                      } else if (attachment.type === "pdf") {
-                                        return (
-                                          <Box
-                                            key={index}
-                                            sx={{
-                                              maxWidth: "280px",
-                                              borderRadius: "8px",
-                                              overflow: "hidden",
-                                              border: "1px solid #e8eaed",
-                                              p: 1,
-                                              backgroundColor: isOwn ? "rgba(255,255,255,0.1)" : "#fff",
-                                            }}
-                                          >
-                                            <a
-                                              href={attachment.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              style={{
-                                                textDecoration: "none",
-                                                color: "inherit",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                              }}
-                                            >
-                                              <span>📄</span>
-                                              <Typography sx={{
-                                                fontSize: "13px",
-                                                wordBreak: "break-all",
-                                                color: isOwn ? "#fff" : "inherit",
-                                              }}>
-                                                {attachment.fileName || "PDF Document"}
-                                              </Typography>
-                                            </a>
-                                          </Box>
-                                        );
-                                      }
-                                      return null;
+                                              +{remainingCount}
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      );
                                     })}
                                   </Box>
                                 )}
+
+                                {/* Videos */}
+                                {msg?.attachments?.filter(a => a.type === 'video').map((attachment, index) => (
+                                  <Box
+                                    key={`video-${index}`}
+                                    sx={{
+                                      maxWidth: "300px",
+                                      maxHeight: "300px",
+                                      borderRadius: "8px",
+                                      overflow: "hidden",
+                                      cursor: 'pointer',
+                                      mb: 0.5,
+                                    }}
+                                    onClick={() => {
+                                      const mediaItems = getMediaItems(msg);
+                                      const videoIndex = mediaItems.findIndex(item => item.url === attachment.url);
+                                      handleMediaClick(mediaItems, videoIndex);
+                                    }}
+                                  >
+                                    <video
+                                      controls
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                      }}
+                                    >
+                                      <source src={attachment.url} />
+                                      Your browser does not support the video tag.
+                                    </video>
+                                  </Box>
+                                ))}
+
+                                {/* PDFs */}
+                                {msg?.attachments?.filter(a => a.type === 'pdf').map((attachment, index) => (
+                                  <Box
+                                    key={`pdf-${index}`}
+                                    sx={{
+                                      maxWidth: "280px",
+                                      borderRadius: "8px",
+                                      overflow: "hidden",
+                                      border: "1px solid #e8eaed",
+                                      p: 1,
+                                      backgroundColor: isOwn ? "rgba(255,255,255,0.1)" : "#fff",
+                                      mb: 0.5,
+                                    }}
+                                  >
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        textDecoration: "none",
+                                        color: "inherit",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                      }}
+                                    >
+                                      <span>📄</span>
+                                      <Typography sx={{
+                                        fontSize: "13px",
+                                        wordBreak: "break-all",
+                                        color: isOwn ? "#fff" : "inherit",
+                                      }}>
+                                        {attachment.fileName || "PDF Document"}
+                                      </Typography>
+                                    </a>
+                                  </Box>
+                                ))}
 
                                 {/* Text Message */}
                                 {msg.text && (

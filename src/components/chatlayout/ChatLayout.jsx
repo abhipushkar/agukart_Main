@@ -122,7 +122,7 @@ const ActionButton = styled(Button)(({ theme, disabled: isDisabled }) => ({
   padding: "6px 16px",
   color: isDisabled ? "#9aa0a6" : "#3c4043",
   textTransform: "none",
-  fontSize: "13px",
+  fontSize: "12px",
   "&:hover": {
     background: isDisabled ? "transparent" : "#f1f3f4",
     borderColor: isDisabled ? "#dadce0" : "#3c4043",
@@ -132,6 +132,10 @@ const ActionButton = styled(Button)(({ theme, disabled: isDisabled }) => ({
     color: "#9aa0a6",
   },
 }));
+
+ActionButton.defaultProps = {
+  size: "small",
+};
 
 const ChatLayout = ({ children }) => {
   const theme = useTheme();
@@ -480,7 +484,7 @@ const ChatLayout = ({ children }) => {
     <Box sx={{ bgcolor: "#f8f9fa", minHeight: "100vh" }}>
       {/* Header */}
       <Box
-        p={{ xs: 2, sm: 3 }}
+        p={2}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -582,7 +586,7 @@ const ChatLayout = ({ children }) => {
           }}>
             {/* Toolbar */}
             <Box
-              p={{ xs: 1, sm: 2 }}
+              p={1}
               sx={{
                 borderBottom: "1px solid #e8eaed",
                 flexShrink: 0,
