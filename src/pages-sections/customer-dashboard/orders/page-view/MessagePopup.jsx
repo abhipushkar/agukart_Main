@@ -363,6 +363,7 @@ const MessagePopup = ({
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
+    console.log("msg", messages);
   }, [messages]);
 
   const detectLink = (text) => {
@@ -379,6 +380,7 @@ const MessagePopup = ({
   };
 
   useEffect(() => {
+    if (!token) return;
     const q = query(
       collection(db, "chatRooms"),
       where("receiverId", "==", receiverId),
@@ -393,8 +395,6 @@ const MessagePopup = ({
       }));
       const matchingDocument = newMessages?.filter((doc) => {
         return (
-          doc?.receiverId === receiverId &&
-          doc?.user === senderId &&
           doc?.subOrderId === subOrderId
         );
       });
@@ -490,6 +490,8 @@ const MessagePopup = ({
   };
 
   const buildProductMessages = () => {
+    let messages = [];
+
     if (subOrderProducts && subOrderProducts.length > 0 && !productID && !productData) {
       const productMessages = subOrderProducts.map((p) => ({
         senderType: "user",
@@ -503,53 +505,64 @@ const MessagePopup = ({
         productData: {
           productTitle: p?.productData?.product_title || "",
           price: p?.sub_total || 0,
-          imageUrl: p?.productData?.image?.[0]
-            ? `${baseUrl}${p.productData.image[0]}`
-            : "",
+          imageUrl: p?.productData?.image?.[0] ? `${baseUrl}${p.productData.image[0]}` : "",
         },
-        orderId: orderId,
-        subOrderId: subOrderId,
+        orderId: orderId || "",
+        subOrderId: subOrderId || "",
       }));
-      productMessages.push({
+      messages = productMessages;
+
+      messages.push({
         senderType: "user",
         text: input?.trim() || "Hi, I need help with this order",
         createdAt: new Date(),
         messageSenderId: senderId,
         isNotification: false,
         imageUrls: [],
-        orderId: orderId,
-        subOrderId: subOrderId
+        orderId: orderId || "",
+        subOrderId: subOrderId || ""
       });
-      return productMessages;
-    }
-    return [
-      {
-        senderType: "user",
-        text: "",
-        createdAt: new Date(),
-        messageSenderId: senderId,
-        isNotification: true,
-        imageUrls: [],
-        productId: productID || null,
-        productData: {
-          productTitle: productData?.productData?.product_title || "",
-          price: productData?.sub_total || 0,
-          imageUrl: product_image || "",
+    } else {
+      messages = [
+        {
+          senderType: "user",
+          text: "",
+          createdAt: new Date(),
+          messageSenderId: senderId,
+          isNotification: true,
+          imageUrls: [],
+          productId: productID || null,
+          productData: {
+            productTitle: productData?.productData?.product_title || "",
+            price: productData?.sub_total || 0,
+            imageUrl: product_image || "",
+          },
+          orderId: orderId || "",
+          subOrderId: subOrderId || ""
         },
-        orderId: orderId,
-        subOrderId: subOrderId
-      },
-      {
-        senderType: "user",
-        text: input?.trim() || "Hi, I need help with this order",
-        createdAt: new Date(),
-        messageSenderId: senderId,
-        isNotification: false,
-        imageUrls: [],
-        orderId: orderId,
-        subOrderId: subOrderId
-      }
-    ];
+        {
+          senderType: "user",
+          text: input?.trim() || "Hi, I need help with this order",
+          createdAt: new Date(),
+          messageSenderId: senderId,
+          isNotification: false,
+          imageUrls: [],
+          orderId: orderId || "",
+          subOrderId: subOrderId || ""
+        }
+      ];
+    }
+
+    // Clean messages - remove undefined values
+    return messages.map(msg => {
+      const cleaned = { ...msg };
+      Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === undefined) {
+          delete cleaned[key];
+        }
+      });
+      return cleaned;
+    });
   };
 
   const sendMessage = async () => {
@@ -651,59 +664,90 @@ const MessagePopup = ({
           text: updatedText,
           currentTime: new Date(),
         });
+        // Replace this entire else block (from line ~350-380) with:
+
       } else {
         const productMessages = buildProductMessages();
+
+        // Build productData only if there's actual data
         let productdata = {};
-        if (productData) {
+        if (productData && Object.keys(productData).length > 0) {
           productdata = {
             orderId: orderId,
-            name: productData?.productData?.product_title,
-            qty: productData?.qty,
-            sale_price: productData?.sub_total,
-            product_image: product_image,
-            isCombination: productData?.isCombination,
-            variants: productData?.variants,
-            variantData: productData?.variantData,
-            variantAttributeData: productData?.variantAttributeData,
-            customize: productData?.customize,
-            customizationData: productData?.customizationData,
+            name: productData?.productData?.product_title || "",
+            qty: productData?.qty || 0,
+            sale_price: productData?.sub_total || 0,
+            product_image: product_image || "",
+            isCombination: productData?.isCombination || false,
+            variants: productData?.variants || [],
+            variantData: productData?.variantData || [],
+            variantAttributeData: productData?.variantAttributeData || [],
+            customize: productData?.customize || "No",
+            customizationData: productData?.customizationData || [],
           };
         }
 
         const mappedProducts = (subOrderProducts || []).map((item) => ({
-          orderId: orderId,
-          name: item?.productData?.product_title,
-          qty: item?.qty,
-          sale_price: item?.sub_total,
-          product_image: baseUrl + item?.productData?.image?.[0],
-          isCombination: item?.isCombination,
-          variants: productData?.variants,
-          variantData: item?.variantData,
-          variantAttributeData: item?.variantAttributeData,
-          customize: item?.customize,
-          customizationData: item?.customizationData,
+          orderId: orderId || "",
+          name: item?.productData?.product_title || "",
+          qty: item?.qty || 0,
+          sale_price: item?.sub_total || 0,
+          product_image: item?.productData?.image?.[0] ? baseUrl + item.productData.image[0] : "",
+          isCombination: item?.isCombination || false,
+          variants: productData?.variants || [],
+          variantData: item?.variantData || [],
+          variantAttributeData: item?.variantAttributeData || [],
+          customize: item?.customize || "No",
+          customizationData: item?.customizationData || [],
         }));
 
-        await addDoc(collection(db, "chatRooms"), {
+        // Clean up the payload - remove undefined values
+        const payload = {
           text: productMessages,
           createdAt: new Date(),
           user: senderId,
           receiverId: receiverId,
           isDeleted: false,
           currentTime: new Date(),
-          userName: usercredentials?.name,
+          userName: usercredentials?.name || "",
           vendorName: vendorName || "",
           shopName: shopName || "",
           productId: productID || "",
-          productData: productdata,
-          orderId: orderId,
-          subOrderId: subOrderId,
-          products: mappedProducts
+          orderId: orderId || "",
+          subOrderId: subOrderId || "",
+        };
+
+        // Only add productData if it has keys
+        if (Object.keys(productdata).length > 0) {
+          payload.productData = productdata;
+        }
+
+        // Only add products if array has items
+        if (mappedProducts && mappedProducts.length > 0) {
+          payload.products = mappedProducts;
+        }
+
+        // Also clean up productMessages to ensure no undefined values
+        const cleanedProductMessages = productMessages.map(msg => {
+          const cleaned = { ...msg };
+          // Remove undefined values
+          Object.keys(cleaned).forEach(key => {
+            if (cleaned[key] === undefined) {
+              delete cleaned[key];
+            }
+          });
+          return cleaned;
         });
+
+        // Update the text in payload with cleaned messages
+        payload.text = cleanedProductMessages;
+
+        await addDoc(collection(db, "chatRooms"), payload);
       }
       setInput("");
     } catch (error) {
       console.error("Error sending message:", error);
+      console.trace("err", error);
     } finally {
       setIsSending(false);
     }
@@ -881,6 +925,7 @@ const MessagePopup = ({
                             maxWidth: "85%", // Increased from 100%
                             gap: 1,
                             width: "auto", // Allow it to size based on content
+                            flex: 1
                           }}
                         >
                           {!isOwn && (
@@ -987,7 +1032,8 @@ const MessagePopup = ({
                                 )}
 
                                 {/* New Attachments */}
-                                {msg?.attachments?.length > 0 && (
+                                {/* Images Grid */}
+                                {msg?.attachments?.filter(a => a.type === 'image').length > 0 && (
                                   <Box
                                     sx={{
                                       display: "grid",
@@ -997,144 +1043,141 @@ const MessagePopup = ({
                                       mb: msg.text ? 1 : 0,
                                     }}
                                   >
-                                    {msg.attachments.slice(0, 4).map((attachment, index) => {
-                                      if (attachment.type === "image") {
-                                        const imageAttachments = msg.attachments.filter(a => a.type === 'image');
-                                        const imageIndex = imageAttachments.indexOf(attachment);
-                                        const isLast = imageIndex === 3 && imageAttachments.length > 4;
-                                        const remainingCount = imageAttachments.length - 4;
+                                    {msg.attachments.filter(a => a.type === 'image').slice(0, 4).map((attachment, index) => {
+                                      const imageAttachments = msg.attachments.filter(a => a.type === 'image');
+                                      const imageIndex = imageAttachments.indexOf(attachment);
+                                      const isLast = imageIndex === 3 && imageAttachments.length > 4;
+                                      const remainingCount = imageAttachments.length - 4;
 
-                                        return (
-                                          <Box
-                                            key={index}
-                                            sx={{
-                                              position: 'relative',
-                                              aspectRatio: '1',
-                                              borderRadius: imageAttachments.length === 1 ? '8px' : '4px',
-                                              overflow: 'hidden',
-                                              cursor: 'pointer',
-                                              gridColumn: imageAttachments.length === 1 ? '1 / -1' : 'auto',
-                                              ...(imageAttachments.length === 3 && imageIndex === 0 && {
-                                                gridRow: '1 / 3',
-                                              }),
+                                      return (
+                                        <Box
+                                          key={index}
+                                          sx={{
+                                            position: 'relative',
+                                            aspectRatio: '1',
+                                            borderRadius: imageAttachments.length === 1 ? '8px' : '4px',
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            gridColumn: imageAttachments.length === 1 ? '1 / -1' : 'auto',
+                                            ...(imageAttachments.length === 3 && imageIndex === 0 && {
+                                              gridRow: '1 / 3',
+                                            }),
+                                          }}
+                                          onClick={() => {
+                                            const mediaItems = getMediaItems(msg);
+                                            const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
+                                            handleMediaClick(mediaItems, imageIndex);
+                                          }}
+                                        >
+                                          <img
+                                            src={attachment.url}
+                                            alt={`attachment-${index}`}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
                                             }}
-                                            onClick={() => {
-                                              const mediaItems = getMediaItems(msg);
-                                              const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
-                                              handleMediaClick(mediaItems, imageIndex);
-                                            }}
-                                          >
-                                            <img
-                                              src={attachment.url}
-                                              alt={`attachment-${index}`}
-                                              style={{
-                                                width: "100%",
-                                                height: "100%",
-                                                objectFit: "cover",
+                                          />
+                                          {isLast && (
+                                            <Box
+                                              sx={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#fff',
+                                                fontSize: '24px',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
                                               }}
-                                            />
-                                            {isLast && (
-                                              <Box
-                                                sx={{
-                                                  position: 'absolute',
-                                                  top: 0,
-                                                  left: 0,
-                                                  right: 0,
-                                                  bottom: 0,
-                                                  backgroundColor: 'rgba(0,0,0,0.5)',
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  color: '#fff',
-                                                  fontSize: '24px',
-                                                  fontWeight: 'bold',
-                                                  cursor: 'pointer',
-                                                }}
-                                                onClick={() => {
-                                                  const mediaItems = getMediaItems(msg);
-                                                  const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
-                                                  handleMediaClick(mediaItems, imageIndex);
-                                                }}
-                                              >
-                                                +{remainingCount}
-                                              </Box>
-                                            )}
-                                          </Box>
-                                        );
-                                      } else if (attachment.type === "video") {
-                                        return (
-                                          <Box
-                                            key={index}
-                                            sx={{
-                                              maxWidth: "300px",
-                                              maxHeight: "300px",
-                                              borderRadius: "8px",
-                                              overflow: "hidden",
-                                              [theme.breakpoints.down("sm")]: {
-                                                maxWidth: "250px",
-                                                maxHeight: "250px",
-                                              },
-                                              cursor: 'pointer',
-                                            }}
-                                            onClick={() => {
-                                              const mediaItems = getMediaItems(msg);
-                                              const videoIndex = mediaItems.findIndex(item => item.url === attachment.url);
-                                              handleMediaClick(mediaItems, videoIndex);
-                                            }}
-                                          >
-                                            <video
-                                              controls
-                                              style={{
-                                                width: "100%",
-                                                height: "100%",
+                                              onClick={() => {
+                                                const mediaItems = getMediaItems(msg);
+                                                const imageIndex = mediaItems.findIndex(item => item.url === attachment.url);
+                                                handleMediaClick(mediaItems, imageIndex);
                                               }}
                                             >
-                                              <source src={attachment.url} />
-                                              Your browser does not support the video tag.
-                                            </video>
-                                          </Box>
-                                        );
-                                      } else if (attachment.type === "pdf") {
-                                        return (
-                                          <Box
-                                            key={index}
-                                            sx={{
-                                              maxWidth: "280px",
-                                              borderRadius: "8px",
-                                              overflow: "hidden",
-                                              border: "1px solid #e8eaed",
-                                              p: 1,
-                                              backgroundColor: isOwn ? "rgba(255,255,255,0.1)" : "#fff",
-                                            }}
-                                          >
-                                            <a
-                                              href={attachment.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              style={{
-                                                textDecoration: "none",
-                                                color: "inherit",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                              }}
-                                            >
-                                              <span>📄</span>
-                                              <Typography sx={{
-                                                fontSize: "13px",
-                                                wordBreak: "break-all",
-                                                color: isOwn ? "#fff" : "inherit",
-                                              }}>
-                                                {attachment.fileName || "PDF Document"}
-                                              </Typography>
-                                            </a>
-                                          </Box>
-                                        );
-                                      }
-                                      return null;
+                                              +{remainingCount}
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      );
                                     })}
                                   </Box>
                                 )}
+
+                                {/* Videos */}
+                                {msg?.attachments?.filter(a => a.type === 'video').map((attachment, index) => (
+                                  <Box
+                                    key={`video-${index}`}
+                                    sx={{
+                                      maxWidth: "300px",
+                                      maxHeight: "300px",
+                                      borderRadius: "8px",
+                                      overflow: "hidden",
+                                      cursor: 'pointer',
+                                      mb: 0.5,
+                                    }}
+                                    onClick={() => {
+                                      const mediaItems = getMediaItems(msg);
+                                      const videoIndex = mediaItems.findIndex(item => item.url === attachment.url);
+                                      handleMediaClick(mediaItems, videoIndex);
+                                    }}
+                                  >
+                                    <video
+                                      controls
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                      }}
+                                    >
+                                      <source src={attachment.url} />
+                                      Your browser does not support the video tag.
+                                    </video>
+                                  </Box>
+                                ))}
+
+                                {/* PDFs */}
+                                {msg?.attachments?.filter(a => a.type === 'pdf').map((attachment, index) => (
+                                  <Box
+                                    key={`pdf-${index}`}
+                                    sx={{
+                                      maxWidth: "280px",
+                                      borderRadius: "8px",
+                                      overflow: "hidden",
+                                      border: "1px solid #e8eaed",
+                                      p: 1,
+                                      backgroundColor: isOwn ? "rgba(255,255,255,0.1)" : "#fff",
+                                      mb: 0.5,
+                                    }}
+                                  >
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        textDecoration: "none",
+                                        color: "inherit",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                      }}
+                                    >
+                                      <span>📄</span>
+                                      <Typography sx={{
+                                        fontSize: "13px",
+                                        wordBreak: "break-all",
+                                        color: isOwn ? "#fff" : "inherit",
+                                      }}>
+                                        {attachment.fileName || "PDF Document"}
+                                      </Typography>
+                                    </a>
+                                  </Box>
+                                ))}
 
                                 {/* Text Message */}
                                 {msg.text && (

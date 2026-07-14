@@ -37,7 +37,7 @@ const SORT_OPTIONS = [
   },
 ];
 
-const ReviewsTab = ({ vendor_id }) => {
+const ReviewsTab = ({ vendor_id, setSummary }) => {
   const [loading, setLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [avgRating, setAvgRating] = useState(0);
@@ -54,7 +54,7 @@ const ReviewsTab = ({ vendor_id }) => {
 
     try {
       setLoading(true);
-      const baseurl = '/product-reviews';
+      const baseurl = 'product-reviews';
       const queryPayload = {
         vendor_id,
         review_type: "shop",
@@ -70,6 +70,7 @@ const ReviewsTab = ({ vendor_id }) => {
         setImageBaseUrl(res?.data?.image_url);
         setProductImageBaseUrl("https://api.agukart.com/uploads/product/");
         setTotalPages(res?.data?.pagination?.pages);
+        setSummary(res?.data?.summary)
       }
     } catch (error) {
       setLoading(false);

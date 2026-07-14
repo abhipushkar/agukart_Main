@@ -1734,6 +1734,7 @@ const MyproductDetails = ({ res }) => {
         productTitle={myproduct?.product_title}
         originalPrice={originalPrice}
         productImage={`${myproduct?.image_url}${myproduct?.image[0]}`}
+        productCode={myproduct?.product_code}
       />
       <ShareModal
         open={openModal}
