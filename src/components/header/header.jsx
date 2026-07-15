@@ -42,7 +42,7 @@ export default function Header({ isFixed, className, midSlot }) {
       <FlexBox minWidth={100} alignItems="center">
         <Link href="/">
           <LazyImage
-            src={require("/public/assets/images/Agukart.svg")}
+            src={require("/public/assets/images/logo.png")}
             alt="logo"
           />
         </Link>
