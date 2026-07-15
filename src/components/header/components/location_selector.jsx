@@ -102,7 +102,6 @@ const LocationSelector = () => {
                     onClick={handleClick}
                     size="small"
                     sx={{
-                        color: "text.secondary",
                         "&:hover": { color: "primary.main" }
                     }}
                 >

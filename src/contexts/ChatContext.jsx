@@ -132,40 +132,65 @@ const ChatContextProvider = ({ children }) => {
   const markAsUnreadHandler = () => {
     checkMessage.map(async (docId) => {
       try {
-        const docRef = doc(
-          db,
-          pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId,
-        );
+        const docRef = doc(db, "chatRooms", docId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          router.push('/messages')
+          router.push('/messages');
           const myDoc = docSnap.data();
+          const existingText = myDoc.text || [];
 
-          const updateArr = myDoc.text.map((msg) => {
-            if (msg.messageSenderId !== usercredentials?._id) {
-              return { ...msg, isNotification: false };
+          // For user: find vendor/admin messages (not user)
+          const isVendorOrAdmin = (msg) => msg.senderType === "vendor" || msg.senderType === "admin";
+          const isUser = (msg) => msg.senderType === "user";
+
+          // Find the last batch of vendor/admin messages
+          let lastBatchIndex = -1;
+          for (let i = existingText.length - 1; i >= 0; i--) {
+            if (isVendorOrAdmin(existingText[i])) {
+              if (lastBatchIndex === -1) {
+                lastBatchIndex = i;
+              }
+            } else {
+              // Stop when we hit user's own message
+              if (lastBatchIndex !== -1) break;
+            }
+          }
+
+          if (lastBatchIndex === -1) {
+            setCheckMessage([]);
+            return;
+          }
+
+          // Find the start of the batch
+          let batchStart = lastBatchIndex;
+          for (let i = lastBatchIndex - 1; i >= 0; i--) {
+            if (isVendorOrAdmin(existingText[i])) {
+              batchStart = i;
+            } else {
+              break;
+            }
+          }
+
+          // Update only the last batch of vendor/admin messages
+          const updateArr = existingText.map((msg, index) => {
+            if (index >= batchStart && isVendorOrAdmin(msg)) {
+              return {
+                ...msg,
+                isNotification: false
+              };
             }
             return msg;
           });
 
-          await updateDoc(
-            doc(
-              db,
-              pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-              docId,
-            ),
-            {
-              text: updateArr,
-            },
-          );
+          await updateDoc(doc(db, "chatRooms", docId), {
+            text: updateArr
+          });
         }
         setCheckMessage([]);
-        setAllChecked(false);
       } catch (error) {
         console.error("Error getting document:", error);
-        throw error; // Handle the error as needed
+        throw error;
       }
     });
   };

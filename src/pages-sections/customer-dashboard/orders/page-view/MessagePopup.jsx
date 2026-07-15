@@ -905,7 +905,7 @@ const MessagePopup = ({
                     {date === formatDate(new Date()) ? "Today" : date}
                   </DateDivider>
                   {messageGroups[date].map((msg, index) => {
-                    const isOwn = msg.messageSenderId === senderId;
+                    const isOwn = msg.senderType === 'user';
 
                     return (
                       <ListItem

@@ -33,6 +33,8 @@ import { fetchConversionRate } from "utils/currencyConverter";
 import { useCurrency } from "contexts/CurrencyContext";
 import { getAPIAuth } from "utils/__api__/ApiServies";
 import useAuth from "hooks/useAuth";
+import LocationSelector from "components/header/components/location_selector";
+import { Box } from "@mui/material";
 // ==============================================================
 
 // ==============================================================
@@ -311,6 +313,9 @@ export default function Topbar({ bgColor }) {
               </Link>
             ))}
           </FlexBox>
+          <Box display={{xs: 'block', sm: "block", md: 'none', lg: 'none'}}>
+            <LocationSelector />
+          </Box>
         </FlexBox>
       </StyledContainer>
     </StyledRoot>
