@@ -25,12 +25,15 @@ import useAuth from "hooks/useAuth";
 import LocationSelector from "./components/location_selector";
 import IconButton from '@mui/material/IconButton'
 import { Favorite, Message } from "@mui/icons-material";
+import { Badge } from "@mui/material";
+import useChat from "hooks/useChat";
 // ==============================================================
 
 // ==============================================================
 export default function Header({ isFixed, className, midSlot }) {
   const { usercredentials } = useMyProvider();
   const { token } = useAuth();
+  const { showCount } = useChat();
   const theme = useTheme();
   const downMd = useMediaQuery(theme.breakpoints.down(1150));
   const { dialogOpen, sidenavOpen, toggleDialog, toggleSidenav } = useHeader();
@@ -47,19 +50,21 @@ export default function Header({ isFixed, className, midSlot }) {
         {isFixed ? <CategoriesMenu /> : null}
       </FlexBox>
       {midSlot}
-        <LocationSelector />
+      <LocationSelector />
       {/* {
         usercredentials?.designation_id != "4" &&  <Typography component="div"> <Link href="/affiliate-register" style={{fontWeight:'600',color:'rgba(0, 0, 0, 0.54)'}}>Affiliate registration</Link></Typography>
       } */}
-      { token ?(<FlexBox>
-        <IconButton component={Link} href='/profile/wish-list' aria-label="" sx={{color: "grey.600"}}>
+      {token ? (<FlexBox>
+        <IconButton component={Link} href='/profile/wish-list' aria-label="" sx={{ color: "grey.600" }}>
           <Favorite />
         </IconButton>
-        <IconButton component={Link} href='/messages' aria-label="" sx={{color: "grey.600"}}>
-          <Message />
-        </IconButton>
-      </FlexBox>):(
-        <IconButton onClick={toggleDialog} sx={{color: "grey.600"}}>
+        <Badge badgeContent={showCount} sx={{ mt: 0.3 }} color="primary">
+          <IconButton component={Link} href='/messages' aria-label="" sx={{ color: "grey.600" }}>
+            <Message />
+          </IconButton>
+        </Badge>
+      </FlexBox>) : (
+        <IconButton onClick={toggleDialog} sx={{ color: "grey.600" }}>
           <Favorite />
         </IconButton>
       )}
@@ -84,7 +89,7 @@ export default function Header({ isFixed, className, midSlot }) {
       </div>
       <HeaderWrapper className={clsx(className)}>
         <StyledContainer>
-          {downMd ? <MobileHeader midSlot={midSlot}/> : CONTENT_FOR_LARGE_DEVICE}
+          {downMd ? <MobileHeader midSlot={midSlot} /> : CONTENT_FOR_LARGE_DEVICE}
         </StyledContainer>
       </HeaderWrapper>
     </>

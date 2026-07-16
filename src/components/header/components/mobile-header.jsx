@@ -7,7 +7,7 @@ import IconButton from "@mui/material/IconButton";
 import { InputBase } from "@mui/material";
 import LazyImage from "components/LazyImage";
 // MUI ICON COMPONENT
-
+import { Message } from "@mui/icons-material";
 import Clear from "@mui/icons-material/Clear";
 // CUSTOM ICON COMPONENTS
 
@@ -23,7 +23,8 @@ import { SearchInput } from "components/search-box";
 import { MobileMenu } from "components/navbar/mobile-menu";
 import { FlexBetween, FlexBox } from "components/flex-box";
 // GLOBAL CUSTOM HOOK
-
+import useAuth from "hooks/useAuth";
+import useChat from "hooks/useChat";
 import useCart from "hooks/useCart";
 // LOCAL CUSTOM HOOK
 
@@ -31,6 +32,8 @@ import useHeader from "../hooks/use-header";
 import LoginCartButtons from "./login-cart-buttons";
 export default function MobileHeader({ midSlot }) {
   const { state } = useCart();
+  const { token } = useAuth();
+  const { showCount } = useChat();
   const {
     dialogOpen,
     sidenavOpen,
@@ -45,7 +48,7 @@ export default function MobileHeader({ midSlot }) {
   };
   return (
     <Fragment>
-      <FlexBetween width="100%" sx={{ flexDirection: "column", gap: { sm: 0.5}}}>
+      <FlexBetween width="100%" sx={{ flexDirection: "column", gap: { sm: 0.5 } }}>
         {/* LEFT CONTENT - NAVIGATION ICON BUTTON */}
 
         {/* MIDDLE CONTENT - LOGO */}
@@ -66,24 +69,29 @@ export default function MobileHeader({ midSlot }) {
               pt: 1,
               justifyContent: "space-between",
               width: "100%",
-              position: {xs: "relative", sm: "relative"},
-              top: {xs: 5, sm: 10}
+              position: { xs: "relative", sm: "relative" },
+              top: { xs: 5, sm: 10 }
             }}
           >
-            <Box>
-              <Link href="/">
-                <LazyImage
-                  src={require("/public/assets/images/logo.png")}
-                  alt="logo"
-                />
-              </Link>
+            <Box component={Link} href='/' width={'130px'}>
+              <LazyImage
+                src={require("/public/assets/images/logo.png")}
+                alt="logo"
+              />
             </Box>
-            <Box>
+            <FlexBox>
+              {token && (
+                <Badge badgeContent={showCount} sx={{ mt: 0.3 }} color="primary">
+                  <IconButton component={Link} href='/messages' aria-label="" sx={{ color: "grey.600" }}>
+                    <Message />
+                  </IconButton>
+                </Badge>
+              )}
               <LoginCartButtons
                 toggleDialog={toggleDialog}
                 toggleSidenav={toggleSidenav}
               />
-            </Box>
+            </FlexBox>
           </Box>
         </FlexBox>
 
@@ -93,13 +101,13 @@ export default function MobileHeader({ midSlot }) {
             alignItems: "center",
             width: "100%",
             justifyContent: "space-between",
-            marginBottom:"20px" 
+            marginBottom: "20px"
           }}
         >
           <Box flex={1}>
             <MobileMenu />
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", width: "100%"}}>
+          <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
             {midSlot}
           </Box>
         </Box>

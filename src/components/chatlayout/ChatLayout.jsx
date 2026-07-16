@@ -600,36 +600,38 @@ const ChatLayout = ({ children }) => {
                 gap: 0.5,
               }}>
                 {isMobile && (
-                  <IconButton onClick={toggleMobileDrawer} sx={{ color: "#3c4043" }}>
+                  <IconButton onClick={toggleMobileDrawer} sx={{ color: "#3c4043", p: 0.5 }}>
                     <MenuIcon />
                   </IconButton>
                 )}
-                <Typography component="span">
-                  <Checkbox
-                    checked={
-                      slug
-                        ? checkMessage.includes(slug)
-                        : chats.length > 0 && checkMessage.length === chats.length
-                    }
-                    onChange={() => {
-                      if (slug) {
-                        if (checkMessage.includes(slug)) {
-                          setCheckMessage([]);
-                        } else {
-                          setCheckMessage([slug]);
-                        }
+                <Checkbox
+                  checked={
+                    slug
+                      ? checkMessage.includes(slug)
+                      : chats.length > 0 && checkMessage.length === chats.length
+                  }
+                  onChange={() => {
+                    if (slug) {
+                      if (checkMessage.includes(slug)) {
+                        setCheckMessage([]);
                       } else {
-                        if (checkMessage.length !== chats.length) {
-                          const allCheckIds = chats.map((doc) => doc.id);
-                          setCheckMessage(allCheckIds);
-                        } else {
-                          setCheckMessage([]);
-                        }
+                        setCheckMessage([slug]);
                       }
-                    }}
-                    size={isMobile ? "small" : "medium"}
-                  />
-                </Typography>
+                    } else {
+                      if (checkMessage.length !== chats.length) {
+                        const allCheckIds = chats.map((doc) => doc.id);
+                        setCheckMessage(allCheckIds);
+                      } else {
+                        setCheckMessage([]);
+                      }
+                    }
+                  }}
+                  size={isMobile ? "small" : "medium"}
+                  sx={{
+                    padding: isMobile ? '0px' : '9px',
+                    transform: isMobile ? 'scale(0.9)' : 'scale(1)',
+                  }}
+                />
 
                 <Box sx={{
                   display: "flex",

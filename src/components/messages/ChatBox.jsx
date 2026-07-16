@@ -87,7 +87,7 @@ const MessagesWrapper = styled(Box)(({ theme }) => ({
 
 const MessageBubble = styled(Paper)(({ theme, isOwn, images, video }) => ({
   padding: theme.spacing(1.5),
-  maxWidth: video ? '70%' : images > 1 ? "50%" : images === 1 ? "30%" : "80%",
+  maxWidth: video ? '70%' : images > 1 ? "50%" : images === 1 ? "30%" : "100%",
   minHeight: video ? '70%' : undefined,
   minWidth: video ? 'fit-content' : '60px',
   borderRadius: isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
@@ -96,6 +96,7 @@ const MessageBubble = styled(Paper)(({ theme, isOwn, images, video }) => ({
   wordWrap: "break-word",
   whiteSpace: "pre-wrap",
   transition: "all 0.2s ease",
+  marginTop: "8px",
   [theme.breakpoints.down("sm")]: {
     maxWidth: "90%",
     padding: theme.spacing(1),
@@ -112,28 +113,27 @@ const InputContainer = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "24px",
-    backgroundColor: "#f8f9fa",
-    "& fieldset": {
-      borderColor: "transparent",
-    },
-    "&:hover fieldset": {
-      borderColor: theme.palette.primary.main,
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: theme.palette.primary.main,
-    },
-    "& textarea": {
-      padding: "12px 16px",
-      fontSize: "14px",
-      lineHeight: "1.5",
-      [theme.breakpoints.down("sm")]: {
-        fontSize: "13px",
-        padding: "10px 12px",
-      },
-    },
+const StyledTextArea = styled('textarea')(({ theme }) => ({
+  width: '100%',
+  padding: '12px 16px',
+  fontSize: '14px',
+  borderRadius: '24px',
+  backgroundColor: '#f8f9fa',
+  border: '1px solid #222',
+  resize: 'vertical',
+  minHeight: '52px',
+  maxHeight: '400px',
+  outline: 'none',
+  fontFamily: 'inherit',
+  '&:focus': {
+    border: `2px solid ${theme.palette.primary.main}`
+  },
+  '&:hover': {
+    borderColor: theme.palette.primary.main,
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '13px',
+    padding: '10px 12px',
   },
 }));
 
@@ -289,6 +289,7 @@ const ChatBox = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [files, setFiles] = useState([]);
   const [isSending, setIsSending] = useState(false);
@@ -335,6 +336,19 @@ const ChatBox = () => {
   // Close lightbox
   const handleLightboxClose = () => {
     setLightboxState({ ...lightboxState, open: false });
+  };
+
+
+  const handleTextareaInput = (e) => {
+    const textarea = e.target;
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    // Set height based on scrollHeight
+    const newHeight = Math.max(textarea.scrollHeight, 52); // 56px = min height
+    textarea.style.height = newHeight + 'px';
+
+    // Update input value
+    setInput(e.target.value);
   };
 
   // Function to get all media items from a message
@@ -406,7 +420,11 @@ const ChatBox = () => {
     const existingText = matchingDocument.data.text || [];
 
     const updatedText = existingText.map((item) => {
+      // Only update if it's not the user's own message
+      // AND if the message is not already marked as read
       if (item.messageSenderId !== senderId) {
+        // Only set to true if it's currently false (unread)
+        // This prevents overwriting a user's "mark as unread" action
         return {
           ...item,
           isNotification: true,
@@ -549,17 +567,6 @@ const ChatBox = () => {
     return () => unsubscribe();
   }, [slug, usercredentials?._id, role]);
 
-  const uploadImagesToFirebase = async () => {
-    const uploadPromises = files.map(async (file) => {
-      const storageRef = ref(storage, `chatImages/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      await uploadTask;
-      return getDownloadURL(uploadTask.snapshot.ref);
-    });
-
-    return Promise.all(uploadPromises);
-  };
 
   const sendMessage = async () => {
     if ((!input.trim() && files.length === 0) || isSending) return;
@@ -636,12 +643,6 @@ const ChatBox = () => {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp?.seconds * 1000);
@@ -723,7 +724,7 @@ const ChatBox = () => {
                 {date === formatDate(new Date()) ? "Today" : date}
               </DateDivider>
               {messageGroups[date].map((msg, index) => {
-                const isOwn = msg.messageSenderId === senderId;
+                const isOwn = msg.senderType === 'user';
 
                 return (
                   <ListItem
@@ -773,7 +774,8 @@ const ChatBox = () => {
                       >
                         {/* Images */}
                         {/* Combined Message Content */}
-                        {(msg.text || msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
+                        {(msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
+
                           <MessageBubble elevation={0} isOwn={isOwn} images={msg?.attachments?.length} video={msg?.attachments?.some(att => att.type === 'video')}>
                             {/* Images from old format with WhatsApp style */}
 
@@ -999,23 +1001,24 @@ const ChatBox = () => {
                                 </a>
                               </Box>
                             ))}
+                          </MessageBubble>)}
 
+                        {msg.text && (
+                          <MessageBubble elevation={0} isOwn={isOwn}>
                             {/* Text Message */}
-                            {msg.text && (
+                            <Typography
+                              sx={{
+                                fontSize: isMobile ? "14px" : "15px",
+                                wordWrap: "break-word",
+                                whiteSpace: "pre-wrap",
+                                width: 'fit-content',
+                                maxWidth: "100%",
+                                textAlign: "initial",
+                              }}
+                            >
+                              {detectLink(msg.text || "")}
+                            </Typography>
 
-                              <Typography
-                                sx={{
-                                  fontSize: isMobile ? "14px" : "15px",
-                                  wordWrap: "break-word",
-                                  whiteSpace: "pre-wrap",
-                                  width: 'fit-content',
-                                  maxWidth: "100%",
-                                  textAlign: "initial",
-                                }}
-                              >
-                                {detectLink(msg.text || "")}
-                              </Typography>
-                            )}
                           </MessageBubble>
                         )}
 
@@ -1245,17 +1248,18 @@ const ChatBox = () => {
           )}
 
           <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1 }}>
-            <StyledTextField
+            <StyledTextArea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleTextareaInput}
               placeholder="Type a message..."
-              multiline
-              minRows={1}
-              maxRows={4}
-              variant="outlined"
-              fullWidth
-              onKeyPress={handleKeyPress}
+              rows={1}
               disabled={isSending}
+              style={{
+                minHeight: '56px',
+                maxHeight: '300px',
+                overflow: 'auto',
+              }}
             />
 
             <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
