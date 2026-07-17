@@ -19,7 +19,7 @@ import { Box } from "@mui/material";
 export default function DialogDrawer(props) {
   const { dialogOpen, sidenavOpen, toggleDialog, toggleSidenav } = props;
   const isMobile = useMediaQuery((theme) => theme.breakpoints.down("xs"));
-  console.log(process.env.NEXT_PUBLIC_CLIENT_ID,"drfghg4rhrhrthrthrthrthrt")
+  // console.log(process.env.NEXT_PUBLIC_CLIENT_ID,"drfghg4rhrhrthrthrthrthrt")
   return (
     <Fragment>
       <Dialog

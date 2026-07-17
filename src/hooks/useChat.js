@@ -23,11 +23,23 @@ const useChat = () => {
     setEtsyMsgIds,
     sendEtsyIdsHandler,
     etsyMsgIds,
+    unreadComposeIds,
+    markComposeAsUnread,
+    markComposeAsRead,
     pinnedMessageHadler,
     searchText,
     setSearchText,
     searchHandler,
-    getSingleVendorDetails
+    getSingleVendorDetails,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
+    totalCount,
+    setTotalCount,
+    handleChangePage,
+    handleChangeRowsPerPage,
+    isLoading,
   } = useContext(ChatContext);
 
   return {
@@ -51,11 +63,23 @@ const useChat = () => {
     setEtsyMsgIds,
     sendEtsyIdsHandler,
     etsyMsgIds,
+    unreadComposeIds,
+    markComposeAsUnread,
+    markComposeAsRead,
     pinnedMessageHadler,
     searchText,
     setSearchText,
     searchHandler,
-    getSingleVendorDetails
+    getSingleVendorDetails,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
+    totalCount,
+    setTotalCount,
+    handleChangePage,
+    handleChangeRowsPerPage,
+    isLoading,
   };
 };
 

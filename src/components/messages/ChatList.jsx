@@ -4,8 +4,10 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Checkbox,
+  CircularProgress,
   FormControlLabel,
   Grid,
+  TablePagination,
   Typography,
   useMediaQuery,
 } from "@mui/material";
@@ -36,6 +38,13 @@ const ChatList = ({ chatListProp }) => {
     chats,
     vendorDetails,
     pinnedMessageHadler,
+    unreadComposeIds,
+    page,
+    rowsPerPage,
+    totalCount,
+    handleChangePage,
+    handleChangeRowsPerPage,
+    isLoading,
   } = useChat();
 
   const senderId = usercredentials?._id;
@@ -109,10 +118,19 @@ const ChatList = ({ chatListProp }) => {
 
   const pathname = usePathname();
 
-  console.log({ pathname }, "fjjjjiii");
+  if (isLoading) return (
+    <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+      <CircularProgress />
+    </Box>
+  );
 
   return (
-    <Box p={3}>
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      pl: 3, pb: 2
+    }}>
       {chats.length < 1 ? (
         <Typography p={3} component="div" sx={{ textAlign: "center" }}>
           <Typography component="div">
@@ -284,21 +302,30 @@ const ChatList = ({ chatListProp }) => {
         </Typography>
       ) : (
         <>
-          <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+          <TableContainer
+            component={Paper}
+            sx={{
+              boxShadow: "none",
+              flex: 1,
+              overflow: 'auto',
+            }}
+          >
             <Table sx={{ minWidth: "100%", width: "max-content" }}>
               <TableBody>
                 {chats?.map((chat) => {
-                  console.log("qqqqcheattattt", chat);
+                  // console.log("qqqqcheattattt", chat);
                   const isNotification = chat?.text?.filter(
                     (data) =>
                       data.messageSenderId !== senderId &&
-                      data.isNotification == false
+                      data.isNotification == false &&
+                      (data.senderType === "vendor" || data.senderType === "admin")
                   );
 
-                  console.log("isNotificationisNotification", isNotification);
+                  // console.log("isNotificationisNotification", isNotification);
 
                   const vendor = findVendorDetails(chat?.receiverId);
                   const lastMessage = chat?.text?.[chat?.text?.length - 1];
+                  const isUnread = unreadComposeIds.includes(chat.id);
 
                   if (chat.permanentDeleteUser1 === usercredentials?._id) {
                     return;
@@ -359,7 +386,7 @@ const ChatList = ({ chatListProp }) => {
                                         : chatListProp === "unreadMsg"
                                           ? `/messages/unread/message?slug=${chat.id}`
                                           : pathname === "/messages/etsy"
-                                            ? `/messages?slug=${chat.id}&role=admin`
+                                            ? `/messages/etsy?slug=${chat.id}&role=admin`
                                             : `/messages/?slug=${chat.id}`
                                 }
                                 sx={{ textDecoration: "none" }}
@@ -409,7 +436,7 @@ const ChatList = ({ chatListProp }) => {
                                           : chatListProp === "unreadMsg"
                                             ? `/messages/unread/message?slug=${chat.id}`
                                             : pathname === "/messages/etsy"
-                                              ? `/messages?slug=${chat.id}&role=admin`
+                                              ? `/messages/etsy?slug=${chat.id}&role=admin`
                                               : `/messages/?slug=${chat.id}`
                                   }
                                   style={{ textDecoration: "none", color: "inherit" }}
@@ -442,7 +469,7 @@ const ChatList = ({ chatListProp }) => {
                                           : chatListProp === "unreadMsg"
                                             ? `/messages/unread/message?slug=${chat.id}`
                                             : pathname === "/messages/etsy"
-                                              ? `/messages?slug=${chat.id}&role=admin`
+                                              ? `/messages/etsy?slug=${chat.id}&role=admin`
                                               : `/messages/?slug=${chat.id}`
                                   }
                                   style={{ textDecoration: "none", color: "inherit" }}
@@ -463,7 +490,7 @@ const ChatList = ({ chatListProp }) => {
                                           : chatListProp === "unreadMsg"
                                             ? `/messages/unread/message?slug=${chat.id}`
                                             : pathname === "/messages/etsy"
-                                              ? `/messages?slug=${chat.id}&role=admin`
+                                              ? `/messages/etsy?slug=${chat.id}&role=admin`
                                               : `/messages/?slug=${chat.id}`
                                   }
                                   style={{
@@ -491,7 +518,7 @@ const ChatList = ({ chatListProp }) => {
                           padding: { xs: "2px 4px", sm: "16px 8px" },
                           width: { xs: "auto", sm: "auto" },
                         }}>
-                          {pathname !== "/messages/etsy" && (
+                          {pathname !== "/messages/etsy" ? (
                             <Box>
                               {isNotification?.length > 0 && (
                                 <Link
@@ -505,7 +532,7 @@ const ChatList = ({ chatListProp }) => {
                                           : chatListProp === "unreadMsg"
                                             ? `/messages/unread/message?slug=${chat.id}`
                                             : pathname === "/messages/etsy"
-                                              ? `/messages?slug=${chat.id}&role=admin`
+                                              ? `/messages/etsy?slug=${chat.id}&role=admin`
                                               : `/messages/?slug=${chat.id}`
                                   }
                                   sx={{ textDecoration: "none" }}
@@ -530,6 +557,33 @@ const ChatList = ({ chatListProp }) => {
                                 </Link>
                               )}
                             </Box>
+                          ) : (
+                            <Box>
+                              {isUnread && (
+                                <Link
+                                  href={`/messages/etsy?slug=${chat.id}&role=admin`}
+                                  sx={{ textDecoration: "none" }}
+                                >
+                                  <Typography
+                                    component="span"
+                                    sx={{
+                                      color: "#fff",
+                                      background: "#D23F57",
+                                      borderRadius: "50%",
+                                      height: { xs: "18px", sm: "25px" },
+                                      width: { xs: "18px", sm: "25px" },
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      fontSize: { xs: "9px", sm: "12px" },
+                                      fontWeight: "600",
+                                    }}
+                                  >
+                                    {chat?.text?.length}
+                                  </Typography>
+                                </Link>
+                              )}
+                            </Box>
                           )}
                         </TableCell>
                         <TableCell sx={{
@@ -542,7 +596,7 @@ const ChatList = ({ chatListProp }) => {
                             flexDirection: { xs: 'column-reverse', sm: 'row' },
                             alignItems: 'center',
                             justifyContent: { xs: 'space-between', sm: 'flex-end' },
-                            gap: { xs: 1, sm: 2, md :5 },
+                            gap: { xs: 1, sm: 2, md: 5 },
                             width: '100%',
                           }}>
                             {/* Date/Time and Reply Icon */}
@@ -562,7 +616,7 @@ const ChatList = ({ chatListProp }) => {
                                         : chatListProp === "unreadMsg"
                                           ? `/messages/unread/message?slug=${chat.id}`
                                           : pathname === "/messages/etsy"
-                                            ? `/messages?slug=${chat.id}&role=admin`
+                                            ? `/messages/etsy?slug=${chat.id}&role=admin`
                                             : `/messages/?slug=${chat.id}`
                                 }
                                 sx={{
@@ -654,6 +708,25 @@ const ChatList = ({ chatListProp }) => {
             </Table>
           </TableContainer>
         </>
+      )}
+      {pathname !== "/messages/etsy" && (
+        <TablePagination
+          component="div"
+          count={totalCount}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[25, 50, 100, 200]}
+          sx={{
+            borderTop: '1px solid #e8eaed',
+            flexShrink: 0,
+            backgroundColor: '#fff',
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 10,
+          }}
+        />
       )}
     </Box>
   );

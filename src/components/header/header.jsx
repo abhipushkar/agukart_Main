@@ -25,15 +25,16 @@ import useAuth from "hooks/useAuth";
 import LocationSelector from "./components/location_selector";
 import IconButton from '@mui/material/IconButton'
 import { Favorite, Message } from "@mui/icons-material";
-import { Badge } from "@mui/material";
+import { Badge, Box } from "@mui/material";
 import useChat from "hooks/useChat";
+import { ImgBox } from "components/product-cards/product-card-6/styles";
 // ==============================================================
 
 // ==============================================================
 export default function Header({ isFixed, className, midSlot }) {
   const { usercredentials } = useMyProvider();
   const { token } = useAuth();
-  const { showCount } = useChat();
+  const { showCount, etsyCount } = useChat();
   const theme = useTheme();
   const downMd = useMediaQuery(theme.breakpoints.down(1150));
   const { dialogOpen, sidenavOpen, toggleDialog, toggleSidenav } = useHeader();
@@ -41,10 +42,30 @@ export default function Header({ isFixed, className, midSlot }) {
     <Fragment>
       <FlexBox minWidth={100} alignItems="center">
         <Link href="/">
-          <LazyImage
-            src={require("/public/assets/images/logo.png")}
-            alt="logo"
-          />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60" width="160" height="60">
+            <rect width="160" height="60" fill="transparent" />
+
+            <text
+              x="80"
+              y="34"
+              fontFamily="'Constania', 'Playfair Display', Georgia, serif"
+              fontSize="30"
+              fontWeight="700"
+              fill="#3a3949"
+              letterSpacing="1.5"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              shapeRendering="geometricPrecision"
+              style={{
+                WebkitFontSmoothing: 'antialiased',
+                MozOsxFontSmoothing: 'grayscale',
+                textRendering: 'optimizeLegibility',
+                fontVariantNumeric: 'proportional-nums',
+              }}
+            >
+              Agukart
+            </text>
+          </svg>
         </Link>
 
         {isFixed ? <CategoriesMenu /> : null}
@@ -58,7 +79,12 @@ export default function Header({ isFixed, className, midSlot }) {
         <IconButton component={Link} href='/profile/wish-list' aria-label="" sx={{ color: "grey.600" }}>
           <Favorite />
         </IconButton>
-        <Badge badgeContent={showCount} sx={{ mt: 0.3 }} color="primary">
+        <Badge badgeContent={showCount + etsyCount} color="primary" sx={{
+          "& .MuiBadge-badge": {
+            transform: "translate(4px, -4px)", // left 4px, down 4px
+          },
+        }}
+        >
           <IconButton component={Link} href='/messages' aria-label="" sx={{ color: "grey.600" }}>
             <Message />
           </IconButton>

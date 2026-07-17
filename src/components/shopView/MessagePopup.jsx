@@ -478,6 +478,8 @@ const MessagePopup = ({
           isDeleted: false,
           currentTime: new Date(),
           userName: usercredentials?.name,
+          userEmail: usercredentials?.email || "",
+          customerId: usercredentials?.customerId || "",
           vendorName: vendorName || "",
           shopName: shopName || "",
           productId: null,
