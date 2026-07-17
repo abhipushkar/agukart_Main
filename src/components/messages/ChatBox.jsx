@@ -379,8 +379,8 @@ const ChatBox = () => {
     if (messagesEndRef.current) {
       setTimeout(() => {
         messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
-        inputContainerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" })
+        if (inputContainerRef.current)
+          inputContainerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" })
       }, 100);
     }
     console.log(messages, "msg");
@@ -420,11 +420,11 @@ const ChatBox = () => {
     const existingText = matchingDocument.data.text || [];
 
     const updatedText = existingText.map((item) => {
-      // Only update if it's not the user's own message
-      // AND if the message is not already marked as read
-      if (item.messageSenderId !== senderId) {
-        // Only set to true if it's currently false (unread)
-        // This prevents overwriting a user's "mark as unread" action
+      // Only mark vendor/admin messages as read (not user's own messages)
+      if (
+        item.messageSenderId !== senderId &&
+        (item.senderType === "vendor" || item.senderType === "admin")
+      ) {
         return {
           ...item,
           isNotification: true,
@@ -446,15 +446,20 @@ const ChatBox = () => {
   };
 
   useEffect(() => {
-    if (!slug || !usercredentials?._id) return;
-    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-      return;
-    }
+    if (slug && messages.length > 0) {
+      // Check if there are any unread messages from vendor/admin
+      const hasUnreadVendorMessages = messages.some(
+        (msg) =>
+          msg.messageSenderId !== senderId &&
+          (msg.senderType === "vendor" || msg.senderType === "admin") &&
+          msg.isNotification === false
+      );
 
-    if (slug) {
-      handleRemoveAllNotification(slug);
+      if (hasUnreadVendorMessages) {
+        handleRemoveAllNotification(slug);
+      }
     }
-  }, [slug, usercredentials?._id]);
+  }, [messages, slug, senderId]);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);

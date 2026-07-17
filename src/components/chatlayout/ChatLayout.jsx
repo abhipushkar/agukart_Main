@@ -339,7 +339,7 @@ const ChatLayout = ({ children }) => {
           >
             Store : {orderData.shopName || "-"}
           </Typography>
-          <Typography
+          {orderData.subOrderId && (<Typography
             component="div"
             sx={{
               fontSize: "14px",
@@ -351,8 +351,8 @@ const ChatLayout = ({ children }) => {
               gap: "4px",
             }}
           >
-            SubOrder Id : {`#${orderData.subOrderId || "-"}`}
-          </Typography>
+            Order Id : {`#${orderData.subOrderId || "-"}`}
+          </Typography>)}
           <Typography fontSize={16} fontWeight={600} pb={1}>
             Items:
           </Typography>
@@ -481,7 +481,7 @@ const ChatLayout = ({ children }) => {
   );
 
   return (
-    <Box sx={{ bgcolor: "#f8f9fa", minHeight: "100vh" }}>
+    <Box sx={{ bgcolor: "#f8f9fa" }}>
       {/* Header */}
       <Box
         p={2}
@@ -667,7 +667,7 @@ const ChatLayout = ({ children }) => {
                   <ActionButton
                     disabled={!checkMessage.length}
                     onClick={markAsReadHandler}
-                    sx={{ display: { xs: "none", sm: "inline-flex" } }}
+                    sx={{ display: { xs: pathname === "/messages/etsy" ? "inline-flex" : "none", sm: "inline-flex" } }}
                   >
                     Mark Read
                   </ActionButton>
@@ -685,7 +685,7 @@ const ChatLayout = ({ children }) => {
                   {/* Mobile More Menu */}
                   <IconButton
                     onClick={handleClick2}
-                    sx={{ display: { xs: "inline-flex", sm: "none" } }}
+                    sx={{ display: { xs: pathname === "/messages/etsy" ? "none" : "inline-flex", sm: "none" } }}
                   >
                     <MoreVertIcon />
                   </IconButton>

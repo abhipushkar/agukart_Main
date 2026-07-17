@@ -33,7 +33,7 @@ import LoginCartButtons from "./login-cart-buttons";
 export default function MobileHeader({ midSlot }) {
   const { state } = useCart();
   const { token } = useAuth();
-  const { showCount } = useChat();
+  const { showCount, etsyCount } = useChat();
   const {
     dialogOpen,
     sidenavOpen,
@@ -74,14 +74,40 @@ export default function MobileHeader({ midSlot }) {
             }}
           >
             <Box component={Link} href='/' width={'130px'}>
-              <LazyImage
-                src={require("/public/assets/images/logo.png")}
-                alt="logo"
-              />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 50" width="150" height="50">
+                <rect width="150" height="50" fill="transparent" />
+
+                <text
+                  x="75"
+                  y="30"
+                  fontFamily="'Constania', 'Playfair Display', Georgia, serif"
+                  fontSize="26"
+                  fontWeight="700"
+                  fill="#3a3949"
+                  letterSpacing="1.5"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  shapeRendering="geometricPrecision"
+                  style={{
+                    WebkitFontSmoothing: 'antialiased',
+                    MozOsxFontSmoothing: 'grayscale',
+                    textRendering: 'optimizeLegibility',
+                    fontVariantNumeric: 'proportional-nums',
+                  }}
+                >
+                  Agukart
+                </text>
+              </svg>
             </Box>
             <FlexBox>
               {token && (
-                <Badge badgeContent={showCount} sx={{ mt: 0.3 }} color="primary">
+                <Badge badgeContent={showCount + etsyCount} color="primary"
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      transform: "translate(4px, -3px)", // left 4px, down 4px
+                    },
+                  }}
+                >
                   <IconButton component={Link} href='/messages' aria-label="" sx={{ color: "grey.600" }}>
                     <Message />
                   </IconButton>

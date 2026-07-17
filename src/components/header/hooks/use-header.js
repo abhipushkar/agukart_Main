@@ -1,7 +1,7 @@
 import { useState } from "react";
 export default function useHeader() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  console.log("dialogOpen", dialogOpen);
+  // console.log("dialogOpen", dialogOpen);
   const [sidenavOpen, setSidenavOpen] = useState(false);
   const [searchBarOpen, setSearchBarOpen] = useState(false);
 

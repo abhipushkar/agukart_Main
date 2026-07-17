@@ -163,7 +163,6 @@ const MainProvider = ({ children }) => {
 
     return acc;
   }, {});
-  console.log("wishlistProductIds",wishlistProductIds);
 
   useEffect(() => {
     if(token){
