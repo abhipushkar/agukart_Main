@@ -21,7 +21,7 @@ import {
   Select,
   Pagination,
 } from "@mui/material";
-import { H1, H4, H5, Paragraph } from "components/Typography";
+import { H1, H2, H3, H4, H5, Paragraph } from "components/Typography";
 import AdminChildCat from "./AdminChildCat";
 import Link from "next/link";
 import Product from "components/product/Product";
@@ -48,7 +48,7 @@ const ProductSlug = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  console.log({initialProducts });
+  console.log({ initialProducts });
 
   // ✅ URL STATE (same as category page)
   const sortBy = searchParams.get("sort") || "relevance";
@@ -67,6 +67,9 @@ const ProductSlug = ({
   const [videoBaseUrl, setVideoBaseUrl] = useState(
     initialProducts?.video_base_url || ""
   );
+
+  const [expanded, setExpanded] = useState(false);
+  const visibleChildren = expanded ? children : children.slice(0, 6);
 
   const [productLoading, setProductLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -159,23 +162,53 @@ const ProductSlug = ({
                 </H5>
               )}
 
-              <H4 textAlign="center">
+              <H2 textAlign="center">
                 {current?.title}
-              </H4>
+              </H2>
             </Grid>
           </Grid>
         </Box>
 
         {/* 🔥 CHILD CATEGORIES (SSR ONLY) */}
-        {children.length > 0 && (
-          <Box sx={{ mb: 4 }}>
+        {children.length > 0 && page === 1 && (
+          <Box sx={{ mb: 4, px: { xs: 0, sm: 2, md: 20, lg: 20 } }}>
             <Grid container spacing={2} justifyContent="center">
-              {children.map((item) => (
-                <Grid item key={item._id}>
+              {visibleChildren.map((item) => (
+                <Grid item xs={6} sm={4} md={2} key={item._id}>
                   <AdminChildCat cat={item} />
                 </Grid>
               ))}
             </Grid>
+
+            {children.length > 6 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  mt: 3,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() => setExpanded((prev) => !prev)}
+                  sx={{
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: 30,
+                    borderColor: "transparent",
+                    padding: "10px 24px",
+                    fontWeight: 500,
+                    fontSize: 16,
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "#e0e0e0",
+                      borderColor: "transparent",
+                    },
+                  }}
+                >
+                  {expanded ? "Show Less" : "Show More"}
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
 

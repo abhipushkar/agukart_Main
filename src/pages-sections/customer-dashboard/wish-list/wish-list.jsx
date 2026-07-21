@@ -101,14 +101,14 @@ export default function WishListPageView(props) {
                       /<\/?[^>]+(>|$)/g,
                       ""
                     )}
-                    price={item?.price}
-                    original_price={item?.original_price}
+                    price={item?.product_id?.finalPrice}
+                    original_price={item?.product_id?.originalPrice}
                     isCombination={item?.isCombination}
                     variant_id={item?.variant_id}
                     variant_attribute_id={item?.variant_attribute_id}
                     rating={item?.product_id?.rating}
                     ratingCount={item?.product_id?.reviewCount}
-                    imgUrl={`${item?.base_url || "https://api.agukart.com/uploads/product/"}${item?.product_id?.image[0]}`}
+                    imgUrl={`${item?.base_url || "https://api.agukart.com/uploads/product/"}${item?.product_id?.edited_image || item?.product_id?.image[0]}`}
                   />
                 </Grid>
               ))

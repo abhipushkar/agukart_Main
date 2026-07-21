@@ -278,157 +278,132 @@ export default function OrdersPageView() {
     <Fragment>
       {/* TITLE HEADER AREA */}
       <DashboardHeader Icon={ShoppingBag} title="My Orders" />
-      <SectionCreator py={3}>
-        <Grid>
-          <H3
-            mb={2}
-            sx={{
-              textAlign: {
-                lg: "start",
-                md: "start",
-                xs: "center",
-              },
-            }}
-          >
-            Your Orders
-          </H3>
-          <Grid
-            container
-            pb={3}
-            spacing={3}
-            sx={{ margin: "0", width: "100%", alignItems: "center" }}
-          >
-            <Grid lg={6} md={6} xs={12} sx={{ paddingTop: "0" }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: {
-                    lg: "0",
-                    md: "0",
-                    sm: "12px",
-                    xs: "12px",
-                  },
-                }}
-              >
-                <Typography sx={{ fontSize: "14px" }}>
-                  {totalCount} order placed in
-                </Typography>
-                <Typography component="span" ml={1}>
-                  <TextField
-                    select
-                    value={filterOrders}
-                    onChange={(e) => setFilterOrders(e.target.value)}
-                  >
-                    {orderplace.map((option) => (
-                      <MenuItem
-                        sx={{ color: "#ad1414" }}
-                        key={option.value}
-                        value={option.value}
-                      >
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid lg={6} md={6} xs={12} sx={{ paddingTop: "0" }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "end",
-                }}
-              >
-                <Search>
-                  <SearchIconWrapper>
-                    <SearchIcon sx={{ fontSize: "21px" }} />
-                  </SearchIconWrapper>
-                  <InputBase
-                    value={searchTerms}
-                    onChange={(e) => setSearchTerms(e.target.value)}
-                    placeholder="Search by order id,title..."
-                    inputProps={{ "aria-label": "search" }}
-                    sx={{
-                      paddingLeft: "32px",
-                      height: "35px",
-                      border: "none",
-                      "& input": {
-                        height: "35px",
-                      },
-                    }}
-                  />
-                </Search>
-                <Typography component="span">
-                  <Button
-                    onClick={() => {
-                      if (searchTerms) {
-                        router.push(
-                          `/search-order-detail?search-terms=${searchTerms}`
-                        );
-                      }
-                    }}
-                    variant="contained"
-                    sx={{
-                      whiteSpace: "nowrap",
-                      borderRadius: "0 4px 4px 0",
-                      background: "#000",
-                      color: "#fff",
-                      height: "35px",
-                      "&:hover": {
-                        background: "#363636",
-                      },
-                    }}
-                  >
-                    Search order
-                  </Button>
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-          {showLoading ? (
-            <OrderListShimmer />
-          ) : allOrders.length === 0 ? (
+      <Box pt={3}>
+
+
+        <Grid
+          container
+          pb={3}
+          spacing={3}
+          sx={{ margin: "0", width: "100%", alignItems: "center" }}
+        >
+          <Grid lg={6} md={6} xs={12} sx={{ paddingTop: "0" }}>
             <Box
               sx={{
-                marginTop: "20  px",
-                display: "flex ",
+                display: "flex",
                 alignItems: "center",
-                flexDirection: "column",
-                height: "100vh",
+                marginBottom: {
+                  lg: "0",
+                  md: "0",
+                  sm: "12px",
+                  xs: "12px",
+                },
               }}
             >
-              <Box sx={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <Typography variant="h4" fontWeight={600}>
-                  No Order Found
-                </Typography>
-              </Box>
-            </Box>
-          ) : (
-            subOrders.map((order) => {
-              return (
-                <Order key={order?._id} baseUrl={baseUrl} shopBaseUrl={shopBaseUrl} filterOrders={filterOrders} getAllOrders={getAllOrders} order={order} />
-              );
-            })
-          )}
-          {/* {allOrders.length > 0 ? (
-            <Box sx={{ borderTop: "1px solid #dfdfdf" }} p={3}>
-              <Typography component="div">
-                <Link
-                  href="#"
-                  underline="hover"
-                  sx={{ fontSize: "16px", fontWeight: "500" }}
+              <Typography sx={{ fontSize: "14px" }}>
+                {totalCount} order placed in
+              </Typography>
+              <Typography component="span" ml={1}>
+                <TextField
+                  select
+                  value={filterOrders}
+                  onChange={(e) => setFilterOrders(e.target.value)}
                 >
-                  Archive order
-                </Link>
+                  {orderplace.map((option) => (
+                    <MenuItem
+                      sx={{ color: "#ad1414" }}
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Typography>
             </Box>
-          ) : (
-            ""
-          )} */}
+          </Grid>
+          <Grid lg={6} md={6} xs={12} sx={{ paddingTop: "0" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "end",
+              }}
+            >
+              <Search>
+                <SearchIconWrapper>
+                  <SearchIcon sx={{ fontSize: "21px" }} />
+                </SearchIconWrapper>
+                <InputBase
+                  value={searchTerms}
+                  onChange={(e) => setSearchTerms(e.target.value)}
+                  placeholder="Search by order id,title..."
+                  inputProps={{ "aria-label": "search" }}
+                  sx={{
+                    paddingLeft: "32px",
+                    height: "35px",
+                    border: "none",
+                    "& input": {
+                      height: "35px",
+                    },
+                  }}
+                />
+              </Search>
+              <Typography component="span">
+                <Button
+                  onClick={() => {
+                    if (searchTerms) {
+                      router.push(
+                        `/search-order-detail?search-terms=${searchTerms}`
+                      );
+                    }
+                  }}
+                  variant="contained"
+                  sx={{
+                    whiteSpace: "nowrap",
+                    borderRadius: "0 4px 4px 0",
+                    background: "#000",
+                    color: "#fff",
+                    height: "35px",
+                    "&:hover": {
+                      background: "#363636",
+                    },
+                  }}
+                >
+                  Search order
+                </Button>
+              </Typography>
+            </Box>
+          </Grid>
         </Grid>
-      </SectionCreator>
+        {showLoading ? (
+          <OrderListShimmer />
+        ) : allOrders.length === 0 ? (
+          <Box
+            sx={{
+              marginTop: "20  px",
+              display: "flex ",
+              alignItems: "center",
+              flexDirection: "column",
+              height: "100vh",
+            }}
+          >
+            <Box sx={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <Typography variant="h4" fontWeight={600}>
+                No Order Found
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          subOrders.map((order) => {
+            return (
+              <Order key={order?._id} baseUrl={baseUrl} shopBaseUrl={shopBaseUrl} filterOrders={filterOrders} getAllOrders={getAllOrders} order={order} />
+            );
+          })
+        )}
+
+
+      </Box>
       {/* ORDER LIST AREA */}
       {/* {orders.map(order => <OrderRow order={order} key={order.id} />)} */}
       {/* ORDERS PAGINATION */}

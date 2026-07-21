@@ -661,10 +661,10 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
 
           {images.length > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2, gap: 5 }}>
-              <Typography variant="body1" fontWeight={500}>
+              <Typography variant="body1" fontWeight={500} fontSize={{xs: 12, sm : 14}}>
                 {images[currentImageIndex].name}
               </Typography>
-              <Typography>
+              <Typography fontSize={{xs: 12, sm : 14}}>
                 Image {currentImageIndex + 1} of {images.length}
               </Typography>
             </Box>
@@ -696,10 +696,10 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
           {currentGuide?.file && currentGuide?.type === "image" && (
             <DialogActions sx={{ p: 2 }}>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Button onClick={() => transformRef.current?.zoomIn()} variant="outlined">Zoom +</Button>
-                <Button onClick={() => transformRef.current?.zoomOut()} variant="outlined">Zoom -</Button>
-                <Button onClick={() => transformRef.current?.resetTransform()} variant="outlined">Reset</Button>
-                <Button onClick={() => setGuideOpen(false)} variant="outlined">Close</Button>
+                <Button onClick={() => transformRef.current?.zoomIn()} size="small" variant="outlined">Zoom +</Button>
+                <Button onClick={() => transformRef.current?.zoomOut()} size="small" variant="outlined">Zoom -</Button>
+                <Button onClick={() => transformRef.current?.resetTransform()} size="small" variant="outlined">Reset</Button>
+                <Button onClick={() => setGuideOpen(false)} size="small" variant="outlined">Close</Button>
               </Box>
             </DialogActions>
           )}

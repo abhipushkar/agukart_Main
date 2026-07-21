@@ -1,6 +1,6 @@
 "use client";
 import { Fragment } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Box,
   Button,
@@ -27,7 +27,8 @@ export default function ProductsCategoriesPage({
   productlength,
 }) {
   const router = useRouter();
-
+  const searchParams = useSearchParams();
+  const currPage = Number(searchParams.get("page") || 1);
   const ShimmerCategory = () => (
     <Grid container spacing={3}>
       {[...Array(6)].map((_, index) => (
@@ -36,15 +37,17 @@ export default function ProductsCategoriesPage({
     </Grid>
   );
 
-  console.log({products,
-  title,
-  childCategories,
-  SetProductIncreaseValue,
-  isproductIncreaseValue,
-  SetIsProductIncreaseValue,
-  subcategoryMenus,
-  isLoading,
-  productlength,}, "Categoties");
+  console.log({
+    products,
+    title,
+    childCategories,
+    SetProductIncreaseValue,
+    isproductIncreaseValue,
+    SetIsProductIncreaseValue,
+    subcategoryMenus,
+    isLoading,
+    productlength,
+  }, "Categoties");
   const handleClick = () => {
     SetIsProductIncreaseValue(!isproductIncreaseValue);
     if (isproductIncreaseValue) {
@@ -56,7 +59,7 @@ export default function ProductsCategoriesPage({
 
   return (
     <Fragment>
-      <Grid container justifyContent="center" spacing={3} sx={{ px: { xs: 2, md: 0 } }}>
+      <Grid container justifyContent="center" spacing={3} sx={{ px: { xs: 2, md: 0 } }} mb={currPage > 1 ? 0 : { xs: 4, md: 6 }}>
         <Grid item xs={12} md={10}>
           <Box textAlign="center" mb={3}>
             {childCategories.length > 1 && (
@@ -87,7 +90,7 @@ export default function ProductsCategoriesPage({
           {isLoading ? (
             <ShimmerCategory />
           ) : (
-            <Grid container spacing={3}>
+            <Grid container display={currPage > 1 ? 'none' : undefined} spacing={3} justifyContent="center">
               {products?.map((item) => (
                 <Grid item key={item.id} xs={6} sm={4} md={2}>
                   <ProductCategories1
@@ -98,8 +101,8 @@ export default function ProductsCategoriesPage({
               ))}
             </Grid>
           )}
-          {products.length >= 6 && (
-            <Box display="flex" justifyContent="center" mt={4} mb={2}>
+          {subcategoryMenus.length > 6 && (
+            <Box display={currPage > 1 ? 'none' : "flex"} justifyContent="center" mt={4} mb={2}>
               <Button
                 onClick={handleClick}
                 sx={{
