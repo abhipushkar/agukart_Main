@@ -15,11 +15,11 @@ const AdminChildCat = ({ cat }) => {
     <Box sx={{ cursor: "pointer", }}>
       <Link href={url} passHref>
         <Box>
-          <Box position="relative" borderRadius={3} mb={2} sx={{ height: "210px" }}>
+          <Box position="relative" borderRadius={3} mb={2} sx={{ height: "240px" }}>
             <LazyImage
               alt={title || "Category"}
-              width={140}
-              height={210}
+              width={150}
+              height={240}
               src={image}
               sx={{
                 aspectRatio: "2/3",

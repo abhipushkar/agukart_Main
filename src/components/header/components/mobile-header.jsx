@@ -34,6 +34,7 @@ export default function MobileHeader({ midSlot }) {
   const { state } = useCart();
   const { token } = useAuth();
   const { showCount, etsyCount } = useChat();
+  console.log(showCount, etsyCount, showCount + etsyCount);
   const {
     dialogOpen,
     sidenavOpen,
@@ -103,8 +104,11 @@ export default function MobileHeader({ midSlot }) {
               {token && (
                 <Badge badgeContent={showCount + etsyCount} color="primary"
                   sx={{
-                    "& .MuiBadge-badge": {
-                      transform: "translate(4px, -3px)", // left 4px, down 4px
+                    "& .MuiBadge-badge.MuiBadge-invisible": {
+                      transform: undefined,
+                    },
+                    "& .MuiBadge-badge:not(.MuiBadge-invisible)": {
+                      transform: "translate(4px, -3px)",
                     },
                   }}
                 >

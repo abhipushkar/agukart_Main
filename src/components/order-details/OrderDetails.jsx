@@ -67,44 +67,7 @@ const invoices = [
   },
 ];
 
-const breadcrumbs = [
-  <Link
-    style={{
-      fontSize: "16px",
-      fontWeight: "500",
-      color: "green",
-      textDecoration: "none",
-    }}
-    href="/"
-    key="1"
-  >
-    Your Account
-  </Link>,
-  <Link
-    style={{
-      fontSize: "16px",
-      fontWeight: "500",
-      color: "green",
-      textDecoration: "none",
-    }}
-    href="/profile/orders"
-    key="2"
-  >
-    Your Orders
-  </Link>,
-  <Typography
-    style={{
-      fontSize: "16px",
-      fontWeight: "500",
-      color: "orange",
-      textDecoration: "none",
-    }}
-    sx={{ color: "text.primary" }}
-    key="3"
-  >
-    Order Details
-  </Typography>,
-];
+
 const OrderDetails = () => {
   const { currency } = useCurrency();
   const baseUrl = 'https://api.agukart.com/uploads/product/';
@@ -113,6 +76,45 @@ const OrderDetails = () => {
   // Add these state variables at the top of your component
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const breadcrumbs = [
+    <Link
+      style={{
+        fontSize: isMobile ? "13px" : "16px",
+        fontWeight: "500",
+        color: "green",
+        textDecoration: "none",
+      }}
+      href="/"
+      key="1"
+    >
+      Your Account
+    </Link>,
+    <Link
+      style={{
+        fontSize: isMobile ? "13px" : "16px",
+        fontWeight: "500",
+        color: "green",
+        textDecoration: "none",
+      }}
+      href="/profile/orders"
+      key="2"
+    >
+      Your Orders
+    </Link>,
+    <Typography
+      style={{
+        fontSize: isMobile ? "13px" : "16px",
+        fontWeight: "500",
+        color: "orange",
+        textDecoration: "none",
+      }}
+      sx={{ color: "text.primary" }}
+      key="3"
+    >
+      Order Details
+    </Typography>,
+  ];
 
   const { addToast } = useToasts();
 
@@ -278,7 +280,7 @@ const OrderDetails = () => {
     } else { date = new Date(timestamp); }
     if (isNaN(date.getTime())) return "...";
     try {
-      return new Intl.DateTimeFormat("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", timeZone: "America/Los_Angeles" }).format(date);
+      return new Intl.DateTimeFormat("en-GB", { year: "numeric", month: "short", day: "numeric", timeZone: "America/Los_Angeles" }).format(date);
     } catch { return "..."; }
   };
 
@@ -295,7 +297,7 @@ const OrderDetails = () => {
     }
     const formatDeliveryDate = (dateString) => {
       try {
-        return new Date(dateString).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+        return new Date(dateString).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
       } catch { return "..."; }
     };
     return {
@@ -427,7 +429,7 @@ const OrderDetails = () => {
   ) : (
     <>
       <SectionCreator p={{ xs: 1, sm: 2, md: 3, lg: 3 }}>
-        <Box mb={4}>
+        <Box mb={4} position={'relative'} top={{xs: 20, sm: 20, md: 0}}>
           <Breadcrumbs
             separator={<NavigateNextIcon fontSize="small" />}
             aria-label="breadcrumb"
@@ -437,7 +439,7 @@ const OrderDetails = () => {
         </Box>
         <Box>
           <Box display={'flex'} justifyContent={'space-between'} pb={2}>
-            <Typography variant="h4" fontWeight={600}>
+            <Typography variant="h4" fontWeight={600} fontSize={{xs: 22, sm: 30}}>
               Order Details
             </Typography>
 
@@ -462,7 +464,7 @@ const OrderDetails = () => {
             </Box>
           </Box>
           {/* Order Header */}
-          <Paper elevation={0} sx={{ p: 2, mb: 3, bgcolor: "#f8f9fa", borderRadius: 2 }}>
+          <Paper elevation={0} sx={{ p: { xs: 1, sm: 2, md: 2 }, mb: 3, bgcolor: "#f8f9fa", borderRadius: 2 }}>
             <Grid container alignItems="center" spacing={2}>
               <Grid item xs={12} md={7}>
                 <Typography fontWeight={600}>
@@ -500,56 +502,56 @@ const OrderDetails = () => {
 
           <Grid container width={"100%"} m={0} py={1} mb={2} spacing={2} component={Paper}>
             <Grid lg={7} md={6} sm={12} xs={12}>
-              <Box p={1.5}>
+              <Box p={{ xs: 1, sm: 1.5, md: 1.5 }} pr={'0 !important'}>
                 <Typography fontSize={18} fontWeight={600}>
                   Order Status
                 </Typography>
 
                 <Grid container width="100%" m={0} spacing={2}>
                   <Grid lg={7} md={7} sm={7} xs={12}>
-                    <Box mt={1}>
-                      <Box display="flex" alignItems="center" mb={1.5}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>
-                          Purchase date:
-                        </Typography>
-                        <Typography fontWeight={600} sx={{ width: "70%" }}>
-                          {formatDate(orderDetail?.createdAt)}
-                        </Typography>
-                      </Box>
 
-                      <Box display="flex" alignItems="center" mb={1.5}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>
-                          Ship by:
-                        </Typography>
-                        <Typography
-                          fontWeight={600}
-                          color="#e2912c"
-                          sx={{ width: "70%" }}
-                        >
-                          {deliveryDates.minDate} to {deliveryDates.maxDate}
-                        </Typography>
-                      </Box>
-
-                      <Box display="flex" alignItems="center" mb={1.5}>
-                        <Typography fontWeight={500} sx={{ width: "30%" }}>
-                          Deliver by:
-                        </Typography>
-                        <Typography fontWeight={600} sx={{ width: "70%" }}>
-                          {deliveryDates.minDate} to {deliveryDates.maxDate}
-                        </Typography>
-                      </Box>
-
-                      {orderDetail?.items?.[0]?.delivered_date && (
-                        <Box display="flex" alignItems="center" mb={1.5}>
-                          <Typography fontWeight={500} sx={{ width: "30%" }}>
-                            Delivered date:
-                          </Typography>
-                          <Typography fontWeight={600} sx={{ width: "70%" }}>
-                            {formatDate(orderDetail.items[0].delivered_date)}
-                          </Typography>
-                        </Box>
-                      )}
+                    <Box display="flex" alignItems="center" mb={1.5}>
+                      <Typography fontWeight={500} sx={{ width: "35%" }}>
+                        Purchase date:
+                      </Typography>
+                      <Typography fontWeight={600} sx={{ width: "65%" }}>
+                        {formatDate(orderDetail?.createdAt)}
+                      </Typography>
                     </Box>
+
+                    <Box display="flex" alignItems="center" mb={1.5}>
+                      <Typography fontWeight={500} sx={{ width: "35%" }}>
+                        Ship by:
+                      </Typography>
+                      <Typography
+                        fontWeight={600}
+                        color="#e2912c"
+                        sx={{ width: "65%" }}
+                      >
+                        {deliveryDates.minDate} to {deliveryDates.maxDate}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" mb={1.5}>
+                      <Typography fontWeight={500} sx={{ width: "35%" }}>
+                        Deliver by:
+                      </Typography>
+                      <Typography fontWeight={600} sx={{ width: "65%" }}>
+                        {deliveryDates.minDate} to {deliveryDates.maxDate}
+                      </Typography>
+                    </Box>
+
+                    {orderDetail?.items?.[0]?.delivered_date && (
+                      <Box display="flex" alignItems="center" mb={1.5}>
+                        <Typography fontWeight={500} sx={{ width: "30%" }}>
+                          Delivered date:
+                        </Typography>
+                        <Typography fontWeight={600} sx={{ width: "70%" }}>
+                          {formatDate(orderDetail.items[0].delivered_date)}
+                        </Typography>
+                      </Box>
+                    )}
+
                   </Grid>
 
                   <Grid lg={5} md={5} sm={5} xs={12}>
@@ -594,9 +596,9 @@ const OrderDetails = () => {
               <Box>
                 <Typography fontSize={18} fontWeight={600}>Shipping Address</Typography>
                 <Grid container width={"100%"} m={0} spacing={1}>
-                  <Grid lg={6} md={4} sm={4} xs={12}>
+                  <Grid lg={5} md={4} sm={4} xs={12}>
                     <Box mt={2}>
-                      <Typography fontSize={15}>{(orderDetail?.receiver_name)}</Typography>
+                      <Typography fontSize={15}>{(orderDetail?.name)}</Typography>
                       <Typography>{(orderDetail?.address_line1)}</Typography>
                       <Typography>{(orderDetail?.address_line2)}</Typography>
                       <Typography>{(orderDetail?.city)}, {(orderDetail?.state)} {(orderDetail?.pincode)}</Typography>
@@ -604,16 +606,16 @@ const OrderDetails = () => {
                       <Typography fontSize={15} fontWeight={500}>Mob. No.: {`${(orderDetail?.phone_code)} ${(orderDetail?.mobile)}`}</Typography>
                     </Box>
                   </Grid>
-                  <Grid lg={6} md={8} sm={8} xs={12}>
-                    <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", paddingBottom: "0" }}>
+                  {/* <Grid lg={7} md={8} sm={8} xs={12} pr={'0 !important'}>
+                    <ListItem sx={{ padding: "0", width: "auto", display: { xs: "none", sm: "flex" }, alignItems: "center", whiteSpace: "normal", }}>
                       <Typography fontWeight={501}>Buyer Name:</Typography>
                       <Typography fontWeight={500} pl={1} color={"green"}>{(orderDetail?.name)}</Typography>
                     </ListItem>
-                    <ListItem sx={{ paddingLeft: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", paddingBottom: "0" }}>
+                    <ListItem sx={{ padding: "0", width: "auto", display: "flex", alignItems: "center", whiteSpace: "normal", }}>
 
                       <Typography fontWeight={500}>Buyer Email: {(orderDetail?.email)}</Typography>
                     </ListItem>
-                  </Grid>
+                  </Grid> */}
                 </Grid>
               </Box>
             </Grid>
@@ -677,21 +679,34 @@ const OrderDetails = () => {
                           )}
                           {imageCount > 1 && (
                             <Chip
-                              label={`${imageCount}`}
-                              icon={<Collections sx={{ fontSize: 14 }} />}
+                              label={imageCount}
+                              icon={<Collections />}
                               size="small"
                               sx={{
                                 position: "absolute",
-                                bottom: 4,
-                                right: 4,
+                                bottom: { xs: 2, sm: 4 },
+                                right: { xs: 2, sm: 4 },
                                 bgcolor: "rgba(0,0,0,0.8)",
                                 color: "#fff",
                                 fontWeight: 600,
-                                fontSize: 12,
-                                '&:hover': {
+                                fontSize: { xs: 8, sm: 12 },
+
+                                "& .MuiChip-icon": {
+                                  fontSize: { xs: 9, sm: 16 }, // smaller icon on mobile
+                                  ml: { xs: "4px", sm: "6px" }, // optional: reduce left margin
+                                  mr: { xs: "-2px", sm: "-4px" },
+                                  color: "inherit",
+                                },
+
+                                "& .MuiChip-label": {
+                                  px: { xs: 0.1, sm: 1 }, // decrease horizontal padding on mobile
+                                  py: 0,
+                                },
+
+                                "&:hover": {
                                   bgcolor: "rgba(0, 0, 0, 0.66)",
                                   color: "#fff",
-                                }
+                                },
                               }}
                             />
                           )}
@@ -720,7 +735,7 @@ const OrderDetails = () => {
                             {productTitle}
                           </Link>
                         </Typography>
-                        <Typography variant="body2" sx={{ color: "#666", mt: 0.5 }}>
+                        <Typography variant="body2" fontSize={{xs: 12, sm: 14}} sx={{ color: "#666", mt: 0.5 }}>
                           Transaction ID: <Box component="span" ml={1} fontWeight={500}>{product?.item_id}</Box>
                         </Typography>
                         <Box sx={{ display: { xs: "none", md: "block" } }}>
@@ -911,9 +926,9 @@ const OrderDetails = () => {
                               </Box>)}
                               {product?.promotional_discount > 0 && (
                                 <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
-                                  <Typography color={"#32be19"} fontSize={13} sx={{ display: "flex", alignItems: "center" }}>
+                                  <Typography color={"#32be19"} fontWeight={500} fontSize={13} sx={{ display: "flex", alignItems: "center" }}>
                                     <LocalOfferIcon sx={{ marginRight: "4px", fontSize: "18px", transform: "rotate(115deg)" }} />
-                                    {`${product?.promotionData?.promotional_title} (${product?.promotionData?.offer_type === "percentage" ? (product?.promotionData?.discount_amount) + "%" : "$" + (product?.promotionData?.discount_amount)} off)`}:
+                                    {`${product?.promotionData?.offer_type === "percentage" ? (product?.promotionData?.discount_amount) + "%" : "$" + (product?.promotionData?.discount_amount)} off`}:
                                   </Typography>
                                   <Box color={"red"} fontSize={13}>- ${(product?.promotional_discount || 0).toFixed(2)}</Box>
                                 </Box>
@@ -1515,10 +1530,10 @@ const OrderDetails = () => {
 
             {images.length > 1 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2, gap: 5 }}>
-                <Typography variant="body1" fontWeight={500}>
+                <Typography variant="body1" fontWeight={500} fontSize={isMobile ? 12 : 14}>
                   {images[currentImageIndex].name}
                 </Typography>
-                <Typography>
+                <Typography fontSize={isMobile ? 12 : 14}>
                   Image {currentImageIndex + 1} of {images.length}
                 </Typography>
               </Box>
@@ -1550,10 +1565,10 @@ const OrderDetails = () => {
             {currentGuide?.file && currentGuide?.type === "image" && (
               <DialogActions sx={{ p: 2 }}>
                 <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button onClick={() => transformRef.current?.zoomIn()} variant="outlined">Zoom +</Button>
-                  <Button onClick={() => transformRef.current?.zoomOut()} variant="outlined">Zoom -</Button>
-                  <Button onClick={() => transformRef.current?.resetTransform()} variant="outlined">Reset</Button>
-                  <Button onClick={() => setGuideOpen(false)} variant="outlined">Close</Button>
+                  <Button onClick={() => transformRef.current?.zoomIn()} size="small" variant="outlined">Zoom +</Button>
+                  <Button onClick={() => transformRef.current?.zoomOut()} size="small" variant="outlined">Zoom -</Button>
+                  <Button onClick={() => transformRef.current?.resetTransform()} size="small" variant="outlined">Reset</Button>
+                  <Button onClick={() => setGuideOpen(false)} size="small" variant="outlined">Close</Button>
                 </Box>
               </DialogActions>
             )}

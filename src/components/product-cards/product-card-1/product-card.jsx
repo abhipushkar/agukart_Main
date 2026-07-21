@@ -192,25 +192,25 @@ export default function ProductCard1({
       {/* ===== FOLLOW SHOP PAGE ===== */}
       {pathname === "/profile/follow-shop" ? (
         <StyledBazaarCard
-  sx={{
-    border: "1px solid #e0e0e0",
-    borderRadius: "4px",
-    overflow: "hidden",
-    background: "#fff",
-    margin: "4px 0",
-    width: "100%",
-    "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.12)" },
-  }}
->
+          sx={{
+            border: "1px solid #e0e0e0",
+            borderRadius: "4px",
+            overflow: "hidden",
+            background: "#fff",
+            margin: "4px 0",
+            width: "100%",
+            "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.12)" },
+          }}
+        >
           {/* Shop Banner */}
           <Link href={`/store/${vendorSlug}`}>
             <Box sx={{ width: "100%", overflow: "hidden" }}>
-  <img
-    src={imgUrl}
-    alt={title}
-    style={{ width: "100%", height: "auto", display: "block" }}
-  />
-</Box>
+              <img
+                src={imgUrl}
+                alt={title}
+                style={{ width: "100%", height: "auto", display: "block" }}
+              />
+            </Box>
           </Link>
 
           {/* Bottom - Shop Icon + Name + Rating + Heart */}
@@ -291,7 +291,7 @@ export default function ProductCard1({
                 alt={title}
                 style={{
                   aspectRatio: "1/1",
-                  objectFit: "cover",
+                  objectFit: "contain",
                   height: "260px",
                   position: "relative",
                 }}
@@ -306,8 +306,8 @@ export default function ProductCard1({
                       product?.product_id?.product_bedge === "Popular Now"
                         ? "#fed9c9"
                         : product?.product_id?.product_bedge === "Best Seller"
-                        ? "#e9d8a6"
-                        : "#c1f1c1",
+                          ? "#e9d8a6"
+                          : "#c1f1c1",
                     color: "#000",
                     borderRadius: "20px",
                     textDecoration: "underline dashed",
@@ -335,16 +335,16 @@ export default function ProductCard1({
           <Box px={1}>
             <ProductTitle pathname={pathname} title={title} product_id={product.product_id} vendorSlug={vendorSlug} />
           </Box>
-          <ContentWrapper sx={{ alignItems: "flex-end" }}>
+          <ContentWrapper sx={{ alignItems: "flex-end", padding: 1.5 }}>
             <Box flex="1 1 0" minWidth="0px" mr={1}>
               <Box display={'flex'}>
-              <Rating size="small" value={rating} color="warn" readOnly />
-              {ratingCount > 0 && (
-                <Span color="lightgray" mb={1} display="block">({ratingCount})</Span>
-              )}
-              {showProductSize && (
-                <Span color="grey.600" mb={1} display="block">Liter</Span>
-              )}
+                <Rating size="small" value={rating} color="warn" readOnly />
+                {ratingCount > 0 && (
+                  <Span color="lightgray" mb={1} display="block">({ratingCount})</Span>
+                )}
+                {showProductSize && (
+                  <Span color="grey.600" mb={1} display="block">Liter</Span>
+                )}
               </Box>
               <ProductPrice salePrice={price} originalPrice={original_price} />
             </Box>
@@ -365,6 +365,18 @@ export default function ProductCard1({
               Add to basket
             </Button>
           </ContentWrapper>
+          {product?.product_id?.promotionLabel && (
+            <Typography
+              width={'100%'}
+              textAlign={'center'}
+              pb={2}
+              variant="caption"
+              color="GrayText"
+              ellipsis
+              px={1}
+            >
+              {product?.product_id?.promotionLabel}
+            </Typography>)}
         </StyledBazaarCard>
       )}
     </>

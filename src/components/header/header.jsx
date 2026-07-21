@@ -35,6 +35,7 @@ export default function Header({ isFixed, className, midSlot }) {
   const { usercredentials } = useMyProvider();
   const { token } = useAuth();
   const { showCount, etsyCount } = useChat();
+  const messageCount = (showCount || 0) + (etsyCount || 0)
   const theme = useTheme();
   const downMd = useMediaQuery(theme.breakpoints.down(1150));
   const { dialogOpen, sidenavOpen, toggleDialog, toggleSidenav } = useHeader();
@@ -79,11 +80,15 @@ export default function Header({ isFixed, className, midSlot }) {
         <IconButton component={Link} href='/profile/wish-list' aria-label="" sx={{ color: "grey.600" }}>
           <Favorite />
         </IconButton>
-        <Badge badgeContent={showCount + etsyCount} color="primary" sx={{
-          "& .MuiBadge-badge": {
-            transform: "translate(4px, -4px)", // left 4px, down 4px
-          },
-        }}
+        <Badge badgeContent={messageCount} color="primary" invisible={messageCount === 0}
+          sx={{
+            "& .MuiBadge-badge.MuiBadge-invisible": {
+              transform: undefined,
+            },
+            "& .MuiBadge-badge:not(.MuiBadge-invisible)": {
+              transform: "translate(4px, -4px)",
+            },
+          }}
         >
           <IconButton component={Link} href='/messages' aria-label="" sx={{ color: "grey.600" }}>
             <Message />
