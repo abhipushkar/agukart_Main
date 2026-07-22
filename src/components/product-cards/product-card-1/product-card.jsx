@@ -57,6 +57,7 @@ export default function ProductCard1({
   hoverEffect,
   showProductSize,
   vendorSlug,
+  getWishlistProduct
 }) {
   const {
     isFavorite,
@@ -135,6 +136,9 @@ export default function ProductCard1({
       const res = await postAPIAuth(`user/follow-vendor`, {
         vendorId: id,
       });
+      if (res.status === 200) {
+        getWishlistProduct();
+      }
       console.log(res);
     } catch (error) {
       console.log(error);
@@ -161,6 +165,7 @@ export default function ProductCard1({
               onClick={() => {
                 if (pathname === "/profile/follow-shop") {
                   toggleFollowVendor(id);
+                  setRemoveWishList(false);
                   return;
                 }
                 wishListToggle();

@@ -661,6 +661,7 @@ const Mycart = () => {
                           isSingleVendor={isSingleVendor}
                           validationMsg={errorMsg}
                           quantityMap={quantityMap}
+                          setCountryModalOpen={setCountryModalOpen}
                         />
                       );
                     })

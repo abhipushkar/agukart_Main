@@ -527,7 +527,7 @@ const ProductImageGallery = ({
                                 style={{
                                     width: "100%",
                                     height: "100%",
-                                    objectFit: "cover",
+                                    objectFit: "contain",
                                     maxHeight: "559px",
                                     aspectRatio: "1/1",
                                     borderRadius: "6px",

@@ -527,7 +527,7 @@ const MyproductDetails = ({ res }) => {
         token
       );
       if (res.status === 200) {
-        setVendorDetail(res.data);
+        setVendorDetail(res.data.data);
       }
     } catch (error) {
       console.error("Error fetching vendor details:", error);
@@ -1306,6 +1306,7 @@ const MyproductDetails = ({ res }) => {
       return;
     }
     try {
+      console.log(vendorDetail,'vendor' );
       const res = await postAPIAuth(`user/follow-vendor`, {
         vendorId: vendorDetail?._id,
       });

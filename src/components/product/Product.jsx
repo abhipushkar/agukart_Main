@@ -213,7 +213,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const handleShopNameClick = (e) => {
     e.stopPropagation(); // Prevent product navigation when clicking shop name
     e.preventDefault(); // Prevent Link navigation
-    const baseUrl = `/store/${product?.vendorDetails?.shop_name.toLowerCase() || product?.shop_name.toLowerCase()}`;
+    const baseUrl = `/store/${product?.shop_slug || product?.shop_name.toLowerCase()}`;
     window.open(baseUrl, "_blank");
   };
 
