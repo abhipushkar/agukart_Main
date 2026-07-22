@@ -79,7 +79,8 @@ const SingleVendorCart = ({
   voucherDetails,
   isSingleVendor,
   validationMsg,
-  quantityMap
+  quantityMap,
+  setCountryModalOpen
 }) => {
   const router = useRouter();
   const { currency } = useCurrency();
@@ -112,7 +113,6 @@ const SingleVendorCart = ({
   });
   const [isModalOpen, setModalOpen] = useState(false);
   const [openContact, setOpenContact] = useState(false);
-  const [showCountryModal, setShowCountryModal] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState(() => {
     // Try to get from persisted storage first
     const persistedOptions = getPersistedDeliveryOptions();
@@ -534,44 +534,9 @@ const SingleVendorCart = ({
   };
 
   const handleCountryChange = () => {
-    setShowCountryModal(true);
+    setCountryModalOpen(true);
   };
 
-  // Country Modal Component
-  const CountryModal = ({ open, onClose }) => (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Select Your Country</DialogTitle>
-      <DialogContent>
-        <Box sx={{ maxHeight: 400, overflow: "auto" }}>
-          {countries?.map((country) => (
-            <MenuItem
-              key={country._id}
-              onClick={() => {
-                setLocation({
-                  countryName: country.name,
-                  countryCode: country.sortname || "",
-                });
-                onClose();
-                // Refresh cart data with new location
-                const data = wallet ? "1" : "0";
-                getCartDetails(
-                  data,
-                  defaultAddress?._id,
-                  voucherDetails?.discount,
-                );
-              }}
-              selected={location.countryName === country.name}
-            >
-              {country.name}
-            </MenuItem>
-          ))}
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-      </DialogActions>
-    </Dialog>
-  );
 
   return (
     <>
@@ -1062,10 +1027,6 @@ const SingleVendorCart = ({
           vendor_id={cart?.vendor_id}
         />
       )}
-      <CountryModal
-        open={showCountryModal}
-        onClose={() => setShowCountryModal(false)}
-      />
       {/* Message Popup */}
       <MessagePopup
         handleClosePopup={() => setOpenContact(false)}

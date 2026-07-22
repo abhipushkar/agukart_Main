@@ -15,7 +15,9 @@ export const getTimeLeftText = (start, end) => {
   const hours = duration.asHours();
   const minutes = duration.asMinutes();
 
-  if (days >= 1) {
+  if (days > 2) {
+    return 'Limited time Offer only!';
+  } else if (days >= 1) {
     const dayCount = Math.round(days);
     return `Sales ends in ${dayCount} day${dayCount !== 1 ? 's' : ''}`;
   } else if (hours >= 1) {

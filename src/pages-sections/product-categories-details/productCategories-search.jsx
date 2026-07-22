@@ -71,8 +71,8 @@ const SORT_OPTIONS = [
     value: "relevance",
   },
   {
-    label: "Newest",
-    value: "newest",
+    label: "Most Recent",
+    value: "latest",
   },
   {
     label: "Price Low to High",

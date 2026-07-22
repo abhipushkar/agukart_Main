@@ -8,7 +8,7 @@ import TopCategoriesCard from "../shared/top-categories-card";
 import { useEffect, useState } from "react";
 import useAuth from "hooks/useAuth";
 import { getAPIAuth } from "utils/__api__/ApiServies";
-import { Box, Skeleton } from "@mui/material";
+import { Box, Skeleton, Typography } from "@mui/material";
 
 export default function Section3() {
   const { token } = useAuth();
@@ -37,8 +37,8 @@ export default function Section3() {
   }, [token]);
 
   const responsive = [
-    { breakpoint: 959, settings: { slidesToShow: 2 } },
-    { breakpoint: 650, settings: { slidesToShow: 1 } },
+    { breakpoint: 959, settings: { slidesToShow: 4 } },
+    { breakpoint: 650, settings: { slidesToShow: 2 } },
   ];
 
   const ShimmerCard = () => (
@@ -76,7 +76,7 @@ export default function Section3() {
       ) : topRatedCategory.length <= 3 ? (
         <Grid container spacing={"20px"}>
           {topRatedCategory.map((item) => (
-            <Grid key={item._id} item xs={12} md={6} lg={4}>
+            <Grid key={item._id} item xs={6} md={2} lg={2}>
               <Link
                 href={`/category/${item.fullSlug}`}
               >
@@ -98,12 +98,13 @@ export default function Section3() {
                     subtitle={item.description}
                   />
                 </BazaarCard>
+                  <Typography variant="body1" color="initial">{item.title}</Typography>
               </Link>
             </Grid>
           ))}
         </Grid>
       ) : (
-        <Carousel slidesToShow={3} responsive={responsive}>
+        <Carousel slidesToShow={6} responsive={responsive}>
           {topRatedCategory.map((item) => (
             <Link
               key={item._id}
@@ -119,13 +120,15 @@ export default function Section3() {
                   "&:hover": {
                     boxShadow: "0 0 6px #c2c1c1",
                   },
+                  aspectRatio: '2/3'
                 }}
               >
                 <TopCategoriesCard
-                  title={item.topRatedImage.alt}
+                  title={item.title}
                   imgUrl={item.base_url + item.topRatedImage.url}
                   subtitle={item.description.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim()}
                 />
+                <Typography color="inherit" mt={1}>{item.title}</Typography>
               </BazaarCard>
             </Link>
           ))}

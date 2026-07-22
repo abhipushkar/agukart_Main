@@ -6,6 +6,7 @@ export default styled(Box)({
   display: "flex",
   overflow: "hidden",
   position: "relative",
+  height: '100%',
   "&:after": {
     inset: 0,
     zIndex: 1,

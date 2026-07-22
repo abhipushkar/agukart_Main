@@ -34,6 +34,7 @@ export const CountryModal = ({ open, onClose, countries, currentCountry, onCount
 
     const handleCountrySelect = (country) => {
         onCountrySelect(country);
+        setSearchQuery("");
         onClose();
     };
 

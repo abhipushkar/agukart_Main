@@ -1,5 +1,6 @@
 "use client";
 
+import { Box } from "@mui/material";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import styled from "@mui/material/styles/styled";
@@ -25,6 +26,7 @@ export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
     <Card
       sx={{
         position: "relative",
+        aspectRatio: '2/3'
       }}
     >
       {/* <StyledChip
@@ -40,30 +42,28 @@ export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
           color: "white",
         }}
       /> */}
-
-      <StyledChip
+      {/* <StyledChip
         style={{
           textTransform: "capitalize",
         }}
         color="default"
-        label={subtitle}
+        label={title}
         size="small"
         sx={{
           right: 12,
           maxWidth: "90%",
           bgcolor: "#fefefe4f",
         }}
-      />
+      /> */}
 
-      <HoverBox borderRadius={2}>
-        <LazyImage
-          priority
-          src={imgUrl}
-          width={1035}
-          height={348}
-          alt={title}
-        />
-      </HoverBox>
+
+      <img
+        priority
+        src={imgUrl}
+        alt={title}
+        style={{aspectRatio: '2/3', maxHeight: '100%', maxWidth: '100%'}}
+        objectFit='contain'
+      />
     </Card>
   );
 }

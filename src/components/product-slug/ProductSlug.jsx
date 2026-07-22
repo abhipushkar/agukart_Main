@@ -33,7 +33,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 const SORT_OPTIONS = [
   { label: "Relevance", value: "relevance" },
-  { label: "Newest", value: "newest" },
+  { label: "Most Recent", value: "latest" },
   { label: "Price Low to High", value: "asc" },
   { label: "Price High to Low", value: "desc" },
 ];

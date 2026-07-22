@@ -94,10 +94,11 @@ export default function FollowShop(props) {
               display: "flex",
               justifyContent: "center",
               width: "100%",
-              gap: "10px",
+              height: '200px',
+              alignItems: 'center'
             }}
           >
-            <Typography variant="h6">No {pathname === "/profile/follow-shop" ? "shop":"product"} found in {pathname === "/profile/follow-shop" ?"Follow shop":"Wishlist"}</Typography>
+            <Typography variant="h6">No {pathname === "/profile/follow-shop" ? "shop":"product"} found in {pathname === "/profile/follow-shop" ?"Followed Shops":"Wishlist"}</Typography>
           </Box>
         ) : (
           // </Box>
