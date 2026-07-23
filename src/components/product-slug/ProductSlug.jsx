@@ -51,7 +51,7 @@ const ProductSlug = ({
   console.log({ initialProducts });
 
   // ✅ URL STATE (same as category page)
-  const sortBy = searchParams.get("sort") || "relevance";
+  const sortBy = searchParams.get("sortBy") || "relevance";
   const page = Number(searchParams.get("page") || 1);
 
   // ✅ INITIAL SSR DATA
@@ -112,9 +112,9 @@ const ProductSlug = ({
     const params = new URLSearchParams(searchParams.toString());
 
     if (value) {
-      params.set("sort", value);
+      params.set("sortBy", value);
     } else {
-      params.delete("sort");
+      params.delete("sortBy");
     }
 
     params.delete("page"); // reset page

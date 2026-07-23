@@ -101,7 +101,7 @@ export default function AllCategoriesSearchPageView({
 
   const router = useRouter();
   const [view, setView] = useState("grid");
-  const sortBy = searchParams.get("sort") || "relevance";
+  const sortBy = searchParams.get("sortBy") || "relevance";
   const [productIncreaseValue, SetProductIncreaseValue] = useState(6);
   const [isproductIncreaseValue, SetIsProductIncreaseValue] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -140,9 +140,9 @@ export default function AllCategoriesSearchPageView({
     const params = new URLSearchParams(searchParams.toString());
 
     if (value) {
-      params.set("sort", value);
+      params.set("sortBy", value);
     } else {
-      params.delete("sort");
+      params.delete("sortBy");
     }
 
     // ✅ ALWAYS reset page to 1 explicitly

@@ -34,9 +34,19 @@ const getBreadcrumbData = async (slugPath) => {
   return res.json();
 };
 
-const getInitialProducts = async (categoryId) => {
+const getInitialProducts = async (categoryId, sortBy = '') => {
+  const query = new URLSearchParams({
+    categoryId,
+    page: "1",
+    limit: "64",
+  });
+
+  if (sortBy) {
+    query.append("sortBy", sortBy);
+  }
+  console.log(`${baseURL}/get-product?${query.toString()}`)
   const res = await fetch(
-    `${baseURL}/get-product?categoryId=${categoryId}&page=1&limit=64`,
+    `${baseURL}/get-product?${query.toString()}`,
     {
       cache: "no-store",
     }
@@ -48,7 +58,7 @@ const getInitialProducts = async (categoryId) => {
 };
 
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, }) {
 
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
@@ -88,10 +98,12 @@ export async function generateMetadata({ params }) {
 }
 
 
-export default async function ProductSearch({ params }) {
+export default async function ProductSearch({ params, searchParams }) {
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
 
+  const sortBy = searchParams?.sortBy || "";
+  
   // 2. THEN FETCH CATEGORY
   const categoryData = await getCategoryData(slugPath);
 
@@ -100,7 +112,7 @@ export default async function ProductSearch({ params }) {
   }
 
   const [productData, breadcrumbData] = await Promise.all([
-    getInitialProducts(categoryData?.current?._id),
+    getInitialProducts(categoryData?.current?._id, sortBy),
     getBreadcrumbData(slugPath),
   ]);
 

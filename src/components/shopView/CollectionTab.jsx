@@ -71,7 +71,7 @@ const CollectionTab = ({
   const [selectedStoreId, setSelectedStoreId] = useState(store_id || "all");
   const [storeProductLoading, setStoreProductLoading] = useState(true);
   const [storeProducts, setStoreProducts] = useState([]);
-  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(queryPage || 1);
   const [productbaseUrl, setProductBaseUrl] = useState("");
@@ -262,6 +262,7 @@ const CollectionTab = ({
               sx={{
                 display: { xs: "flex", md: "none" },
                 alignItems: "center",
+                justifyContent: 'space-between', flexDirection: 'row',
                 gap: 1.2,
                 mb: 1.5,
               }}
@@ -278,7 +279,6 @@ const CollectionTab = ({
                   setSelectedStoreId(value);
                 }}
                 sx={{
-                  flex: 1,
                   borderRadius: "14px",
                   height: "44px",
                   bgcolor: "#fff",
@@ -289,7 +289,7 @@ const CollectionTab = ({
                   },
                   "& fieldset": {
                     border: "none",
-                  },
+                  }, flex: 1
                 }}
                 displayEmpty
               >
@@ -302,55 +302,24 @@ const CollectionTab = ({
                 ))}
               </Select>
 
-              <Box sx={{ position: "relative" }}>
-                <IconButton
-                  onClick={() => setShowSortMenu((prev) => !prev)}
-                  sx={{
-                    border: "1.5px solid #d6d6d6",
-                    borderRadius: "12px",
-                    height: "44px",
-                    width: "44px",
-                    bgcolor: "#fff",
-                  }}
-                >
-                  <SortIcon sx={{ fontSize: "22px", color: "#555" }} />
-                </IconButton>
 
-                {showSortMenu && (
-                  <Box
-                    sx={{
-                      display: { xs: "block", md: "none" },
-                      position: "absolute",
-                      top: "52px",
-                      right: 0,
-                      width: "180px",
-                      bgcolor: "#fff",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: "12px",
-                      boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
-                      zIndex: 20,
-                      p: 1,
-                    }}
-                  >
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      value={sortBy}
-                      onChange={(e) => {
-                        handleChangeSortBy(e.target.value);
-                        setShowSortMenu(false);
-                      }}
-                    >
-                      {SORT_OPTIONS.map((item) => (
-                        <MenuItem key={item.value} value={item.value}>
-                          {item.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Box>
-                )}
-              </Box>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  value={sortBy}
+                  onChange={(e) => {
+                    handleChangeSortBy(e.target.value);
+                    // setShowSortMenu(false);
+                  }}
+                  sx={{ maxWidth: '50%' }}
+                >
+                  {SORT_OPTIONS.map((item) => (
+                    <MenuItem key={item.value} value={item.value}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
             </Box>
             <List
               sx={{

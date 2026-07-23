@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import LazyImage from "components/LazyImage";
 export default function LogoSection() {
-  return <Fragment sx={{margin:'0 auto'}}>
+  return <Fragment>
       <Link href="/">
         <Typography component="span" mb={2} sx={{background:'#f1641e',borderRadius:'12px',width:'60px',height:"60px",padding:'6px',display:'flex',alignItems:'center',justifyContent:'center'}}>
           {/* <svg stroke="currentColor" fill="#fff" xmlns="http://www.w3.org/2000/svg" height="60px" width="60px" viewBox="0 0 48 24" aria-hidden="true" focusable="false">

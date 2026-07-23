@@ -37,7 +37,7 @@ import { useToasts } from "react-toast-notifications";
 import UseScrollToHash from "./UseScrollToHash";
 import { Carousel } from "components/carousel";
 
-const ShopView = () => {
+const ShopView = ({initialVendor, isDisabled, slug}) => {
   UseScrollToHash();
   const { addToast } = useToasts();
   const [_value, setValue] = useState("1");
@@ -46,7 +46,7 @@ const ShopView = () => {
   const [loading, setLoading] = useState(true);
   const { usercredentials } = useMyProvider();
 
-  const [vendorDetail, setVendorDetail] = useState(null);
+  const [vendorDetail, setVendorDetail] = useState(initialVendor);
   const [followed, setFollowed] = useState(false);
   console.log({ vendorDetail }, "eryeree");
   const [openPopup, SetOpenPopup] = useState(false);
@@ -54,13 +54,13 @@ const ShopView = () => {
   const [openAnnouncementModal, setOpenAnnouncementModal] = useState(false);
   const [isWishlist, setIsWishlist] = useState(false);
   const shareUrl = encodeURIComponent(
-    `${process.env.NEXT_PUBLIC_WEB_URL}/store/${vendorDetail?.slug}`
+    `https://agukart.com/store/${vendorDetail?.slug}`
   );
   const shareTitle = encodeURIComponent(vendorDetail?.shop_name);
   const [summary, setSummary] = useState(null);
 
   const copyToClipboard = () => {
-    const url = `${process.env.NEXT_PUBLIC_WEB_URL}/store/${vendorDetail?.slug}`;
+    const url = `https://agukart.com/store/${vendorDetail?.slug}`;
     navigator.clipboard.writeText(url);
     addToast("Link copied to clipboard!", {
       appearance: "success",
@@ -85,49 +85,30 @@ const ShopView = () => {
   };
 
   const pathname = usePathname();
-  const parts = pathname.split("/store/");
 
   const router = useRouter();
 
-  const getVendorDetail = async () => {
+  const getFollowStatus = async (id) => {
+    if (!id) return;
     try {
-      setLoading(true);
-      let url = `getVendorDetailsBySlug/${parts[1]}`;
-      if (token) {
-        url = `getVendorDetailsBySlug/${parts[1]}?userId=${usercredentials?._id}`;
-      }
-      const res = await getAPIAuth(url, token);
-
+      const res = await getAPIAuth(
+        `vendor-follow-status/${id}?userId=${usercredentials?._id}`,
+        token
+      );
       if (res.status === 200) {
-        setLoading(false);
-        const members = res?.data?.data?.members?.map((member) => ({
-          ...member,
-          imageUrl: member.images
-            ? `${res?.data?.data?.member_image_url}${member.images}`
-            : "",
-        }));
-        const shop_photos = res?.data?.data?.shop_photos?.map((shop) => ({
-          ...shop,
-          imageUrl: shop.image
-            ? `${res?.data?.data?.member_image_url}${shop.image}`
-            : "",
-        }));
-        console.log({ members }, "dgfgfgfgf");
-        setVendorDetail({ ...res.data.data, members, shop_photos });
-        setFollowed(res.data.data.followStatus);
+        setFollowed(res.data.followStatus);
+        setIsWishlist(res.data.followStatus);
+        console.log(res.data, "follow")
       }
     } catch (error) {
-      setLoading(false);
-      console.log(error);
-    } finally {
-      setLoading(false);
+      console.error(error.response?.data?.message || "")
     }
   };
 
   const getVendorProductCategory = async () => {
     try {
       const res = await getAPIAuth(
-        `getVendorCategoryBySlug/${parts[1]}`,
+        `getVendorCategoryBySlug/${slug}`,
         token
       );
       if (res.status === 200) {
@@ -137,9 +118,16 @@ const ShopView = () => {
       console.log(error);
     }
   };
+
   useEffect(() => {
-    getVendorDetail();
+    if (!token || !vendorDetail?._id) return;
+    getFollowStatus(vendorDetail?._id);
+  }, [token, vendorDetail?._id]);
+
+  useEffect(() => {
+    setLoading(true);
     getVendorProductCategory();
+    setLoading(false);
   }, [pathname]);
 
   const toggelFollowShopHandler = async () => {
@@ -372,20 +360,6 @@ const ShopView = () => {
                     overflow: "hidden",
                   }}
                 >
-                  {/* Blurred background */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      inset: 0,
-                      backgroundImage: `url(${vendorDetail.shop_banner[0]?.editedImage ||
-                        vendorDetail.shop_banner[0]?.image
-                        })`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      filter: "blur(20px)",
-                      transform: "scale(1.1)", // prevents blur edges from showing
-                    }}
-                  />
 
                   {/* Foreground image */}
                   <Box
@@ -486,7 +460,7 @@ const ShopView = () => {
                       display: { xs: "flex", md: "none" },
                       mt: 0.5
                     }}>
-                      <Rating value={summary?.shopRatingAvg || 0} size='small' readOnly/>
+                      <Rating value={summary?.shopRatingAvg || 0} size='small' readOnly />
                     </Box>
                   </Box>
                   <Typography
@@ -667,7 +641,7 @@ const ShopView = () => {
 
                     {/* Desktop stars + follow button (unchanged) */}
                     <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1, mt: 1 }}>
-                      <Rating value={summary?.shopRatingAvg || 0} sx={{color: '#000'}} readOnly/>
+                      <Rating value={summary?.shopRatingAvg || 0} sx={{ color: '#000' }} readOnly />
                     </Box>
                     <Box mt={1.5} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
                       <Button
@@ -756,16 +730,16 @@ const ShopView = () => {
                     md: "column",
                   },
                   justifyContent: {
-                    md: "flex-end",
+                    md: "center",
                     xs: "center",
                   },
                   alignItems: {
-                    md: "flex-end",
+                    md: "center",
                     xs: "center",
                   },
                   textAlign: {
                     xs: "center", // mobile: center text
-                    md: "end", // desktop: right align text (optional)
+                    md: "center", // desktop: right align text (optional)
                   },
                 }}
               >
@@ -811,12 +785,12 @@ const ShopView = () => {
             <Box
               mb={0}
               sx={{
-                position: {xs: "sticky", sm: "sticky", md: "static", lg: "static"},
-                top: {xs: 0, sm: 0},
+                position: { xs: "sticky", sm: "sticky", md: "static", lg: "static" },
+                top: { xs: 0, sm: 0 },
                 zIndex: 99,
                 background: "#fff",
-                py: {xs: 0.8, sm: 0.8, md: 0.3, lg: 0.3},
-                width: {xs: "100%", sm: "100%", md: "70%", lg: "73%"},
+                py: { xs: 0.8, sm: 0.8, md: 0.3, lg: 0.3 },
+                width: { xs: "100%", sm: "100%", md: "70%", lg: "73%" },
                 display: { lg: "flex", md: "flex", xs: "block" },
                 alignItems: "center",
                 marginTop: {
@@ -902,8 +876,8 @@ const ShopView = () => {
                 flexGrow: 1,
                 height: '1px',
                 backgroundColor: '#e0e0e0',
-                position: {xs: "sticky", sm: "sticky", md: "relative", lg: "relative"},
-                top: {xs: 40, sm: 40, md: 5, lg: 5},
+                position: { xs: "sticky", sm: "sticky", md: "relative", lg: "relative" },
+                top: { xs: 40, sm: 40, md: 5, lg: 5 },
                 zIndex: 99
               }}
             />
@@ -931,7 +905,7 @@ const ShopView = () => {
                   </Grid>
 
                   <Grid item xs={12} id="reviews">
-                    <ReviewsTab vendor_id={vendorDetail?._id} setSummary={setSummary}/>
+                    <ReviewsTab vendor_id={vendorDetail?._id} setSummary={setSummary} />
                   </Grid>
 
                   <Grid item xs={12} id="about">
@@ -1289,6 +1263,7 @@ const ShopView = () => {
             fontSize: "20px",
             textTransform: "uppercase",
             fontWeight: 900,
+            height: '85vh'
           }}
         >
           Vendor Not Found
