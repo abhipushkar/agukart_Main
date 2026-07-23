@@ -38,7 +38,8 @@ export function generateMetadata({ params }) {
     };
 }
 
-export default async function AllCategory({ params }) {
+export default async function AllCategory({ params, searchParams }) {
+    const sortBy = searchParams?.sortBy || "";
 
     // FETCH CATEGORY
     const categoryRes = await fetch(
@@ -52,9 +53,17 @@ export default async function AllCategory({ params }) {
 
     const categoryData = await categoryRes.json();
 
+    const query = new URLSearchParams({
+        page: "1",
+        limit: "64",
+    });
+
+    if (sortBy) {
+        query.append("sortBy", sortBy);
+    }
 
     const productRes = await fetch(
-        `${baseURL}/get-product?page=1&limit=64`,
+        `${baseURL}/get-product?${query.toString()}`,
         { cache: "no-store" }
     );
 
@@ -62,11 +71,11 @@ export default async function AllCategory({ params }) {
 
     // 🔥 3. PASS DATA / SLUG TO CLIENT COMPONENT
     return (
-            <AllCategoriesSearchPageView
-                slug={"Jwellery"}
-                initialCategory={categoryData || {}}
-                initialProducts={productData||{}}
-                initialBreadcrumb={{}} 
-            />
+        <AllCategoriesSearchPageView
+            slug={"Jwellery"}
+            initialCategory={categoryData || {}}
+            initialProducts={productData || {}}
+            initialBreadcrumb={{}}
+        />
     );
 }

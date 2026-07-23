@@ -51,9 +51,11 @@ export async function generateMetadata({ params }) {
 }
 
 
-const page = async ({ params }) => {
+const page = async ({ params, searchParams }) => {
   const slugArray = params.slug || [];
   const slugPath = slugArray.join("/");
+
+  const sortBy = searchParams?.sortBy || "";
 
   const resolveRes = await fetch(
     `${baseURL}/${slugPath}`,
@@ -92,8 +94,16 @@ const page = async ({ params }) => {
   const childData = childRes.ok ? await childRes.json() : { data: [] };
 
   // 🔥 4. PRODUCTS (SSR now)
+  const query = new URLSearchParams({
+    page: "1",
+    limit: "64",
+  });
+
+  if (sortBy) {
+    query.append("sortBy", sortBy);
+  }
   const productRes = await fetch(
-    `${baseURL}/getProductBySlug/${slugPath}?page=1&limit=64`,
+    `${baseURL}/getProductBySlug/${slugPath}?${query.toString()}`,
     { cache: "no-store" }
   );
 
