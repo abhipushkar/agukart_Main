@@ -128,7 +128,7 @@ const ChangePassword = () => {
 
   useEffect(() => {
     validateToken();
-  }, []);
+  }, [pathName]);
   return (
     <Fragment>
       <H3 mb={3} textAlign="center">

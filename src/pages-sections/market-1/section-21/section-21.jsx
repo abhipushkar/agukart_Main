@@ -97,15 +97,15 @@ const Slider = ({ cat }) => {
                     alt="banner"
                     src={product.base_url + product.image[0]}
                     sx={{
-  height: {
-    xs: "170px",
-    sm: "220px",
-    md: "260px",
-  },
-  width: "100%",
-  objectFit: "cover",
-  aspectRatio: "1/1",
-}}
+                      height: {
+                        xs: "170px",
+                        sm: "220px",
+                        md: "260px",
+                      },
+                      width: "100%",
+                      objectFit: "cover",
+                      aspectRatio: "1/1",
+                    }}
                   />
                 </Box>
               </Link>
@@ -113,7 +113,7 @@ const Slider = ({ cat }) => {
           ))}
         </Grid>
       ) : (
-        <Carousel slidesToShow={6} responsive={responsive}>
+        <Carousel slidesToShow={6} autoplay={true} responsive={responsive}>
           {products.map((product) => (
             <Link key={product._id} href={`/product/${product.slug}/${product.product_code}`}>
               <Box
@@ -132,15 +132,15 @@ const Slider = ({ cat }) => {
                   alt="banner"
                   src={product.base_url + product.image[0]}
                   sx={{
-  height: {
-    xs: "170px",
-    sm: "220px",
-    md: "260px",
-  },
-  width: "100%",
-  objectFit: "cover",
-  aspectRatio: "1/1",
-}}
+                    height: {
+                      xs: "170px",
+                      sm: "220px",
+                      md: "260px",
+                    },
+                    width: "100%",
+                    objectFit: "cover",
+                    aspectRatio: "1/1",
+                  }}
                 />
               </Box>
             </Link>

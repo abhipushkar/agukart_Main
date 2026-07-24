@@ -128,7 +128,7 @@ export default function Section3() {
                   imgUrl={item.base_url + item.topRatedImage.url}
                   subtitle={item.description.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim()}
                 />
-                <Typography color="inherit" mt={1}>{item.title}</Typography>
+                <Typography color="inherit" my={1}>{item.title}</Typography>
               </BazaarCard>
             </Link>
           ))}
