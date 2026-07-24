@@ -19,6 +19,32 @@ const StyledChip = styled(Chip)({
   position: "absolute",
 });
 // ========================================================
+{/* <StyledChip
+  style={{
+    textTransform: "capitalize",
+  }}
+  size="small"
+  label={title}
+  color="secondary"
+  sx={{
+    backgroundColor: "secondary.main",
+    left: 12,
+    color: "white",
+  }}
+/> */}
+{/* <StyledChip
+  style={{
+    textTransform: "capitalize",
+  }}
+  color="default"
+  label={title}
+  size="small"
+  sx={{
+    right: 12,
+    maxWidth: "90%",
+    bgcolor: "#fefefe4f",
+  }}
+/> */}
 
 // ========================================================
 export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
@@ -26,43 +52,19 @@ export default function TopCategoriesCard({ title, subtitle, imgUrl }) {
     <Card
       sx={{
         position: "relative",
-        aspectRatio: '2/3'
+        aspectRatio: "2 / 3",
+        overflow: "hidden",
       }}
     >
-      {/* <StyledChip
-        style={{
-          textTransform: "capitalize",
-        }}
-        size="small"
-        label={title}
-        color="secondary"
-        sx={{
-          backgroundColor: "secondary.main",
-          left: 12,
-          color: "white",
-        }}
-      /> */}
-      {/* <StyledChip
-        style={{
-          textTransform: "capitalize",
-        }}
-        color="default"
-        label={title}
-        size="small"
-        sx={{
-          right: 12,
-          maxWidth: "90%",
-          bgcolor: "#fefefe4f",
-        }}
-      /> */}
-
-
       <img
-        priority
         src={imgUrl}
         alt={title}
-        style={{aspectRatio: '2/3', maxHeight: '100%', maxWidth: '100%'}}
-        objectFit='contain'
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: "block",
+        }}
       />
     </Card>
   );
