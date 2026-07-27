@@ -14,7 +14,7 @@ export async function generateMetadata() {
     return {
       title: `Agukart - ${data?.meta_title || "Agukart"}`,
       description: data?.meta_description || "",
-      keywords: data?.meta_keywords || [],
+      keywords: String(data?.meta_keywords).split(',') || [],
       authors: [
         {
           name: "Agukart",

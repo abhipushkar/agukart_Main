@@ -300,10 +300,10 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                         <Avatar alt="image" src={product?.firstImage} sx={{ width: 150, height: 150, borderRadius: 2 }} variant="square" />
                         {product?.product_bedge && (
                             <Box sx={{
-                                zIndex: "9", position: "absolute", top: "12px", left: "12px",
+                                zIndex: "9", position: "absolute", top: "4px", left: "4px",
                                 background: product?.product_bedge === "Popular Now" ? "#fed9c9" : product?.product_bedge === "Best Seller" ? "#e9d8a6" : "#c1f1c1",
-                                boxShadow: "0 0 3px #696969", borderRadius: "30px", padding: "5px 10px", color: "#000",
-                                textDecoration: "underline dashed", display: "flex", alignItems: "center", fontSize: "13px", textUnderlineOffset: "2px",
+                                boxShadow: "0 0 3px #696969", borderRadius: "30px", padding: "4px 6px", color: "#000",
+                                textDecoration: "underline dashed", display: "flex", alignItems: "center", fontSize: "10px", textUnderlineOffset: "2px",
                             }}>
                                 {product?.product_bedge}
                             </Box>

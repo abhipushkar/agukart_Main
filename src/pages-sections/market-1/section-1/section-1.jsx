@@ -78,7 +78,7 @@ export default function Section1() {
                   key={ind}
                   sx={{
                     width: "100%",
-                    height: { xs: 100, sm: 300, md: 400 },
+                    aspectRatio: '4/1',
                     overflow: "hidden",
                     borderRadius: 2,
                     lineHeight: 0,
