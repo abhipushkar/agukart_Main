@@ -16,11 +16,12 @@ import {
     Pinterest as PinterestIcon,
     FileCopy as FileCopyIcon
 } from '@mui/icons-material';
+import parse from 'html-react-parser';
 
 const ShareModal = ({ open, onClose, product, usercredentials }) => {
     const shareUrl = usercredentials?.affiliate_code
-        ? `${process.env.NEXT_PUBLIC_WEB_URL}/products/${product?._id}&affiliate_code=${usercredentials?.affiliate_code}`
-        : `${process.env.NEXT_PUBLIC_WEB_URL}/products/${product?._id}`;
+        ? `https://agukart.com/product/${product?.slug}/${product?.product_code}&affiliate_code=${usercredentials?.affiliate_code}`
+        : `https://agukart.com/product/${product?.slug}/${product?.product_code}`;
 
     const shareTitle = encodeURIComponent(product?.product_title || '');
     const encodedShareUrl = encodeURIComponent(shareUrl);
@@ -158,7 +159,7 @@ const ShareModal = ({ open, onClose, product, usercredentials }) => {
                                 mb: 0.5
                             }}
                         >
-                            {product?.product_title}
+                            {parse(product?.product_title)}
                         </Typography>
                         <Typography
                             sx={{

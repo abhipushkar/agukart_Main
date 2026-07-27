@@ -12,6 +12,7 @@ import { ExpandMore as ExpandMoreIcon, FavoriteBorder as FavoriteBorderIcon, Fav
 const SellerInfo = ({
     product,
     vendorDetail,
+    isFollowed,
     onFollowShop,
     onMessage,
     userDesignation
@@ -113,14 +114,14 @@ const SellerInfo = ({
                                         mt: 1
                                     }}
                                     startIcon={
-                                        vendorDetail?.followStatus ? (
+                                        isFollowed ? (
                                             <FavoriteIcon sx={{ color: "red" }} />
                                         ) : (
                                             <FavoriteBorderIcon />
                                         )
                                     }
                                 >
-                                    {vendorDetail?.followStatus ? "Unfollow Shop" : "Follow Shop"}
+                                    {isFollowed ? "Following" : "Follow Shop"}
                                 </Button>
                             )}
                         </Box>

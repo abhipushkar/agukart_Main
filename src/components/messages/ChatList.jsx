@@ -627,7 +627,7 @@ const ChatList = ({ chatListProp }) => {
                               >
                               </Link>
                               <Box>
-                                <Typography sx={{ display: 'flex', alignItems: 'center', maxWidth: { xs: "18px", sm: "25px" }, maxHeight: { xs: "18px", sm: "25px" } }}>
+                                <Typography sx={{ display: 'flex', maxWidth: { xs: "18px", sm: "25px" }, maxHeight: { xs: "18px", sm: "25px" } }}>
                                   <svg
                                     stroke="currentColor"
                                     fill="currentColor"

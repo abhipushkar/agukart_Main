@@ -682,23 +682,39 @@ const ChatContextProvider = ({ children }) => {
 
   const pinnedMessageHadler = async (docId) => {
     try {
+      console.log("📌 Toggling pin for chat:", docId);
       const docRef = doc(db, "chatRooms", docId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
         const docData = docSnap.data();
-        if (docData?.pinnedMsgUser) {
-          await updateDoc(docRef, {
-            pinnedMsgUser: "",
-          });
-        } else {
-          await updateDoc(docRef, {
-            pinnedMsgUser: usercredentials?._id,
-          });
-        }
+        const currentPinnedUser = docData?.pinnedMsgUser;
+
+        // Toggle pin
+        const newPinnedValue = currentPinnedUser === usercredentials?._id ? "" : usercredentials?._id;
+
+        console.log("📌 Current pin status:", currentPinnedUser);
+        console.log("📌 New pin status:", newPinnedValue);
+
+        await updateDoc(docRef, {
+          pinnedMsgUser: newPinnedValue
+        });
+
+        console.log("✅ Pin updated successfully");
+
+        // Optional: Update local state immediately for better UX
+        setChats(prevChats =>
+          prevChats.map(chat =>
+            chat.id === docId
+              ? { ...chat, pinnedMsgUser: newPinnedValue }
+              : chat
+          )
+        );
+      } else {
+        console.log("❌ Document not found:", docId);
       }
     } catch (error) {
-      console.error("Error updating document: ", error);
+      console.error("❌ Error updating pin: ", error);
     }
   };
 

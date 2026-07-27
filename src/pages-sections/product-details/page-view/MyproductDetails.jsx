@@ -59,6 +59,7 @@ const MyproductDetails = ({ res }) => {
   const [originalPrice, setOriginalPrice] = useState(0);
   const [stock, setStock] = useState(0);
   const [vendorDetail, setVendorDetail] = useState(null);
+  const [vendorFollow, setVendorFollow] = useState(false);
   const [bestPromotion, setBestPromotion] = useState({});
   const [nextPromotion, setNextPromotion] = useState({});
   const [plusToggle, setPlusToggle] = useState(false);
@@ -519,6 +520,22 @@ const MyproductDetails = ({ res }) => {
 
   const toggleWishlist = Boolean(wishlistProductIds?.[myproduct?._id]);
   console.log("wishlistProductIds", wishlistProductIds);
+
+  const getFollowStatus = async (id) => {
+    if (!id) return;
+    try {
+      const res = await getAPIAuth(
+        `vendor-follow-status/${id}?userId=${usercredentials?._id}`,
+        token
+      );
+      if (res.status === 200) {
+        setVendorFollow(res.data.followStatus);
+      }
+    } catch (error) {
+      console.error(error.response?.data?.message || "")
+    }
+  };
+
   const getVendorDetailBySlug = async () => {
     if (!myproduct?.vendor_details?.slug) return;
     try {
@@ -547,6 +564,14 @@ const MyproductDetails = ({ res }) => {
       getVendorDetailBySlug();
     }
   }, [myproduct, token]);
+
+  useEffect(() => {
+    if (token && vendorDetail?._id) {
+      getFollowStatus(vendorDetail._id);
+    }
+  }, [token, vendorDetail]);
+
+
   // Price Calculation
   useEffect(() => {
     if (!myproduct) return;
@@ -1306,7 +1331,7 @@ const MyproductDetails = ({ res }) => {
       return;
     }
     try {
-      console.log(vendorDetail,'vendor' );
+      console.log(vendorDetail, 'vendor');
       const res = await postAPIAuth(`user/follow-vendor`, {
         vendorId: vendorDetail?._id,
       });
@@ -1643,6 +1668,7 @@ const MyproductDetails = ({ res }) => {
       <SellerInfo
         product={myproduct}
         vendorDetail={vendorDetail}
+        isFollowed={vendorFollow}
         onFollowShop={toggelFollowShopHandler}
         onMessage={() => setOpenPopup(true)}
         userDesignation={usercredentials?.designation_id}
