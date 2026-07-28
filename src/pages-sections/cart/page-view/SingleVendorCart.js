@@ -416,9 +416,10 @@ const SingleVendorCart = ({
   }
 
   const addParentCart = async () => {
+    console.log('inside parent cart')
     try {
       const products = cart.products;
-
+      console.log(cart.products, "length parent cart");
       for (let index = 0; index < products.length; index++) {
         const product = products[index];
         const templates = product.selectedShipping?.shippingTemplateData;
@@ -438,6 +439,8 @@ const SingleVendorCart = ({
             index,
             deliveryOption,
           );
+
+          console.log('parent cart', nearest)
 
           if (!nearest) {
             console.warn(`Shipping ${deliveryOption} not supported for vendor`);
@@ -471,10 +474,11 @@ const SingleVendorCart = ({
             region: location.countryName,
           },
         };
+        console.log('before api parent cart', payload)
 
         await postAPIAuth("user/add-parent-cart", payload);
       }
-
+      console.log('before cart detail parent cart')
       const data = wallet ? "1" : "0";
       getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
     } catch (err) {
@@ -1008,7 +1012,7 @@ const SingleVendorCart = ({
                     </Button>
                   </Box>
                   <Typography color="error">
-                    Oops! We're currently unable to deliver to your location.
+                    {validationMsg ? validationMsg : "Oops! We're currently unable to deliver to your location."}
                   </Typography>
                 </>
               )}

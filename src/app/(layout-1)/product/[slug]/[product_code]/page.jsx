@@ -5,8 +5,9 @@ import {
     Box,
     Typography,
     Chip,
+    Alert,
 } from "@mui/material";
-
+import SentimentDissatisfiedRoundedIcon from '@mui/icons-material/SentimentDissatisfiedRounded';
 import MyproductDetails from "pages-sections/product-details/page-view/MyproductDetails";
 import SimilarProducts from "pages-sections/product-details/page-view/SimilarProducts/SimilarProducts";
 import ShopProducts from "pages-sections/product-details/page-view/ShopProducts/ShopProducts";
@@ -38,16 +39,16 @@ const normalizeKeywords = (keywords) => {
 ========================================================= */
 
 const getProductData = async (product_code) => {
-  const res = await fetch(
-    `${baseUrl}/get-productById?productId=${product_code}`,
-    {
-      cache: "no-store",
-    }
-  );
+    const res = await fetch(
+        `${baseUrl}/get-productById?productId=${product_code}`,
+        {
+            cache: "no-store",
+        }
+    );
 
-  if (!res.ok) return null;
+    if (!res.ok) return null;
 
-  return res.json();
+    return res.json();
 };
 
 /* =========================================================
@@ -109,13 +110,19 @@ export default async function ProductDetails({ params }) {
     const product_code = params.product_code;
 
     const data = await getProductData(product_code);
-
     if (!data?.data) {
-        return notFound();
+        return (
+            <Box height={'50vh'} width={'100%'} display={'flex'} flexDirection={'column'} justifyContent={'center'}>
+                <Box width={"100%"} display={'flex'} justifyContent={'center'}>
+                    <Alert sx={{fontSize: '22px'}} severity="info" color="warning" icon={<SentimentDissatisfiedRoundedIcon sx={{fontSize: '40px'}} color="secondary"/>}>
+                        Sorry! This product is currently unavailable or not found.
+                    </Alert>
+                </Box>
+            </Box>
+        );
     }
 
     const product = data.data;
-
     const productid = product._id;
 
     const searchTerms = product?.search_terms || [];

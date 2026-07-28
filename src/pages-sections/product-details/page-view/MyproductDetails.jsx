@@ -1576,7 +1576,7 @@ const MyproductDetails = ({ res }) => {
         {parse(myproduct?.product_title || "")}
       </Typography>
       {/* Rating */}
-      <ProductRating product={myproduct} />
+      <ProductRating product={myproduct} reviewData={reviewData?.summary || {}} />
       {/* Promotion Info */}
       {nextPromotion &&
         Object.keys(nextPromotion).length > 0 &&

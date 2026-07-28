@@ -87,20 +87,20 @@ const MessagesWrapper = styled(Box)(({ theme }) => ({
   },
 }));
 
-const MessageBubble = styled(Paper)(({ theme, isOwn }) => ({
+const MessageBubble = styled(Paper)(({ theme, isOwn, images, video }) => ({
   padding: theme.spacing(1.5),
-  maxWidth: "85%", // Changed from 85% to 100%
-  minWidth: "60px",
-  width: "fit-content", // This is key
+  maxWidth: video ? '70%' : images > 1 ? "50%" : images === 1 ? "30%" : "100%",
+  minHeight: video ? '70%' : undefined,
+  minWidth: video ? 'fit-content' : '60px',
   borderRadius: isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
   backgroundColor: isOwn ? '#fff' : "#ddd",
   boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
   wordWrap: "break-word",
   whiteSpace: "pre-wrap",
   transition: "all 0.2s ease",
-  overflow: "hidden",
+  marginTop: "8px",
   [theme.breakpoints.down("sm")]: {
-    maxWidth: "100%",
+    maxWidth: "90%",
     padding: theme.spacing(1),
   },
 }));
@@ -754,9 +754,12 @@ const MessagePopup = ({
                               flex: "1 1 auto", // Allow growth
                             }}
                           >
-                            {(msg.text || msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
-                              <MessageBubble elevation={0} isOwn={isOwn}>
-                                {/* Images */}
+                            {/* Combined Message Content */}
+                            {(msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
+
+                              <MessageBubble elevation={0} isOwn={isOwn} images={msg?.attachments?.length} video={msg?.attachments?.some(att => att.type === 'video')}>
+                                {/* Images from old format with WhatsApp style */}
+
                                 {msg?.imageUrls?.length > 0 && (
                                   <Box
                                     sx={{
@@ -779,10 +782,16 @@ const MessagePopup = ({
                                             aspectRatio: '1',
                                             borderRadius: msg.imageUrls.length === 1 ? '8px' : '4px',
                                             overflow: 'hidden',
+                                            cursor: 'pointer',
                                             gridColumn: msg.imageUrls.length === 1 ? '1 / -1' : 'auto',
                                             ...(msg.imageUrls.length === 3 && imgIndex === 0 && {
                                               gridRow: '1 / 3',
                                             }),
+                                          }}
+                                          onClick={() => {
+                                            const mediaItems = getMediaItems(msg);
+                                            const imageIndex = mediaItems.findIndex(item => item.url === imageUrl);
+                                            handleMediaClick(mediaItems, imageIndex);
                                           }}
                                         >
                                           <img
@@ -809,6 +818,12 @@ const MessagePopup = ({
                                                 color: '#fff',
                                                 fontSize: '24px',
                                                 fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                              }}
+                                              onClick={() => {
+                                                const mediaItems = getMediaItems(msg);
+                                                const imageIndex = mediaItems.findIndex(item => item.url === imageUrl);
+                                                handleMediaClick(mediaItems, imageIndex);
                                               }}
                                             >
                                               +{remainingCount}
@@ -967,106 +982,24 @@ const MessagePopup = ({
                                     </a>
                                   </Box>
                                 ))}
+                              </MessageBubble>)}
 
+                            {msg.text && (
+                              <MessageBubble elevation={0} isOwn={isOwn}>
                                 {/* Text Message */}
-                                {msg.text && (
-                                  <Typography
-                                    sx={{
-                                      fontSize: isMobile ? "14px" : "15px",
-                                      wordWrap: "break-word",
-                                      whiteSpace: "pre-wrap",
-                                      width: 'fit-content',
-                                      maxWidth: "100%",
-                                      textAlign: "initial",
-                                    }}
-                                  >
-                                    {detectLink(msg.text || "")}
-                                  </Typography>
-                                )}
+                                <Typography
+                                  sx={{
+                                    fontSize: isMobile ? "14px" : "15px",
+                                    wordWrap: "break-word",
+                                    whiteSpace: "pre-wrap",
+                                    width: 'fit-content',
+                                    maxWidth: "100%",
+                                    textAlign: "initial",
+                                  }}
+                                >
+                                  {detectLink(msg.text || "")}
+                                </Typography>
 
-                                {/* Shop Link */}
-                                {msg.shopLink && Object.keys(msg?.shopData || {}).length > 0 && (
-                                  <Box sx={{ mt: 1, width: "100%" }}>
-                                    <Typography
-                                      sx={{
-                                        fontSize: "12px",
-                                        color: "text.secondary",
-                                        mb: 0.5,
-                                      }}
-                                    >
-                                      Shop:
-                                    </Typography>
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 2,
-                                        p: 2,
-                                        borderRadius: 2,
-                                        border: "1px solid #e0e0e0",
-                                        backgroundColor: isOwn ? "#f5f5f5" : "#fff",
-                                        width: "100%",
-                                        minWidth: "220px", // Force minimum width
-                                        boxSizing: "border-box",
-                                      }}
-                                    >
-                                      <img
-                                        src={msg?.shopData?.imageUrl}
-                                        alt="Shop"
-                                        width={70}
-                                        height={70}
-                                        style={{
-                                          borderRadius: 8,
-                                          objectFit: "cover",
-                                          flexShrink: 0,
-                                        }}
-                                      />
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          flexDirection: "column",
-                                          flex: 1,
-                                          gap: 1.5,
-                                          minWidth: 0,
-                                        }}
-                                      >
-                                        <Typography
-                                          sx={{
-                                            fontSize: 15,
-                                            fontWeight: 600,
-                                            color: "#333",
-                                            wordWrap: "break-word",
-                                            overflowWrap: "break-word",
-                                            whiteSpace: "normal", // Allow text to wrap
-                                          }}
-                                        >
-                                          {msg?.shopData?.shopName || ""}
-                                        </Typography>
-                                        <Button
-                                          variant="contained"
-                                          size="medium"
-                                          sx={{
-                                            backgroundColor: "black",
-                                            color: "white",
-                                            textTransform: "none",
-                                            fontSize: 13,
-                                            fontWeight: "bold",
-                                            "&:hover": { background: "black" },
-                                            width: "fit-content",
-                                            flexShrink: 0,
-                                            whiteSpace: "nowrap",
-                                            px: 3,
-                                          }}
-                                          onClick={() => {
-                                            window.open(msg.shopLink, "_blank");
-                                          }}
-                                        >
-                                          Visit Store
-                                        </Button>
-                                      </Box>
-                                    </Box>
-                                  </Box>
-                                )}
                               </MessageBubble>
                             )}
 

@@ -82,16 +82,18 @@ const MessagesWrapper = styled(Box)(({ theme }) => ({
   },
 }));
 
-const MessageBubble = styled(Paper)(({ theme, isOwn }) => ({
+const MessageBubble = styled(Paper)(({ theme, isOwn, images, video }) => ({
   padding: theme.spacing(1.5),
-  maxWidth: "75%",
-  minWidth: "60px",
+  maxWidth: video ? '70%' : images > 1 ? "50%" : images === 1 ? "30%" : "100%",
+  minHeight: video ? '70%' : undefined,
+  minWidth: video ? 'fit-content' : '60px',
   borderRadius: isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
   backgroundColor: isOwn ? '#fff' : "#ddd",
   boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
   wordWrap: "break-word",
   whiteSpace: "pre-wrap",
   transition: "all 0.2s ease",
+  marginTop: "8px",
   [theme.breakpoints.down("sm")]: {
     maxWidth: "90%",
     padding: theme.spacing(1),
@@ -775,9 +777,12 @@ const MessagePopup = ({
                               flex: "1 1 auto", // Allow growth
                             }}
                           >
-                            {(msg.text || msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
-                              <MessageBubble elevation={0} isOwn={isOwn}>
-                                {/* Images from old format */}
+                            {/* Combined Message Content */}
+                            {(msg?.imageUrls?.length > 0 || msg?.attachments?.length > 0) && (
+
+                              <MessageBubble elevation={0} isOwn={isOwn} images={msg?.attachments?.length} video={msg?.attachments?.some(att => att.type === 'video')}>
+                                {/* Images from old format with WhatsApp style */}
+
                                 {msg?.imageUrls?.length > 0 && (
                                   <Box
                                     sx={{
@@ -1000,22 +1005,24 @@ const MessagePopup = ({
                                     </a>
                                   </Box>
                                 ))}
+                              </MessageBubble>)}
 
+                            {msg.text && (
+                              <MessageBubble elevation={0} isOwn={isOwn}>
                                 {/* Text Message */}
-                                {msg.text && (
-                                  <Typography
-                                    sx={{
-                                      fontSize: isMobile ? "14px" : "15px",
-                                      wordWrap: "break-word",
-                                      whiteSpace: "pre-wrap",
-                                      width: 'fit-content',
-                                      maxWidth: "100%",
-                                      textAlign: "initial",
-                                    }}
-                                  >
-                                    {detectLink(msg.text || "")}
-                                  </Typography>
-                                )}
+                                <Typography
+                                  sx={{
+                                    fontSize: isMobile ? "14px" : "15px",
+                                    wordWrap: "break-word",
+                                    whiteSpace: "pre-wrap",
+                                    width: 'fit-content',
+                                    maxWidth: "100%",
+                                    textAlign: "initial",
+                                  }}
+                                >
+                                  {detectLink(msg.text || "")}
+                                </Typography>
+
                               </MessageBubble>
                             )}
 
