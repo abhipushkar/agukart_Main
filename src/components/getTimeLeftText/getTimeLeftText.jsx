@@ -19,13 +19,13 @@ export const getTimeLeftText = (start, end) => {
     return 'Limited time Offer only!';
   } else if (days >= 1) {
     const dayCount = Math.round(days);
-    return `Sales ends in ${dayCount} day${dayCount !== 1 ? 's' : ''}`;
+    return `Sales ends in ${dayCount} day${dayCount !== 1 ? 's' : ''}!`;
   } else if (hours >= 1) {
     const hourCount = Math.round(hours);
-    return `Sales ends in ${hourCount} hour${hourCount !== 1 ? 's' : ''}`;
+    return `Sales ends in ${hourCount} hour${hourCount !== 1 ? 's' : ''}!`;
   } else if (minutes > 0) {
     const minuteCount = Math.round(minutes);
-    return `Sales ends in ${minuteCount} minute${minuteCount !== 1 ? 's' : ''}`;
+    return `Sales ends in ${minuteCount} minute${minuteCount !== 1 ? 's' : ''}!`;
   }
 
   return null;

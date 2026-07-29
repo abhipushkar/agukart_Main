@@ -33,7 +33,7 @@ const section19 = () => {
 
     return (
         <>
-         <SectionCreator seeMoreLink="#" pt={2}  sx={{background:'#e9e7e7'}}>
+         <SectionCreator seeMoreLink="" pt={2}  sx={{background:'#e9e7e7'}}>
            <Box sx={{background:'#fff'}} p={2} my={1}>
             <H4 fontSize={20} pb={1}>Best Sellers in Jewelry</H4>
             <Carousel  slidesToShow={6} responsive={responsive}>

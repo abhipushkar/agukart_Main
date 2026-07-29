@@ -21,7 +21,7 @@ const Carousel = forwardRef((props, ref) => {
   const {
     dotColor,
     children,
-    arrowStyles,
+    arrowStyles = {color: '#1d1d1de0', backgroundColor: '#ffffff7c', borderRadius: '4px'},
     dots = false,
     arrows = true,
     slidesToShow = 5,

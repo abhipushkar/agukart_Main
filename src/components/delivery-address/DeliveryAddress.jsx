@@ -57,16 +57,21 @@ import useCart from "hooks/useCart";
 import { useCurrency } from "contexts/CurrencyContext";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import Checkout from "./Checkout";
+import DutyTaxesInfo from "components/Duty&Taxes/DutyTaxesInfo";
+
+
 const DeliveryAddress = () => {
+
   const initialOptions = {
     // "client-id": "AYKXmGSaIYk_P8R1brliTpBwrpi2hA8y5yulQMmi4XLByhWw1rvfdtoefzWkm0nUvSQ86123jZYOuaWq",
     "client-id": "Adp4wynJ83t9uJa6Nfr7z1gNpaz8KgNKCDCJBFihYhVDII2XeB-Q-doPyCjraqC0VkyelBhVR8GVNP7N",
     currency: "USD",
     intent: "capture",
   };
+
   // modal popup message
   const { currency } = useCurrency();
-  const [wallet, setWallet] = useState(() => {if (typeof window === "undefined") return false; return localStorage.getItem("wallet") === "true";});
+  const [wallet, setWallet] = useState(() => { if (typeof window === "undefined") return false; return localStorage.getItem("wallet") === "true"; });
   const [openPopup, SetOpenPopup] = useState(false);
   const [code, setCountryCode] = useState("in");
   const [getState, setGetState] = useState([]);
@@ -131,6 +136,9 @@ const DeliveryAddress = () => {
   const handleClosePopup = () => {
     SetOpenPopup(false);
   };
+
+  const [taxInfoOpen, setTaxInfoOpen] = useState(false);
+
   const splitCountryCode = (number) => {
     // Ensure the number includes a '+'
     if (!number.startsWith("+")) {
@@ -343,12 +351,12 @@ const DeliveryAddress = () => {
         wallet: localStorage.getItem("wallet") == "true" ? "1" : "0",
         coupon_vendor_ids: state?.cart?.filter(vendor => vendor.coupon_status === true)?.map(vendor => vendor.vendor_id) || [],
       };
-      if(voucherDetails?._id){
+      if (voucherDetails?._id) {
         payload.voucherBreakdown = JSON.parse(localStorage.getItem("voucherDetails")).voucherDetails;
       }
-      if((localStorage.getItem("wallet") == "true" && cartDetails?.grandTotal === 0) || paymentType==='wallet'){
-        payload.payment_status="completed";
-        payload.payment_type="wallet";
+      if ((localStorage.getItem("wallet") == "true" && cartDetails?.grandTotal === 0) || paymentType === 'wallet') {
+        payload.payment_status = "completed";
+        payload.payment_type = "wallet";
       }
       if (paymentType === "paypal") {
         payload.paypal_order_id = paypalOrderId;
@@ -407,7 +415,7 @@ const DeliveryAddress = () => {
 
   return (
     <>
-      <Box p={5}>
+      <Box p={{ xs: 2.5, md: 5 }}>
         <Grid container justifyContent="center" spacing={3} sx={{ px: 2, py: 4 }}>
           <Grid item xs={12} md={10}>
             <Grid container spacing={4}>
@@ -435,7 +443,7 @@ const DeliveryAddress = () => {
                           key={address._id}
                           container
                           spacing={2}
-                          mb={2}
+                          mb={3}
                           alignItems="flex-start"
                         >
                           <Grid item lg={4} md={4} xs={12}>
@@ -488,35 +496,30 @@ const DeliveryAddress = () => {
                               </Box>
                             </Box>
                           </Grid>
-                          <Grid item lg={4} md={4} xs={12}>
+                          <Grid item lg={4} md={4} xs={12} pt={'0 !important'} sx={{ mt: { xs: '0 !important', md: 2 } }}>
+
                             <Box
-                              width={"300px"}
-                              display={"flex"}
-                              flexDirection={"column"}
-                              mt={{ xs: 2, md: 0 }}
+
+                              display="flex"
+                              justifyContent={{ xs: "end", md: "center" }}
+                              gap={4}
                             >
-                              <Box
-                                mt={1}
-                                display="flex"
-                                justifyContent="center"
-                                gap={4}
+                              <Button
+                                onClick={() => {
+                                  editHandler(address);
+                                }}
                               >
-                                <Button
-                                  onClick={() => {
-                                    editHandler(address);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  onClick={() => {
-                                    setDeleteAddressPopup(true);
-                                    setDeleteAddressId(address._id);
-                                  }}
-                                >
-                                  Delete
-                                </Button>
-                              </Box>
+                                Edit
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  setDeleteAddressPopup(true);
+                                  setDeleteAddressId(address._id);
+                                }}
+                              >
+                                Delete
+                              </Button>
+
                             </Box>
                           </Grid>
                           <React.Fragment>
@@ -568,7 +571,7 @@ const DeliveryAddress = () => {
                 <Typography variant="h5" fontWeight={600} mb={2}>
                   Order Summary
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 2 }}>
+                <Paper variant="outlined" sx={{ p: { xs: 0, md: 2 }, borderRadius: 2, mb: 2 }}>
                   <TableContainer>
                     <Table size="small">
                       <TableBody>
@@ -667,71 +670,70 @@ const DeliveryAddress = () => {
                   <Box mb={3}>
                     <Typography color="text.secondary" fontSize={13}>
                       Local taxes included. Additional duties and{" "}
-                      <Link component={NextLink} href="/" underline="hover">
-                        taxes may apply
-                      </Link>
+                      <Typography component={'span'} color="primary" fontSize={13} sx={{cursor: 'pointer', '&:hover': {textDecoration: 'underline' }}} onClick={() => setTaxInfoOpen(true)}>taxes may apply</Typography>
+
                     </Typography>
                   </Box>
                 )}
                 {cartDetails?.grandTotal > 0 && (<>
                   <FormLabel component="legend" sx={{ mb: 1 }}>
-                  Select Payment Method
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={paymentType}
-                  onChange={(e) => setPaymentType(e.target.value)}
-                >
-                  <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
-                  <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
-                </RadioGroup>
-                {cartDetails?.error && (
-                  <Typography color={"red"} fontSize={12}>
-                    {cartDetails?.error}
-                  </Typography>
-                )}
-                {paymentType === "1" && (
-                  <Button
-                    fullWidth
-                    onClick={() => orderConfirmation("cod", "pending")}
-                    endIcon={loading ? <CircularProgress size={15} /> : ""}
-                    disabled={loading || checkoutDisabled}
-                    sx={{
-                      mt: 2,
-                      fontSize: "18px",
-                      background: "#000",
-                      color: "#fff",
-                      borderRadius: "30px",
-                      padding: "10px",
-                      "&:hover": {
-                        background: "#222",
-                      },
-                      "&.Mui-disabled": {
-                        background: "#F3F4F6",
-                        color: "#6B7280",
-                      }
-                    }}
+                    Select Payment Method
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    value={paymentType}
+                    onChange={(e) => setPaymentType(e.target.value)}
                   >
-                    Place Order
-                  </Button>
-                )}
-                {paymentType === "2" && cartDetails?.grandTotal > 0 && (
-                  <Box mt={2}>
-                    <PayPalScriptProvider options={initialOptions}>
-                      <Checkout
-                        cartData={state.cart}
-                        selectedAddress={allAddress[addressIndex]}
-                        currencyCode={"USD"}
-                        rate={currency?.rate}
-                        cartDetails={cartDetails}
-                        orderConfirmation={orderConfirmation}
-                        token={token}
-                        addToast={addToast}
-                        disabled={checkoutDisabled}
-                      />
-                    </PayPalScriptProvider>
-                  </Box>
-                )}</>)}
+                    <FormControlLabel value="1" control={<Radio />} label="Cash on Delivery" />
+                    <FormControlLabel value="2" control={<Radio />} label="Online Payment" />
+                  </RadioGroup>
+                  {cartDetails?.error && (
+                    <Typography color={"red"} fontSize={12}>
+                      {cartDetails?.error}
+                    </Typography>
+                  )}
+                  {paymentType === "1" && (
+                    <Button
+                      fullWidth
+                      onClick={() => orderConfirmation("cod", "pending")}
+                      endIcon={loading ? <CircularProgress size={15} /> : ""}
+                      disabled={loading || checkoutDisabled}
+                      sx={{
+                        mt: 2,
+                        fontSize: "18px",
+                        background: "#000",
+                        color: "#fff",
+                        borderRadius: "30px",
+                        padding: "10px",
+                        "&:hover": {
+                          background: "#222",
+                        },
+                        "&.Mui-disabled": {
+                          background: "#F3F4F6",
+                          color: "#6B7280",
+                        }
+                      }}
+                    >
+                      Place Order
+                    </Button>
+                  )}
+                  {paymentType === "2" && cartDetails?.grandTotal > 0 && (
+                    <Box mt={2}>
+                      <PayPalScriptProvider options={initialOptions}>
+                        <Checkout
+                          cartData={state.cart}
+                          selectedAddress={allAddress[addressIndex]}
+                          currencyCode={"USD"}
+                          rate={currency?.rate}
+                          cartDetails={cartDetails}
+                          orderConfirmation={orderConfirmation}
+                          token={token}
+                          addToast={addToast}
+                          disabled={checkoutDisabled}
+                        />
+                      </PayPalScriptProvider>
+                    </Box>
+                  )}</>)}
                 {usercredentials?.wallet_balance >= cartDetails?.netAmount && cartDetails?.walletAmount >= cartDetails?.netAmount && wallet && (
                   <Button
                     fullWidth
@@ -1120,6 +1122,10 @@ const DeliveryAddress = () => {
           </Button>
         </Dialog>
       </Box>
+      <DutyTaxesInfo
+        open={taxInfoOpen}
+        onClose={() => setTaxInfoOpen(false)}
+      />
     </>
   );
 };

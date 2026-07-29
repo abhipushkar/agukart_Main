@@ -473,7 +473,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               },
             }}
           >
-            {product?.product_title.replace(/<\/?[^>]+(>|$)/g, "")}
+            {product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace("&amp;","&")}
           </Typography>
 
           {/* Rating - Only show when there are reviews */}

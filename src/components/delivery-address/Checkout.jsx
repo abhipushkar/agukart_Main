@@ -2,6 +2,14 @@ import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import useAuth from "hooks/useAuth";
 import { postAPIAuth } from "utils/__api__/ApiServies";
 import { useToasts } from "react-toast-notifications";
+import { Skeleton, Stack } from "@mui/material";
+
+  const PayPalButtonSkeleton = () => (
+    <Stack spacing={1}>
+      <Skeleton variant="rounded" height={40} animation="wave" />
+      <Skeleton variant="rounded" height={40} animation="wave" />
+    </Stack>
+  );
 
 const Checkout = ({ cartData, selectedAddress, currencyCode, cartDetails, orderConfirmation, token: tokenProp, addToast: addToastProp, disabled }) => {
 
@@ -14,6 +22,7 @@ const Checkout = ({ cartData, selectedAddress, currencyCode, cartDetails, orderC
 
   return (
     <div>
+      {isPending && <PayPalButtonSkeleton />}
       {!isPending && (
         <div style={{ marginTop: 20 }}>
           <PayPalButtons

@@ -56,7 +56,7 @@ export default function Section5() {
     <SectionCreator
       icon={<NewArrival />}
       title="New Arrivals"
-      seeMoreLink="#"
+      seeMoreLink=""
     >
       {loading ? (
         <Carousel slidesToShow={5} responsive={responsive}>

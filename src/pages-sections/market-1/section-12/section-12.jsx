@@ -59,7 +59,7 @@ export default function Section12({ bigDiscountProduct }) {
         <SectionCreator
           icon={<GiftBox />}
           title="Big Discounts"
-          seeMoreLink="#"
+          seeMoreLink=""
         >
           {bigDiscountProduct.length <= 5 ? (
             <Grid container spacing={"20px"}>

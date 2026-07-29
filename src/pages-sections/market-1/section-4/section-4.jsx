@@ -57,7 +57,7 @@ export default function Section4() {
     <SectionCreator
       icon={<RankBadge />}
       title="Top Ratings"
-      seeMoreLink="#"
+      seeMoreLink=""
     >
       {loading ? (
         <Carousel slidesToShow={5} responsive={responsive}>

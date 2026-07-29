@@ -63,7 +63,7 @@ export default function Section3() {
 
   return (
     <SectionCreator
-      seeMoreLink="#"
+      seeMoreLink=""
       title="Top Categories"
       icon={<CategoryIcon color="primary" />}
     >
@@ -76,7 +76,7 @@ export default function Section3() {
       ) : topRatedCategory.length <= 3 ? (
         <Grid container spacing={"20px"}>
           {topRatedCategory.map((item) => (
-            <Grid key={item._id} item xs={6} md={2} lg={2}>
+            <Grid key={item._id} item xs={6} md={3} lg={3}>
               <Link
                 href={`/category/${item.fullSlug}`}
               >
@@ -104,7 +104,7 @@ export default function Section3() {
           ))}
         </Grid>
       ) : (
-        <Carousel slidesToShow={6} responsive={responsive}>
+        <Carousel slidesToShow={4} responsive={responsive}>
           {topRatedCategory.map((item) => (
             <Link
               key={item._id}

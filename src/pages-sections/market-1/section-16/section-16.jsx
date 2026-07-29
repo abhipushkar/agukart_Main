@@ -54,7 +54,7 @@ const section16 = ({ becauseViewed, getBecauseOfView }) => {
 
   return (
     <>
-      <SectionCreator seeMoreLink="#">
+      <SectionCreator seeMoreLink="">
         <H2 fontSize={17} mb={1}>
           Because you viewed
         </H2>

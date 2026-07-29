@@ -31,7 +31,7 @@ export default function Section9() {
     getCategories()
   }, []);
   return <Container className="mb-5">
-      <SectionHeader seeMoreLink="#" title="Categories" icon={<CategoryIcon color="primary" />} />
+      <SectionHeader seeMoreLink="" title="Categories" icon={<CategoryIcon color="primary" />} />
 
       <Grid container spacing={3}>
         {data?.map((item, ind) => <Grid item lg={2} md={3} sm={4} xs={6} key={ind}>

@@ -614,20 +614,22 @@ const MessagePopup = ({
   return (
     <Dialog
       open={openPopup}
+      onClose={handleClosePopup}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
       maxWidth="sm"
       fullWidth
       sx={{
         "& .MuiDialog-paper": {
-          height: { xs: "100vh", sm: "600px" },
+          minHeight: { sm: "600px" },
           maxHeight: { xs: "100vh", sm: "80vh" },
           maxWidth: "500px",
           margin: { xs: 0, sm: "auto" },
-          borderRadius: { xs: 0, sm: "12px" },
+          borderRadius: { xs: "10px 0px 0px 10px", sm: "12px" },
           position: { xs: "fixed", sm: "relative" },
-          bottom: { xs: 0, sm: "auto" },
+          bottom: { xs: 30, sm: "auto" },
           right: { xs: 0, sm: "auto" },
+          top: { xs: 30, sm: "auto" }
         },
         "& .MuiDialogContent-root": {
           padding: 0,

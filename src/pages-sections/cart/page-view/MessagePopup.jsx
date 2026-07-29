@@ -725,14 +725,15 @@ const MessagePopup = ({
             fullWidth
             sx={{
                 "& .MuiDialog-paper": {
-                    height: { xs: "100vh", sm: "600px" },
+                    minHeight: { sm: "600px" },
                     maxHeight: { xs: "100vh", sm: "80vh" },
                     maxWidth: "500px",
                     margin: { xs: 0, sm: "auto" },
-                    borderRadius: { xs: 0, sm: "12px" },
+                    borderRadius: { xs: "10px 0px 0px 10px", sm: "12px" },
                     position: { xs: "fixed", sm: "relative" },
-                    bottom: { xs: 0, sm: "auto" },
+                    bottom: { xs: 30, sm: "auto" },
                     right: { xs: 0, sm: "auto" },
+                    top: { xs: 30, sm: "auto" }
                 },
                 "& .MuiDialogContent-root": {
                     padding: 0,
@@ -853,6 +854,7 @@ const MessagePopup = ({
                                                         maxWidth: "85%", // Increased from 100%
                                                         gap: 1,
                                                         width: "auto", // Allow it to size based on content
+                                                        flex: 1
                                                     }}
                                                 >
                                                     {!isOwn && (

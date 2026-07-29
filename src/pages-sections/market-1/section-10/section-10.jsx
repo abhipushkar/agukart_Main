@@ -23,7 +23,7 @@ export default function Section10() {
     carouselDatafuction()
   }, []);
   return <Container className="mb-5">
-      <SectionHeader title="More For You" seeMoreLink="#" />
+      <SectionHeader title="More For You" seeMoreLink="" />
 
       <Grid container spacing={3}>
         {data?.map(item => <Grid item lg={3} md={4} sm={6} xs={12} key={item.id}>
