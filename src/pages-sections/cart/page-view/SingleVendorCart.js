@@ -416,9 +416,10 @@ const SingleVendorCart = ({
   }
 
   const addParentCart = async () => {
+    console.log('inside parent cart')
     try {
       const products = cart.products;
-
+      console.log(cart.products, "length parent cart");
       for (let index = 0; index < products.length; index++) {
         const product = products[index];
         const templates = product.selectedShipping?.shippingTemplateData;
@@ -438,6 +439,8 @@ const SingleVendorCart = ({
             index,
             deliveryOption,
           );
+
+          console.log('parent cart', nearest)
 
           if (!nearest) {
             console.warn(`Shipping ${deliveryOption} not supported for vendor`);
@@ -471,10 +474,11 @@ const SingleVendorCart = ({
             region: location.countryName,
           },
         };
+        console.log('before api parent cart', payload)
 
         await postAPIAuth("user/add-parent-cart", payload);
       }
-
+      console.log('before cart detail parent cart')
       const data = wallet ? "1" : "0";
       getCartDetails(data, defaultAddress?._id, voucherDetails?.discount);
     } catch (err) {
@@ -681,9 +685,10 @@ const SingleVendorCart = ({
                             sx={{
                               background: "transparent",
                               color: "#000",
-                              padding: "10px 18px",
+                              padding: {xs: 0, md: "10px 18px"},
                               fontSize: "13px",
                               borderRadius: "25px",
+                              mt: {xs: 1}
                             }}
                           >
                             <Typography
@@ -821,9 +826,10 @@ const SingleVendorCart = ({
                           sx={{
                             background: "transparent",
                             color: "#000",
-                            padding: "10px 18px",
+                            padding: {xs: 0, md: "10px 18px"},
                             fontSize: "13px",
                             borderRadius: "25px",
+                            mt: {xs: 1}
                           }}
                         >
                           <Typography
@@ -943,22 +949,50 @@ const SingleVendorCart = ({
                       value={selectedShipping}
                       onChange={handleShippingChange}
                       sx={{
-                        borderBottom: "1px dashed gray",
-                        width: {
-                          xs: "100%",
-                          md: "397px",
-                        },
-                        maxWidth: "100%",
-                        '& .MuiSelect-icon': {
-                          zIndex: 1,
-                          backgroundColor: 'white',
-                        },
-                      }}
+  borderBottom: "1px dashed gray",
+  width: {
+    xs: "100%",
+    md: "397px",
+  },
+  maxWidth: "100%",
+
+  "& .MuiSelect-select": {
+    fontSize: {
+      xs: "13px",
+      md: "16px",
+    },
+    py: {
+      xs: 1,
+      md: 1.5,
+    },
+    pr: 4, // keep space for arrow
+
+    // fallback if still too long
+    whiteSpace: "normal",
+    lineHeight: 1.3,
+  },
+
+  "& .MuiSelect-icon": {
+    zIndex: 1,
+    backgroundColor: "white",
+  },
+}}
                     >
                       {deliveryOptions?.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
-                          <Typography fontSize={16}>{option.label}</Typography>
-                        </MenuItem>
+  <Typography
+    sx={{
+      fontSize: {
+        xs: 12,
+        md: 16,
+      },
+      lineHeight: 1.3,
+      whiteSpace: "normal",
+    }}
+  >
+    {option.label}
+  </Typography>
+</MenuItem>
                       ))}
                     </Select>
                   </Box>
@@ -1008,7 +1042,7 @@ const SingleVendorCart = ({
                     </Button>
                   </Box>
                   <Typography color="error">
-                    Oops! We're currently unable to deliver to your location.
+                    {validationMsg ? validationMsg : "Oops! We're currently unable to deliver to your location."}
                   </Typography>
                 </>
               )}

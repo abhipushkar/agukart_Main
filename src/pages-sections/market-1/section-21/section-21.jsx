@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Grid from "@mui/material/Grid";
-import { Box, Skeleton } from "@mui/material";
+import { Box, colors, Skeleton, useMediaQuery } from "@mui/material";
 import LazyImage from "components/LazyImage";
 import { SectionCreator } from "components/section-header";
 import { H4 } from "components/Typography";
@@ -8,11 +8,12 @@ import { Carousel } from "components/carousel";
 import useAuth from "hooks/useAuth";
 import { getAPIAuth } from "utils/__api__/ApiServies";
 import { useEffect, useState } from "react";
+import { useTheme } from "@emotion/react";
 
 const responsive = [
   { breakpoint: 1024, settings: { slidesToShow: 5 } },
   { breakpoint: 959, settings: { slidesToShow: 4 } },
-  { breakpoint: 650, settings: { slidesToShow: 2 } },
+  { breakpoint: 650, settings: { slidesToShow: 1 } },
   { breakpoint: 370, settings: { slidesToShow: 1 } },
 ];
 
@@ -33,6 +34,10 @@ const Slider = ({ cat }) => {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
+
 
   const getProductData = async (_id) => {
     try {
@@ -73,13 +78,13 @@ const Slider = ({ cat }) => {
   return (
     <Box key={cat._id} sx={{ background: "#fff" }} p={2} my={1}>
       <H4 fontSize={20} pb={1}>
-        Best Sellers in {cat.title}
+        Top picks in {cat.title}
       </H4>
 
-      {products.length <= 6 ? (
+      {!isMobile && products.length <= 6 ? (
         <Grid container spacing={2}>
           {products.map((product) => (
-            <Grid key={product._id} item lg={2} md={4} xs={6}>
+            <Grid key={product._id} item lg={2} md={4} xs={12}>
               <Link href={`/product/${product.slug}/${product.product_code}`}>
                 <Box
                   sx={{
@@ -113,7 +118,7 @@ const Slider = ({ cat }) => {
           ))}
         </Grid>
       ) : (
-        <Carousel slidesToShow={6} autoplay={true} responsive={responsive}>
+        <Carousel slidesToShow={6} autoplay={products.length > 1} infinite={products.length > 6} responsive={responsive}>
           {products.map((product) => (
             <Link key={product._id} href={`/product/${product.slug}/${product.product_code}`}>
               <Box
@@ -132,11 +137,7 @@ const Slider = ({ cat }) => {
                   alt="banner"
                   src={product.base_url + product.image[0]}
                   sx={{
-                    height: {
-                      xs: "170px",
-                      sm: "220px",
-                      md: "260px",
-                    },
+                    height: 260,
                     width: "100%",
                     objectFit: "cover",
                     aspectRatio: "1/1",
@@ -173,7 +174,8 @@ const Section21 = () => {
   return (
     <>
       {bestSellerCategories?.length > 0 && (
-        <SectionCreator seeMoreLink="#" pt={2} sx={{ background: "#e9e7e7" }}>
+        // <SectionCreator seeMoreLink="" pt={2} sx={{ background: "#e9e7e7" }}>        //seeMoreLink prop will show the View All button
+        <SectionCreator pt={2} sx={{ background: "#e9e7e7" }}>
           {bestSellerCategories?.map((cat) => (
             <Slider key={cat._id} cat={cat} />
           ))}

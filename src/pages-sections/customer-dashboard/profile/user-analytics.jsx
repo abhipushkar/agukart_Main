@@ -71,7 +71,7 @@ export default function UserAnalytics({ user, data }) {
           </FlexBetween>
         </Card>
       </Grid>
-      {
+      {/* {
         usercredentials?.designation_id != "4" &&
         <Grid item container spacing={3} md={6} xs={12}>
           {INFO_LIST?.map((item) => (
@@ -96,7 +96,7 @@ export default function UserAnalytics({ user, data }) {
             </Grid>
           ))}
         </Grid>
-      }
+      } */}
     </Grid>
   );
 }

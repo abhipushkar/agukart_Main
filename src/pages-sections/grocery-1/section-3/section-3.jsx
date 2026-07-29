@@ -34,7 +34,7 @@ export default function ProductCarousel({
     }
   }];
   return <div className="mb-3">
-      <SectionHeader title={title} seeMoreLink="#" />
+      <SectionHeader title={title} seeMoreLink="" />
       <SubTitle>Best collection in 2021 for you!</SubTitle>
 
       <Carousel responsive={responsive} slidesToShow={4} arrowStyles={{

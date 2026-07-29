@@ -51,6 +51,7 @@ import { Sell } from "@mui/icons-material";
 import { validateCartItem, getCartCheckoutErrorMessage } from "../utils/validateCartItem";
 import { buildCartItemIdentity } from "../utils/buildCartItemIdentity";
 import { productQuantityMap } from "../utils/buildCombinationIdentity";
+import DutyTaxesInfo from "components/Duty&Taxes/DutyTaxesInfo";
 
 const Mycart = () => {
   const { currency } = useCurrency();
@@ -69,6 +70,7 @@ const Mycart = () => {
   const [isAvailable, setIsAvailable] = useState(false);
   const [applyinCoupon, setCouponApplying] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [taxInfoOpen, setTaxInfoOpen] = useState(false);
   const [formValues, setFormValues] = useState({
     voucher_code: "",
   });
@@ -628,7 +630,7 @@ const Mycart = () => {
           <Container py={5} sx={{ padding: "30px 0" }}>
             <Grid container spacing={4}>
               <Grid item lg={totalItems > 0 ? 8 : 12} md={totalItems > 0 ? 7 : 12} xs={12}>
-                <Box sx={{ padding: "18px" }}>
+                <Box sx={{ padding: {xs: 0, sm: "18px"} }}>
                   {state?.cart?.length === 0 ? (
                     <Box
                       sx={{
@@ -692,7 +694,7 @@ const Mycart = () => {
                             <TableRow>
                               {token && (
                                 <>
-                                  <TableCell>
+                                  <TableCell sx={{alignItems: {xs: 'center', md: 'start'}}}>
                                     <Typography
                                       fontSize={17}
                                       fontWeight={600}
@@ -707,15 +709,10 @@ const Mycart = () => {
                                               "aria-label":
                                                 "Wallet Balance Checkbox",
                                             }}
+                                            sx={{p:{xs: "4px", md: 1}}}
                                           />
                                         }
-                                        label={
-                                          <Typography
-                                            sx={{ ml: 2, fontWeight: "600" }}
-                                          >
-                                            Gift Card Wallet Balance
-                                          </Typography>
-                                        }
+                                        label={"Gift Card Wallet Balance" }
                                       />
                                     </Typography>
                                   </TableCell>
@@ -1192,7 +1189,7 @@ const Mycart = () => {
                     </React.Fragment>
 
                     {state.cart.length > 0 ? (
-                      <Typography component="div" mt={3}>
+                      <Typography component="div" mt={3} textAlign="center">
                         <Typography color={"gray"}>
                           Local taxes included (where applicable)
                         </Typography>
@@ -1200,11 +1197,10 @@ const Mycart = () => {
                           *Additional duties and taxes{" "}
                           <Typography
                             variant="span"
-                            sx={{ textDecoration: "underline" }}
+                            sx={{ textDecoration: "underline", cursor:'pointer' }}
+                            onClick={()=>setTaxInfoOpen(true)}
                           >
-                            <Link component={NextLink} href="/">
                               may apply
-                            </Link>
                           </Typography>{" "}
                         </Typography>
                       </Typography>
@@ -1224,6 +1220,10 @@ const Mycart = () => {
         countries={countries}
         currentCountry={location.countryName}
         onCountrySelect={handleCountrySelect}
+      />
+      <DutyTaxesInfo 
+        open={taxInfoOpen}
+        onClose={()=> setTaxInfoOpen(false)}
       />
     </>
   );

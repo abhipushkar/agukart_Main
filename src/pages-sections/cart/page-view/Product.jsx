@@ -297,7 +297,7 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                 <Box sx={{ display: { lg: "flex", md: "flex", sx: "block" } }}>
                     {/* Left column – product image and badge */}
                     <Typography component="div" sx={{ flex: "1", position: "relative" }}>
-                        <Avatar alt="image" src={product?.firstImage} sx={{ width: 150, height: 150, borderRadius: 2 }} variant="square" />
+                        <Avatar alt="image" src={product?.editedImage || product?.firstImage} sx={{ width: 150, height: 150, borderRadius: 2 }} variant="square" />
                         {product?.product_bedge && (
                             <Box sx={{
                                 zIndex: "9", position: "absolute", top: "4px", left: "4px",

@@ -45,6 +45,19 @@ export const validateCartItem = (product, options = {}) => {
             resolvedState: state,
         };
     }
+    if (product?.vendorStatus === false){
+        return {
+            valid: false,
+            type: "VENDOR_INACTIVE",
+            caseType: "VENDOR_INACTIVE",
+            message: "This Shop is currently unavailable. Please remove this item to continue.",
+            shouldResetQuantity: true,
+            allowQuantitySelection: false,
+            disableCheckout: true,
+            openEditDrawer: false,
+            resolvedState: state,
+        };
+    }
 
     // --- 2. Missing variant selection (product now requires variants) ---
     if (state.caseType === "VARIANT_SELECTION_REQUIRED") {
@@ -273,6 +286,8 @@ export const getCartCheckoutErrorMessage = (validation) => {
 
         case "PRODUCT_UNAVAILABLE":
             return "Some items are no longer available. Please remove them.";
+        case "VENDOR_INACTIVE":
+            return "One or More Shop is currently unavailable. Please remove items to continue.";
         case "QUANTITY_EXCEEDS_STOCK":
             return "Quantity exceeds available stock for some items. Please adjust.";
         case "AGGREGATED_QUANTITY_EXCEEDS_STOCK":

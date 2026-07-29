@@ -13,7 +13,7 @@ export default function ProductGridList({
   heading
 }) {
   return <Box flex="1 1 0">
-      <SectionHeader title={heading} seeMoreLink="#" />
+      <SectionHeader title={heading} seeMoreLink="" />
 
       <Grid container spacing={3}>
         {products.map(item => <Grid item lg={4} sm={6} xs={12} key={item.id}>

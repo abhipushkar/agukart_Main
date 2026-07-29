@@ -741,7 +741,8 @@ const CartEditContent = ({
             const res = await postAPIAuth("user/add-to-cart", payload);
             if (res.status === 200) {
                 await getCartItems(address?._id);
-                addParentCart();
+                await getCartDetails(wallet ? "1" : "0", address?._id, voucher?.discount);
+                await addParentCart();
                 onClose()
             }
         } catch (error) {

@@ -56,7 +56,7 @@ const section15 = ({ recentlyViewd, getRecentlyViewd }) => {
 
   return (
     <>
-      <SectionCreator seeMoreLink="#">
+      <SectionCreator seeMoreLink="">
         <H2 fontSize={17} mb={1}>
           Recently viewed & more
         </H2>

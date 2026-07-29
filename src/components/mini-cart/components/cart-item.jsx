@@ -108,7 +108,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
       borderBottom="1px solid"
       borderColor="divider"
     >
-      <FlexBox alignItems="center" flexDirection="column">
+      {/* <FlexBox alignItems="center" flexDirection="column">
         <Button
           size="small"
           color="primary"
@@ -140,7 +140,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
         >
           <Remove fontSize="small" />
         </Button>
-      </FlexBox>
+      </FlexBox> */}
 
       <Link href={`/product/${item.slug}/${item.product_code}`}>
         <Avatar

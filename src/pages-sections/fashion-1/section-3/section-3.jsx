@@ -25,7 +25,7 @@ export default async function Section3() {
     }
   }];
   console.log({products},"hrthrthrth")
-  return <SectionCreator title="New Arrivals" seeMoreLink="#">
+  return <SectionCreator title="New Arrivals" seeMoreLink="">
       <Carousel slidesToShow={6} responsive={responsive} arrowStyles={{
       color: "#2B3445",
       backgroundColor: "white"

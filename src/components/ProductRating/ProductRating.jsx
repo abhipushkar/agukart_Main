@@ -1,30 +1,40 @@
 import React from 'react';
 import { Typography, Rating } from '@mui/material';
 
-const ProductRating = ({ product }) => {
+// {
+//     "shopReviewCount": 6,
+//     "itemReviewCount": 2,
+//     "shopRatingAvg": 4,
+//     "itemRatingAvg": 4
+// }
+
+const ProductRating = ({ product, reviewData }) => {
     return (
         <Typography component="div" sx={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="span" pr={1} sx={{ fontSize: "18px", color: "#000" }}>
-                {product?.ratingAvg || 0}
-            </Typography>
+            {/* <Typography
+                variant="span"
+                pr={1}
+                sx={{ fontSize: "18px", fontWeight: "600", color: "#32888a" }}
+            >
+                ({reviewData?.itemReviewCount || 0})
+            </Typography> */}
 
             <Typography component="div" sx={{ display: "flex", alignItems: "center" }}>
                 <Rating
-                    precision={0.5}
-                    value={product?.ratingAvg || 0}
+                    precision={0.1}
+                    value={reviewData?.itemRatingAvg || 0}
                     size="small"
                     color="warn"
                     readOnly
-                    sx={{ fontSize: 13 }}
+                    sx={{ fontSize: 16 }}
                 />
             </Typography>
-
             <Typography
                 variant="span"
-                pl={2}
+                pr={1}
                 sx={{ fontSize: "18px", fontWeight: "600", color: "#32888a" }}
             >
-                {product?.userReviewCount || 0} ratings
+                ({reviewData?.itemReviewCount || 0})
             </Typography>
         </Typography>
     );

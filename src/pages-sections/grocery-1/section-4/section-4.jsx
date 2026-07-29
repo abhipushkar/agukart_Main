@@ -19,7 +19,7 @@ export default function AllProducts({
   title = "All Products"
 }) {
   return <div className="mb-3">
-      <SectionHeader title={title} seeMoreLink="#" />
+      <SectionHeader title={title} seeMoreLink="" />
       <SubTitle>Best collection in 2021 for you!</SubTitle>
 
       <Grid container spacing={3}>

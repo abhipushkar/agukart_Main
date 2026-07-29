@@ -1,6 +1,7 @@
 import React from 'react';
 import { Typography, Box } from '@mui/material';
 import { Small } from 'components/Typography';
+import { getTimeLeftText } from 'components/getTimeLeftText/getTimeLeftText';
 
 const ProductPricing = ({
     price,
@@ -11,6 +12,10 @@ const ProductPricing = ({
     bestPromotion,
     quantity
 }) => {
+    const timeLeftText =
+        bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion?.qty <= 1
+            ? getTimeLeftText(bestPromotion.start_date, bestPromotion.expiry_date)
+            : null;
     return (
         <Typography component="div">
             <Typography component="div" sx={{ display: "flex", alignItems: "center" }}>
@@ -41,6 +46,7 @@ const ProductPricing = ({
                         {originalPrice != price && (originalPrice * currency.rate).toFixed(2)}
                         {originalPrice != price && isCombination && plusToggle && "+"}
                     </Small>
+
                 </Typography>
 
                 {bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion?.qty <= quantity && (
@@ -68,6 +74,7 @@ const ProductPricing = ({
                     {"(Per Unit)"}
                 </Typography>
             )}
+            {timeLeftText && (<span style={{color: 'red'}}>{timeLeftText}</span>)}
         </Typography>
     );
 };
