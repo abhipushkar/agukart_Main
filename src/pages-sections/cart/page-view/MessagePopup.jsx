@@ -84,21 +84,21 @@ const MessagesWrapper = styled(Box)(({ theme }) => ({
 }));
 
 const MessageBubble = styled(Paper)(({ theme, isOwn, images, video }) => ({
-  padding: theme.spacing(1.5),
-  maxWidth: video ? '70%' : images > 1 ? "50%" : images === 1 ? "30%" : "100%",
-  minHeight: video ? '70%' : undefined,
-  minWidth: video ? 'fit-content' : '60px',
-  borderRadius: isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-  backgroundColor: isOwn ? '#fff' : "#ddd",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-  wordWrap: "break-word",
-  whiteSpace: "pre-wrap",
-  transition: "all 0.2s ease",
-  marginTop: "8px",
-  [theme.breakpoints.down("sm")]: {
-    maxWidth: "90%",
-    padding: theme.spacing(1),
-  },
+    padding: theme.spacing(1.5),
+    maxWidth: video ? '70%' : images > 1 ? "50%" : images === 1 ? "30%" : "100%",
+    minHeight: video ? '70%' : undefined,
+    minWidth: video ? 'fit-content' : '60px',
+    borderRadius: isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+    backgroundColor: isOwn ? '#fff' : "#ddd",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+    wordWrap: "break-word",
+    whiteSpace: "pre-wrap",
+    transition: "all 0.2s ease",
+    marginTop: "8px",
+    [theme.breakpoints.down("sm")]: {
+        maxWidth: "90%",
+        padding: theme.spacing(1),
+    },
 }));
 
 const InputContainer = styled(Paper)(({ theme }) => ({
@@ -725,7 +725,7 @@ const MessagePopup = ({
             fullWidth
             sx={{
                 "& .MuiDialog-paper": {
-                    minHeight: { sm: "600px" },
+                    height: { sm: "600px" },
                     maxHeight: { xs: "100vh", sm: "80vh" },
                     maxWidth: "500px",
                     margin: { xs: 0, sm: "auto" },

@@ -491,7 +491,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 size="large"
                 readOnly
                 sx={{
-                  fontSize: "24px",
+                  fontSize: {xs: "18px", sm: "24px"},
                   color: "black",
                   "& .MuiRating-icon": {
                     marginRight: "1px",
@@ -500,7 +500,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               />
               <Small
                 sx={{
-                  fontSize: "18px",
+                  fontSize: {xs: "14px", sm: "18px"},
                   color: "#666",
                   fontWeight: 400,
                   ml: 0.5,

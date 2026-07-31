@@ -170,7 +170,7 @@ const ChatLayout = ({ children }) => {
     searchText,
     setSearchText,
     searchHandler,
-    getSingleVendorDetails
+    vendorDetailsMap
   } = useChat();
 
   const open = Boolean(anchorEl);
@@ -239,7 +239,7 @@ const ChatLayout = ({ children }) => {
         const { text, ...order } = chatData;
         setOrderData(order);
       }
-      const vendor_detail = await getSingleVendorDetails(chatData.receiverId);
+      const vendor_detail = vendorDetailsMap[chatData.receiverId];
       setSingleVendorDetails(vendor_detail || {});
     });
     return () => unsubscribe();

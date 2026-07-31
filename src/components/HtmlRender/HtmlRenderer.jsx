@@ -87,6 +87,13 @@ const HtmlRenderer = ({ html }) => {
         "& .ql-indent-6": { ml: { xs: 6, md: "18em" } },
         "& .ql-indent-7": { ml: { xs: 7, md: "21em" } },
         "& .ql-indent-8": { ml: { xs: 8, md: "24em" } },
+        "& .ql-align-left": { textAlign: "left", },
+        "& .ql-align-center": { textAlign: "center", },
+        "& .ql-align-right": { textAlign: "right", },
+        "& .ql-align-justify": { textAlign: "justify", },
+        "& img.ql-align-center": { display: "block", margin: "0 auto", },
+        "& img.ql-align-right": { display: "block", marginLeft: "auto", },
+        "& img.ql-align-left": { display: "block", marginRight: "auto", }
       }}
     >
       {parse(cleanHtml(html || ""))}

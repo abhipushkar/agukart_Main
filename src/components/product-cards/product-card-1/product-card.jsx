@@ -116,6 +116,7 @@ export default function ProductCard1({
         variant_attribute_id: variant_attribute_id,
         customize: product?.product_id?.customize,
         customizationData: [],
+        shipping_id: product?.product_id?.shipping_templates,
         source: "wishlist"
       }
       const res = await postAPIAuth("user/add-to-cart", payload);

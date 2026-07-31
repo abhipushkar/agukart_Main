@@ -621,7 +621,7 @@ const MessagePopup = ({
       fullWidth
       sx={{
         "& .MuiDialog-paper": {
-          minHeight: { sm: "600px" },
+          height: { sm: "600px" },
           maxHeight: { xs: "100vh", sm: "80vh" },
           maxWidth: "500px",
           margin: { xs: 0, sm: "auto" },

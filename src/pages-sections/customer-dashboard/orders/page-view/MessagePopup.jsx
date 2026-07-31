@@ -390,7 +390,7 @@ const MessagePopup = ({
       where("subOrderId", "==", subOrderId),
       limit(1)
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const newMessages = snapshot?.docs?.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -400,6 +400,46 @@ const MessagePopup = ({
           doc?.subOrderId === subOrderId
         );
       });
+
+
+      // Auto mark vendor/admin messages as read when popup is open
+      if (
+        matchingDocument.length &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        const existingText = matchingDocument[0].text || [];
+
+        let hasUnread = false;
+
+        const updatedText = existingText.map((item) => {
+          if (
+            item.messageSenderId !== senderId &&
+            (item.senderType === "vendor" || item.senderType === "admin") &&
+            item.isNotification === false
+          ) {
+            hasUnread = true;
+
+            return {
+              ...item,
+              isNotification: true,
+            };
+          }
+
+          return item;
+        });
+
+        if (hasUnread) {
+          await updateDoc(
+            doc(db, "chatRooms", matchingDocument[0].id),
+            {
+              text: updatedText,
+            }
+          );
+        }
+      }
+
+
       if (matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id) {
         setMessages([]);
         return;
@@ -814,7 +854,7 @@ const MessagePopup = ({
       fullWidth
       sx={{
         "& .MuiDialog-paper": {
-          minHeight: { sm: "600px" },
+          height: { sm: "600px" },
           maxHeight: { xs: "100vh", sm: "80vh" },
           maxWidth: "500px",
           margin: { xs: 0, sm: "auto" },
