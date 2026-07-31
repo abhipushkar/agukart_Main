@@ -438,7 +438,7 @@ const ProductWithoutVideo = ({ product }) => {
                   size="large"
                   readOnly
                   sx={{
-                    fontSize: "24px",
+                    fontSize: {xs: "18px", sm: "24px"},
                     color: "black",
                     '& .MuiRating-icon': {
                       marginRight: '1px'
@@ -447,7 +447,7 @@ const ProductWithoutVideo = ({ product }) => {
                 />
                 <Small
                   sx={{
-                    fontSize: "18px",
+                    fontSize: {xs: "14px", sm: "18px"},
                     color: "#666",
                     fontWeight: 400,
                     ml: 0.5,
@@ -462,7 +462,7 @@ const ProductWithoutVideo = ({ product }) => {
             <FlexBox
               sx={{
                 alignItems: "baseline",
-                gap: 1,
+                gap: {xs: 0.8, sm: 1},
                 mb: 0.5,
               }}
             >
@@ -495,7 +495,7 @@ const ProductWithoutVideo = ({ product }) => {
                 <Typography
                   component="span"
                   sx={{
-                    fontSize: "12px",
+                    fontSize: {xs: "10px", sm: "12px"},
                     color: "#d10000",
                     fontWeight: 500,
                   }}

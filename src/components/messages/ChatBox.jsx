@@ -299,7 +299,7 @@ const ChatBox = () => {
   const { token } = useAuth();
   const [singleVendorDetails, setSingleVendorDetails] = useState({});
   const [uploadError, setUploadError] = useState(null);
-  const { getSingleVendorDetails } = useChat();
+  const { vendorDetailsMap } = useChat();
 
   const searchParams = useSearchParams();
   const role = searchParams.get("role");
@@ -392,30 +392,23 @@ const ChatBox = () => {
       return;
     }
 
-    const querySnapshot = await getDocs(
-      collection(db, role === "admin" ? "composeChat" : "chatRooms")
+    const chatRef = doc(
+      db,
+      role === "admin" ? "composeChat" : "chatRooms",
+      venderID
     );
 
-    const documents = querySnapshot.docs.map((doc) => {
-      const docId = doc.id;
-      const docData = doc.data();
-      const receiverId = docData.receiverId;
+    const chatSnap = await getDoc(chatRef);
 
-      return {
-        id: docId,
-        data: docData,
-        receiverId: receiverId,
-      };
-    });
-
-    const matchingDocument = documents.find((doc) => {
-      return doc.id === venderID;
-    });
-
-    if (!matchingDocument) {
-      console.error("No matching document found for the provided venderID");
+    if (!chatSnap.exists()) {
+      console.error("No matching document found");
       return;
     }
+
+    const matchingDocument = {
+      id: chatSnap.id,
+      data: chatSnap.data(),
+    };
 
     const existingText = matchingDocument.data.text || [];
 
@@ -454,6 +447,7 @@ const ChatBox = () => {
           (msg.senderType === "vendor" || msg.senderType === "admin") &&
           msg.isNotification === false
       );
+
 
       if (hasUnreadVendorMessages) {
         handleRemoveAllNotification(slug);
@@ -559,7 +553,7 @@ const ChatBox = () => {
 
       const data = snapshot.data();
 
-      const vendor_detail = await getSingleVendorDetails(data?.receiverId);
+      const vendor_detail = vendorDetailsMap[data?.receiverId];
       setSingleVendorDetails(vendor_detail);
 
       const filterMsg = data?.text?.filter(

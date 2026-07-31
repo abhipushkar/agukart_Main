@@ -36,7 +36,7 @@ const ChatList = ({ chatListProp }) => {
     checkMessage,
     handleCheckboxChange,
     chats,
-    vendorDetails,
+    vendorDetailsMap,
     pinnedMessageHadler,
     unreadComposeIds,
     page,
@@ -112,9 +112,6 @@ const ChatList = ({ chatListProp }) => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const findVendorDetails = (receiverId) => {
-    return vendorDetails.find((vendor) => vendor?._id === receiverId);
-  };
 
   const pathname = usePathname();
 
@@ -323,7 +320,7 @@ const ChatList = ({ chatListProp }) => {
 
                   // console.log("isNotificationisNotification", isNotification);
 
-                  const vendor = findVendorDetails(chat?.receiverId);
+                  const vendor = vendorDetailsMap[chat.receiverId];
                   const lastMessage = chat?.text?.[chat?.text?.length - 1];
                   const isUnread = unreadComposeIds.includes(chat.id);
 

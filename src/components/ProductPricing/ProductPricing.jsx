@@ -13,7 +13,7 @@ const ProductPricing = ({
     quantity
 }) => {
     const timeLeftText =
-        bestPromotion && Object.keys(bestPromotion).length > 0 && bestPromotion?.qty <= 1
+        bestPromotion && Object.keys(bestPromotion).length > 0
             ? getTimeLeftText(bestPromotion.start_date, bestPromotion.expiry_date)
             : null;
     return (

@@ -37,6 +37,7 @@ const ChatContextProvider = ({ children }) => {
 
   const [etsyCount, setEtsyCount] = useState(0);
   const [vendorDetails, setVendorDetails] = useState([]);
+  const [vendorDetailsMap, setVendorDetailsMap] = useState({});
   const [allChecked, setAllChecked] = useState(false);
   const [etsyMsgIds, setEtsyMsgIds] = useState([]);
   const [unreadComposeIds, setUnreadComposeIds] = useState([]);
@@ -412,6 +413,20 @@ const ChatContextProvider = ({ children }) => {
         ...doc.data(),
       }));
 
+      if (pathname !== "/messages/etsy") {
+        const unreadMessages = newMessages.filter((parent) =>
+          parent?.text?.some(
+            (notification) =>
+              !notification?.isNotification &&
+              notification.messageSenderId !== usercredentials?._id &&
+              (notification.senderType === "vendor" ||
+                notification.senderType === "admin")
+          )
+        );
+
+        setShowCount(unreadMessages.length);
+      }
+
       console.log("📝 Raw messages from query:", newMessages?.length || 0);
 
       // Store last visible document for next page
@@ -420,7 +435,7 @@ const ChatContextProvider = ({ children }) => {
         setFirstVisible(snapshot.docs[0]);
       }
 
-      const vendorIds = newMessages.map((chat) => chat.receiverId);
+      const vendorIds = [...new Set(newMessages.map(chat => chat.receiverId).filter(Boolean))];
       if (vendorIds.length) {
         getVendorDetails(vendorIds);
       }
@@ -494,26 +509,26 @@ const ChatContextProvider = ({ children }) => {
     setSearchText("");
   }, [pathname]);
 
-  const getVendorDetails = async (vendorIds) => {
-    try {
-      const res = await postAPIAuth("getVendorDetails", {
-        vendorId: vendorIds,
-      });
-      setVendorDetails(res?.data?.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const getVendorDetails = async (vendorIds = []) => {
+    const missingIds = vendorIds.filter(id => id && !vendorDetailsMap[id]);
 
-  const getSingleVendorDetails = async (id) => {
-    try {
-      const res = await postAPIAuth("getVendorDetails", {
-        vendorId: [id],
+    if (!missingIds.length) return;
+
+    const res = await postAPIAuth("getVendorDetails", {
+      vendorId: missingIds,
+    });
+
+    const vendors = res?.data?.data || [];
+
+    setVendorDetailsMap(prev => {
+      const updated = { ...prev };
+
+      vendors.forEach(vendor => {
+        updated[vendor._id] = vendor;
       });
-      return res?.data?.data[0];
-    } catch (error) {
-      console.log(error);
-    }
+
+      return updated;
+    });
   };
 
   // track real time unread chat count
@@ -524,14 +539,7 @@ const ChatContextProvider = ({ children }) => {
       orderBy("currentTime", "desc"),
     );
 
-    const chatRoomsQuery = query(
-      collection(db, "chatRooms"),
-      orderBy("currentTime", "desc"),
-    );
-
     const getUnreadCounts = async () => {
-      let composeChatUnreadCount = 0;
-      let chatRoomsUnreadCount = 0;
 
       // Fetch and calculate unread messages for composeChat (Etsy route)
       const unsubscribeComposeChat = onSnapshot(
@@ -569,33 +577,8 @@ const ChatContextProvider = ({ children }) => {
         }
       );
 
-      // Fetch and calculate unread messages for chatRooms (other routes)
-      const unsubscribeChatRooms = onSnapshot(chatRoomsQuery, (snapshot) => {
-        const newMessages = snapshot?.docs?.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        const filtersDocs = newMessages.filter((doc) => {
-          return doc?.user === usercredentials?._id;
-        });
-
-        const unreadMessages = filtersDocs.filter((parent) =>
-          parent?.text?.some(
-            (notification) =>
-              !notification?.isNotification &&
-              notification.messageSenderId !== usercredentials?._id &&
-              (notification.senderType === "vendor" || notification.senderType === "admin")
-          )
-        );
-
-        chatRoomsUnreadCount = unreadMessages.length;
-        setShowCount(chatRoomsUnreadCount);
-      });
-
       return () => {
         unsubscribeComposeChat();
-        unsubscribeChatRooms();
       };
     };
 
@@ -769,6 +752,7 @@ const ChatContextProvider = ({ children }) => {
         setChats,
         vendorDetails,
         setVendorDetails,
+        vendorDetailsMap,
         allChecked,
         setAllChecked,
         etsyCount,
@@ -780,7 +764,6 @@ const ChatContextProvider = ({ children }) => {
         searchText,
         setSearchText,
         searchHandler,
-        getSingleVendorDetails,
         page,
         setPage,
         rowsPerPage,

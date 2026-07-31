@@ -41,7 +41,7 @@ const Slider = ({ cat }) => {
 
   const getProductData = async (_id) => {
     try {
-      const res = await getAPIAuth(`get-product?categoryId=${_id}`, token);
+      const res = await getAPIAuth(`get-product?categoryId=${_id}&bestseller=Yes&sortBy=latest`, token);
       if (res.status === 200) {
         const arr = res.data.data.map((item) => ({
           ...item,
@@ -100,7 +100,7 @@ const Slider = ({ cat }) => {
                     width={260}
                     height={260}
                     alt="banner"
-                    src={product.base_url + product.image[0]}
+                    src={product.base_url + (product.edited_image || product.image[0])}
                     sx={{
                       height: {
                         xs: "170px",
@@ -118,7 +118,7 @@ const Slider = ({ cat }) => {
           ))}
         </Grid>
       ) : (
-        <Carousel slidesToShow={6} autoplay={products.length > 1} infinite={products.length > 6} responsive={responsive}>
+        <Carousel slidesToShow={6} infinite={products.length > 6} responsive={responsive}>
           {products.map((product) => (
             <Link key={product._id} href={`/product/${product.slug}/${product.product_code}`}>
               <Box
@@ -135,7 +135,7 @@ const Slider = ({ cat }) => {
                   width={260}
                   height={260}
                   alt="banner"
-                  src={product.base_url + product.image[0]}
+                  src={product.base_url + (product.edited_image || product.image[0])}
                   sx={{
                     height: 260,
                     width: "100%",
