@@ -29,12 +29,13 @@ import useMyProvider from "hooks/useMyProvider";
 import parse from "html-react-parser";
 import {
     addDoc,
+    arrayUnion,
     collection,
     doc,
     getDocs,
     onSnapshot,
     orderBy,
-    query,
+    query, where, limit,
     updateDoc,
 } from "firebase/firestore";
 import { db, storage } from "../../../../src/firebase/Firebase";
@@ -46,6 +47,7 @@ import { uploadChatFiles } from "utils/uploadChatFile";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
+import { markIncomingMessagesAsRead } from "utils/chatUtil";
 
 // Styled Components
 const MessageContainer = styled(Box)(({ theme }) => ({
@@ -233,6 +235,7 @@ const MessagePopup = ({
     const messagesEndRef = useRef(null);
     const receiverId = receiverid;
     const senderId = usercredentials?._id;
+    const [currentChat, setCurrentChat] = useState(null);
 
     const detectLink = (text) => {
         if (!text) return text;
@@ -261,68 +264,104 @@ const MessagePopup = ({
     }, [messages]);
 
     useEffect(() => {
-        if (!receiverId || !senderId) {
-            setError("Please login to view messages");
+        if (!openPopup || !receiverId || !senderId) {
+            setCurrentChat(null);
+            setMessages([]);
             return;
         }
 
-        const q = query(collection(db, "chatRooms"), orderBy("createdAt", "asc"));
+        const chatQuery = query(
+            collection(db, "chatRooms"),
+            where("receiverId", "==", receiverId),
+            where("user", "==", senderId),
+            where("productId", "==", null),
+            where("orderId", "==", null),
+            limit(1)
+        );
 
         const unsubscribe = onSnapshot(
-            q,
-            (snapshot) => {
-                try {
-                    const newMessages = snapshot?.docs?.map((doc) => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    }));
+            chatQuery,
+            async (snapshot) => {
+                if (snapshot.empty) {
+                    setCurrentChat(null);
+                    setMessages([]);
+                    return;
+                }
 
-                    const matchingDocument = newMessages?.filter((doc) => {
-                        return (
-                            doc?.receiverId === receiverId &&
-                            doc?.user === senderId &&
-                            doc?.productId === null &&
-                            doc?.orderId === null
-                        );
-                    });
+                const docSnap = snapshot.docs[0];
 
-                    if (
-                        matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id
-                    ) {
-                        setMessages([]);
-                        return;
-                    }
+                const chat = {
+                    id: docSnap.id,
+                    ...docSnap.data()
+                };
 
-                    if (matchingDocument.length > 0) {
-                        const filterArr = matchingDocument[0]?.text?.filter((msg) => {
-                            return msg.permanentDeleteUser !== senderId;
+                setCurrentChat(chat);
+                await markIncomingMessagesAsRead({
+                    chatId: chat.id,
+                    messages: chat.text || [],
+                    senderId
+                });
+
+                if (chat.permanentDeleteUser1 === senderId) {
+                    setMessages([]);
+                    return;
+                }
+
+                const existingText = chat.text || [];
+
+                const visibleMessages = existingText.filter(
+                    msg => msg.permanentDeleteUser !== senderId
+                );
+
+                setMessages(visibleMessages);
+                setError("");
+
+                if (
+                    typeof document !== "undefined" &&
+                    document.visibilityState === "visible"
+                ) {
+                    const hasUnread = existingText.some(
+                        item =>
+                            item.messageSenderId !== senderId &&
+                            (item.senderType === "vendor" || item.senderType === "admin") &&
+                            item.isNotification === false
+                    );
+
+                    if (hasUnread) {
+                        const updatedText = existingText.map(item => {
+                            if (
+                                item.messageSenderId !== senderId &&
+                                (item.senderType === "vendor" || item.senderType === "admin") &&
+                                item.isNotification === false
+                            ) {
+                                return {
+                                    ...item,
+                                    isNotification: true
+                                };
+                            }
+
+                            return item;
                         });
-                        setMessages(filterArr || []);
-                        setError("");
-                    } else {
-                        setMessages([]);
-                    }
-                } catch (err) {
-                    console.error("Error fetching messages:", err);
-                    if (err.code === "permission-denied") {
-                        setError(
-                            "Firebase permissions error. Please check Firebase rules."
-                        );
+
+                        await updateDoc(doc(db, "chatRooms", chat.id), {
+                            text: updatedText
+                        });
                     }
                 }
             },
             (error) => {
                 console.error("Firebase listener error:", error);
+                setCurrentChat(null);
+                setMessages([]);
+
                 if (error.code === "permission-denied") {
-                    setError(
-                        "Permission denied. Please update Firebase Firestore rules."
-                    );
+                    setError("Permission denied. Please update Firebase Firestore rules.");
                 }
             }
         );
 
         return () => unsubscribe();
-    }, [senderId, receiverId, productID, usercredentials?._id]);
+    }, [senderId, receiverId, openPopup]);
 
     // Add this state
     const [lightboxState, setLightboxState] = useState({
@@ -406,74 +445,38 @@ const MessagePopup = ({
             return;
         }
 
-        const updatedFiles = [...files, ...validFiles];
-        const previews = updatedFiles.map((file) => URL.createObjectURL(file));
+        const newPreviews = validFiles.map(file => URL.createObjectURL(file));
 
-        setFiles(updatedFiles);
-        setImagePreviews(previews);
+        setFiles(prev => [...prev, ...validFiles]);
+        setImagePreviews(prev => [...prev, ...newPreviews]);
         e.target.value = "";
     };
 
-    useEffect(() => {
-        return () => {
-            imagePreviews.forEach(preview => {
-                URL.revokeObjectURL(preview);
-            });
-        };
-    }, []);
-
     const handleRemoveImage = (index) => {
-        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-        setFiles((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => {
+            if (prev[index]) {
+                URL.revokeObjectURL(prev[index]);
+            }
+
+            return prev.filter((_, i) => i !== index);
+        });
+
+        setFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleClearPreview = () => {
+        imagePreviews.forEach(preview => {
+            URL.revokeObjectURL(preview);
+        });
+
         setImagePreviews([]);
         setFiles([]);
+
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     };
 
-    const buildCartProductMessages = () => {
-        const productMessages = [];
-
-        products.forEach((product) => {
-            productMessages.push({
-                senderType: "user",
-                text: "",
-                createdAt: new Date(),
-                messageSenderId: senderId,
-                isNotification: true,
-                imageUrls: [],
-                productId: product?.product_id || null,
-                productLink: `${process.env.NEXT_PUBLIC_WEB_URL}/product/${product?.slug}`,
-                productData: {
-                    productTitle: product?.product_name || product?.product_title || "",
-                    price: product?.sale_price || product?.original_price || 0,
-                    imageUrl: product?.firstImage || product?.thumbnail_image || "",
-                    qty: product?.qty || 1,
-                    isCombination: product?.isCombination || false,
-                    variants: product?.variants || [],
-                    variantData: product?.variantData || [],
-                    variantAttributeData: product?.variantAttributeData || [],
-                    selectedCustomization: product?.selectedCustomization || [],
-                    customize: product?.customize || "No",
-                },
-            });
-        });
-
-        productMessages.push({
-            senderType: "user",
-            text: input?.trim() || "Hi, I am interested in these products",
-            createdAt: new Date(),
-            messageSenderId: senderId,
-            isNotification: false,
-            imageUrls: [],
-        });
-
-        return productMessages;
-    };
 
     const sendMessage = async () => {
         if (!usercredentials?._id) {
@@ -487,139 +490,49 @@ const MessagePopup = ({
             return;
         }
 
-        if (loading) return;
+        if ((!input.trim() && files.length === 0 && products.length === 0) || loading) return;
 
         setLoading(true);
         setError("");
 
-        let uploadedFiles = [];
-
         try {
-            // Upload files to backend API
+            let uploadedFiles = [];
+
             if (files.length > 0) {
-                try {
-                    const uploadResult = await uploadChatFiles({
-                        files: files,
-                        token: token,
-                        addToast: (msg) => console.log(msg),
-                    });
-                    uploadedFiles = uploadResult;
-                    handleClearPreview();
-                } catch (uploadError) {
-                    console.error("Error uploading files:", uploadError);
-                    setError("Failed to upload files. Please try again.");
-                    setLoading(false);
-                    return;
-                }
+                uploadedFiles = await uploadChatFiles({
+                    files,
+                    token,
+                    addToast: msg => console.log(msg)
+                });
             }
 
-            if (!input.trim() && uploadedFiles.length === 0 && products.length === 0) {
-                setLoading(false);
-                return;
-            }
+            if (currentChat?.id) {
+                const existingText = currentChat.text || [];
 
-            const querySnapshot = await getDocs(collection(db, "chatRooms"));
-            const documents = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                data: doc.data(),
-            }));
-
-            const matchingDocument = documents?.find((doc) => {
-                return (
-                    doc.data.receiverId === receiverId &&
-                    doc.data.user === senderId &&
-                    doc.data.productId == null &&
-                    doc.data.orderId == null
+                const existingProductIds = new Set(
+                    existingText
+                        .filter(msg => msg?.productId)
+                        .map(msg => String(msg.productId))
                 );
-            });
-
-            if (matchingDocument) {
-                if (matchingDocument.data.permanentDeleteUser1 === senderId) {
-                    await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-                        permanentDeleteUser1: "",
-                        isTempDelete1: "",
-                    });
-                }
-
-                const existingText = matchingDocument.data.text || [];
-                const existingProductIds = existingText
-                    .filter((msg) => msg?.productId)
-                    .map((msg) => msg.productId);
 
                 const newMessages = [];
 
-                products.forEach((product) => {
-                    const alreadySent = existingProductIds.includes(product?.product_id);
+                products.forEach(product => {
+                    const productId = product?.product_id || null;
 
-                    if (!alreadySent) {
-                        newMessages.push({
-                            senderType: "user",
-                            text: "",
-                            createdAt: {
-                                seconds: Math.floor(Date.now() / 1000),
-                            },
-                            messageSenderId: senderId,
-                            isNotification: true,
-                            imageUrls: [],
-                            attachments: [], // Add attachments field
-                            productId: product?.product_id || null,
-                            productLink: `${process.env.NEXT_PUBLIC_WEB_URL}/product/${product?.slug}`,
-                            productData: {
-                                productTitle: product?.product_name || product?.product_title || "",
-                                price: product?.sale_price || product?.original_price || 0,
-                                imageUrl: product?.firstImage || product?.thumbnail_image || "",
-                                qty: product?.qty || 1,
-                                isCombination: product?.isCombination || false,
-                                variants: product?.variants || [],
-                                variantData: product?.variantData || [],
-                                variantAttributeData: product?.variantAttributeData || [],
-                                selectedCustomization: product?.selectedCustomization || [],
-                                customize: product?.customize || "No",
-                            },
-                        });
+                    if (!productId || existingProductIds.has(String(productId))) {
+                        return;
                     }
-                });
 
-                if (input.trim() || uploadedFiles.length > 0) {
                     newMessages.push({
                         senderType: "user",
-                        text: input.trim(),
-                        createdAt: {
-                            seconds: Math.floor(Date.now() / 1000),
-                        },
-                        messageSenderId: senderId,
-                        isNotification: false,
-                        imageUrls: [],
-                        attachments: uploadedFiles, // Changed from imageUrls to attachments
-                    });
-                }
-
-                if (newMessages.length === 0) {
-                    setLoading(false);
-                    return;
-                }
-
-                const updatedText = [...existingText, ...newMessages];
-                await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-                    text: updatedText,
-                    currentTime: new Date(),
-                });
-            } else {
-                // Build product messages with attachments support
-                const productMessages = [];
-
-                products.forEach((product) => {
-                    productMessages.push({
-                        senderType: "user",
                         text: "",
-                        createdAt: {
-                            seconds: Math.floor(Date.now() / 1000),
-                        },
+                        createdAt: new Date(),
                         messageSenderId: senderId,
                         isNotification: true,
                         imageUrls: [],
-                        attachments: [], // Add attachments field
-                        productId: product?.product_id || null,
+                        attachments: [],
+                        productId,
                         productLink: `${process.env.NEXT_PUBLIC_WEB_URL}/product/${product?.slug}`,
                         productData: {
                             productTitle: product?.product_name || product?.product_title || "",
@@ -631,42 +544,93 @@ const MessagePopup = ({
                             variantData: product?.variantData || [],
                             variantAttributeData: product?.variantAttributeData || [],
                             selectedCustomization: product?.selectedCustomization || [],
-                            customize: product?.customize || "No",
-                        },
+                            customize: product?.customize || "No"
+                        }
                     });
                 });
 
-                // Add the user's text message with attachments
+                if (input.trim() || uploadedFiles.length > 0) {
+                    newMessages.push({
+                        senderType: "user",
+                        text: input.trim(),
+                        createdAt: new Date(),
+                        messageSenderId: senderId,
+                        isNotification: false,
+                        imageUrls: [],
+                        attachments: uploadedFiles
+                    });
+                }
+
+                if (!newMessages.length) return;
+
+                const updatePayload = {
+                    text: arrayUnion(...newMessages),
+                    currentTime: new Date()
+                };
+
+                if (currentChat.permanentDeleteUser1 === senderId) {
+                    updatePayload.permanentDeleteUser1 = "";
+                    updatePayload.isTempDelete1 = "";
+                }
+
+                await updateDoc(
+                    doc(db, "chatRooms", currentChat.id),
+                    updatePayload
+                );
+            } else {
+                const productMessages = products.map(product => ({
+                    senderType: "user",
+                    text: "",
+                    createdAt: new Date(),
+                    messageSenderId: senderId,
+                    isNotification: true,
+                    imageUrls: [],
+                    attachments: [],
+                    productId: product?.product_id || null,
+                    productLink: `${process.env.NEXT_PUBLIC_WEB_URL}/product/${product?.slug}`,
+                    productData: {
+                        productTitle: product?.product_name || product?.product_title || "",
+                        price: product?.sale_price || product?.original_price || 0,
+                        imageUrl: product?.firstImage || product?.thumbnail_image || "",
+                        qty: product?.qty || 1,
+                        isCombination: product?.isCombination || false,
+                        variants: product?.variants || [],
+                        variantData: product?.variantData || [],
+                        variantAttributeData: product?.variantAttributeData || [],
+                        selectedCustomization: product?.selectedCustomization || [],
+                        customize: product?.customize || "No"
+                    }
+                }));
+
                 productMessages.push({
                     senderType: "user",
                     text: input.trim() || "Hi, I am interested in these products",
-                    createdAt: {
-                        seconds: Math.floor(Date.now() / 1000),
-                    },
+                    createdAt: new Date(),
                     messageSenderId: senderId,
                     isNotification: false,
                     imageUrls: [],
-                    attachments: uploadedFiles, // Changed from imageUrls to attachments
+                    attachments: uploadedFiles
                 });
 
                 await addDoc(collection(db, "chatRooms"), {
                     text: productMessages,
                     createdAt: new Date(),
                     user: senderId,
-                    receiverId: receiverId,
+                    receiverId,
                     isDeleted: false,
                     currentTime: new Date(),
-                    userName: usercredentials?.name,
+                    userName: usercredentials?.name || "",
                     userEmail: usercredentials?.email || "",
                     customerId: usercredentials?.customerId || "",
-                    vendorName: vendorName,
-                    shopName: shopName,
+                    vendorName: vendorName || "",
+                    shopName: shopName || "",
                     productId: null,
-                    orderId: null,
+                    orderId: null
                 });
             }
 
             setInput("");
+            handleClearPreview();
         } catch (error) {
             console.error("Error sending message:", error);
 

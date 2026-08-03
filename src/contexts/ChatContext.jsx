@@ -1,10 +1,10 @@
 "use client";
-import React, { useEffect, useState, createContext, u } from "react";
-// import { db } from "../../../src/firebase/Firebase";
+import React, { useEffect, useState, createContext, useMemo } from "react";
 import { db } from "../../src/firebase/Firebase";
 import {
   collection,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -34,6 +34,8 @@ const ChatContextProvider = ({ children }) => {
   const [checkMessage, setCheckMessage] = useState([]);
   const [showCount, setShowCount] = useState(0);
   const [chats, setChats] = useState([]);
+  const [allChats, setAllChats] = useState([]);
+  const [allComposeChats, setAllComposeChats] = useState([]);
 
   const [etsyCount, setEtsyCount] = useState(0);
   const [vendorDetails, setVendorDetails] = useState([]);
@@ -46,8 +48,7 @@ const ChatContextProvider = ({ children }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
-  const [lastVisible, setLastVisible] = useState(null);
-  const [firstVisible, setFirstVisible] = useState(null);
+  const [pageCursors, setPageCursors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const { token } = useAuth();
 
@@ -59,133 +60,121 @@ const ChatContextProvider = ({ children }) => {
     }
   };
 
-  const moveToChatHandler = () => {
+  const moveToChatHandler = async () => {
     if (!checkMessage.length) {
       return;
     }
-
-    checkMessage.map(async (docId) => {
-      try {
+    try {
+      await Promise.all(checkMessage.map((docId) => {
         const docRef = doc(
           db,
           pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
           docId,
         );
-        await updateDoc(docRef, {
+        return updateDoc(docRef, {
           isTempDelete1: "",
         });
-        setCheckMessage([]);
-        setAllChecked(false);
-      } catch (error) {
-        console.error("Error updating document: ", error);
-      }
-    });
-  };
-  const moveToTrashHandler = () => {
-    if (!checkMessage.length) {
-      return;
-    }
-
-    checkMessage.map(async (docId) => {
-      try {
-        const docRef = doc(
-          db,
-          pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId,
-        );
-        await updateDoc(docRef, {
-          isTempDelete1: usercredentials?._id,
-        });
-        setCheckMessage([]);
-        setAllChecked(false);
-      } catch (error) {
-        console.error("Error updating document: ", error);
-      }
-    });
-  };
-
-  const permanentDeleteHandler = () => {
-    checkMessage.map(async (docId) => {
-      try {
-        const docRef = doc(
-          db,
-          pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId,
-        );
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const myDoc = docSnap.data(); // Return the document data
-
-          const updateArr = myDoc.text.map((msg) => {
-            return { ...msg, permanentDeleteUser: usercredentials?._id };
-          });
-
-          await updateDoc(
-            doc(
-              db,
-              pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-              docId,
-            ),
-            {
-              permanentDeleteUser1: usercredentials?._id,
-              text: updateArr,
-            },
-          );
-        }
-        setCheckMessage([]);
-        setAllChecked(false);
-      } catch (error) {
-        console.error("Error getting document:", error);
-        throw error; // Handle the error as needed
-      }
-    });
-  };
-
-  const markAsUnreadHandler = async () => {
-
-    if (pathname === "/messages/etsy") {
-      await markComposeAsUnread(checkMessage);
-
+      }))
       setCheckMessage([]);
       setAllChecked(false);
 
+    } catch (error) {
+      console.error("Error updating document: ", error);
+    }
+  };
+
+  const moveToTrashHandler = async () => {
+    if (!checkMessage.length) return;
+
+    try {
+      await Promise.all(checkMessage.map(docId => {
+        const docRef = doc(
+          db,
+          pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
+          docId
+        );
+
+        return updateDoc(docRef, {
+          isTempDelete1: usercredentials?._id
+        });
+      })
+      );
+
+      setCheckMessage([]);
+      setAllChecked(false);
+    } catch (error) {
+      console.error("Error moving messages to trash:", error);
+    }
+  };
+
+  const permanentDeleteHandler = async () => {
+    if (!checkMessage.length) return;
+
+    try {
+      await Promise.all(
+        checkMessage.map(async (docId) => {
+          const collectionName = pathname === "/messages/etsy" ? "composeChat" : "chatRooms";
+          const docRef = doc(db, collectionName, docId);
+          const docSnap = await getDoc(docRef);
+          const myDoc = docSnap.data();
+          const existingText = myDoc?.text || [];
+
+          const updateArr = existingText.map((msg) => ({
+            ...msg,
+            permanentDeleteUser: usercredentials?._id
+          }));
+
+          return updateDoc(docRef, {
+            permanentDeleteUser1: usercredentials?._id,
+            text: updateArr
+          });
+        })
+      );
+
+      setCheckMessage([]);
+      setAllChecked(false);
+    } catch (error) {
+      console.error("Error permanently deleting messages:", error);
+    }
+  };
+
+  const markAsUnreadHandler = async () => {
+    if (!checkMessage.length) return;
+
+    if (pathname === "/messages/etsy") {
+      await markComposeAsUnread(checkMessage);
+      setCheckMessage([]);
+      setAllChecked(false);
       return;
     }
 
-    checkMessage.map(async (docId) => {
-      try {
-        const docRef = doc(db, "chatRooms", docId);
-        const docSnap = await getDoc(docRef);
+    try {
+      await Promise.all(
+        checkMessage.map(async (docId) => {
+          const docRef = doc(db, "chatRooms", docId);
+          const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          router.push('/messages');
+          if (!docSnap.exists()) return;
+
           const myDoc = docSnap.data();
           const existingText = myDoc.text || [];
 
-          // For user: find vendor/admin messages (not user)
           const isVendorOrAdmin = (msg) => msg.senderType === "vendor" || msg.senderType === "admin";
 
-          // Find the last batch of vendor/admin messages
           let lastBatchIndex = -1;
+
           for (let i = existingText.length - 1; i >= 0; i--) {
             if (isVendorOrAdmin(existingText[i])) {
-              if (lastBatchIndex === -1) {
-                lastBatchIndex = i;
-              }
-            } else {
-              // Stop when we hit user's own message
-              if (lastBatchIndex !== -1) break;
+              if (lastBatchIndex === -1) lastBatchIndex = i;
+            } else if (lastBatchIndex !== -1) {
+              break;
             }
           }
 
-          if (lastBatchIndex === -1) {
-            setCheckMessage([]);
-            return;
-          }
+          if (lastBatchIndex === -1) return;
 
-          // Find the start of the batch
           let batchStart = lastBatchIndex;
+
           for (let i = lastBatchIndex - 1; i >= 0; i--) {
             if (isVendorOrAdmin(existingText[i])) {
               batchStart = i;
@@ -194,78 +183,76 @@ const ChatContextProvider = ({ children }) => {
             }
           }
 
-          // Update ONLY the last batch of vendor/admin messages
           const updateArr = existingText.map((msg, index) => {
             if (index >= batchStart && isVendorOrAdmin(msg)) {
               return {
                 ...msg,
-                isNotification: false // Only user sees this as unread
+                isNotification: false
               };
             }
+
             return msg;
           });
 
-          await updateDoc(doc(db, "chatRooms", docId), {
+          await updateDoc(docRef, {
             text: updateArr
           });
-        }
-        setCheckMessage([]);
-      } catch (error) {
-        console.error("Error getting document:", error);
-        throw error;
-      }
-    });
-  };
-  const markAsReadHandler = async () => {
-    if (pathname === "/messages/etsy") {
-      await markComposeAsRead(checkMessage);
+        })
+      );
 
+      router.push("/messages");
       setCheckMessage([]);
       setAllChecked(false);
+    } catch (error) {
+      console.error("Error marking messages as unread:", error);
+    }
+  };
+  const markAsReadHandler = async () => {
+    if (!checkMessage.length) return;
 
+    if (pathname === "/messages/etsy") {
+      await markComposeAsRead(checkMessage);
+      setCheckMessage([]);
+      setAllChecked(false);
       return;
     }
-    checkMessage.map(async (docId) => {
-      try {
-        const docRef = doc(
-          db,
-          pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-          docId,
-        );
-        const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
+    try {
+      await Promise.all(
+        checkMessage.map(async (docId) => {
+          const docRef = doc(db, "chatRooms", docId);
+          const docSnap = await getDoc(docRef);
+
+          if (!docSnap.exists()) return;
+
           const myDoc = docSnap.data();
+          const existingText = myDoc.text || [];
 
-          const updateArr = myDoc.text.map((msg) => {
-            // Only mark vendor/admin messages as read
+          const updateArr = existingText.map((msg) => {
             if (
               msg.messageSenderId !== usercredentials?._id &&
               (msg.senderType === "vendor" || msg.senderType === "admin")
             ) {
-              return { ...msg, isNotification: true };
+              return {
+                ...msg,
+                isNotification: true
+              };
             }
+
             return msg;
           });
 
-          await updateDoc(
-            doc(
-              db,
-              pathname === "/messages/etsy" ? "composeChat" : "chatRooms",
-              docId,
-            ),
-            {
-              text: updateArr,
-            },
-          );
-        }
-        setCheckMessage([]);
-        setAllChecked(false);
-      } catch (error) {
-        console.error("Error getting document:", error);
-        throw error;
-      }
-    });
+          await updateDoc(docRef, {
+            text: updateArr
+          });
+        })
+      );
+
+      setCheckMessage([]);
+      setAllChecked(false);
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
   };
 
   const parseUserCreatedAt = (value) => {
@@ -328,272 +315,327 @@ const ChatContextProvider = ({ children }) => {
     return userCreatedAt <= item.spreadStoppedAt.toDate();
   };
 
+
+  // chat list logic
   useEffect(() => {
-    // Don't run if usercredentials is not available
-    if (!usercredentials || !usercredentials?._id) {
-      console.log("⏳ Waiting for usercredentials...");
+    if (!usercredentials?._id) {
+      setAllChats([]);
       setIsLoading(false);
       return;
     }
 
     if (searchText) return;
-    setCheckMessage([]);
+
     setIsLoading(true);
 
-    console.log("🔄 Fetching chats for user:", usercredentials._id);
-
-    // Get total count for user's chats only using where clause
     const getTotalCount = async () => {
       try {
-        let q;
+        const countQuery = query(
+          collection(db, "chatRooms"),
+          where("user", "==", usercredentials._id)
+        );
 
-        if (pathname === "/messages/etsy") {
-          q = query(
-            collection(db, "composeChat")
-          );
-        } else {
-          q = query(
-            collection(db, "chatRooms"),
-            where("user", "==", usercredentials._id)
-          );
-        }
+        const countSnapshot = await getCountFromServer(countQuery);
+        const total = countSnapshot.data().count;
 
-        const snapshot = await getDocs(q);
-        const total = snapshot.docs.length;
-        console.log("📊 Total user chats count:", total);
+        console.log("TOTAL CHAT COUNT:", total);
+
         setTotalCount(total);
-        return total;
       } catch (error) {
-        console.error("Error getting total count:", error);
-        return 0;
+        console.error("Error getting total chat count:", error);
+        setTotalCount(0);
       }
     };
 
     getTotalCount();
 
-    // Build query with pagination and where clause for user's chats
-    let q;
+    const baseConstraints = [
+      where("user", "==", usercredentials._id),
+      orderBy("currentTime", "desc")
+    ];
 
-    if (pathname === "/messages/etsy") {
-      q = query(
-        collection(db, "composeChat"),
-        orderBy("currentTime", "desc"),
+    let chatQuery;
+
+    if (page === 0) {
+      chatQuery = query(
+        collection(db, "chatRooms"),
+        ...baseConstraints,
         limit(rowsPerPage)
       );
     } else {
-      q = query(
-        collection(db, "chatRooms"),
-        where("user", "==", usercredentials._id),
-        orderBy("currentTime", "desc"),
-        limit(rowsPerPage)
-      );
-    }
+      const previousPageCursor = pageCursors[page - 1];
 
-    // If not first page, start after lastVisible
-    if (page > 0 && lastVisible) {
-      q = query(
-        collection(db, pathname === "/messages/etsy" ? "composeChat" : "chatRooms"),
-        where("user", "==", usercredentials._id),
-        orderBy("currentTime", "desc"),
-        startAfter(lastVisible),
-        limit(rowsPerPage)
-      );
-    }
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("📩 Snapshot received. Docs count:", snapshot.docs.length);
-
-      if (!usercredentials?._id) {
+      if (!previousPageCursor) {
+        console.warn("Missing cursor for page:", page);
         setIsLoading(false);
         return;
       }
 
-      const newMessages = snapshot?.docs?.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      chatQuery = query(
+        collection(db, "chatRooms"),
+        ...baseConstraints,
+        startAfter(previousPageCursor),
+        limit(rowsPerPage)
+      );
+    }
 
-      if (pathname !== "/messages/etsy") {
-        const unreadMessages = newMessages.filter((parent) =>
-          parent?.text?.some(
-            (notification) =>
-              !notification?.isNotification &&
-              notification.messageSenderId !== usercredentials?._id &&
-              (notification.senderType === "vendor" ||
-                notification.senderType === "admin")
+    const unsubscribe = onSnapshot(
+      chatQuery,
+      (snapshot) => {
+        const newMessages = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        if (snapshot.docs.length > 0) {
+          const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+          setPageCursors(prev => {
+            if (prev[page]?.id === lastDoc.id) return prev;
+
+            return {
+              ...prev,
+              [page]: lastDoc
+            };
+          });
+        }
+
+        const vendorIds = [...new Set(
+          newMessages
+            .map(chat => chat.receiverId)
+            .filter(Boolean)
+        )];
+
+        if (vendorIds.length) {
+          getVendorDetails(vendorIds);
+        }
+
+        setAllChats(newMessages);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error loading user chats:", error);
+        setAllChats([]);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [usercredentials?._id, page, rowsPerPage]);
+
+
+  const filteredChats = useMemo(() => {
+    if (!allChats.length || !usercredentials?._id) return [];
+
+    if (pathname === "/messages/pin") {
+      return allChats.filter(item =>
+        item.pinnedMsgUser === usercredentials._id &&
+        item.isTempDelete1 !== usercredentials._id
+      );
+    }
+
+    if (pathname === "/messages") {
+      return allChats.filter(item =>
+        item.isTempDelete1 !== usercredentials._id
+      );
+    }
+
+    if (pathname === "/messages/inbox") {
+      return allChats
+        .filter(item => item.isTempDelete1 !== usercredentials._id)
+        .filter(item =>
+          item?.text?.some(msg =>
+            msg.messageSenderId !== usercredentials._id
           )
         );
+    }
 
-        setShowCount(unreadMessages.length);
-      }
-
-      console.log("📝 Raw messages from query:", newMessages?.length || 0);
-
-      // Store last visible document for next page
-      if (snapshot.docs.length > 0) {
-        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-        setFirstVisible(snapshot.docs[0]);
-      }
-
-      const vendorIds = [...new Set(newMessages.map(chat => chat.receiverId).filter(Boolean))];
-      if (vendorIds.length) {
-        getVendorDetails(vendorIds);
-      }
-
-      // Since we already filtered by user in the query, no need to filter again
-      let matchingDocument = newMessages;
-
-      // Apply filters based on pathname
-      let filteredData = [];
-      if (pathname === "/messages/pin") {
-        filteredData = matchingDocument.filter((doc) => {
-          return (
-            doc.pinnedMsgUser === usercredentials._id &&
-            doc.isTempDelete1 !== usercredentials._id
-          );
-        });
-      } else if (pathname === "/messages" || pathname === "/messages/sent") {
-        filteredData = matchingDocument.filter(
-          (item) => item.isTempDelete1 !== usercredentials._id
-        );
-      } else if (pathname === "/messages/etsy") {
-        console.log(
-          "compose doc count",
-          snapshot.docs.length
-        );
-        const userCreatedAt = parseUserCreatedAt(usercredentials?.createdAt);
-        filteredData = newMessages.filter((item) => {
-          if (item.type !== "allusers") return false;
-          if (!userCreatedAt) return false;
-          return (
-            isAudienceAllowed(item, userCreatedAt) &&
-            isSpreadAllowed(item, userCreatedAt)
-          );
-        });
-      } else if (pathname === "/messages/inbox") {
-        const isDeletefilterData = matchingDocument.filter(
-          (item) => item.isTempDelete1 !== usercredentials._id
-        );
-        filteredData = isDeletefilterData?.filter((item) =>
-          item?.text?.some((msg) => msg.messageSenderId !== usercredentials._id)
-        );
-      } else if (pathname === "/messages/unread") {
-        filteredData = matchingDocument?.filter((item) =>
-          item?.text?.some(
-            (msg) =>
-              msg.messageSenderId !== usercredentials._id &&
-              msg?.isNotification === false
+    if (pathname === "/messages/sent") {
+      return allChats
+        .filter(item => item.isTempDelete1 !== usercredentials._id)
+        .filter(item =>
+          item?.text?.some(msg =>
+            msg.messageSenderId === usercredentials._id
           )
         );
-      } else if (pathname === "/messages/trash") {
-        filteredData = matchingDocument.filter(
-          (item) => item.isTempDelete1 === usercredentials._id
-        );
-      }
+    }
 
-      console.log("✅ Final filtered data count:", filteredData.length);
-      setChats(filteredData);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("🔥 Snapshot error:", error);
-      setIsLoading(false);
+    if (pathname === "/messages/unread") {
+      return allChats
+        .filter(item => item.isTempDelete1 !== usercredentials._id)
+        .filter(item =>
+          item?.text?.some(msg =>
+            msg.messageSenderId !== usercredentials._id &&
+            msg.isNotification === false
+          )
+        );
+    }
+
+    if (pathname === "/messages/trash") {
+      return allChats.filter(item =>
+        item.isTempDelete1 === usercredentials._id
+      );
+    }
+
+    return allChats;
+  }, [
+    allChats,
+    pathname,
+    usercredentials?._id
+  ]);
+
+  useEffect(() => {
+    if (pathname === "/messages/etsy") return;
+
+    setChats(filteredChats);
+  }, [filteredChats, pathname]);
+
+
+
+  // compose list logic
+  useEffect(() => {
+    if (!usercredentials?._id) {
+      setAllComposeChats([]);
+      return;
+    }
+
+    const composeQuery = query(
+      collection(db, "composeChat"),
+      orderBy("currentTime", "desc")
+    );
+
+    const unsubscribe = onSnapshot(
+      composeQuery,
+      (snapshot) => {
+        const newMessages = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        setAllComposeChats(newMessages);
+      },
+      (error) => {
+        console.error("Error loading compose chats:", error);
+        setAllComposeChats([]);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [usercredentials?._id]);
+
+  const eligibleComposeChats = useMemo(() => {
+    if (!usercredentials?.createdAt || !allComposeChats.length) return [];
+
+    const userCreatedAt = parseUserCreatedAt(usercredentials.createdAt);
+
+    if (!userCreatedAt) return [];
+
+    return allComposeChats.filter(item => {
+      if (item.type !== "allusers") return false;
+
+      return (
+        isAudienceAllowed(item, userCreatedAt) &&
+        isSpreadAllowed(item, userCreatedAt)
+      );
     });
+  }, [
+    allComposeChats,
+    usercredentials?.createdAt
+  ]);
 
-    return () => {
-      console.log("🧹 Cleaning up subscription");
-      unsubscribe();
-    };
-  }, [usercredentials?._id, pathname, searchText, page, rowsPerPage]);
+  useEffect(() => {
+    if (pathname !== "/messages/etsy") return;
+
+    setChats(eligibleComposeChats);
+  }, [
+    pathname,
+    eligibleComposeChats
+  ]);
+
+
+  //unread cont logic
+  const unreadCount = useMemo(() => {
+    if (!usercredentials?._id) return 0;
+
+    return allChats.filter(parent =>
+      parent?.text?.some(msg =>
+        !msg?.isNotification &&
+        msg.messageSenderId !== usercredentials._id &&
+        (msg.senderType === "vendor" || msg.senderType === "admin")
+      )
+    ).length;
+  }, [
+    allChats,
+    usercredentials?._id
+  ]);
+
+  useEffect(() => {
+    setShowCount(unreadCount);
+  }, [unreadCount]);
+
+  const unreadComposeMessages = useMemo(() => {
+    if (!eligibleComposeChats.length) return [];
+
+    return eligibleComposeChats.filter(
+      item => !etsyMsgIds.includes(item.id)
+    );
+  }, [
+    eligibleComposeChats,
+    etsyMsgIds
+  ]);
+
+  useEffect(() => {
+    setUnreadComposeIds(
+      unreadComposeMessages.map(item => item.id)
+    );
+
+    setEtsyCount(unreadComposeMessages.length);
+  }, [unreadComposeMessages]);
+
+
 
   useEffect(() => {
     setSearchText("");
+    setCheckMessage([]);
+    setAllChecked(false);
   }, [pathname]);
 
   const getVendorDetails = async (vendorIds = []) => {
-    const missingIds = vendorIds.filter(id => id && !vendorDetailsMap[id]);
+    const uniqueIds = [...new Set(vendorIds.filter(Boolean))];
+
+    const missingIds = uniqueIds.filter(
+      id => !vendorDetailsMap[id]
+    );
 
     if (!missingIds.length) return;
 
-    const res = await postAPIAuth("getVendorDetails", {
-      vendorId: missingIds,
-    });
-
-    const vendors = res?.data?.data || [];
-
-    setVendorDetailsMap(prev => {
-      const updated = { ...prev };
-
-      vendors.forEach(vendor => {
-        updated[vendor._id] = vendor;
+    try {
+      const res = await postAPIAuth("getVendorDetails", {
+        vendorId: missingIds
       });
 
-      return updated;
-    });
+      const vendors = res?.data?.data || [];
+
+      setVendorDetailsMap(prev => {
+        const updated = { ...prev };
+
+        vendors.forEach(vendor => {
+          updated[vendor._id] = vendor;
+        });
+
+        return updated;
+      });
+    } catch (error) {
+      console.error("Error getting vendor details:", error);
+    }
   };
 
-  // track real time unread chat count
 
   useEffect(() => {
-    const composeChatQuery = query(
-      collection(db, "composeChat"),
-      orderBy("currentTime", "desc"),
+    setAllChecked(
+      chats.length > 0 &&
+      checkMessage.length === chats.length
     );
-
-    const getUnreadCounts = async () => {
-
-      // Fetch and calculate unread messages for composeChat (Etsy route)
-      const unsubscribeComposeChat = onSnapshot(
-        composeChatQuery,
-        (snapshot) => {
-
-          const userCreatedAt = parseUserCreatedAt(
-            usercredentials?.createdAt
-          );
-
-          const composeMessages = snapshot?.docs
-            ?.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }))
-            ?.filter((item) => {
-              if (item.type !== "allusers") return false;
-              if (!userCreatedAt) return false;
-
-              return (
-                isAudienceAllowed(item, userCreatedAt) &&
-                isSpreadAllowed(item, userCreatedAt)
-              );
-            });
-
-          const unreadMessages = composeMessages.filter(
-            (item) => !etsyMsgIds.includes(item.id)
-          );
-
-          setUnreadComposeIds(
-            unreadMessages.map((item) => item.id)
-          );
-
-          setEtsyCount(unreadMessages.length);
-        }
-      );
-
-      return () => {
-        unsubscribeComposeChat();
-      };
-    };
-
-    getUnreadCounts();
-  }, [usercredentials?._id, etsyMsgIds]);
-
-  useEffect(() => {
-    if (checkMessage.length === chats.length) {
-      setAllChecked(true);
-      return;
-    }
-    if (checkMessage.length !== chats.length) {
-      setAllChecked(false);
-      return;
-    }
   }, [checkMessage, chats]);
 
   // get messageids from node for etsy
@@ -665,39 +707,23 @@ const ChatContextProvider = ({ children }) => {
 
   const pinnedMessageHadler = async (docId) => {
     try {
-      console.log("📌 Toggling pin for chat:", docId);
       const docRef = doc(db, "chatRooms", docId);
       const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists()) {
-        const docData = docSnap.data();
-        const currentPinnedUser = docData?.pinnedMsgUser;
+      if (!docSnap.exists()) return;
 
-        // Toggle pin
-        const newPinnedValue = currentPinnedUser === usercredentials?._id ? "" : usercredentials?._id;
+      const docData = docSnap.data();
 
-        console.log("📌 Current pin status:", currentPinnedUser);
-        console.log("📌 New pin status:", newPinnedValue);
+      const newPinnedValue =
+        docData?.pinnedMsgUser === usercredentials?._id
+          ? ""
+          : usercredentials?._id;
 
-        await updateDoc(docRef, {
-          pinnedMsgUser: newPinnedValue
-        });
-
-        console.log("✅ Pin updated successfully");
-
-        // Optional: Update local state immediately for better UX
-        setChats(prevChats =>
-          prevChats.map(chat =>
-            chat.id === docId
-              ? { ...chat, pinnedMsgUser: newPinnedValue }
-              : chat
-          )
-        );
-      } else {
-        console.log("❌ Document not found:", docId);
-      }
+      await updateDoc(docRef, {
+        pinnedMsgUser: newPinnedValue
+      });
     } catch (error) {
-      console.error("❌ Error updating pin: ", error);
+      console.error("Error updating pin:", error);
     }
   };
 
@@ -721,17 +747,18 @@ const ChatContextProvider = ({ children }) => {
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
-    // Reset lastVisible when going back to first page
-    if (newPage === 0) {
-      setLastVisible(null);
-    }
   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-    setLastVisible(null);
+    setPageCursors({});
   };
+
+  useEffect(() => {
+    setPage(0);
+    setPageCursors({});
+  }, [usercredentials?._id]);
 
   return (
     <ChatContext.Provider

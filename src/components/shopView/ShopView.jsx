@@ -772,6 +772,7 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                       md: "flex-end",
                     },
                     cursor: "pointer",
+                    pb: 1
                   }}
                   onClick={handleClickPopup}
                 >
