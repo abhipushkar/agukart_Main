@@ -32,6 +32,7 @@ import { useCurrency } from "contexts/CurrencyContext";
 import useMyProvider from "hooks/useMyProvider";
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   getDocs,
@@ -50,6 +51,7 @@ import useAuth from "hooks/useAuth";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
+import { markIncomingMessagesAsRead } from "utils/chatUtil";
 
 // Styled Components
 const MessageContainer = styled(Box)(({ theme }) => ({
@@ -208,79 +210,6 @@ const TimeStamp = styled(Typography)(({ theme }) => ({
   },
 }));
 
-const MediaGrid = ({ items, onMediaClick }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  if (!items || items.length === 0) return null;
-
-  const displayItems = items.slice(0, 4);
-  const remaining = items.length - 4;
-
-  return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: items.length === 1 ? '1fr' : 'repeat(2, 1fr)',
-        gap: 0.5,
-        maxWidth: "100%",
-        mb: 1,
-      }}
-    >
-      {displayItems.map((item, index) => {
-        const isLast = index === 3 && remaining > 0;
-
-        return (
-          <Box
-            key={index}
-            sx={{
-              position: 'relative',
-              aspectRatio: '1',
-              borderRadius: items.length === 1 ? '8px' : '4px',
-              overflow: 'hidden',
-              cursor: 'pointer',
-              gridColumn: items.length === 1 ? '1 / -1' : 'auto',
-              ...(items.length === 3 && index === 0 && {
-                gridRow: '1 / 3',
-              }),
-            }}
-            onClick={() => onMediaClick(index)}
-          >
-            <img
-              src={item.url}
-              alt={`media-${index}`}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-            {isLast && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                }}
-              >
-                +{remaining}
-              </Box>
-            )}
-          </Box>
-        );
-      })}
-    </Box>
-  );
-};
 
 const MessagePopup = ({
   vendorName,
@@ -313,6 +242,7 @@ const MessagePopup = ({
   const receiverId = receiverid;
   const senderId = usercredentials?._id;
   const router = useRouter();
+  const [currentChat, setCurrentChat] = useState(null);
 
   const [lightboxState, setLightboxState] = useState({
     open: false,
@@ -382,77 +312,98 @@ const MessagePopup = ({
   };
 
   useEffect(() => {
-    if (!token) return;
-    const q = query(
+    if (!openPopup || !token || !senderId || !receiverId || !subOrderId) {
+      setCurrentChat(null);
+      setMessages([]);
+      return;
+    }
+
+    const chatQuery = query(
       collection(db, "chatRooms"),
       where("receiverId", "==", receiverId),
       where("user", "==", senderId),
       where("subOrderId", "==", subOrderId),
       limit(1)
     );
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const newMessages = snapshot?.docs?.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const matchingDocument = newMessages?.filter((doc) => {
-        return (
-          doc?.subOrderId === subOrderId
-        );
-      });
 
-
-      // Auto mark vendor/admin messages as read when popup is open
-      if (
-        matchingDocument.length &&
-        typeof document !== "undefined" &&
-        document.visibilityState === "visible"
-      ) {
-        const existingText = matchingDocument[0].text || [];
-
-        let hasUnread = false;
-
-        const updatedText = existingText.map((item) => {
-          if (
-            item.messageSenderId !== senderId &&
-            (item.senderType === "vendor" || item.senderType === "admin") &&
-            item.isNotification === false
-          ) {
-            hasUnread = true;
-
-            return {
-              ...item,
-              isNotification: true,
-            };
-          }
-
-          return item;
-        });
-
-        if (hasUnread) {
-          await updateDoc(
-            doc(db, "chatRooms", matchingDocument[0].id),
-            {
-              text: updatedText,
-            }
-          );
+    const unsubscribe = onSnapshot(
+      chatQuery,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          setCurrentChat(null);
+          setMessages([]);
+          return;
         }
-      }
 
+        const docSnap = snapshot.docs[0];
 
-      if (matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id) {
-        setMessages([]);
-        return;
-      }
-      matchingDocument.forEach((data) => {
-        const filterArr = data?.text?.filter((msg) => {
-          return msg.permanentDeleteUser !== senderId;
+        const chat = {
+          id: docSnap.id,
+          ...docSnap.data()
+        };
+
+        setCurrentChat(chat);
+        await markIncomingMessagesAsRead({
+          chatId: chat.id,
+          messages: chat.text || [],
+          senderId
         });
-        setMessages(filterArr);
-      });
-    });
+
+        if (chat.permanentDeleteUser1 === senderId) {
+          setMessages([]);
+          return;
+        }
+
+        const existingText = chat.text || [];
+
+        const visibleMessages = existingText.filter(
+          msg => msg.permanentDeleteUser !== senderId
+        );
+
+        setMessages(visibleMessages);
+
+        if (
+          typeof document !== "undefined" &&
+          document.visibilityState === "visible"
+        ) {
+          const hasUnread = existingText.some(
+            item =>
+              item.messageSenderId !== senderId &&
+              (item.senderType === "vendor" || item.senderType === "admin") &&
+              item.isNotification === false
+          );
+
+          if (hasUnread) {
+            const updatedText = existingText.map(item => {
+              if (
+                item.messageSenderId !== senderId &&
+                (item.senderType === "vendor" || item.senderType === "admin") &&
+                item.isNotification === false
+              ) {
+                return {
+                  ...item,
+                  isNotification: true
+                };
+              }
+
+              return item;
+            });
+
+            await updateDoc(doc(db, "chatRooms", chat.id), {
+              text: updatedText
+            });
+          }
+        }
+      },
+      error => {
+        console.error("Chat listener error:", error);
+        setCurrentChat(null);
+        setMessages([]);
+      }
+    );
+
     return () => unsubscribe();
-  }, [senderId, receiverId, subOrderId]);
+  }, [token, senderId, receiverId, subOrderId, openPopup]);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -510,28 +461,33 @@ const MessagePopup = ({
     e.target.value = "";
   };
 
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach(preview => {
-        URL.revokeObjectURL(preview);
-      });
-    };
-  }, []);
 
   const handleRemoveImage = (index) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => {
+      if (prev[index]) {
+        URL.revokeObjectURL(prev[index]);
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
+
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleClearPreview = () => {
+    imagePreviews.forEach(preview => {
+      URL.revokeObjectURL(preview);
+    });
+
     setImagePreviews([]);
     setFiles([]);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const buildProductMessages = () => {
+  const buildProductMessages = (uploadedFiles = []) => {
     let messages = [];
 
     if (subOrderProducts && subOrderProducts.length > 0 && !productID && !productData) {
@@ -561,6 +517,7 @@ const MessagePopup = ({
         messageSenderId: senderId,
         isNotification: false,
         imageUrls: [],
+        attachments: uploadedFiles,
         orderId: orderId || "",
         subOrderId: subOrderId || ""
       });
@@ -590,6 +547,7 @@ const MessagePopup = ({
           messageSenderId: senderId,
           isNotification: false,
           imageUrls: [],
+          attachments: uploadedFiles,
           orderId: orderId || "",
           subOrderId: subOrderId || ""
         }
@@ -608,115 +566,90 @@ const MessagePopup = ({
     });
   };
 
+  const buildUserMessage = (uploadedFiles = []) => ({
+    senderType: "user",
+    text: input.trim(),
+    createdAt: new Date(),
+    messageSenderId: senderId,
+    isNotification: false,
+    attachments: uploadedFiles
+  });
+
+  const buildSingleProductMessage = () => ({
+    senderType: "user",
+    text: "",
+    createdAt: new Date(),
+    messageSenderId: senderId,
+    isNotification: true,
+    imageUrls: [],
+    productId: productID,
+    productLink: `https://agukart.com/product/slug/${productData?.productData?.product_code || ""}`,
+    productData: {
+      productTitle: productData?.productData?.product_title || "",
+      price: productData?.sub_total || 0,
+      imageUrl: product_image || ""
+    },
+    orderId: orderId || "",
+    subOrderId: subOrderId || ""
+  });
+
   const sendMessage = async () => {
     if ((!input.trim() && files.length === 0) || isSending) return;
+
     setIsSending(true);
-    let uploadedFiles = [];
 
     try {
-      const chatQuery = query(
-        collection(db, "chatRooms"),
-        where("receiverId", "==", receiverId),
-        where("user", "==", senderId),
-        where("subOrderId", "==", subOrderId),
-        limit(1)
-      );
+      let uploadedFiles = [];
 
-      const querySnapshot = await getDocs(chatQuery);
-      let matchingDocument = null;
-
-      if (!querySnapshot.empty) {
-        const docSnap = querySnapshot.docs[0];
-        matchingDocument = {
-          id: docSnap.id,
-          data: docSnap.data(),
-        };
-      }
-
-      // Upload files to backend API
       if (files.length > 0) {
-        try {
-          const uploadResult = await uploadChatFiles({
-            files: files,
-            token: token,
-            addToast: (msg) => console.log(msg),
-          });
-          uploadedFiles = uploadResult;
-          handleClearPreview();
-        } catch (uploadError) {
-          console.error("File upload failed:", uploadError);
-          setIsSending(false);
-          return;
-        }
+        uploadedFiles = await uploadChatFiles({
+          files,
+          token,
+          addToast: msg => console.log(msg)
+        });
       }
 
-      if (matchingDocument) {
-        if (matchingDocument.data.permanentDeleteUser1 === senderId) {
-          await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-            permanentDeleteUser1: "",
-            isTempDelete1: "",
-          });
-        }
-
-        const existingText = matchingDocument.data.text || [];
+      if (currentChat?.id) {
         const newMessages = [];
 
         if (input.trim() || uploadedFiles.length > 0) {
-          newMessages.push({
-            senderType: "user",
-            text: input.trim(),
-            createdAt: {
-              seconds: Math.floor(Date.now() / 1000),
-            },
-            messageSenderId: senderId,
-            isNotification: false,
-            attachments: uploadedFiles,
-          });
+          newMessages.push(buildUserMessage(uploadedFiles));
         }
 
+        const existingText = currentChat.text || [];
+
         const alreadySent = productID
-          ? existingText.some((msg) => msg.productId === productID)
+          ? existingText.some(msg => msg.productId === productID)
           : false;
 
         if (productID && !alreadySent) {
-          newMessages.push({
-            senderType: "user",
-            text: "",
-            createdAt: {
-              seconds: Math.floor(Date.now() / 1000),
-            },
-            messageSenderId: senderId,
-            isNotification: true,
-            imageUrls: [],
-            productId: productID,
-            productData: {
-              productTitle: productData?.productData?.product_title,
-              price: productData?.sub_total,
-              imageUrl: product_image,
-            },
-          });
+          newMessages.push(buildSingleProductMessage());
         }
 
-        if (newMessages.length === 0) {
-          setIsSending(false);
-          return;
+        if (!newMessages.length) return;
+
+        const updatePayload = {
+          text: arrayUnion(...newMessages),
+          currentTime: new Date()
+        };
+
+        if (currentChat.permanentDeleteUser1 === senderId) {
+          updatePayload.permanentDeleteUser1 = "";
+          updatePayload.isTempDelete1 = "";
         }
 
-        const updatedText = [...existingText, ...newMessages];
-        await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-          text: updatedText,
-          currentTime: new Date(),
-        });
-        // Replace this entire else block (from line ~350-380) with:
-
+        await updateDoc(
+          doc(db, "chatRooms", currentChat.id),
+          updatePayload
+        );
       } else {
-        const productMessages = buildProductMessages();
+        const productMessages = buildProductMessages(uploadedFiles);
 
-        // Build productData only if there's actual data
         let productdata = {};
+
         if (productData && Object.keys(productData).length > 0) {
           productdata = {
-            orderId: orderId,
+            orderId: orderId || "",
             name: productData?.productData?.product_title || "",
             qty: productData?.qty || 0,
             sale_price: productData?.sub_total || 0,
@@ -726,32 +659,33 @@ const MessagePopup = ({
             variantData: productData?.variantData || [],
             variantAttributeData: productData?.variantAttributeData || [],
             customize: productData?.customize || "No",
-            customizationData: productData?.customizationData || [],
+            customizationData: productData?.customizationData || []
           };
         }
 
-        const mappedProducts = (subOrderProducts || []).map((item) => ({
+        const mappedProducts = (subOrderProducts || []).map(item => ({
           orderId: orderId || "",
           name: item?.productData?.product_title || "",
           qty: item?.qty || 0,
           sale_price: item?.sub_total || 0,
-          product_image: item?.productData?.image?.[0] ? baseUrl + item.productData.image[0] : "",
+          product_image: item?.productData?.image?.[0]
+            ? `${baseUrl}${item.productData.image[0]}`
+            : "",
           isCombination: item?.isCombination || false,
-          variants: productData?.variants || [],
+          variants: item?.variants || [],
           variantData: item?.variantData || [],
           variantAttributeData: item?.variantAttributeData || [],
           customize: item?.customize || "No",
-          customizationData: item?.customizationData || [],
+          customizationData: item?.customizationData || []
         }));
 
-        // Clean up the payload - remove undefined values
         const payload = {
           text: productMessages,
           createdAt: new Date(),
-          user: senderId,
-          receiverId: receiverId,
-          isDeleted: false,
           currentTime: new Date(),
+          user: senderId,
+          receiverId,
+          isDeleted: false,
           userName: usercredentials?.name || "",
           userEmail: usercredentials?.email || "",
           customerId: usercredentials?.customerId || "",
@@ -759,40 +693,24 @@ const MessagePopup = ({
           shopName: shopName || "",
           productId: productID || "",
           orderId: orderId || "",
-          subOrderId: subOrderId || "",
+          subOrderId: subOrderId || ""
         };
 
-        // Only add productData if it has keys
         if (Object.keys(productdata).length > 0) {
           payload.productData = productdata;
         }
 
-        // Only add products if array has items
-        if (mappedProducts && mappedProducts.length > 0) {
+        if (mappedProducts.length > 0) {
           payload.products = mappedProducts;
         }
 
-        // Also clean up productMessages to ensure no undefined values
-        const cleanedProductMessages = productMessages.map(msg => {
-          const cleaned = { ...msg };
-          // Remove undefined values
-          Object.keys(cleaned).forEach(key => {
-            if (cleaned[key] === undefined) {
-              delete cleaned[key];
-            }
-          });
-          return cleaned;
-        });
-
-        // Update the text in payload with cleaned messages
-        payload.text = cleanedProductMessages;
-
         await addDoc(collection(db, "chatRooms"), payload);
       }
+
       setInput("");
+      handleClearPreview();
     } catch (error) {
       console.error("Error sending message:", error);
-      console.trace("err", error);
     } finally {
       setIsSending(false);
     }
@@ -813,21 +731,6 @@ const MessagePopup = ({
   const formatTime = (timestamp) => {
     const date = new Date(timestamp?.seconds * 1000);
     return date?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getExistingChatId = async () => {
-    const q = query(
-      collection(db, "chatRooms"),
-      where("receiverId", "==", receiverId),
-      where("user", "==", senderId),
-      where("subOrderId", "==", subOrderId),
-      limit(1)
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      return snap.docs[0].id;
-    }
-    return null;
   };
 
   const groupMessagesByDate = () => {
@@ -923,12 +826,10 @@ const MessagePopup = ({
                   fontWeight={500}
                   fontSize={16}
                   sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
-                  onClick={async () => {
-                    const chatId = await getExistingChatId();
-                    if (chatId) {
-                      handleClosePopup();
-                      router.push(`/messages?slug=${chatId}`);
-                    }
+                  onClick={() => {
+                    if (!currentChat?.id) return;
+                    handleClosePopup();
+                    router.push(`/messages?slug=${currentChat.id}`);
                   }}
                 >
                   {vendorName} ({shopName})

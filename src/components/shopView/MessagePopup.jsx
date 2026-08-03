@@ -32,6 +32,7 @@ import parse from "html-react-parser";
 import { uploadChatFiles } from "utils/uploadChatFile";
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   getDocs,
@@ -50,6 +51,7 @@ import { useRouter } from 'next/navigation';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Video from "yet-another-react-lightbox/plugins/video";
+import { markIncomingMessagesAsRead } from "utils/chatUtil";
 
 // Styled Components
 const MessageContainer = styled(Box)(({ theme }) => ({
@@ -235,6 +237,7 @@ const MessagePopup = ({
   const [error, setError] = useState("")
   const receiverId = receiverid;
   const senderId = usercredentials?._id;
+  const [currentChat, setCurrentChat] = useState(null);
 
   const detectLink = (text) => {
     if (!text) return text;
@@ -263,8 +266,13 @@ const MessagePopup = ({
   }, [messages]);
 
   useEffect(() => {
-    if (!token) { return; }
-    const q = query(
+    if (!openPopup || !token || !receiverId || !senderId) {
+      setCurrentChat(null);
+      setMessages([]);
+      return;
+    }
+
+    const chatQuery = query(
       collection(db, "chatRooms"),
       where("receiverId", "==", receiverId),
       where("user", "==", senderId),
@@ -273,73 +281,93 @@ const MessagePopup = ({
       limit(1)
     );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const newMessages = snapshot?.docs?.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const matchingDocument = newMessages?.filter((doc) => {
-        return (
-          doc?.receiverId === receiverId &&
-          doc?.user === senderId &&
-          doc?.productId == null &&
-          doc?.orderId == null
-        );
-      });
-
-      // Auto mark vendor/admin messages as read when popup is open
-      if (
-        matchingDocument.length &&
-        typeof document !== "undefined" &&
-        document.visibilityState === "visible"
-      ) {
-        const existingText = matchingDocument[0].text || [];
-
-        let hasUnread = false;
-
-        const updatedText = existingText.map((item) => {
-          if (
-            item.messageSenderId !== senderId &&
-            (item.senderType === "vendor" || item.senderType === "admin") &&
-            item.isNotification === false
-          ) {
-            hasUnread = true;
-
-            return {
-              ...item,
-              isNotification: true,
-            };
-          }
-
-          return item;
-        });
-
-        if (hasUnread) {
-          await updateDoc(
-            doc(db, "chatRooms", matchingDocument[0].id),
-            {
-              text: updatedText,
-            }
-          );
+    const unsubscribe = onSnapshot(
+      chatQuery,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          setCurrentChat(null);
+          setMessages([]);
+          return;
         }
-      }
 
-      if (matchingDocument[0]?.permanentDeleteUser1 === usercredentials?._id) {
-        setMessages([]);
-        return;
-      }
+        const docSnap = snapshot.docs[0];
 
-      matchingDocument.forEach((data) => {
-        const filterArr = data?.text?.filter((msg) => {
-          return msg.permanentDeleteUser !== senderId;
+        const chat = {
+          id: docSnap.id,
+          ...docSnap.data()
+        };
+
+        console.log("🚀 CALLING READ HELPER FROM POPUP", {
+          chatId: chat.id,
+          senderId,
+          textCount: chat.text?.length,
+          text: chat.text
         });
-        setMessages(filterArr || []);
-      });
-    });
+
+        setCurrentChat(chat);
+        await markIncomingMessagesAsRead({
+          chatId: chat.id,
+          messages: chat.text || [],
+          senderId
+        });
+
+        if (chat.permanentDeleteUser1 === senderId) {
+          setMessages([]);
+          return;
+        }
+
+        const existingText = chat.text || [];
+
+        const visibleMessages = existingText.filter(
+          msg => msg.permanentDeleteUser !== senderId
+        );
+
+        setMessages(visibleMessages);
+        setError("");
+
+        if (
+          typeof document !== "undefined" &&
+          document.visibilityState === "visible"
+        ) {
+          const hasUnread = existingText.some(
+            item =>
+              item.messageSenderId !== senderId &&
+              (item.senderType === "vendor" || item.senderType === "admin") &&
+              item.isNotification === false
+          );
+
+          if (hasUnread) {
+            const updatedText = existingText.map(item => {
+              if (
+                item.messageSenderId !== senderId &&
+                (item.senderType === "vendor" || item.senderType === "admin") &&
+                item.isNotification === false
+              ) {
+                return {
+                  ...item,
+                  isNotification: true
+                };
+              }
+
+              return item;
+            });
+
+            await updateDoc(doc(db, "chatRooms", chat.id), {
+              text: updatedText
+            });
+          }
+        }
+      },
+      (error) => {
+        console.error("Error loading vendor chat:", error);
+        setCurrentChat(null);
+        setMessages([]);
+        setError(`Error: ${error.message}`);
+      }
+    );
 
     return () => unsubscribe();
-  }, [senderId, receiverId]);
+  }, [token, senderId, receiverId, openPopup]);
 
 
   // Add this state
@@ -407,131 +435,111 @@ const MessagePopup = ({
 
     setIsSending(true);
     setError("");
-    let uploadedFiles = [];
 
     try {
-      const shopLink = `https://agukart.com/store/${shopSlug}`;
-      const querySnapshot = await getDocs(collection(db, "chatRooms"));
-      const documents = querySnapshot.docs.map((doc) => {
-        const docId = doc.id;
-        const docData = doc.data();
-        return {
-          id: docId,
-          data: docData,
-        };
-      });
+      let uploadedFiles = [];
 
-      const matchingDocument = documents?.find((doc) => {
-        return (
-          doc.data.receiverId === receiverId &&
-          doc.data.user === senderId &&
-          doc.data.productId == null &&
-          doc.data.orderId == null
-        );
-      });
-
-      // Upload files to backend API
       if (files.length > 0) {
-        try {
-          const uploadResult = await uploadChatFiles({
-            files: files,
-            token: token,
-            addToast: (msg) => console.log(msg),
-          });
-          uploadedFiles = uploadResult;
-          handleClearPreview();
-        } catch (uploadError) {
-          console.error("File upload failed:", uploadError);
-          setError("Failed to upload files. Please try again.");
-          setIsSending(false);
-          return;
-        }
+        uploadedFiles = await uploadChatFiles({
+          files,
+          token,
+          addToast: msg => console.log(msg)
+        });
       }
 
-      if (matchingDocument) {
-        if (matchingDocument.data.permanentDeleteUser1 === senderId) {
-          await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-            permanentDeleteUser1: "",
-            isTempDelete1: "",
-          });
-        }
+      const shopLink = `https://agukart.com/store/${shopSlug}`;
 
-        const existingText = matchingDocument.data.text || [];
+      if (currentChat?.id) {
+        const existingText = currentChat.text || [];
+
         const lastText =
           existingText.length > 0
             ? existingText[existingText.length - 1]
             : null;
 
-        let newText = {
+        const newMessage = {
           senderType: "user",
           text: input.trim(),
-          createdAt: {
-            seconds: Math.floor(Date.now() / 1000),
-          },
+          createdAt: new Date(),
           messageSenderId: senderId,
           isNotification: false,
-          attachments: uploadedFiles, // Changed from imageUrls to attachments
+          attachments: uploadedFiles,
           productId: null,
-          shopId: shopId
+          shopId: shopId || ""
         };
 
-        if (lastText?.shopId != shopId) {
-          newText.shopLink = shopLink;
-          newText.shopData = {
-            shopName: shopName,
-            imageUrl: shopImage,
+        if (String(lastText?.shopId || "") !== String(shopId || "")) {
+          newMessage.shopLink = shopLink;
+          newMessage.shopData = {
+            shopName: shopName || "",
+            imageUrl: shopImage || ""
           };
         }
 
-        const updatedText = [...existingText, newText];
-        await updateDoc(doc(db, "chatRooms", matchingDocument.id), {
-          text: updatedText,
-          currentTime: new Date(),
-        });
+        const updatePayload = {
+          text: arrayUnion(newMessage),
+          currentTime: new Date()
+        };
+
+        if (currentChat.permanentDeleteUser1 === senderId) {
+          updatePayload.permanentDeleteUser1 = "";
+          updatePayload.isTempDelete1 = "";
+        }
+
+        await updateDoc(
+          doc(db, "chatRooms", currentChat.id),
+          updatePayload
+        );
       } else {
+        const newMessage = {
+          senderType: "user",
+          text: input.trim(),
+          createdAt: new Date(),
+          messageSenderId: senderId,
+          isNotification: false,
+          attachments: uploadedFiles,
+          productId: null,
+          shopId: shopId || "",
+          shopLink,
+          shopData: {
+            shopName: shopName || "",
+            imageUrl: shopImage || ""
+          }
+        };
+
         await addDoc(collection(db, "chatRooms"), {
-          text: [
-            {
-              senderType: "user",
-              text: input.trim(),
-              createdAt: {
-                seconds: Math.floor(Date.now() / 1000),
-              },
-              messageSenderId: senderId,
-              isNotification: false,
-              attachments: uploadedFiles, // Changed from imageUrls to attachments
-              productId: null,
-              shopId: shopId,
-              shopLink: shopLink,
-              shopData: {
-                shopName: shopName,
-                imageUrl: shopImage,
-              },
-            },
-          ],
+          text: [newMessage],
           createdAt: new Date(),
           user: senderId,
-          receiverId: receiverId,
+          receiverId,
           isDeleted: false,
           currentTime: new Date(),
-          userName: usercredentials?.name,
+          userName: usercredentials?.name || "",
           userEmail: usercredentials?.email || "",
           customerId: usercredentials?.customerId || "",
           vendorName: vendorName || "",
           shopName: shopName || "",
           productId: null,
-          orderId: null,
+          orderId: null
         });
       }
+
       setInput("");
+      handleClearPreview();
     } catch (error) {
       console.error("Error sending message:", error);
-      setError(`Error: ${error.message}`);
+
+      if (error.code === "permission-denied") {
+        setError("Firebase Permission Denied.");
+      } else if (error.code === "unavailable") {
+        setError("Firebase service unavailable. Please try again.");
+      } else {
+        setError(`Error: ${error.message}`);
+      }
     } finally {
       setIsSending(false);
     }
   };
-
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setUploadError(null);
@@ -580,30 +588,33 @@ const MessagePopup = ({
       return;
     }
 
-    const updatedFiles = [...files, ...validFiles];
-    const previews = updatedFiles.map((file) => URL.createObjectURL(file));
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
 
-    setFiles(updatedFiles);
-    setImagePreviews(previews);
+    setFiles(prev => [...prev, ...validFiles]);
+    setImagePreviews(prev => [...prev, ...newPreviews]);
     e.target.value = "";
   };
 
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach(preview => {
-        URL.revokeObjectURL(preview);
-      });
-    };
-  }, []);
-
   const handleRemoveImage = (index) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => {
+      if (prev[index]) {
+        URL.revokeObjectURL(prev[index]);
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
+
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleClearPreview = () => {
+    imagePreviews.forEach(preview => {
+      URL.revokeObjectURL(preview);
+    });
+
     setImagePreviews([]);
     setFiles([]);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

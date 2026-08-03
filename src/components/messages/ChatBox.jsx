@@ -386,7 +386,7 @@ const ChatBox = () => {
     console.log(messages, "msg");
   }, [messages]);
 
-  const handleRemoveAllNotification = async (venderID) => {
+  const handleRemoveAllNotification = async (slug) => {
     if (!slug || !usercredentials?._id) return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") {
       return;
@@ -395,7 +395,7 @@ const ChatBox = () => {
     const chatRef = doc(
       db,
       role === "admin" ? "composeChat" : "chatRooms",
-      venderID
+      slug
     );
 
     const chatSnap = await getDoc(chatRef);
