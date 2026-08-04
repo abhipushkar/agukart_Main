@@ -27,6 +27,7 @@ import parse from "html-react-parser";
 import moment from "moment";
 import useAuth from "hooks/useAuth";
 import Link from "next/link";
+import HtmlRenderer from "components/HtmlRender/HtmlRenderer";
 
 const SingleBlog = () => {
   const pathName = usePathname();
@@ -67,11 +68,11 @@ const SingleBlog = () => {
   return (
     <>
       <Container sx={{ padding: "30px 16px" }}>
-        <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
-          <Grid item lg={12} xs={12}>
+        <Grid container width={{ xs: "100%", md: "calc(100% + -32px)" }} ml={0} spacing={4}>
+          <Grid item lg={12} xs={12} px={{xs: '0 !important', sm: 'inherit'}}>
             <Box textAlign={"center"}>
               <H1
-                fontSize={50}
+                fontSize={{ xs: 28, sm: 35, md: 50 }}
                 fontWeight={500}
                 sx={{
                   textAlign: "center",
@@ -86,6 +87,7 @@ const SingleBlog = () => {
                 display={"flex"}
                 alignItems={"center"}
                 justifyContent={"center"}
+                sx={{ flexWrap: "wrap", gap: "8px" }}
               >
                 {blog?.tag_id?.length === 0
                   ? ""
@@ -118,22 +120,32 @@ const SingleBlog = () => {
           </Grid>
           <Grid
             container
-            width={"calc(100% + -32px)"}
+            width={{ xs: "100%", md: "calc(100% + -32px)" }}
             justifyContent={"center"}
             mt={3}
             ml={0}
             spacing={4}
           >
-            <Grid item lg={8} xs={12}>
-            <Grid item lg={12} xs={12}>
-            <img
-              src={blog?.image}
-              width={"100%"}
-              height={"600px"}
-              style={{ objectFit: "cover",borderRadius:'4px' }}
-              alt=""
-            />
-          </Grid>
+            <Grid item lg={8} xs={12} px={{xs: '0 !important', sm: 'inherit'}}>
+              <Grid item lg={12} xs={12}>
+                <Box sx={{
+                  width: "100%", 
+                  overflow: "hidden",
+                  borderRadius: "4px"
+                }}>
+                  <img
+                    src={blog?.image}
+                    width={"100%"}
+                    height={{ xs: "250px", sm: "350px", md: "450px", lg: "600px" }}
+                    style={{ 
+                      objectFit: "cover",
+                      borderRadius: "4px",
+                      display: "block"
+                    }}
+                    alt=""
+                  />
+                </Box>
+              </Grid>
               <H4 color={"#000"} fontWeight={600} fontSize={20}>
                 {blog?.author_name}
               </H4>
@@ -141,216 +153,143 @@ const SingleBlog = () => {
                 {moment(blog?.updatedAt).format("D-MM-yyyy")}
               </Typography>
               <Typography mb={3} fontSize={16} color={"#000"}>
-                {parse(`${blog?.description}`)}
+                {<HtmlRenderer html={blog?.description}/>}
               </Typography>
-              {/* <Typography mb={3} fontSize={16} color={"#000"}>
-                Hosting isn't just about setting up a table and serving a meal.
-                It's all about curating an experience that puts everyone at
-                ease—even the host. Whether it's a lively gathering of friends
-                or an intimate dinner with family, having people over is a
-                heartwarming experience that brings love and laughter into our
-                lives. And to help you excel at the art of hosting, we've
-                gathered some playful yet practical tips and ideas from our
-                wonderful colleagues at Etsy India. With the festive season
-                right around the corner, we hope this guide helps you in having
-                a wonderful time with your loved ones.
-              </Typography> */}
-              {/* <Box>
-                <H4 color={"#000"} fontWeight={600} fontSize={26}>
-                  1. Quick and easy snack trays
-                </H4>
-                <Box component="figure" my={3} sx={{ textAlign: "center" }}>
-                  <img
-                    src="https://i.etsystatic.com/inv/73f1ea/5310016542/inv_620x495.5310016542_ukkxc6qi.jpg?version=0"
-                    width={"100%"}
-                    height={"500px"}
-                    style={{ objectFit: "cover", borderRadius: "6px" }}
-                    alt=""
-                  />
-                </Box>
-                <Typography mb={3} component="div" fontSize={18} color={"#000"}>
-                  {" "}
-                  <Typography component="span" fontSize={18} fontWeight={700}>
-                    SHOP:
-                  </Typography>{" "}
-                  <Link href="#" color={"#000"}>
-                    {" "}
-                    Oval baking dish{" "}
-                  </Link>{" "}
-                  from Follow TheDunes, Rs. 4,383
-                </Typography>
-                <Typography mb={3} fontSize={16} color={"#000"}>
-                  When asked for her favourite hosting tip, Vrishali’s mantra is
-                  simple: snacks, snacks, and some more snacks. Cheese, hummus,
-                  meats, breads, and fruits that are basically easy to eat and
-                  go well with the drinks. And this sturdy yet stylish serving
-                  board could be a practical addition to her party spread. It is
-                  made with mango wood and the reversible design can be used
-                  either side for cutting and serving.
-                </Typography>
-              </Box> */}
             </Grid>
           </Grid>
         </Grid>
       </Container>
 
-      {  realtedBlogs.length > 0 && <Container
-        sx={{ margin: "30px 0", background: "#ffe0c3", padding: "50px 16px" }}
-      >
-        <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
-          <Grid lg={12} item xs={12}>
-            <Box
-              display={"flex"}
-              justifyContent={"space-between"}
-              alignItems={"center"}
-            >
-              <Typography
-                component="div"
-                color={"#000"}
-                fontSize={16}
-                fontWeight={600}
+      {realtedBlogs.length > 0 && (
+        <Container
+          sx={{ margin: "30px 0", background: "#ffe0c3", padding: "50px 16px" }}
+        >
+          <Grid container width={{ xs: "100%", md: "calc(100% + -32px)" }} ml={0} spacing={4}>
+            <Grid lg={12} item xs={12}>
+              <Box
+                display={"flex"}
+                justifyContent={"space-between"}
+                alignItems={"center"}
+                sx={{ flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 0 } }}
               >
-                {" "}
-                {/* <Link
-                  sx={{
-                    textDecoration: "none",
-                    "&:hover": {
-                      textDecoration: "underline",
-                    },
-                  }}
+                <Typography
+                  component="div"
                   color={"#000"}
-                  href="#"
-                > */}
-                Recommended Posts
-                {/* </Link>{" "} */}
-              </Typography>
-              <Typography
-                component="div"
-                color="#000"
-                fontSize={16}
-                fontWeight={600}
-              >
-                <Link
-                  sx={{
-                    textDecoration: "none",
-                    color: "#000",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    "&:hover .icon": {
-                      transform: "translateX(4px)",
-                    },
-                  }}
-                  href="/blog"
+                  fontSize={16}
+                  fontWeight={600}
                 >
-                Read the Agukart Journal
-                <EastIcon
-                  className="icon"
-                  sx={{
-                    ml: 1,
-                    transition: "transform 0.3s ease",
-                  }}
-                />
-                </Link>
-              </Typography>
-            </Box>
-          </Grid>
-
-          {realtedBlogs.map((blog) => {
-            return (
-              <Grid  key={blog._id} lg={4} item xs={12}>
-                <Card
-                  sx={{
-                    "&:hover": { boxShadow: "0px 1px 3px rgb(3 0 71 / 84%)" },
-                  }}
+                  Recommended Posts
+                </Typography>
+                <Typography
+                  component="div"
+                  color="#000"
+                  fontSize={16}
+                  fontWeight={600}
                 >
-                  <CardMedia>
-                    <img
-                      src={blog.image}
-                      width={"100%"}
-                      alt=""
-                    />
-                  </CardMedia>
-                  <CardContent>
-                    {/* <Typography component="div" pb={1}>
-                      <Typography component="span">Shopping Guides</Typography>
-                      <Typography
-                        component="span"
-                        sx={{
-                          "&::before": {
-                            content: '" | "', // Note the double quotes within single quotes
-                          },
-                        }}
-                      >
-                        Style
-                      </Typography>
-                    </Typography> */}
-
-
-<Typography component="div" pb={1}>
-                      {blog.tag_id.map((tag, i) => {
-                        return (
-                          <>
-                            <Typography component="span">
-                              {tag.title}
-                            </Typography>
-
-                            {!(blog.tag_id.length - 1 === i) && (
-                              <Typography component="span"> | </Typography>
-                            )}
-
-                            {/* <Typography
-                              component="span"
-                              // sx={{
-                              //   "&::before": {
-                              //     content: '" | "',
-                              //   },
-                              // }}
-                            >
-                              {tag.title}
-                            </Typography> */}
-                          </>
-                        );
-                      })}
-                    </Typography>
-                    <Typography
-                      gutterBottom
-                      variant="h6"
-                      component="div"
+                  <Link
+                    sx={{
+                      textDecoration: "none",
+                      color: "#000",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      "&:hover .icon": {
+                        transform: "translateX(4px)",
+                      },
+                    }}
+                    href="/blog"
+                  >
+                    Read the Agukart Journal
+                    <EastIcon
+                      className="icon"
                       sx={{
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        whiteSpace: "normal",
-                        WebkitLineClamp: 1,
+                        ml: 1,
+                        transition: "transform 0.3s ease",
                       }}
-                    >
-                      <Link
-                        href={`/blog/single-blog/slug=${blog.slug}`}
-                        color="#000"
+                    />
+                  </Link>
+                </Typography>
+              </Box>
+            </Grid>
+
+            {realtedBlogs.map((blog) => {
+              return (
+                <Grid key={blog._id} lg={4} md={6} xs={12} item>
+                  <Card
+                    sx={{
+                      "&:hover": { boxShadow: "0px 1px 3px rgb(3 0 71 / 84%)" },
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <CardMedia sx={{ overflow: "hidden" }}>
+                      <img
+                        src={blog.image}
+                        width={"100%"}
+                        height={{ xs: "200px", sm: "250px" }}
+                        style={{ 
+                          objectFit: "cover",
+                          display: "block",
+                          width: "100%"
+                        }}
+                        alt=""
+                      />
+                    </CardMedia>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography component="div" pb={1}>
+                        {blog.tag_id.map((tag, i) => {
+                          return (
+                            <span key={tag._id || i}>
+                              <Typography component="span">
+                                {tag.title}
+                              </Typography>
+                              {!(blog.tag_id.length - 1 === i) && (
+                                <Typography component="span"> | </Typography>
+                              )}
+                            </span>
+                          );
+                        })}
+                      </Typography>
+                      <Typography
+                        gutterBottom
+                        variant="h6"
+                        component="div"
                         sx={{
-                          textDecoration: "none",
-                          "&:hover": {
-                            textDecoration: "underline",
-                          },
+                          textOverflow: "ellipsis",
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitBoxOrient: "vertical",
+                          whiteSpace: "normal",
+                          WebkitLineClamp: 1,
                         }}
                       >
-                       {blog.title}
-                      </Link>
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      {blog.short_description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </Container>}
+                        <Link
+                          href={`/blog/single-blog/slug=${blog.slug}`}
+                          color="#000"
+                          sx={{
+                            textDecoration: "none",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          }}
+                        >
+                          {blog.title}
+                        </Link>
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {blog.short_description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Container>
+      )}
     </>
   );
 };

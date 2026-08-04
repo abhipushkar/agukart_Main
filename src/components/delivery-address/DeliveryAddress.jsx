@@ -562,9 +562,9 @@ const DeliveryAddress = () => {
                     </Button>
                   </DialogActions>
                 </Dialog>
-                <Typography mt={2} variant="body2" color="text.secondary">
+                {/* <Typography mt={2} variant="body2" color="text.secondary">
                   By choosing “Dispatch here,” you agree to our Privacy Policy and may receive order confirmation on SMS or WhatsApp.
-                </Typography>
+                </Typography> */}
               </Grid>
               {/* RIGHT SIDE - Order Summary + Payment */}
               <Grid item xs={12} md={6}>
@@ -1090,7 +1090,7 @@ const DeliveryAddress = () => {
                         Save
                       </Button>
                     </Box>
-                    <Typography mt={1} sx={{ color: "#000" }}>
+                    {/* <Typography mt={1} sx={{ color: "#000" }}>
                       By choosing “Save,” you agree to Agukart’s{" "}
                       <Link
                         href="#"
@@ -1101,7 +1101,7 @@ const DeliveryAddress = () => {
                       and consent to receiving order confirmations from Agukart
                       and its service partners via SMS or WhatsApp using your
                       phone number. Message and data rates may apply.
-                    </Typography>
+                    </Typography> */}
                   </Box>
                 </Form>
               );

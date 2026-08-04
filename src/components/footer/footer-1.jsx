@@ -10,6 +10,9 @@ import { H2, H4, H6 } from "components/Typography";
 import { Paragraph } from "components/Typography";
 import { Heading } from "./styles";
 import Link from "next/link";
+import { Alert } from "@mui/material";
+import HeadsetMicTwoToneIcon from '@mui/icons-material/HeadsetMicTwoTone';
+
 export default function Footer1() {
   return (
     <>
@@ -106,9 +109,27 @@ export default function Footer1() {
                 /* SOCIAL LINKS WITH ICON */
               }
               <SocialLinks />
-              {/* <Link href="/contact-us" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Contact Us</Link> */}
+              <Alert severity="info" color="warning" sx={{ mt: 1,display: {xs: 'none', sm: 'flex'} }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+                <strong>Need help?</strong> Contact
+                <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
+                We're here to help you!
+              </Alert>
+
+              {/* <Typography component={'div'} display={'flex'} gap={1} pt={1}>
+                <HeadsetMicTwoToneIcon sx={{ fontSize: '38px', color: "#faf1c9" }} />
+                <Typography >
+                <strong>Need help?</strong> Contact
+                <a href="mailto:support@agukart.com" style={{ color: "#1b1c1d", textDecoration: "underline" }}><strong style={{marginLeft: '4px'}}>Agukart Support</strong></a><br />
+                We're here to help you!
+                </Typography>
+              </Typography> */}
             </Grid>
           </Grid>
+          <Alert severity="info" color="warning" sx={{ mt: 1, display: {xs: 'flex', sm: 'none'} }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+            <strong>Need help?</strong> Contact
+            <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
+            We're here to help you!
+          </Alert>
         </Box>
       </Box>
     </>
