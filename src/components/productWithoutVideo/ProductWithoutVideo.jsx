@@ -225,6 +225,7 @@ const ProductWithoutVideo = ({ product }) => {
           flexDirection: "column",
           cursor: "pointer",
           position: "relative",
+          flex: 1
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

@@ -46,7 +46,7 @@ const ChatContextProvider = ({ children }) => {
   const [searchText, setSearchText] = useState("");
   // pagination states
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [pageCursors, setPageCursors] = useState({});
   const [isLoading, setIsLoading] = useState(false);

@@ -17,10 +17,16 @@ export const RootStyle = styled("div", {
     marginInline: -space
   },
   ".slick-slide": {
-    paddingInline: space
+    paddingInline: space,
+    height: "auto",
   },
-  ".slick-track":{
-      marginTop:'12px'
+  ".slick-track": {
+    marginTop: '12px',
+    display: "flex",
+    alignItems: "stretch",
+  },
+  ".slick-slide > div": {
+    height: "100%",
   },
   ":hover": {
     ".slick-arrow": {

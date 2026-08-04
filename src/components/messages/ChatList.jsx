@@ -714,7 +714,7 @@ const ChatList = ({ chatListProp }) => {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[25, 50, 100, 200]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
           sx={{
             borderTop: '1px solid #e8eaed',
             flexShrink: 0,

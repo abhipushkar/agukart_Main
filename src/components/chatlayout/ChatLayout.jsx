@@ -238,6 +238,8 @@ const ChatLayout = ({ children }) => {
       if (chatData.orderId && chatData.subOrderId) {
         const { text, ...order } = chatData;
         setOrderData(order);
+      } else {
+        setOrderData(null);
       }
       const vendor_detail = vendorDetailsMap[chatData.receiverId];
       setSingleVendorDetails(vendor_detail || {});
