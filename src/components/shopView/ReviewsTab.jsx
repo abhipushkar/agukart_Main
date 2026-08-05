@@ -216,7 +216,7 @@ const ReviewsTab = ({ vendor_id, setSummary }) => {
               }}
             >
               <Avatar
-                src={"https://api.agukart.com/uploads/shop-icon/" + review.seller_reply.shop_image}
+                src={(review.seller_reply.shop_name === 'Agukart' ? "https://api.agukart.com/uploads/admin/" : "https://api.agukart.com/uploads/shop-icon/") + review.seller_reply.shop_image}
                 sx={{
                   width: 42,
                   height: 42,
@@ -327,7 +327,7 @@ const ReviewsTab = ({ vendor_id, setSummary }) => {
             <CircularProgress size={20} />
           </Box>
           :
-          <Box px={{xs: 0, md: 10}}>
+          <Box px={{ xs: 0, md: 10 }}>
             <Typography variant="h5" fontWeight={600}>
               Review
             </Typography>

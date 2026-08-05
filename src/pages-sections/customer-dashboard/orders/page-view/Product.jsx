@@ -530,7 +530,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                   <Box sx={{ mt: 2, bgcolor: "#fff", border: "1px solid #ececec", borderRadius: 2, p: 1 }}>
                     <Box sx={{ display: "flex", gap: 1.5 }}>
                       <Avatar
-                        src={review?.replyShopIcon ? shopBaseUrl + review?.replyShopIcon : undefined}
+                        src={review?.replyShopIcon ? (review?.replyShopName.toLowerCase() === "agukart" ? "https://api.agukart.com/uploads/admin/" : shopBaseUrl) + review?.replyShopIcon : undefined}
                         alt="Shop"
                         sx={{
                           width: 42,

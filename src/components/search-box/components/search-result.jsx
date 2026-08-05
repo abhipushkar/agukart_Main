@@ -15,7 +15,7 @@ export default function SearchResult({
   return <SearchResultCard elevation={2}>
       {
         productList.map(item => 
-          <Link href={item.source == "category"?`/category/${item.slug}`:`/${item.slug}`}>
+          <Link href={item.source === "category"?`/category/${item.fullSlug}` : item.source === "product" ? `product/${item.slug}/${item._id}` : `/${item.slug}`}>
             <MenuItem key={item._id}>{   item.title.replace(/<[^>]*>/g, "")  }</MenuItem>
           </Link>
         )

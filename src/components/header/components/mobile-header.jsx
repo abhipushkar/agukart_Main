@@ -74,31 +74,8 @@ export default function MobileHeader({ midSlot }) {
               top: { xs: 5, sm: 10 }
             }}
           >
-            <Box component={Link} href='/' width={'130px'}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 50" width="150" height="50">
-                <rect width="150" height="50" fill="transparent" />
-
-                <text
-                  x="75"
-                  y="30"
-                  fontFamily="'Constania', 'Playfair Display', Georgia, serif"
-                  fontSize="26"
-                  fontWeight="700"
-                  fill="#3a3949"
-                  letterSpacing="1.5"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  shapeRendering="geometricPrecision"
-                  style={{
-                    WebkitFontSmoothing: 'antialiased',
-                    MozOsxFontSmoothing: 'grayscale',
-                    textRendering: 'optimizeLegibility',
-                    fontVariantNumeric: 'proportional-nums',
-                  }}
-                >
-                  Agukart
-                </text>
-              </svg>
+            <Box component={Link} href='/' width='120px' height='fit-content' p={0} m={0}>
+              <Box component={'img'} src="/assets/images/Agukart-black.png" alt={'Agukart'} height={50} width={125} />
             </Box>
             <FlexBox>
               {token && (

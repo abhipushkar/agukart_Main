@@ -42,32 +42,9 @@ export default function Header({ isFixed, className, midSlot }) {
   const CONTENT_FOR_LARGE_DEVICE = (
     <Fragment>
       <FlexBox minWidth={100} alignItems="center">
-        <Link href="/">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60" width="160" height="60">
-            <rect width="160" height="60" fill="transparent" />
-
-            <text
-              x="80"
-              y="34"
-              fontFamily="'Constania', 'Playfair Display', Georgia, serif"
-              fontSize="30"
-              fontWeight="700"
-              fill="#3a3949"
-              letterSpacing="1.5"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              shapeRendering="geometricPrecision"
-              style={{
-                WebkitFontSmoothing: 'antialiased',
-                MozOsxFontSmoothing: 'grayscale',
-                textRendering: 'optimizeLegibility',
-                fontVariantNumeric: 'proportional-nums',
-              }}
-            >
-              Agukart
-            </text>
-          </svg>
-        </Link>
+        <Box component={Link} href="/" mr={3} maxHeight={'fit-content'} maxWidth={'fit-content'}>
+          <Box component={'img'} src="/assets/images/Agukart-black.png" alt={'Agukart'} height={70} width={160} />
+        </Box>
 
         {isFixed ? <CategoriesMenu /> : null}
       </FlexBox>

@@ -47,6 +47,8 @@ const ChatList = ({ chatListProp }) => {
     isLoading,
   } = useChat();
 
+  console.log(chats, "list")
+
   const senderId = usercredentials?._id;
 
   // Helper function to format the date
@@ -391,7 +393,7 @@ const ChatList = ({ chatListProp }) => {
                                 <img
                                   src={
                                     vendor?.image ||
-                                    "https://i.etsystatic.com/site-assets/images/avatars/default_avatar.png?width=75"
+                                    "https://api.agukart.com/uploads/admin/1785926627601-695348420.webp"
                                   }
                                   style={{
                                     borderRadius: "50%",

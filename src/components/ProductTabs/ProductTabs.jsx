@@ -310,7 +310,7 @@ const ReviewCard = ({ review, openImageDialog }) => (
                         }}
                     >
                         <Avatar
-                            src={"https://api.agukart.com/uploads/shop-icon/" + review.seller_reply.shop_image}
+                            src={(review.seller_reply.shop_name === 'Agukart' ? "https://api.agukart.com/uploads/admin/" : "https://api.agukart.com/uploads/shop-icon/") + review.seller_reply.shop_image}
                             sx={{
                                 width: 42,
                                 height: 42,
