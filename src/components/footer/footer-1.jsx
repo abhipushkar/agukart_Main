@@ -65,12 +65,11 @@ export default function Footer1() {
               sm: 0,
               md: 4,
             }}>
-              {/* <AboutLinks />  */}
-              <Heading>Help Center</Heading>
-              <Link href="/profile/orders" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Track Your Order</Link>
-              <Link href="" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Order Issues And Return</Link>
-              <Link href="/contact-shop" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Contact A Shop</Link>
-              <Link href="/profile" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Your Account</Link>
+            {/* <CustomerCareLinks />*/}
+            <Heading>Get to know us</Heading>
+            <Link href="/about" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >About Agukart</Link>
+            <Link href="/privacy-policy" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Policy</Link>
+            <Link href="/terms-condition" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Terms & Condition</Link>
             </Grid>
             {
               /* CUSTOMER CARE LINKS */
@@ -79,11 +78,12 @@ export default function Footer1() {
               sm: 0,
               md: 4,
             }}>
-              {/* <CustomerCareLinks />*/}
-              <Heading>Get to know us</Heading>
-              <Link href="/about" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >About Agukart</Link>
-              <Link href="/privacy-policy" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Policy</Link>
-              <Link href="/terms-condition" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Terms & Condition</Link>
+              {/* <AboutLinks />  */}
+              <Heading>Help Center</Heading>
+              <Link href="/profile/orders" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Track Your Order</Link>
+              <Link href="" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Order Issues And Return</Link>
+              <Link href="/contact-shop" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Contact A Shop</Link>
+              <Link href="/profile" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Your Account</Link>
             </Grid>
             {
               /* CONTACT & SOCIAL LINKS */
@@ -109,7 +109,7 @@ export default function Footer1() {
                 /* SOCIAL LINKS WITH ICON */
               }
               <SocialLinks />
-              <Alert severity="info" color="warning" sx={{ mt: 1,display: {xs: 'none', sm: 'flex'} }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+              <Alert severity="info" color="warning" sx={{ mt: 1,display: {xs: 'none', sm: 'flex'}, px:1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
                 <strong>Need help?</strong> Contact
                 <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
                 We're here to help you!
@@ -125,7 +125,7 @@ export default function Footer1() {
               </Typography> */}
             </Grid>
           </Grid>
-          <Alert severity="info" color="warning" sx={{ mt: 1, display: {xs: 'flex', sm: 'none'} }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+          <Alert severity="info" color="warning" sx={{ my: 2, display: {xs: 'flex', sm: 'none'}, px:1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
             <strong>Need help?</strong> Contact
             <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
             We're here to help you!

@@ -32,6 +32,7 @@ export default function SearchInputWithCategory() {
   const [cat, setCat] = useState([]);
   const [productList, setProductList] = useState([]);
   const [searchTerms, setSearchTerms] = useState(search || "");
+  const [isFocused, setIsFocused] = useState(false);
 
   const getCategories = async () => {
     try {
@@ -159,6 +160,13 @@ export default function SearchInputWithCategory() {
       maxWidth="670px"
       mx="auto"
       ref={parentRef}
+      onFocus={() => { if (!searchTerms.trim()) setProductList([]); setIsFocused(true); }}
+      onBlur={(e) => {
+        // Hide only when focus leaves the entire search component
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setIsFocused(false);
+        }
+      }}
     >
       <TextField
         fullWidth
@@ -171,7 +179,7 @@ export default function SearchInputWithCategory() {
       />
 
       {/* SHOW SEARCH RESULT LIST */}
-      {productList.length > 0 ? (
+      {productList.length > 0 && isFocused ? (
         <SearchResult productList={productList} />
       ) : null}
     </Box>
