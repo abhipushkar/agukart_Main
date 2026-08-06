@@ -59,9 +59,9 @@ const initialFilters = {
 };
 export default function ProductSearchPage() {
   const router = useRouter();
-  const searchPrams = useSearchParams();
-  const search = searchPrams.get("q");
-  let queryPage = searchPrams.get("page");
+  const searchParams = useSearchParams();
+  const search = searchParams.get("q");
+  let queryPage = searchParams.get("page");
   queryPage = queryPage ? parseInt(queryPage) : "";
   const [productList, setProductList] = useState([]);
   const [imageBaseUrl, setImageBaseUrl] = useState("");
@@ -71,7 +71,7 @@ export default function ProductSearchPage() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("relevance");
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(queryPage || 1);
+  const page = Number(searchParams.get("page")) || 1;
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen);
   };
@@ -114,6 +114,7 @@ export default function ProductSearchPage() {
       }
     } catch (error) {
       console.log(error);
+      setShopDetails({});
     }
   };
 
@@ -121,11 +122,11 @@ export default function ProductSearchPage() {
     getShopBySearch();
   }, [search]);
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
-    const currentParams = new URLSearchParams(window.location.search);
-    currentParams.set("page", value);
-    router.push(`${window.location.pathname}?${currentParams.toString()}`);
+  const handlePageChange = (_, value) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", value);
+
+    router.push(`/search-product-list?${params.toString()}`);
   };
 
   return (
