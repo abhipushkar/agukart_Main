@@ -1,24 +1,41 @@
 import Link from "next/link";
-import MenuItem from "@mui/material/MenuItem"; 
+import MenuItem from "@mui/material/MenuItem";
 // STYLED COMPONENT
 
-import { SearchResultCard } from "../styles"; 
+import { SearchResultCard } from "../styles";
+import Typography from '@mui/material/Typography'
 // ==============================================================
 
 
 // ==============================================================
 export default function SearchResult({
   productList
-})
-{
-  console.log({productList}, "banda jeeta tha");
+}) {
+  const getUrl = (item) => {
+    const source = item.source;
+
+    switch (source) {
+      case "category":
+        return `/category/${item.fullSlug}`;
+      case "product":
+        return `/product/${item.slug}/${item.product_code}`;
+      case "shop":
+        return `/store/${item.slug}`;
+      case "adminCategory":
+        return `/${item.fullSlug}`;
+      case "brand":
+        return item.link;
+      default:
+        return "/";
+    }
+  };
   return <SearchResultCard elevation={2}>
-      {
-        productList.map(item => 
-          <Link href={item.source === "category"?`/category/${item.fullSlug}` : item.source === "product" ? `product/${item.slug}/${item._id}` : `/${item.slug}`}>
-            <MenuItem key={item._id}>{   item.title.replace(/<[^>]*>/g, "")  }</MenuItem>
-          </Link>
-        )
-      }
-    </SearchResultCard>;
+    {
+      productList.map(item =>
+        <Link key={item._id} href={getUrl(item)}>
+          <MenuItem key={item._id}><Typography noWrap sx={{ width: "100%" }}>{item.title.replace(/<[^>]*>/g, "").replace("&amp;", "&")}</Typography></MenuItem>
+        </Link>
+      )
+    }
+  </SearchResultCard>;
 }
