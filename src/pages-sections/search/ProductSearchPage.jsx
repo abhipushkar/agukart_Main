@@ -79,7 +79,7 @@ export default function ProductSearchPage() {
     try {
       setLoading(true);
       const res = await getAPIAuth(
-        `search-product-list?q=${search}&page=${page}&limit=16&sortBy=${sortBy}`
+        `search-product-list?q=${search}&page=${page}&limit=64&sortBy=${sortBy}`
       );
       if (res.status === 200) {
         setLoading(false);

@@ -30,16 +30,16 @@ import ProductActions from "components/ProductActions/ProductActions";
 import QuantitySelector from "components/QuantitySelector/QuantitySelector";
 import MessagePopup from "./MessagePopup";
 import ShareModal from "./ShareModal";
-import SimilarProducts from "./SimilarProducts/SimilarProducts";
-import ShopProducts from "./ShopProducts/ShopProducts";
 import ReportItem from "./ReportItem";
+
 // Services
 import { getAPI, getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import useMyProvider from "hooks/useMyProvider";
 import ProductRating from "components/ProductRating/ProductRating";
 import ProductPricing from "components/ProductPricing/ProductPricing";
-import { limit } from "firebase/firestore";
+
+
 const MyproductDetails = ({ res }) => {
   // Hooks and Context
   const { currency } = useCurrency();
@@ -68,6 +68,7 @@ const MyproductDetails = ({ res }) => {
   const [hoveredCustomizationImage, setHoveredCustomizationImage] =
     useState(null);
   const pathname = useParams();
+  console.log(pathname, "path")
   const [reviewData, setReviewData] = useState({});
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewType, setReviewType] = useState("shop");   // "item" || "shop"
@@ -107,7 +108,7 @@ const MyproductDetails = ({ res }) => {
   } = useProductCustomization(myproduct);
   const viewProduct = async () => {
     try {
-      const id = pathname.productId;
+      const id = pathname.productId || myproduct?._id;
       const res = await postAPIAuth("user/add-viewed-products", {
         product_id: id || res.data._id,
       });
@@ -558,7 +559,8 @@ const MyproductDetails = ({ res }) => {
     }
     // Reset URL initialization flag when product ID changes
     urlInitializedRef.current = false;
-  }, [pathname.productId]);
+  }, [pathname.productId, pathname.product_code]);
+
   useEffect(() => {
     if (token && myproduct) {
       getVendorDetailBySlug();
