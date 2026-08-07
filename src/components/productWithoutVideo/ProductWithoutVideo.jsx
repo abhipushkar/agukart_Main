@@ -254,7 +254,7 @@ const ProductWithoutVideo = ({ product }) => {
           >
             <img
               alt="image"
-              src={product.base_url + product.image[0]}
+              src={product.base_url +(product.edited_image || product.image[0])}
               style={{
                 objectFit: "contain",
                 width: "100%",
