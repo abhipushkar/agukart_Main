@@ -135,7 +135,7 @@ const section17 = () => {
                 {dealData.box1_category.map((cat) => (
                   <Grid key={cat._id} item xs={6}>
                     <Link
-                      href={`/${cat.slug}`}
+                      href={`/${cat.fullSlug}`}
                       style={{ textDecoration: "none", color: "inherit" }}
                     >
                       <Box sx={{
@@ -227,7 +227,7 @@ const section17 = () => {
               {dealData.box2_category.map((cat) => (
                 <Link
                   key={cat._id}
-                  href={`/${cat.slug}`}
+                  href={`/${cat.fullSlug}`}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
                   <Box sx={{
@@ -312,7 +312,7 @@ const section17 = () => {
                 {dealData.box3_category.map((cat) => (
                   <Grid key={cat._id} item xs={6}>
                     <Link
-                      href={`/${cat.slug}`}
+                      href={`/${cat.fullSlug}`}
                       style={{ textDecoration: "none", color: "inherit" }}
                     >
                       <Box sx={{
@@ -404,7 +404,7 @@ const section17 = () => {
               {/* Large Top Item */}
               {dealData.box4_category[0] && (
                 <Link
-                  href={`/${dealData.box4_category[0]?.slug}`}
+                  href={`/${dealData.box4_category[0]?.fullSlug}`}
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
                   <Box sx={{
@@ -459,7 +459,7 @@ const section17 = () => {
                 {dealData.box4_category.slice(1, 4).map((cat) => (
                   <Grid key={cat._id} item xs={4}>
                     <Link
-                      href={`/${cat.slug}`}
+                      href={`/${cat.fullSlug}`}
                       style={{ textDecoration: "none", color: "inherit" }}
                     >
                       <Box sx={{
