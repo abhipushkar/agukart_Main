@@ -109,6 +109,7 @@ const MyproductDetails = ({ res }) => {
   const viewProduct = async () => {
     try {
       const id = pathname.productId || myproduct?._id;
+      if(!id) return;
       const res = await postAPIAuth("user/add-viewed-products", {
         product_id: id || res.data._id,
       });
@@ -554,12 +555,16 @@ const MyproductDetails = ({ res }) => {
   // Effects
   useEffect(() => {
     fetchProductHandler();
-    if (token) {
-      viewProduct();
-    }
+
     // Reset URL initialization flag when product ID changes
     urlInitializedRef.current = false;
   }, [pathname.productId, pathname.product_code]);
+
+  useEffect(() => {
+    if (!token || !myproduct) return;
+
+    viewProduct();
+  }, [token, myproduct]);
 
   useEffect(() => {
     if (token && myproduct) {
@@ -719,7 +724,7 @@ const MyproductDetails = ({ res }) => {
     }
     const getProductReviews = async (product_id, vendor_id) => {
       try {
-        const baseurl = '/product-reviews';
+        const baseurl = 'product-reviews';
         const queryPayload = {
           product_id,
           vendor_id,
