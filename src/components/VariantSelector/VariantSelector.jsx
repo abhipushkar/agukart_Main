@@ -351,24 +351,7 @@ const VariantSelector = ({
     };
   }, [variant.attributes, isMobile]);
 
-  // Scroll to page function
-  // const scrollToPage = useCallback(
-  //   (page) => {
-  //     if (!scrollRef.current || !pageWidthRef.current) return;
 
-  //     const targetPage = Math.max(0, Math.min(page, totalPages - 1));
-  //     const scrollPosition = targetPage * pageWidthRef.current;
-
-  //     scrollRef.current.scrollTo({
-  //       left: scrollPosition,
-  //       behavior: "smooth",
-  //     });
-
-  //     // Update page immediately for better UX
-  //     setCurrentPage(targetPage);
-  //   },
-  //   [totalPages]
-  // );
   const scrollToPage = useCallback((page) => {
     if (!scrollRef.current) return;
 
@@ -385,70 +368,7 @@ const VariantSelector = ({
     // setCurrentPage(targetPage); no flicker
   }, [totalPages]);
 
-  // Handle scroll with proper debouncing and edge detection
-  // const handleScroll = useCallback(
-  //   debounce(() => {
-  //     if (
-  //       !scrollRef.current ||
-  //       !pageWidthRef.current ||
-  //       pageWidthRef.current <= 0
-  //     )
-  //       return;
 
-  //     const scrollLeft = scrollRef.current.scrollLeft;
-  //     const scrollWidth = scrollRef.current.scrollWidth;
-  //     const clientWidth = scrollRef.current.clientWidth;
-
-  //     // Handle edge cases
-  //     if (scrollWidth <= clientWidth) {
-  //       setCurrentPage(0);
-  //       return;
-  //     }
-
-  //     // Calculate current page with edge detection
-  //     const pageWidth = pageWidthRef.current;
-  //     const maxScroll = scrollWidth - clientWidth;
-
-  //     // Check if at the beginning or end
-  //     if (scrollLeft <= 0) {
-  //       setCurrentPage(0);
-  //       return;
-  //     }
-
-  //     if (scrollLeft >= maxScroll - 5) {
-  //       // 5px tolerance for rounding errors
-  //       setCurrentPage(totalPages - 1);
-  //       return;
-  //     }
-
-  //     // Calculate current page with rounding
-  //     const calculatedPage = Math.round(scrollLeft / pageWidth);
-  //     const boundedPage = Math.max(0, Math.min(calculatedPage, totalPages - 1));
-
-  //     if (boundedPage !== currentPage) {
-  //       setCurrentPage(boundedPage);
-  //     }
-  //   }, 100),
-  //   [totalPages, currentPage]
-  // );
-
-  // Enhanced scroll handler that also fires immediately
-  // const handleScrollImmediate = useCallback(() => {
-  //   if (!scrollRef.current || !pageWidthRef.current) return;
-
-  //   const scrollLeft = scrollRef.current.scrollLeft;
-  //   const pageWidth = pageWidthRef.current;
-
-  //   if (pageWidth > 0) {
-  //     const calculatedPage = Math.round(scrollLeft / pageWidth);
-  //     if (calculatedPage !== currentPage) {
-  //       setCurrentPage(calculatedPage);
-  //     }
-  //   }
-
-  //   // Call the debounced handler
-  //   handleScroll();
-  // }, [currentPage, handleScroll]);
 
   const handleScrollImmediate = useCallback(() => {
     if (!scrollRef.current) return;
@@ -1354,12 +1274,14 @@ const renderInternalVariantDropdown = () => {
                 onMouseLeave={() => onHoverOut && onHoverOut()}
                 sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}
               >
-                {attr.thumbnail && (
+                {attr.thumbnail ? (
                   <img
                     src={attr.thumbnail}
                     alt=""
                     style={{ width: "48px", height: "48px", borderRadius: "4px", objectFit: "cover" }}
                   />
+                ) : (
+                  <Box sx={{width: "48px", height: "48px", bgcolor: 'transparent'}}/>
                 )}
                 <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography variant="body2">{attr.value}</Typography>
