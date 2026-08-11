@@ -286,7 +286,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
             >
               <img
                 alt={product?.altText?.[0] || product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 8).join(" ") || "Product Image"}
-                src={imageBaseUrl + (product?.edited_image || product?.image[0])}
+                src={(product?.matchedVariant && product?.matchedVariant.image) ? product?.matchedVariant.image : (imageBaseUrl + (product?.edited_image || product?.image[0]))}
                 style={{
                   objectFit: "contain",
                   width: "100%",
