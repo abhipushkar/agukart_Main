@@ -88,6 +88,8 @@ export default function SearchInputWithCategory() {
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter") {
+
+      setIsFocused(false);
       navigateSearch();
     }
   };

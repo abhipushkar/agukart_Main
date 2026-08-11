@@ -226,8 +226,15 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       ? getTimeLeftText(promotion.start_date, promotion.expiry_date)
       : null;
 
-  // Helper to check if we should show next promotion
-  const shouldShowNextPromotion = nextPromotion?.offer_type;
+  const productImage = 
+    (product?.matchedVariant && product?.matchedVariant.image) 
+    ? product?.matchedVariant.image
+    : (product?.matchedCustomization && product?.matchedCustomization?.image)
+      ? product?.matchedCustomization?.image
+      : (imageBaseUrl + (product?.edited_image || product?.image[0]));
+
+  const imageAlt = product?.altText?.[0] || product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 8).join(" ") || "Product Image";
+
 
   return (
     <Link
@@ -285,8 +292,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               }}
             >
               <img
-                alt={product?.altText?.[0] || product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 8).join(" ") || "Product Image"}
-                src={(product?.matchedVariant && product?.matchedVariant.image) ? product?.matchedVariant.image : (imageBaseUrl + (product?.edited_image || product?.image[0]))}
+                alt={imageAlt}
+                src={productImage}
                 style={{
                   objectFit: "contain",
                   width: "100%",

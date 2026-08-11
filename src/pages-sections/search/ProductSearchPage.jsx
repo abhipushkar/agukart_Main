@@ -141,10 +141,10 @@ export default function ProductSearchPage() {
   return (
     <div className="bg-white pt-2 pb-4">
       <Container sx={{ padding: "30px 16px" }}>
-        <Container>
+        <Box>
           <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
             <Grid item lg={12} md={12} xs={12}>
-              <FlexBetween flexWrap="wrap" gap={2} mb={2}>
+              <FlexBetween flexWrap="wrap" gap={2} mb={2} p={0}>
                 <Box>
                   {/* <Button onClick={toggleDrawer(true)}
                     variant="text"
@@ -236,7 +236,7 @@ export default function ProductSearchPage() {
               </FlexBetween>
             </Grid>
           </Grid>
-        </Container>
+        </Box>
         {loading ? (
           <Container sx={{ padding: "30px 16px" }}>
             <Grid container spacing={4}>
@@ -248,13 +248,12 @@ export default function ProductSearchPage() {
             </Grid>
           </Container>
         ) : (
-          <Container sx={{ padding: "30px 16px" }}>
-            <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
+          <Box m={{xs: 0, sm: 4}}>
+            <Grid container spacing={4}>
               {productList?.length > 0 ? (
                 productList?.map((product) => (
-                  <Grid item lg={3} md={4} xs={6}>
+                  <Grid key={product._id} item xs={6} md={4} lg={3}>
                     <Product
-                      key={product._id}
                       product={product}
                       imageBaseUrl={imageBaseUrl}
                       videoBaseUrl={videoBaseUrl}
@@ -278,7 +277,7 @@ export default function ProductSearchPage() {
                 </Box>
               )}
             </Grid>
-          </Container>
+          </Box>
         )}
         {productList?.length > 0 && (
           <Box mt={4} display="flex" justifyContent="center">
