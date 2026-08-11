@@ -202,6 +202,7 @@ useEffect(() => {
                       }}
                     >
                       <Box sx={{ textAlign: "center" }}>
+                        <Link href={`/${item.slug}`}>
                         <img
                           alt={item.title}
                           src={item.image}
@@ -212,8 +213,9 @@ useEffect(() => {
                             margin: "0 auto",
                           }}
                         />
+                        </Link>
                         <Link
-                          href={`product?slug=${item.slug}&id=${item._id}&title=${item.title}`}
+                          href={`/${item.slug}`}
                         >
                           <Typography
                             style={{ textTransform: "capitalize" }}

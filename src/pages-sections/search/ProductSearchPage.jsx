@@ -61,15 +61,13 @@ export default function ProductSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const search = searchParams.get("q");
-  let queryPage = searchParams.get("page");
-  queryPage = queryPage ? parseInt(queryPage) : "";
   const [productList, setProductList] = useState([]);
   const [imageBaseUrl, setImageBaseUrl] = useState("");
   const [videoBaseUrl, setVideoBaseUrl] = useState("");
   const [shopDetails, setShopDetails] = useState({});
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("relevance");
+  const sortBy = searchParams.get("sortBy") || "relevance";
   const [totalPages, setTotalPages] = useState(1);
   const page = Number(searchParams.get("page")) || 1;
   const toggleDrawer = (newOpen) => () => {
@@ -86,6 +84,7 @@ export default function ProductSearchPage() {
         setImageBaseUrl(res?.data?.base_url);
         setVideoBaseUrl(res?.data?.video_base_url);
         setProductList(res?.data?.data);
+        console.log('list', res?.data?.data.slice(0,6));
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {
@@ -96,7 +95,17 @@ export default function ProductSearchPage() {
     }
   };
 
-  const handleChangeSortBy = useCallback((v) => setSortBy(v), []);
+  const handleChangeSortBy = useCallback(
+    (value) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      params.set("sortBy", value);
+      params.set("page", "1");
+
+      router.push(`/search-product-list?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
   useEffect(() => {
     if (search) {
