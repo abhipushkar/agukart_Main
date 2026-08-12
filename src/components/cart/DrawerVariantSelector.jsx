@@ -469,6 +469,7 @@ const DrawerVariantSelector = ({
     };
 
     const showPrice = form_values?.isCheckedPrice && form_values?.prices?.includes(variant.name);
+    const anyHaveThumbnail = variant.attributes.some((attr) => attr.thumbnail);
 
     // Desktop: Use Menu with left-aligned popover
     return (
@@ -553,15 +554,15 @@ const DrawerVariantSelector = ({
                   onMouseLeave={() => onHoverOut && onHoverOut()}
                   sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}
                 >
-                  {attr.thumbnail ? (
+                  {anyHaveThumbnail && (attr.thumbnail ? (
                     <img
                       src={attr.thumbnail}
                       alt=""
                       style={{ width: "32px", height: "32px", borderRadius: "4px", objectFit: "cover" }}
                     />
-                  ):(
-                    <Box sx={{width: "32px", height: "32px"}}/>
-                  )}
+                  ) : (
+                    <Box sx={{ width: "32px", height: "32px" }} />
+                  ))}
                   <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <Typography variant="body2">{attr.value}</Typography>
                     {priceText && (
