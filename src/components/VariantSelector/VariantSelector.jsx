@@ -1142,249 +1142,252 @@ const VariantSelector = ({
     return "";
   };
 
-const renderInternalVariantDropdown = () => {
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const menuOpen = Boolean(menuAnchorEl);
+  const renderInternalVariantDropdown = () => {
+    const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+    const menuOpen = Boolean(menuAnchorEl);
 
-  const handleMenuOpen = (event) => {
-    setMenuAnchorEl(event.currentTarget);
-    setIsViewAllOpen(false);
-  };
+    const handleMenuOpen = (event) => {
+      setMenuAnchorEl(event.currentTarget);
+      setIsViewAllOpen(false);
+    };
 
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
-    onHoverOut && onHoverOut();
-  };
+    const handleMenuClose = () => {
+      setMenuAnchorEl(null);
+      onHoverOut && onHoverOut();
+    };
 
-  const handleViewAllClick = (e) => {
-    e.stopPropagation();
-    handleMenuClose();
-    setIsViewAllOpen(true);
-  };
+    const handleViewAllClick = (e) => {
+      e.stopPropagation();
+      handleMenuClose();
+      setIsViewAllOpen(true);
+    };
 
-  const handleImageSelect = (attr) => {
-    setIsViewAllOpen(false);
-    onChange(variant.id, attr.id);
-    handleMenuClose();
-  };
+    const handleImageSelect = (attr) => {
+      setIsViewAllOpen(false);
+      onChange(variant.id, attr.id);
+      handleMenuClose();
+    };
 
-  const showPrice = form_values?.isCheckedPrice && form_values?.prices?.includes(`${variant.name}`);
+    const showPrice = form_values?.isCheckedPrice && form_values?.prices?.includes(`${variant.name}`);
+    const anyHaveThumbnail = variant.attributes.some(
+      (attr) => attr.thumbnail
+    );
 
-  return (
-    <Grid item xs={12} sx={{ mb: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Typography variant="h6" sx={{ fontSize: "17px" }}>
-          {variant.name}
-        </Typography>
-        {hasGuide && (
-          <Button
-            onClick={handleGuideClick}
-            size="small"
-            variant="outlined"
+    return (
+      <Grid item xs={12} sx={{ mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+          <Typography variant="h6" sx={{ fontSize: "17px" }}>
+            {variant.name}
+          </Typography>
+          {hasGuide && (
+            <Button
+              onClick={handleGuideClick}
+              size="small"
+              variant="outlined"
+              sx={{
+                fontSize: "12px",
+                padding: "2px 8px",
+                minWidth: "auto",
+                textTransform: "none",
+                borderColor: "#D23F57",
+                color: "#D23F57",
+                "&:hover": {
+                  borderColor: "#b32e44",
+                  backgroundColor: "rgba(210, 63, 87, 0.04)",
+                },
+              }}
+            >
+              {variant.guide_name}
+            </Button>
+          )}
+        </Box>
+
+        <Box>
+          <Box
+            ref={triggerRef}
+            onClick={handleMenuOpen}
             sx={{
-              fontSize: "12px",
-              padding: "2px 8px",
-              minWidth: "auto",
-              textTransform: "none",
-              borderColor: "#D23F57",
-              color: "#D23F57",
-              "&:hover": {
-                borderColor: "#b32e44",
-                backgroundColor: "rgba(210, 63, 87, 0.04)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              border: "none",
+              background: "#fff",
+              height: "40px",
+              boxShadow: "0 0 3px #000",
+              cursor: "pointer",
+              userSelect: "none",
+              borderRadius: "4px",
+              px: 2,
+            }}
+          >
+            <Typography>{selectedAttr?.value || "Select an option"}</Typography>
+            <Box sx={{ color: "grey" }}>{menuOpen ? "⏶" : "⏷"}</Box>
+          </Box>
+
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={menuOpen}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "left",
+            }}
+            PaperProps={{
+              sx: {
+                maxHeight: "300px",
+                width: triggerRef.current?.offsetWidth || 280,
+                mt: 1,
               },
             }}
           >
-            {variant.guide_name}
-          </Button>
-        )}
-      </Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, borderBottom: "1px solid #eee", pr: 1 }}>
+              <MenuItem onClick={() => { onChange(variant.id, ""); handleMenuClose(); }} sx={{ flex: 1, py: 1 }}>
+                <em>Select an option</em>
+              </MenuItem>
+              {variant.viewAllVisible && (
+                <Button onClick={handleViewAllClick} size="small" variant="text" sx={{ fontSize: "12px", textTransform: "none", color: "#D23F57", fontWeight: "bold" }}>
+                  View All
+                </Button>
+              )}
+            </Box>
 
-      <Box>
-        <Box
-          ref={triggerRef}
-          onClick={handleMenuOpen}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            border: "none",
-            background: "#fff",
-            height: "40px",
-            boxShadow: "0 0 3px #000",
-            cursor: "pointer",
-            userSelect: "none",
-            borderRadius: "4px",
-            px: 2,
-          }}
-        >
-          <Typography>{selectedAttr?.value || "Select an option"}</Typography>
-          <Box sx={{ color: "grey" }}>{menuOpen ? "⏶" : "⏷"}</Box>
+            {variant.attributes.map((attr) => {
+              const isDisabled = isAttributeDisabled(attr);
+              const isVisible = isAttributeVisible(attr);
+              const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
+              const priceText = showPrice ? renderAttributePriceForDropdown(attr) : "";
+
+              if (!isVisible) return null;
+
+              return (
+                <MenuItem
+                  key={attr.id}
+                  onClick={() => {
+                    if (isDisabled) return;
+                    onChange(variant.id, attr.id);
+                    handleMenuClose();
+                  }}
+                  disabled={isDisabled}
+                  selected={isSelected}
+                  onMouseEnter={() => !isDisabled && onHover && menuOpen && onHover(attr.id)}
+                  onMouseLeave={() => onHoverOut && onHoverOut()}
+                  sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}
+                >
+                  {anyHaveThumbnail && (attr.thumbnail ? (
+                    <img
+                      src={attr.thumbnail}
+                      alt=""
+                      style={{ width: "48px", height: "48px", borderRadius: "4px", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Box sx={{ width: "48px", height: "48px", bgcolor: 'transparent' }} />
+                  ))}
+                  <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Typography variant="body2">{attr.value}</Typography>
+                    {priceText && (
+                      <Typography variant="caption" sx={{ color: "#666", ml: 1 }}>
+                        {priceText}
+                      </Typography>
+                    )}
+                    {isDisabled && (
+                      <Typography variant="caption" sx={{ color: "#d32f2f", ml: 1 }}>
+                        Sold Out
+                      </Typography>
+                    )}
+                  </Box>
+                </MenuItem>
+              );
+            })}
+          </Menu>
         </Box>
 
-        <Menu
-          anchorEl={menuAnchorEl}
-          open={menuOpen}
-          onClose={handleMenuClose}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "left",
-          }}
-          transformOrigin={{
-            vertical: "top",
-            horizontal: "left",
-          }}
+        {error && (
+          <Typography color="error" sx={{ mt: 1, fontSize: "14px" }}>
+            {error}
+          </Typography>
+        )}
+
+        {renderGuideModal()}
+
+        {/* View All Dialog - separate from Menu */}
+        <Dialog
+          open={isViewAllOpen}
+          onClose={() => setIsViewAllOpen(false)}
+          fullWidth
+          maxWidth="md"
           PaperProps={{
             sx: {
-              maxHeight: "300px",
-              width: triggerRef.current?.offsetWidth || 280,
-              mt: 1,
+              borderRadius: "12px",
+              maxHeight: "90vh",
             },
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, borderBottom: "1px solid #eee", pr: 1 }}>
-            <MenuItem onClick={() => { onChange(variant.id, ""); handleMenuClose(); }} sx={{ flex: 1, py: 1 }}>
-              <em>Select an option</em>
-            </MenuItem>
-            {variant.viewAllVisible && (
-              <Button onClick={handleViewAllClick} size="small" variant="text" sx={{ fontSize: "12px", textTransform: "none", color: "#D23F57", fontWeight: "bold" }}>
-                View All
-              </Button>
-            )}
-          </Box>
+          <DialogContent sx={{ p: 0 }}>
+            <Box sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, pb: 1, borderBottom: "1px solid #eee" }}>
+                <Typography variant="h6" sx={{ fontSize: "17px" }}>{variant.name}</Typography>
+                <IconButton onClick={() => setIsViewAllOpen(false)} size="small">✕</IconButton>
+              </Box>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(auto-fill, minmax(180px, 1fr))" }, gap: 2, overflowY: "auto", maxHeight: "70vh", pr: 1 }}>
+                {variant.attributes.map((attr) => {
+                  const isDisabled = isAttributeDisabled(attr);
+                  const isVisible = isAttributeVisible(attr);
+                  const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
+                  if (!isVisible) return null;
 
-          {variant.attributes.map((attr) => {
-            const isDisabled = isAttributeDisabled(attr);
-            const isVisible = isAttributeVisible(attr);
-            const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
-            const priceText = showPrice ? renderAttributePriceForDropdown(attr) : "";
+                  const cleanImages = (attr.images || []).filter(img => img && typeof img === "string" && img.trim() !== "");
+                  let imageSrc = null;
+                  if (cleanImages.length) imageSrc = cleanImages[0];
+                  else if (attr.preview_image && attr.preview_image !== '__DELETE__') imageSrc = attr.preview_image;
+                  else if (productMainImage) imageSrc = Array.isArray(productMainImage) ? `https://api.agukart.com/uploads/product/${productMainImage[0]}` : `https://api.agukart.com/uploads/product/${productMainImage}`;
 
-            if (!isVisible) return null;
+                  const thumbnailSrc = attr.thumbnail;
+                  const showThumbnail = cleanImages.length === 0 && !(attr.preview_image && attr.preview_image !== '__DELETE__');
 
-            return (
-              <MenuItem
-                key={attr.id}
-                onClick={() => {
-                  if (isDisabled) return;
-                  onChange(variant.id, attr.id);
-                  handleMenuClose();
-                }}
-                disabled={isDisabled}
-                selected={isSelected}
-                onMouseEnter={() => !isDisabled && onHover && menuOpen && onHover(attr.id)}
-                onMouseLeave={() => onHoverOut && onHoverOut()}
-                sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}
-              >
-                {attr.thumbnail ? (
-                  <img
-                    src={attr.thumbnail}
-                    alt=""
-                    style={{ width: "48px", height: "48px", borderRadius: "4px", objectFit: "cover" }}
-                  />
-                ) : (
-                  <Box sx={{width: "48px", height: "48px", bgcolor: 'transparent'}}/>
-                )}
-                <Box sx={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Typography variant="body2">{attr.value}</Typography>
-                  {priceText && (
-                    <Typography variant="caption" sx={{ color: "#666", ml: 1 }}>
-                      {priceText}
-                    </Typography>
-                  )}
-                  {isDisabled && (
-                    <Typography variant="caption" sx={{ color: "#d32f2f", ml: 1 }}>
-                      Sold Out
-                    </Typography>
-                  )}
-                </Box>
-              </MenuItem>
-            );
-          })}
-        </Menu>
-      </Box>
-
-      {error && (
-        <Typography color="error" sx={{ mt: 1, fontSize: "14px" }}>
-          {error}
-        </Typography>
-      )}
-
-      {renderGuideModal()}
-
-      {/* View All Dialog - separate from Menu */}
-      <Dialog
-        open={isViewAllOpen}
-        onClose={() => setIsViewAllOpen(false)}
-        fullWidth
-        maxWidth="md"
-        PaperProps={{
-          sx: {
-            borderRadius: "12px",
-            maxHeight: "90vh",
-          },
-        }}
-      >
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 2 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, pb: 1, borderBottom: "1px solid #eee" }}>
-              <Typography variant="h6" sx={{ fontSize: "17px" }}>{variant.name}</Typography>
-              <IconButton onClick={() => setIsViewAllOpen(false)} size="small">✕</IconButton>
-            </Box>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(auto-fill, minmax(180px, 1fr))" }, gap: 2, overflowY: "auto", maxHeight: "70vh", pr: 1 }}>
-              {variant.attributes.map((attr) => {
-                const isDisabled = isAttributeDisabled(attr);
-                const isVisible = isAttributeVisible(attr);
-                const isSelected = selectedAttr && (selectedAttr.id === attr.id || selectedAttr.value === attr.value);
-                if (!isVisible) return null;
-
-                const cleanImages = (attr.images || []).filter(img => img && typeof img === "string" && img.trim() !== "");
-                let imageSrc = null;
-                if (cleanImages.length) imageSrc = cleanImages[0];
-                else if (attr.preview_image && attr.preview_image !== '__DELETE__') imageSrc = attr.preview_image;
-                else if (productMainImage) imageSrc = Array.isArray(productMainImage) ? `https://api.agukart.com/uploads/product/${productMainImage[0]}` : `https://api.agukart.com/uploads/product/${productMainImage}`;
-
-                const thumbnailSrc = attr.thumbnail;
-                const showThumbnail = cleanImages.length === 0 && !(attr.preview_image && attr.preview_image !== '__DELETE__');
-
-                return (
-                  <Box
-                    key={attr.id}
-                    onClick={() => { if (isDisabled) return; handleImageSelect(attr); }}
-                    sx={{
-                      cursor: isDisabled ? "not-allowed" : "pointer",
-                      opacity: isDisabled ? 0.5 : 1,
-                      border: isSelected ? "2px solid #D23F57" : "1px solid #e0e0e0",
-                      borderRadius: "8px",
-                      overflow: "hidden",
-                      transition: "all 0.2s ease",
-                      "&:hover": { transform: isDisabled ? "none" : "translateY(-2px)", boxShadow: isDisabled ? "none" : "0 4px 12px rgba(0,0,0,0.1)" }
-                    }}
-                  >
-                    <Box sx={{ position: "relative", paddingTop: "100%", backgroundColor: "#f5f5f5" }}>
-                      {imageSrc ? (
-                        <img src={imageSrc} alt={attr.value} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f5f5f5", color: "#999" }}>No Image</Box>
-                      )}
-                      {showThumbnail && thumbnailSrc && (
-                        <Box sx={{ position: "absolute", bottom: "8px", right: "8px", width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden", border: "2px solid white", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", backgroundColor: "white" }}>
-                          <img src={thumbnailSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        </Box>
-                      )}
+                  return (
+                    <Box
+                      key={attr.id}
+                      onClick={() => { if (isDisabled) return; handleImageSelect(attr); }}
+                      sx={{
+                        cursor: isDisabled ? "not-allowed" : "pointer",
+                        opacity: isDisabled ? 0.5 : 1,
+                        border: isSelected ? "2px solid #D23F57" : "1px solid #e0e0e0",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        transition: "all 0.2s ease",
+                        "&:hover": { transform: isDisabled ? "none" : "translateY(-2px)", boxShadow: isDisabled ? "none" : "0 4px 12px rgba(0,0,0,0.1)" }
+                      }}
+                    >
+                      <Box sx={{ position: "relative", paddingTop: "100%", backgroundColor: "#f5f5f5" }}>
+                        {imageSrc ? (
+                          <img src={imageSrc} alt={attr.value} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f5f5f5", color: "#999" }}>No Image</Box>
+                        )}
+                        {showThumbnail && thumbnailSrc && (
+                          <Box sx={{ position: "absolute", bottom: "8px", right: "8px", width: "48px", height: "48px", borderRadius: "4px", overflow: "hidden", border: "2px solid white", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", backgroundColor: "white" }}>
+                            <img src={thumbnailSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          </Box>
+                        )}
+                      </Box>
+                      <Box sx={{ p: 1.5, textAlign: "center" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "13px", mb: 0.5, color: isDisabled ? "#999" : "inherit" }}>{attr.value}</Typography>
+                        {isDisabled && <Typography variant="caption" sx={{ color: "#d32f2f", fontSize: "10px", display: "block" }}>Sold Out</Typography>}
+                      </Box>
                     </Box>
-                    <Box sx={{ p: 1.5, textAlign: "center" }}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "13px", mb: 0.5, color: isDisabled ? "#999" : "inherit" }}>{attr.value}</Typography>
-                      {isDisabled && <Typography variant="caption" sx={{ color: "#d32f2f", fontSize: "10px", display: "block" }}>Sold Out</Typography>}
-                    </Box>
-                  </Box>
-                );
-              })}
+                  );
+                })}
+              </Box>
             </Box>
-          </Box>
-        </DialogContent>
-      </Dialog>
-    </Grid>
-  );
-};
+          </DialogContent>
+        </Dialog>
+      </Grid>
+    );
+  };
 
   if (variant.type === "parent") {
     return renderParentVariantGrid();

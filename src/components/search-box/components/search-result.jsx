@@ -9,7 +9,8 @@ import Typography from '@mui/material/Typography'
 
 // ==============================================================
 export default function SearchResult({
-  productList
+  productList,
+  isSearching
 }) {
   const getUrl = (item) => {
     const source = item.source;
@@ -30,12 +31,19 @@ export default function SearchResult({
     }
   };
   return <SearchResultCard elevation={2}>
-    {
+    {isSearching ? (
+      <MenuItem >
+        <Typography color={'GrayText'} textAlign={'center'}>
+          searching...
+        </Typography>
+      </MenuItem>
+    ) : (
       productList.map(item =>
         <Link key={item._id} href={getUrl(item)}>
           <MenuItem key={item._id}><Typography noWrap sx={{ width: "100%" }}>{item.title.replace(/<[^>]*>/g, "").replace("&amp;", "&")}</Typography></MenuItem>
         </Link>
       )
+    )
     }
   </SearchResultCard>;
 }

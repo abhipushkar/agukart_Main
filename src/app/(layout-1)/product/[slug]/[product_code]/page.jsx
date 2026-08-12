@@ -69,13 +69,9 @@ export async function generateMetadata({ params }) {
     const product = data.data;
 
     return {
-        title:
-            product?.meta_title ||
-            product?.product_name ||
-            "Agukart",
+        title: product?.meta_title || product?.product_name || "Agukart",
 
-        description:
-            product?.meta_description || "",
+        description: product?.meta_description || "",
 
         keywords: Array.from(
             new Set([
@@ -85,20 +81,12 @@ export async function generateMetadata({ params }) {
         ),
 
         openGraph: {
-            title:
-                product?.meta_title ||
-                product?.product_name ||
-                "Agukart",
-
-            description:
-                product?.meta_description || "",
-
+            title: product?.meta_title || product?.product_name || "Agukart",
+            description: product?.meta_description || "",
             type: "website",
         },
 
-        alternates: {
-            canonical: `${baseUrl}/product/${params.slug}/${product_code}`,
-        },
+        alternates: { canonical: `${baseUrl}/product/${params.slug}/${product_code}`, },
     };
 }
 
@@ -114,7 +102,7 @@ export default async function ProductDetails({ params }) {
         return (
             <Box height={'50vh'} width={'100%'} display={'flex'} flexDirection={'column'} justifyContent={'center'}>
                 <Box width={"100%"} display={'flex'} justifyContent={'center'}>
-                    <Alert sx={{fontSize: '22px'}} severity="info" color="warning" icon={<SentimentDissatisfiedRoundedIcon sx={{fontSize: '40px'}} color="secondary"/>}>
+                    <Alert sx={{ fontSize: '22px' }} severity="info" color="warning" icon={<SentimentDissatisfiedRoundedIcon sx={{ fontSize: '40px' }} color="secondary" />}>
                         Sorry! This product is currently unavailable or not found.
                     </Alert>
                 </Box>
