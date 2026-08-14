@@ -14,7 +14,9 @@ export const SearchResultCard = styled(Card)({
   width: "100%",
   position: "absolute",
   paddingTop: "0.5rem",
-  paddingBottom: "0.5rem"
+  paddingBottom: "0.5rem",
+  maxHeight: "200px",
+  overflowY: 'auto'
 });
 export const DropDownHandler = styled(Box)(({
   theme
