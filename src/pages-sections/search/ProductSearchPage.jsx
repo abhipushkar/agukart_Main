@@ -84,7 +84,7 @@ export default function ProductSearchPage() {
         setImageBaseUrl(res?.data?.base_url);
         setVideoBaseUrl(res?.data?.video_base_url);
         setProductList(res?.data?.data);
-        console.log('list', res?.data?.data.slice(0,6));
+        console.log('list', res?.data?.data.slice(0,6), res?.data?.data.find(p => p.product_code === 'AKCVKVUZX1'));
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {
