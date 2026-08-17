@@ -7,10 +7,9 @@ const HtmlRenderer = ({ html }) => {
     if (!rawHtml) return "";
 
     return rawHtml
-      .replace(/width="[^"]*"/gi, "")
-      .replace(/height="[^"]*"/gi, "")
-      .replace(/style="[^"]*"/gi, "")
-      .replace(/align="[^"]*"/gi, "");
+      .replace(/\sheight="[^"]*"/gi, "")
+      .replace(/\swidth="([^"]*)"/gi, ' data-quill-width="$1"')
+      .replace(/\salign="[^"]*"/gi, "");
   };
 
   return (
@@ -67,8 +66,10 @@ const HtmlRenderer = ({ html }) => {
 
         "& img": {
           maxWidth: "100%",
+          width: "auto",
           height: "auto",
-          display: "block",
+          display: "inline-block",
+          verticalAlign: "middle",
         },
 
         "& p": {
@@ -96,7 +97,19 @@ const HtmlRenderer = ({ html }) => {
         "& img.ql-align-left": { display: "block", marginRight: "auto", }
       }}
     >
-      {parse(cleanHtml(html || ""))}
+      {parse(cleanHtml(html || ""), {
+        replace: (domNode) => {
+          if (domNode.type === "tag" && domNode.name === "img") {
+            const quillWidth = domNode.attribs?.["data-quill-width"];
+
+            if (quillWidth) {
+              domNode.attribs.style = `width: ${quillWidth}px; max-width: 100%; height: auto;`;
+            }
+
+            delete domNode.attribs?.["data-quill-width"];
+          }
+        },
+      })}
     </Box>
   );
 };

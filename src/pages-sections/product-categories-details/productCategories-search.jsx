@@ -327,16 +327,48 @@ export default function ProductCategoriesSearchPageView({
             alignItems="center"
             gap={2}
           >
-            <Box flex="1 1 0">
-              {/* Filter button can be added here if needed */}
-            </Box>
+            <Button onClick={()=>toggleDrawer(true)}
+              variant="text"
+              sx={{
+                '&:hover': {
+                  boxShadow: '0 0 3px #000'
+                },
+                background: '#fff',
+                border: '1px solid',
+                borderColor: '#ccc',
+                borderRadius: '30px',
+                padding: {xs: '12px', sm: '12px 16px'},
+                transition: 'all 500ms',
+              }}
+            >
+              <Typography component="div" display="flex" alignItems="center">
+                <svg
+                  height="20px"
+                  width="20px"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                  ></path>
+                </svg>
+                <Typography component="span" sx={{ marginLeft: '5px', display: {xs: 'none', sm: 'block'} }}>
+                  All Filters
+                </Typography>
+              </Typography>
+            </Button>
             <Box>
               <FlexBox
                 alignItems="center"
                 sx={{
                   border: "1px solid #ccc",
                   borderRadius: "30px",
-                  px: 2,
+                  pl: 2,
+                  pr: {xs: 0, sm: 2},
                   py: 0.5,
                   transition: "0.3s",
                   "&:hover": {
@@ -355,7 +387,7 @@ export default function ProductCategoriesSearchPageView({
                   sx={{
                     minWidth: 120,
                     "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                    "& .MuiSelect-select": { pl: 0 },
+                    "& .MuiSelect-select": { pl: '0 !important' },
                   }}
                 >
                   {SORT_OPTIONS.map((item) => (
@@ -443,7 +475,7 @@ export default function ProductCategoriesSearchPageView({
 
       {/* Filter Drawer */}
       <Drawer open={open} onClose={() => toggleDrawer(false)}>
-        <Box sx={{ width: 400, position: "relative" }} role="presentation">
+        <Box sx={{ width: {xs: '90vw', sm: '500px'}, position: "relative" }} role="presentation">
           <Typography
             component="span"
             sx={{

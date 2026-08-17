@@ -90,7 +90,7 @@ export default function MobileMenu() {
           zIndex: 15001,
         }}
       >
-        <Box width="100vw" height="100%" position="relative">
+        <Box width={{xs: "90vw", sm: "500px"}} height="100%" position="relative">
           <Scrollbar
             autoHide={false}
             sx={{

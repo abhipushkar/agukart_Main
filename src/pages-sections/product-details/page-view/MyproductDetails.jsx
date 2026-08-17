@@ -1361,7 +1361,8 @@ const MyproductDetails = ({ res }) => {
         "&::-webkit-scrollbar": {
           display: "none",
         },
-        py: { xs: 1, md: 0.25 },
+        py: { xs: 1, sm: 2, md: 0.25 },
+        "@media (min-width: 900px) and (max-width: 1149px)": { py: 2, },
       }}
     >
       <Box
