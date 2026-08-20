@@ -43,13 +43,13 @@ const LightPopover = ({
   const triggerProps =
     trigger === "hover"
       ? {
-          onMouseEnter: handleOpen,
-          onMouseLeave: handleClose,
-        }
+        onMouseEnter: handleOpen,
+        onMouseLeave: handleClose,
+      }
       : {
-          onClick: (e) =>
-            open ? handleClose() : handleOpen(e),
-        };
+        onClick: (e) =>
+          open ? handleClose() : handleOpen(e),
+      };
 
   return (
     <>
@@ -78,6 +78,23 @@ const LightPopover = ({
               boxShadow: 1,
               p: 1,
               borderRadius: 1,
+              overflow: "visible",
+              mt: 1,
+              mb: 1,
+              // "&::before": {
+              //   content: '""',
+              //   position: "absolute",
+              //   top: -7,
+              //   left: "20%",
+              //   width: 12,
+              //   height: 12,
+              //   backgroundColor: "#fff",
+              //   borderLeft: "1px solid #e8eaed",
+              //   borderTop: "1px solid #e8eaed",
+              //   transform: "translateX(-50%) rotate(45deg)",
+              //   boxShadow: "4px #1a191990",
+              //   zIndex: 0,
+              // },
               ...paperSx,
             },
           },

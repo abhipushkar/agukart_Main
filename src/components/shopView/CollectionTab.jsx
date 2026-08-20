@@ -418,7 +418,7 @@ const CollectionTab = ({
           </Box>
         </Grid>
         <Grid item lg={9.5} md={8.5} xs={12}>
-          <Grid container spacing={3}>
+          <Grid container spacing={{xs: 1, sm: 2}}>
             {storeProductLoading ? (
               <>
                 {[...Array(40)].map((_, index) => (

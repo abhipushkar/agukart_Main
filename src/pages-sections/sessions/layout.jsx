@@ -92,8 +92,8 @@ export default function AuthLayout({ children }) {
         <Header isFixed={isFixed} midSlot={<SearchInputWithCategory />} />
         <Navbar elevation={0} border={1} />
         <MobileNavigationBar />
-        <FlexRowCenter flexDirection="column" p={5}>
-          <Wrapper elevation={3}>
+        <FlexRowCenter flexDirection="column" p={{xs: 3, sm: 5}}>
+          <Wrapper elevation={3} sx={{p: {xs: 3, sm: 6}}}>
             <LogoWithTitle />
 
             {children}

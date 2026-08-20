@@ -360,9 +360,7 @@ export default function ProductCard1({
               variant="text"
               sx={{
                 background: "#fff",
-                height: "38px",
                 fontSize: "12px",
-                padding: "6px 16px",
                 border: "2px solid #000",
                 borderRadius: "30px",
                 transition: "all 500ms",

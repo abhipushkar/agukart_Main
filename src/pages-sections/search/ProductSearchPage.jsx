@@ -140,7 +140,7 @@ export default function ProductSearchPage() {
 
   return (
     <div className="bg-white pt-2 pb-4">
-      <Container sx={{ padding: {xs: "16px", sm: "30px 16px" }}}>
+      <Container sx={{ padding: {xs: "12px", sm: "30px 16px" }}}>
         <Box px={{xs: 0, sm: 3, md: 4}}>
 
           {Object.values(shopDetails || {}).length > 0 && (
@@ -247,7 +247,7 @@ export default function ProductSearchPage() {
           </Container>
         ) : (
           <Box m={{ xs: 0, sm: 4 }}>
-            <Grid container spacing={4}>
+            <Grid container spacing={{xs: 1, sm: 2}}>
               {productList?.length > 0 ? (
                 productList?.map((product) => (
                   <Grid key={product._id} item xs={6} md={4} lg={3}>

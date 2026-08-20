@@ -128,7 +128,7 @@ const ChatList = ({ chatListProp }) => {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      pl: 3, pb: 2
+      p: { xs: "0 0 8px 8px", sm: "0 0 16px 24px" }
     }}>
       {chats.length < 1 ? (
         <Typography p={3} component="div" sx={{ textAlign: "center" }}>
@@ -332,7 +332,7 @@ const ChatList = ({ chatListProp }) => {
 
                   return (
                     <>
-                      <TableRow key={chat.id}>
+                      <TableRow key={chat.id} sx={{borderBottom: "1px solid", borderColor: "divider"}}>
                         <TableCell sx={{
                           border: "none",
                           width: { xs: "auto", sm: "30px" },
@@ -626,7 +626,7 @@ const ChatList = ({ chatListProp }) => {
                               >
                               </Link>
                               <Box>
-                                <Typography sx={{ display: 'flex', maxWidth: { xs: "18px", sm: "25px" }, maxHeight: { xs: "18px", sm: "25px" } }}>
+                                <Typography sx={{ display: {xs: "none", sm: 'flex'}, maxWidth: { xs: "18px", sm: "25px" }, maxHeight: { xs: "18px", sm: "25px" } }}>
                                   <svg
                                     stroke="currentColor"
                                     fill="currentColor"
@@ -724,6 +724,10 @@ const ChatList = ({ chatListProp }) => {
             position: 'sticky',
             bottom: 0,
             zIndex: 10,
+            '& .MuiToolbar-root': {
+              paddingLeft: 0,
+              paddingRight: 0,
+            },
           }}
         />
       )}

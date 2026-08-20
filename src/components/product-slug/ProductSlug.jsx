@@ -133,7 +133,7 @@ const ProductSlug = ({
   const toggleDrawer = (val) => setOpen(val);
 
   return (
-    <Container sx={{ bgcolor: "background.paper" }}>
+    <Container sx={{ bgcolor: "background.paper", px: {xs: 1.5, sm: 2, md: 3} }}>
       <Box sx={{ pt: 4, pb: 4 }}>
 
         {/* 🔥 Breadcrumb */}
@@ -171,14 +171,14 @@ const ProductSlug = ({
 
         {/* 🔥 CHILD CATEGORIES (SSR ONLY) */}
         {children.length > 0 && page === 1 && (
-          <Box sx={{ mb: 4, px: { xs: 1, sm: 2, md: 8, lg: 8 }, }}>
+          <Box sx={{ mb: 4, px: { xs: 0, sm: 2, md: 8, lg: 8 }, pr: {xs: 1.5, sm: 0}}}>
             <Grid
               container
               spacing={2}
+              justifyContent={"center"}
               sx={{
                 width: "100%",
                 margin: 0,
-                display: 'flex', justifyContent: 'center'
               }}
             >
               {visibleChildren.map((item) => (
@@ -294,7 +294,7 @@ const ProductSlug = ({
             ))}
           </Grid>
         ) : productList?.length > 0 ? (
-          <Grid container spacing={2}>
+          <Grid container spacing={{xs: 1, sm:2}}>
             {productList.map((product) => (
               <Grid key={product._id} item xs={6} sm={4} md={3}>
                 <Product

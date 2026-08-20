@@ -8,6 +8,7 @@ import parse from "html-react-parser";
 import { useLocation } from "contexts/location_context";
 import { LocationOn } from "@mui/icons-material";
 import WarningIcon from "@mui/icons-material/Warning";
+import LightPopover from "components/TooltipPopover/LightPopover";
 
 const DeliveryAndReturnPolicy = ({ product }) => {
     const whiteTooltipProps = {
@@ -134,7 +135,7 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                     <Row icon={<LocalShippingOutlinedIcon />}>
                         <Typography>
                             Estimated Delivery : Order today to get by {" "}
-                            <Tooltip
+                            <LightPopover
                                 title={
                                     <Typography fontSize={12}>
                                         Your order should arrive by this date if you buy today. To calculate
@@ -144,13 +145,13 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                                         delivered to.
                                     </Typography>
                                 }
-                                componentsProps={whiteTooltipProps}
                                 arrow
+                                paperSx={{width: '300px', boxShadow: "2px 4px 12px 2px rgba(0,0,0,0.12)", }}
                             >
                                 <Typography component={"span"} fontWeight={500} sx={{ textDecoration: "underline", cursor: "pointer" }}>
                                     {deliveryRange}
                                 </Typography>
-                            </Tooltip>
+                            </LightPopover>
                         </Typography>
                     </Row>
 
@@ -163,7 +164,7 @@ const DeliveryAndReturnPolicy = ({ product }) => {
             <Box mt={2}>
                 {policyLabel && !shippingError && (
                     <Row icon={<AutorenewOutlinedIcon />}>
-                        <Tooltip
+                        <LightPopover
                             title={
                                 <Typography fontSize={12}>
                                     Buyers are responsible for return postage costs. If the item is not
@@ -172,7 +173,8 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                                 </Typography>
                             }
                             arrow
-                            componentsProps={whiteTooltipProps}
+                            paperSx={{width: '300px', boxShadow: "2px 4px 12px 2px rgba(0,0,0,0.12)", }}
+
                         >
                             <Typography
                                 component="span"
@@ -184,7 +186,7 @@ const DeliveryAndReturnPolicy = ({ product }) => {
                             >
                                 {policyLabel}
                             </Typography>
-                        </Tooltip>
+                        </LightPopover>
 
                         <Typography component="span">
                             {" "}within {exchangePolicy?.returnExchangeTime} days

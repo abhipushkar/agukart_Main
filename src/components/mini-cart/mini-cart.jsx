@@ -121,14 +121,25 @@ export default function MiniCart({ toggleSidenav }) {
   };
 
   return (
-    <Box width="100%" minWidth={380}>
+    <Box
+      width="100%"
+      minWidth={{ xs: "95vw", sm: 380 }}
+      height="100vh"
+      display="flex"
+      flexDirection="column"
+      overflow="hidden"
+    >
       {/* HEADING SECTION */}
       {
         usercredentials?.designation_id != "4" && <TopHeader toggle={toggleSidenav} total={cartList?.reduce((total, cartItem) => total + cartItem?.products?.length, 0)} />
       }
       <Divider />
 
-      <Box height={`calc(100vh - ${cartList.length ? "207px" : "75px"})`}>
+      <Box sx={{
+        flex: 1,
+        minHeight: 0,
+        overflow: "hidden",
+      }}>
         {cartList.length > 0 ? (
           <Scrollbar>
             {cartList?.map((item, index) => (

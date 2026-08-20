@@ -91,7 +91,7 @@ const AboutTab = ({ vendorDetail, vendorCategories }) => {
   };
   return (
     <>
-      <Box>
+      <Box px={{xs: 0, md: 2}} pt={1}>
         <Typography variant="h5" fontWeight={600}>
           About
         </Typography>
@@ -128,12 +128,12 @@ const AboutTab = ({ vendorDetail, vendorCategories }) => {
                     {vendorCategories?.sale_count}
                   </Typography>
                 </Box>
-                <Box ml={3} textAlign={"center"}>
+                {/* <Box ml={3} textAlign={"center"}>
                   <Typography>On Agukart Since</Typography>
                   <Typography fontSize={20} fontWeight={600}>
                     {new Date(vendorDetail?.vendor_created_at).getFullYear()}
                   </Typography>
-                </Box>
+                </Box> */}
               </Typography>
               {
                 mediaItems?.length > 0 && <Typography component="div" mt={3} sx={{

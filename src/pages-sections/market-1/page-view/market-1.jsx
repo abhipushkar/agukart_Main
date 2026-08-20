@@ -76,13 +76,13 @@ export default function MarketOnePageView() {
 
   const getRecentlyViewd = async () => {
     try {
-      const res = await getAPIAuth("user/recently-viewed-products", token);
+      const res = await getAPIAuth("user/recently-viewed-products?limit=10", token);
 
       if (res.status === 200) {
         const arr = res.data.data.map((item) => {
           return { ...item, base_url: res.data.base_url };
         });
-        setRecentlyViewed(arr);
+        setRecentlyViewed(arr.slice(-10).reverse());
       }
     } catch (error) {
       console.log(error);
@@ -90,13 +90,13 @@ export default function MarketOnePageView() {
   };
   const getBecauseOfView = async () => {
     try {
-      const res = await getAPIAuth("user/because-viewed-products", token);
+      const res = await getAPIAuth("user/because-viewed-products?limit=10", token);
 
       if (res.status === 200) {
         const arr = res.data.productData.map((item) => {
           return { ...item, base_url: res.data.base_url };
         });
-        setBecauseViewed(arr);
+        setBecauseViewed(arr.slice(-10).reverse());
       }
     } catch (error) {
       console.log(error);
@@ -184,20 +184,20 @@ export default function MarketOnePageView() {
 
       {/* RECENTLY VIEWED */}
 
-      {/* {token && recentlyViewd.length > 0 && (
+      {token && recentlyViewd.length > 0 && (
         <Section15
           recentlyViewd={recentlyViewd}
           getRecentlyViewd={getRecentlyViewd}
         />
-      )} */}
+      )}
 
       {/* BECAUSE YOU VIEWED  */}
-      {/* {token && becauseViewed.length > 0 && (
+      {token && becauseViewed.length > 0 && (
         <Section16
           becauseViewed={becauseViewed}
           getBecauseOfView={getBecauseOfView}
         />
-      )} */}
+      )}
 
       {/* HOME ARRIVALS */}
       <Section17 />

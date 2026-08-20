@@ -14,11 +14,13 @@ import { H2, H4, Small } from "components/Typography";
 import { Box, Grid } from "@mui/material";
 import { Carousel } from "components/carousel";
 import { fontSize } from "theme/typography";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useAuth from "hooks/useAuth";
+import ProductWithoutVideo from "components/productWithoutVideo/ProductWithoutVideo";
 
 const section16 = ({ becauseViewed, getBecauseOfView }) => {
   const { token } = useAuth();
+  const [loading, setLoading] = useState(false);
   const responsive = [
     {
       breakpoint: 1024,
@@ -35,20 +37,22 @@ const section16 = ({ becauseViewed, getBecauseOfView }) => {
     {
       breakpoint: 650,
       settings: {
-        slidesToShow: 2,
+        slidesToShow: 3,
       },
     },
     {
-      breakpoint: 370,
+      breakpoint: 450,
       settings: {
-        slidesToShow: 1,
+        slidesToShow: 2,
       },
     },
   ];
 
   useEffect(() => {
     if (token) {
+      setLoading(true);
       getBecauseOfView();
+      setLoading(false);
     }
   }, [token]);
 
@@ -58,7 +62,13 @@ const section16 = ({ becauseViewed, getBecauseOfView }) => {
         <H2 fontSize={17} mb={1}>
           Because you viewed
         </H2>
-        {becauseViewed.length <= 5 ? (
+        {loading ? (
+          <Carousel slidesToShow={5} responsive={responsive}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <ProductCardShimmerWithoutVideo key={i} />
+            ))}
+          </Carousel>
+        ) : becauseViewed.length <= 5 ? (
           <Grid container spacing={"20px"}>
             {becauseViewed.map((product) => {
               return (
@@ -122,57 +132,7 @@ const section16 = ({ becauseViewed, getBecauseOfView }) => {
           <Carousel slidesToShow={5} responsive={responsive}>
             {becauseViewed.map((product) => {
               return (
-                <Box key={product._id}>
-                  <Box mb={2}>
-                    <Link href={`/product/${product.slug}/${product.product_code}`}>
-                      <BazaarCard
-                        sx={{
-                          background: "none",
-                          borderRadius: "4px",
-                          position: "relative",
-                          overflow: "hidden",
-                          transition: "all 500ms",
-                          "&:hover": {
-                            boxShadow: "0 0 6px #c2c1c1",
-                          },
-                        }}
-                      >
-                        <LazyImage
-                          width={260}
-                          height={260}
-                          alt="Anniversary Gifts"
-                          src={product.base_url + product.image[0]}
-                          sx={{
-                            height: "260px",
-                            objectFit: "cover",
-                            borderRadius: "4px",
-                            aspectRatio: "1/1",
-                          }}
-                        />
-                        <H4
-                          fontSize={13}
-                          sx={{
-                            position: "absolute",
-                            bottom: "12px",
-                            left: "12px",
-                            background: "#fff",
-                            boxShadow: "0 0 3px #000",
-                            borderRadius: "30px",
-                            padding: "6px 18px",
-                          }}
-                        >
-                          ${product.price}
-                          <Small
-                            component="del"
-                            sx={{ marginLeft: "3px", fontSize: "13px" }}
-                          >
-                            ${product.sale_price}
-                          </Small>
-                        </H4>
-                      </BazaarCard>
-                    </Link>
-                  </Box>
-                </Box>
+                <ProductWithoutVideo product={product}/>
               );
             })}
           </Carousel>

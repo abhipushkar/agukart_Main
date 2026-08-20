@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
@@ -108,7 +108,7 @@ export default function ProductCategoriesSearchPageView({
   const [filters, setFilters] = useState({
     ...initialFilters,
   });
-  const [hasMounted, setHasMounted] = useState(false);
+  const isFirstRender = useRef(true);
 
   const [title, setTitle] = useState(initialCategory?.current?.title || "");
   const [id, setId] = useState(initialCategory?.current?._id || "");
@@ -178,7 +178,6 @@ export default function ProductCategoriesSearchPageView({
   const productSearchById = async () => {
     try {
       setLoading(true);
-      // console.log("product api called here", page);
       const res = await getAPI(
         `get-product?categoryId=${id}&page=${page}&limit=64&sortBy=${sortBy}`
       );
@@ -205,9 +204,9 @@ export default function ProductCategoriesSearchPageView({
   useEffect(() => {
     if (!id) return;
 
-    // skip first hydration fetch
-    if (!hasMounted) {
-      setHasMounted(true);
+    // Skip the API call on initial hydration.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
       return;
     }
 
@@ -219,24 +218,6 @@ export default function ProductCategoriesSearchPageView({
     setPage(currentPage);
   }, []);
 
-
-  // const getParentCategory = async () => {
-  //   try {
-  //     const res = await getAPI(`get-category-by-slug/${slug}`);
-  //     if (res.status === 200) {
-  //       setChildCategories(res.data.data);
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
-
-  // useEffect(() => {
-  //   if (slug) {
-  //     getParentCategory();
-  //   }
-  // }, [slug]);
 
 
   const handlePageChange = (event, value) => {
@@ -255,7 +236,7 @@ export default function ProductCategoriesSearchPageView({
   };
 
   return (
-    <Container sx={{ bgcolor: "background.paper", pb: 4 }}>
+    <Container sx={{ bgcolor: "background.paper", pb: 4, px: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Main Content */}
       <Box sx={{ pb: 4 }}>
         {/* Products Categories Page */}
@@ -327,7 +308,7 @@ export default function ProductCategoriesSearchPageView({
             alignItems="center"
             gap={2}
           >
-            <Button onClick={()=>toggleDrawer(true)}
+            <Button onClick={() => toggleDrawer(true)}
               variant="text"
               sx={{
                 '&:hover': {
@@ -337,7 +318,7 @@ export default function ProductCategoriesSearchPageView({
                 border: '1px solid',
                 borderColor: '#ccc',
                 borderRadius: '30px',
-                padding: {xs: '12px', sm: '12px 16px'},
+                padding: { xs: '12px', sm: '12px 16px' },
                 transition: 'all 500ms',
               }}
             >
@@ -356,7 +337,7 @@ export default function ProductCategoriesSearchPageView({
                     d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
                   ></path>
                 </svg>
-                <Typography component="span" sx={{ marginLeft: '5px', display: {xs: 'none', sm: 'block'} }}>
+                <Typography component="span" sx={{ marginLeft: '5px', display: { xs: 'none', sm: 'block' } }}>
                   All Filters
                 </Typography>
               </Typography>
@@ -368,7 +349,7 @@ export default function ProductCategoriesSearchPageView({
                   border: "1px solid #ccc",
                   borderRadius: "30px",
                   pl: 2,
-                  pr: {xs: 0, sm: 2},
+                  pr: { xs: 0, sm: 2 },
                   py: 0.5,
                   transition: "0.3s",
                   "&:hover": {
@@ -403,8 +384,6 @@ export default function ProductCategoriesSearchPageView({
 
         {/* Products Grid */}
         <Box sx={{
-          px: { xs: 2, sm: 0 },
-
           mx: "auto"
         }}>
           {loading ? (
@@ -418,7 +397,7 @@ export default function ProductCategoriesSearchPageView({
           ) : (
             <>
               {productList?.length > 0 ? (
-                <Grid container spacing={2}>
+                <Grid container spacing={{ xs: 1, sm: 2 }}>
                   {productList?.map((product) => (
                     <Grid key={product._id} item xs={6} sm={4} md={3}>
                       <Product
@@ -475,7 +454,7 @@ export default function ProductCategoriesSearchPageView({
 
       {/* Filter Drawer */}
       <Drawer open={open} onClose={() => toggleDrawer(false)}>
-        <Box sx={{ width: {xs: '90vw', sm: '500px'}, position: "relative" }} role="presentation">
+        <Box sx={{ width: { xs: '90vw', sm: '500px' }, position: "relative" }} role="presentation">
           <Typography
             component="span"
             sx={{
