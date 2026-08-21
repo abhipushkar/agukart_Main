@@ -70,6 +70,7 @@ export default function Footer1() {
               <Link href="/about" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >About Agukart</Link>
               <Link href="/privacy-policy" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Policy</Link>
               <Link href="/terms-condition" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Terms & Condition</Link>
+              <Link href="/apply" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Become a Creator</Link>
             </Grid>
             {
               /* CUSTOMER CARE LINKS */
