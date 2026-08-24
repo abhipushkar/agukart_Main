@@ -313,7 +313,13 @@ export default function Topbar({ bgColor }) {
               </Link>
             ))}
           </FlexBox>
-          <Box display={{xs: 'block', sm: "block", md: 'none', lg: 'none'}}>
+          <Box display={{ xs: 'block', sm: "block", md: 'none', lg: 'none' }}
+            sx={{
+              "@media (min-width: 900px) and (max-width: 1149px)": {
+                display: "block",
+              },
+            }}
+          >
             <LocationSelector />
           </Box>
         </FlexBox>

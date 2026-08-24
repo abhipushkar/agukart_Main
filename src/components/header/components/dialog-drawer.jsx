@@ -29,19 +29,25 @@ export default function DialogDrawer(props) {
         onClose={toggleDialog}
         sx={{
           zIndex: 9999,
+          "& .MuiDialog-paper": {
+            margin: { xs: 1, sm: 3 },
+            width: { xs: "95vw", sm: "auto" },
+            p: 0
+          },
         }}
       >
-        <Wrapper sx={{ position: "relative" }}>
+        <Wrapper sx={{ position: "relative", p: {xs: 4, sm: 6} }}>
           <Box>
             <IconButton
               sx={{
                 position: "absolute",
                 right: "30px",
+                top: "30px",
                 width: "30px",
                 height: "30px",
                 cursor: "pointer",
               }}
-              onClick={ () => toggleDialog()}
+              onClick={() => toggleDialog()}
             >
               <CloseIcon
                 sx={{
@@ -66,6 +72,10 @@ export default function DialogDrawer(props) {
         onClose={toggleSidenav}
         sx={{
           zIndex: 9999,
+          "& .MuiDrawer-paper": {
+      overflow: "hidden",
+      height: "100vh",
+    },
         }}
       >
         <MiniCart toggleSidenav={toggleSidenav} />

@@ -286,7 +286,7 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
       {loading ? (
         <VendorProfileShimmer />
       ) : Object.values(vendorDetail || {}).length > 0 ? (
-        <Box sx={{ overflow: "visible" }}>
+        <Box sx={{ overflow: "visible", "@media (min-width: 900px) and (max-width: 1149px)": { pt: 1.5 }}} pt={{xs: 1, sm: 1.5, md: 0}}>
           <Box
             sx={{
               position: "relative",
@@ -534,7 +534,7 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                       }}
                     >
 
-                      {vendorDetail?.shop_announcement?.trim() && (
+                      {vendorDetail?.shop_announcement?.trim() ? (
                         <Box
                           onClick={() => {
                             if (window.innerWidth < 900) {
@@ -545,9 +545,8 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                           }}
                           sx={{
                             background: "#fff",
-                            borderRadius: "20px",
-                            px: 1.5,
-                            py: 0.3,
+                            borderRadius: "12px",
+                            p: 1,
                             cursor: "pointer",
                             flexShrink: 0,
                             border: "1px solid #e0e0e0",
@@ -558,7 +557,7 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                             Announcement
                           </Typography>
                         </Box>
-                      )}
+                      ) : <Box /> }
 
                       {/* RIGHT SIDE ICONS */}
                       <Box
@@ -577,8 +576,7 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                             gap: 0.3,
                             background: followed ? "#fff0f0" : "#fff",
                             borderRadius: "20px",
-                            px: 1,
-                            py: 0.3,
+                            p: 1,
                             cursor: "pointer",
                             border: followed
                               ? "1px solid #ffcdd2"

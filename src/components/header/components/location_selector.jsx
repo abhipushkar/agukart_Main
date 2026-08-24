@@ -30,8 +30,7 @@ const LocationSelector = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [filteredCountries, setFilteredCountries] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+    const isMobile = useMediaQuery("(max-width: 1149px)");
     const menuRef = useRef(null);
     const selectedItemRef = useRef(null);
 
@@ -102,6 +101,7 @@ const LocationSelector = () => {
                     onClick={handleClick}
                     size="small"
                     sx={{
+                        color: { xs: "white", sm: "white" },
                         "&:hover": { color: "primary.main" }
                     }}
                 >
@@ -123,7 +123,7 @@ const LocationSelector = () => {
                     }}
                 >
                     <LocationOn sx={{ fontSize: 18, color: "text.secondary", mr: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, width: 180, maxWidth:180, overflow: 'hidden', textOverflow: 'ellipsis',  whiteSpace: 'nowrap',  }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, width: 180, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', }}>
                         Deliver to {location.countryName}
                     </Typography>
                     {open ? (

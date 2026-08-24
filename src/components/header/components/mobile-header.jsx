@@ -49,7 +49,11 @@ export default function MobileHeader({ midSlot }) {
   };
   return (
     <Fragment>
-      <FlexBetween width="100%" sx={{ flexDirection: "column", gap: { sm: 0.5 } }}>
+      <FlexBetween width="100%" sx={{
+        flexDirection: "column",
+        position: { xs: "relative", sm: "relative" },
+        top: { xs: 5, sm: 5 }
+      }}>
         {/* LEFT CONTENT - NAVIGATION ICON BUTTON */}
 
         {/* MIDDLE CONTENT - LOGO */}
@@ -67,15 +71,12 @@ export default function MobileHeader({ midSlot }) {
             sx={{
               display: "flex",
               alignItems: "center",
-              pt: 1,
               justifyContent: "space-between",
               width: "100%",
-              position: { xs: "relative", sm: "relative" },
-              top: { xs: 5, sm: 10 }
             }}
           >
             <Box component={Link} href='/' width='120px' height='fit-content' p={0} m={0}>
-              <Box component={'img'} src="/assets/images/Agukart-black.png" alt={'Agukart'} height={50} width={125} />
+              <Box component={'img'} src="/assets/images/Agukart-black.png" alt={'Agukart'} height={50} width={125} mt={"5px"}/>
             </Box>
             <FlexBox>
               {token && (

@@ -213,7 +213,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const handleShopNameClick = (e) => {
     e.stopPropagation(); // Prevent product navigation when clicking shop name
     e.preventDefault(); // Prevent Link navigation
-    const baseUrl = `/store/${product?.shop_slug || product?.shop_name.toLowerCase()}`;
+    const baseUrl = `/store/${product?.shop_slug || product?.shop_name?.toLowerCase() || product?.vendorDetails?.shop_name}`;
     window.open(baseUrl, "_blank");
   };
 
@@ -226,12 +226,12 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       ? getTimeLeftText(promotion.start_date, promotion.expiry_date)
       : null;
 
-  const productImage = 
-    (product?.matchedVariant && product?.matchedVariant.image) 
-    ? product?.matchedVariant.image
-    : (product?.matchedCustomization && product?.matchedCustomization?.image)
-      ? product?.matchedCustomization?.image
-      : (imageBaseUrl + (product?.edited_image || product?.image[0]));
+  const productImage =
+    (product?.matchedVariant && product?.matchedVariant.image)
+      ? product?.matchedVariant.image
+      : (product?.matchedCustomization && product?.matchedCustomization?.image)
+        ? product?.matchedCustomization?.image
+        : (imageBaseUrl + (product?.edited_image || product?.image[0]));
 
   const imageAlt = product?.altText?.[0] || product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 8).join(" ") || "Product Image";
 
@@ -316,8 +316,8 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
             <Box
               sx={{
                 position: "absolute",
-                top: "8px",
-                left: "8px",
+                top: { xs: "4px", sm: "8px" },
+                left: { xs: "4px", sm: "8px" },
                 background:
                   product?.product_bedge === "Popular Now"
                     ? "#fed9c9"
@@ -325,9 +325,9 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                       ? "#e9d8a6"
                       : "#c1f1c1",
                 borderRadius: "12px",
-                padding: "2px 8px",
+                padding: { xs: "1px 4px", sm: "2px 8px" },
                 color: "#000",
-                fontSize: "11px",
+                fontSize: { xs: "9px", sm: "11px" },
                 fontWeight: 600,
                 zIndex: 2,
                 display: "flex",
@@ -336,9 +336,9 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               }}
             >
               {product?.product_bedge == "Popular Now" && (
-                <svg
-                  height="14px"
-                  width="14px"
+                <Box component='svg'
+                  height={{ xs: "10px", sm: "14px" }}
+                  width={{ xs: "10px", sm: "14px" }}
                   viewBox="-33 0 255 255"
                   xmlns="http://www.w3.org/2000/svg"
                   preserveAspectRatio="xMidYMid"
@@ -374,14 +374,14 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                       fillRule="evenodd"
                     />
                   </g>
-                </svg>
+                </Box>
               )}
               {product?.product_bedge == "Best Seller" && (
-                <svg
+                <Box component='svg'
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  height="14px"
-                  width="14px"
+                  height={{ xs: "10px", sm: "14px" }}
+                  width={{ xs: "10px", sm: "14px" }}
                   aria-hidden="true"
                   focusable="false"
                 >
@@ -391,7 +391,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                     d="M12 18a8 8 0 0 0 7.021-4.163q.008-.012.013-.024A8 8 0 1 0 12 18m4.5-8.8c.2-.1.2-.4.2-.6s-.3-.3-.5-.3h-2.8l-.9-2.7c-.1-.4-.8-.4-1 0l-.9 2.7H7.8c-.2 0-.4.1-.5.3s0 .4.2.6l2.3 1.7-.9 2.7c-.1.2 0 .4.2.6q.3.15.6 0l2.3-1.7 2.3 1.7c.1.1.2.1.3.1s.2 0 .3-.1c.2-.1.2-.4.2-.6l-.9-2.7z"
                   ></path>
                   <path d="M4.405 14.831a9 9 0 0 0 6.833 4.137L8.9 23l-2.7-3.3L2 19zm15.19 0a9 9 0 0 1-6.833 4.137L15.1 23l2.7-3.3L22 19z"></path>
-                </svg>
+                </Box>
               )}
               {product?.product_bedge}
             </Box>
@@ -480,7 +480,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               },
             }}
           >
-            {product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace("&amp;","&")}
+            {product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace("&amp;", "&").replace(/&nbsp;/g, " ")}
           </Typography>
 
           {/* Rating - Only show when there are reviews */}
@@ -498,7 +498,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                 size="large"
                 readOnly
                 sx={{
-                  fontSize: {xs: "18px", sm: "24px"},
+                  fontSize: { xs: "18px", sm: "24px" },
                   color: "black",
                   "& .MuiRating-icon": {
                     marginRight: "1px",
@@ -507,7 +507,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
               />
               <Small
                 sx={{
-                  fontSize: {xs: "14px", sm: "18px"},
+                  fontSize: { xs: "14px", sm: "18px" },
                   color: "#666",
                   fontWeight: 400,
                   ml: 0.5,

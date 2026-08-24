@@ -8,6 +8,7 @@ import BazaarCard from "components/BazaarCard";
 import { SectionCreator } from "components/section-header";
 import LazyImage from "components/LazyImage";
 import { H2, H4, Small } from "components/Typography";
+import ProductWithoutVideo from "components/productWithoutVideo/ProductWithoutVideo";
 // LOCAL CUSTOM COMPONENT
 
 // CUSTOM DATA MODEL
@@ -35,13 +36,13 @@ const section15 = ({ recentlyViewd, getRecentlyViewd }) => {
     {
       breakpoint: 650,
       settings: {
-        slidesToShow: 2,
+        slidesToShow: 3,
       },
     },
     {
-      breakpoint: 370,
+      breakpoint: 450,
       settings: {
-        slidesToShow: 1,
+        slidesToShow: 2,
       },
     },
   ];
@@ -118,50 +119,7 @@ const section15 = ({ recentlyViewd, getRecentlyViewd }) => {
           <Carousel slidesToShow={5} responsive={responsive}>
             {recentlyViewd.map((product) => {
               return (
-                <Box>
-                  <Link href={`/product/${product.slug}/${product.product_code}`}>
-                    <BazaarCard
-                      sx={{
-                        background: "none",
-                        borderRadius: "4px",
-                        position: "relative",
-                        overflow: 'hidden',
-                        transition: 'all 500ms',
-                        '&:hover': {
-                          boxShadow: '0 0 6px #c2c1c1'
-                        }
-                      }}
-                    >
-                      <LazyImage
-                        width={260}
-                        height={260}
-                        alt="Anniversary Gifts"
-                        src={product.base_url + product.image[0]}
-                        sx={{ height: '260px', objectFit: 'cover', borderRadius: '4px', aspectRatio: '1/1' }}
-                      />
-                      <H4
-                        fontSize={13}
-                        sx={{
-                          position: "absolute",
-                          bottom: "12px",
-                          left: "12px",
-                          background: "#fff",
-                          boxShadow: "0 0 3px #000",
-                          borderRadius: "30px",
-                          padding: "6px 18px",
-                        }}
-                      >
-                        ${product.sale_price}
-                        <Small
-                          component="del"
-                          sx={{ marginLeft: "3px", fontSize: "13px" }}
-                        >
-                          ${product.price}
-                        </Small>
-                      </H4>
-                    </BazaarCard>
-                  </Link>
-                </Box>
+                <ProductWithoutVideo product={product}/>
               );
             })}
           </Carousel>

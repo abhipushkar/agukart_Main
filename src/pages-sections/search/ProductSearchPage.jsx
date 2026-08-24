@@ -70,7 +70,7 @@ export default function ProductSearchPage() {
   const sortBy = searchParams.get("sortBy") || "relevance";
   const [totalPages, setTotalPages] = useState(1);
   const page = Number(searchParams.get("page")) || 1;
-  const toggleDrawer = (newOpen) => () => {
+  const toggleDrawer = (newOpen) => {
     setOpen(newOpen);
   };
   const getProductsBySearch = async () => {
@@ -84,7 +84,7 @@ export default function ProductSearchPage() {
         setImageBaseUrl(res?.data?.base_url);
         setVideoBaseUrl(res?.data?.video_base_url);
         setProductList(res?.data?.data);
-        console.log('list', res?.data?.data.slice(0,6), res?.data?.data.find(p => p.product_code === 'AKCVKVUZX1'));
+        console.log('list', res?.data?.data.slice(0, 6), res?.data?.data.find(p => p.product_code === 'AKCVKVUZX1'));
         setTotalPages(res?.data?.pagination?.totalPages);
       }
     } catch (error) {
@@ -140,102 +140,100 @@ export default function ProductSearchPage() {
 
   return (
     <div className="bg-white pt-2 pb-4">
-      <Container sx={{ padding: "30px 16px" }}>
-        <Box>
-          <Grid container width={"calc(100% + -32px)"} ml={0} spacing={4}>
-            <Grid item lg={12} md={12} xs={12}>
-              <FlexBetween flexWrap="wrap" gap={2} mb={2} p={0}>
-                <Box>
-                  {/* <Button onClick={toggleDrawer(true)}
-                    variant="text"
-                    sx={{
-                      '&:hover': {
-                        boxShadow: '0 0 3px #000'
-                      },
-                      background: '#fff',
-                      border: '1px solid gray',
-                      borderRadius: '30px',
-                      padding: '4px 16px',
-                      transition: 'all 500ms',
-                    }}
+      <Container sx={{ padding: {xs: "12px", sm: "30px 16px" }}}>
+        <Box px={{xs: 0, sm: 3, md: 4}}>
+
+          {Object.values(shopDetails || {}).length > 0 && (
+            <Typography mb={2}>
+              Did you mean the shop{" "}
+              <b
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  const url = `/store/${shopDetails?.slug}`;
+                  window.open(url, "_blank");
+                }}
+              >
+                {shopDetails?.shop_name}
+              </b>{" "}
+              ?
+            </Typography>
+          )}
+          <FlexBetween flexWrap="wrap" gap={2} mb={2} p={0}>
+            <Box>
+              <Button onClick={() => toggleDrawer(true)}
+                variant="text"
+                sx={{
+                  '&:hover': {
+                    boxShadow: '0 0 3px #000'
+                  },
+                  background: '#fff',
+                  border: '1px solid',
+                  borderColor: '#ccc',
+                  borderRadius: '30px',
+                  padding: { xs: '12px', sm: '12px 16px' },
+                  transition: 'all 500ms',
+                }}
+              >
+                <Typography component="div" display="flex" alignItems="center">
+                  <svg
+                    height="20px"
+                    width="20px"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    focusable="false"
                   >
-                    <Typography component="div" display="flex" alignItems="center">
-                      <svg
-                        height="20px"
-                        width="20px"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                        focusable="false"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-                        ></path>
-                      </svg>
-                      <Typography component="span" sx={{ marginLeft: '5px' }}>
-                        All Filter
-                      </Typography>
-                    </Typography>
-                  </Button> */}
-                  {Object.values(shopDetails || {}).length > 0 && (
-                    <Typography>
-                      Did you mean the shop{" "}
-                      <b
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          const url = `/store/${shopDetails?.slug}`;
-                          window.open(url, "_blank");
-                        }}
-                      >
-                        {shopDetails?.shop_name}
-                      </b>{" "}
-                      ?
-                    </Typography>
-                  )}
-                </Box>
-                <Box>
-                  <FlexBox
-                    alignItems="center"
-                    sx={{
-                      border: "1px solid #ccc",
-                      borderRadius: "30px",
-                      px: 2,
-                      py: 0.5,
-                      transition: "0.3s",
-                      "&:hover": {
-                        boxShadow: "0 0 5px rgba(0,0,0,0.2)",
-                      },
-                    }}
-                    gap={1}
-                  >
-                    <Paragraph color="grey.600">Sort by: </Paragraph>
-                    <TextField
-                      select
-                      size="small"
-                      value={sortBy}
-                      variant="outlined"
-                      onChange={(e) => handleChangeSortBy(e.target.value)}
-                      sx={{
-                        minWidth: 120,
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          border: "none",
-                        },
-                        "& .MuiSelect-select": { pl: 0 },
-                      }}
-                    >
-                      {SORT_OPTIONS.map((item) => (
-                        <MenuItem key={item.value} value={item.value}>
-                          {item.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </FlexBox>
-                </Box>
-              </FlexBetween>
-            </Grid>
-          </Grid>
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                    ></path>
+                  </svg>
+                  <Typography component="span" sx={{ marginLeft: '5px', display: { xs: 'none', sm: 'block' } }}>
+                    All Filters
+                  </Typography>
+                </Typography>
+              </Button>
+            </Box>
+            <Box>
+              <FlexBox
+                alignItems="center"
+                sx={{
+                  border: "1px solid #ccc",
+                  borderRadius: "30px",
+                  px: 2,
+                  py: 0.5,
+                  transition: "0.3s",
+                  "&:hover": {
+                    boxShadow: "0 0 5px rgba(0,0,0,0.2)",
+                  },
+                }}
+                gap={1}
+              >
+                <Paragraph color="grey.600">Sort by: </Paragraph>
+                <TextField
+                  select
+                  size="small"
+                  value={sortBy}
+                  variant="outlined"
+                  onChange={(e) => handleChangeSortBy(e.target.value)}
+                  sx={{
+                    minWidth: 120,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "& .MuiSelect-select": { pl: 0 },
+                  }}
+                >
+                  {SORT_OPTIONS.map((item) => (
+                    <MenuItem key={item.value} value={item.value}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </FlexBox>
+            </Box>
+          </FlexBetween>
         </Box>
         {loading ? (
           <Container sx={{ padding: "30px 16px" }}>
@@ -248,8 +246,8 @@ export default function ProductSearchPage() {
             </Grid>
           </Container>
         ) : (
-          <Box m={{xs: 0, sm: 4}}>
-            <Grid container spacing={4}>
+          <Box m={{ xs: 0, sm: 4 }}>
+            <Grid container spacing={{xs: 1, sm: 2}}>
               {productList?.length > 0 ? (
                 productList?.map((product) => (
                   <Grid key={product._id} item xs={6} md={4} lg={3}>
@@ -291,7 +289,7 @@ export default function ProductSearchPage() {
           </Box>
         )}
       </Container>
-      <Drawer open={open} onClose={toggleDrawer(false)}>
+      <Drawer open={open} onClose={()=>toggleDrawer(false)}>
         <Box sx={{ width: 400, position: "relative" }} role="presentation">
           <Typography
             component="span"
@@ -302,7 +300,7 @@ export default function ProductSearchPage() {
               cursor: "pointer",
             }}
           >
-            <CloseIcon onClick={toggleDrawer(false)} />
+            <CloseIcon onClick={()=>toggleDrawer(false)} />
           </Typography>
           <SectionCreator p={3}>
             <H1

@@ -12,13 +12,15 @@ export const HeaderWrapper = styled("div")(({
   transition: "height 250ms ease-in-out",
   background: theme.palette.background.paper,
   marginTop:"10px",
-  
-// borderBottom: `1px solid ${theme.palette.grey[200]}`,
+
+  [theme.breakpoints.down("md")]: {
+    height: layoutConstant.tabletHeaderHeight
+  },
   [theme.breakpoints.down("sm")]: {
     height: layoutConstant.mobileHeaderHeight
   },
-  [theme.breakpoints.down("md")]: {
-    height: layoutConstant.tabletHeaderHeight
+  "@media (min-width: 900px) and (max-width: 1149px)": {
+    height: layoutConstant.tabletHeaderHeight + 10
   }
 }));
 export const StyledContainer = styled(Container)({

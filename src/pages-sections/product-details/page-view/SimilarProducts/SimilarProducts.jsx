@@ -12,6 +12,7 @@ const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
   // const [imageBaseUrl, setImageBaseUrl] = useState("");
   // const [videoBaseUrl, setVideoBaseUrl] = useState("");
   // const [loading, setLoading] = useState(true);
+  console.log(similarProducts, "similar");
 
   const chunkArray = (arr, size) => {
     const result = [];
@@ -58,7 +59,7 @@ const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
 
   return (
     <SectionCreator title="Similar Products From Agukart">
-      <Container sx={{ padding: "30px 16px" }}>
+      <Container sx={{ padding:{xs: 0, sm: "30px 16px"} }}>
         {similarProducts?.length > 0 ? (
           similarProducts.length >= 12 ? (
             <Typography
@@ -132,7 +133,7 @@ const SimilarProducts = ({ similarProducts, imageBaseUrl, videoBaseUrl }) => {
               </Slider>
             </Typography>
           ) : (
-            <Grid container spacing={4}>
+            <Grid container spacing={{xs: 1, sm: 2}}>
               {similarProducts.map((product) => (
                 <Grid item xs={6} sm={6} md={4} lg={2} key={product._id}>
                   <Product

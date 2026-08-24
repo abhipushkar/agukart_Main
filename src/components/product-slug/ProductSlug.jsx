@@ -133,7 +133,7 @@ const ProductSlug = ({
   const toggleDrawer = (val) => setOpen(val);
 
   return (
-    <Container sx={{ bgcolor: "background.paper" }}>
+    <Container sx={{ bgcolor: "background.paper", px: {xs: 1.5, sm: 2, md: 3} }}>
       <Box sx={{ pt: 4, pb: 4 }}>
 
         {/* 🔥 Breadcrumb */}
@@ -171,10 +171,27 @@ const ProductSlug = ({
 
         {/* 🔥 CHILD CATEGORIES (SSR ONLY) */}
         {children.length > 0 && page === 1 && (
-          <Box sx={{ mb: 4, px: { xs: 0, sm: 2, md: 20, lg: 20 } }}>
-            <Grid container spacing={2} justifyContent="center">
+          <Box sx={{ mb: 4, px: { xs: 0, sm: 2, md: 8, lg: 8 }, pr: {xs: 1.5, sm: 0}}}>
+            <Grid
+              container
+              spacing={2}
+              justifyContent={"center"}
+              sx={{
+                width: "100%",
+                margin: 0,
+              }}
+            >
               {visibleChildren.map((item) => (
-                <Grid item xs={6} sm={4} md={2} key={item._id}>
+                <Grid
+                  item
+                  xs={6}
+                  sm={4}
+                  md={2}
+                  key={item._id}
+                  sx={{
+                    minWidth: 0,
+                  }}
+                >
                   <AdminChildCat cat={item} />
                 </Grid>
               ))}
@@ -215,7 +232,40 @@ const ProductSlug = ({
         {/* 🔥 SORT */}
         <Box mb={3}>
           <FlexBetween>
-            <Box />
+            <Button onClick={() => toggleDrawer(true)}
+              variant="text"
+              sx={{
+                '&:hover': {
+                  boxShadow: '0 0 3px #000'
+                },
+                background: '#fff',
+                border: '1px solid',
+                borderColor: '#ccc',
+                borderRadius: '30px',
+                padding: { xs: '12px', sm: '12px 16px' },
+                transition: 'all 500ms',
+              }}
+            >
+              <Typography component="div" display="flex" alignItems="center">
+                <svg
+                  height="20px"
+                  width="20px"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M15 9a3 3 0 0 0 2.599-1.5H21v-2h-3.041a3 3 0 0 0-5.918 0H3v2h9.401A2.999 2.999 0 0 0 15 9Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-9.17a3.001 3.001 0 0 0-5.66 0H3v2h3.17A3.001 3.001 0 0 0 9 15Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 8a3.001 3.001 0 0 0 2.83-2H21v-2h-3.17a3.001 3.001 0 0 0-5.66 0H3v2h9.17A3.001 3.001 0 0 0 15 21Zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                  ></path>
+                </svg>
+                <Typography component="span" sx={{ marginLeft: '5px', display: { xs: 'none', sm: 'block' } }}>
+                  All Filters
+                </Typography>
+              </Typography>
+            </Button>
             <FlexBox alignItems="center" gap={1}>
               <Paragraph>Sort by:</Paragraph>
               <TextField
@@ -244,7 +294,7 @@ const ProductSlug = ({
             ))}
           </Grid>
         ) : productList?.length > 0 ? (
-          <Grid container spacing={2}>
+          <Grid container spacing={{xs: 1, sm:2}}>
             {productList.map((product) => (
               <Grid key={product._id} item xs={6} sm={4} md={3}>
                 <Product
@@ -277,14 +327,240 @@ const ProductSlug = ({
 
       {/* 🔥 FILTER DRAWER (unchanged) */}
       <Drawer open={open} onClose={() => toggleDrawer(false)}>
-        <Box sx={{ width: 400, position: "relative" }}>
-          <CloseIcon
-            onClick={() => toggleDrawer(false)}
-            style={{ position: "absolute", right: 10, top: 10, cursor: "pointer" }}
-          />
+        <Box sx={{ width: { xs: '90vw', sm: '500px' }, position: "relative" }} role="presentation">
+          <Typography
+            component="span"
+            sx={{
+              position: "absolute",
+              top: "15px",
+              right: "15px",
+              cursor: "pointer",
+            }}
+          >
+            <CloseIcon onClick={() => toggleDrawer(false)} />
+          </Typography>
           <SectionCreator p={3}>
-            <H1>Filter</H1>
-            {/* keep your existing filters */}
+            <H1
+              fontWeight={500}
+              mb={4}
+              sx={{ borderBottom: "1px solid #eaeaea" }}
+            >
+              Filter
+            </H1>
+            <Box mb={2}>
+              <FormControl>
+                <FormLabel
+                  component="legend"
+                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
+                >
+                  Special offers
+                </FormLabel>
+                <FormGroup
+                  sx={{
+                    ".MuiCheckbox-root": {
+                      padding: "2px 9px",
+                      background: "none",
+                    },
+                  }}
+                >
+                  <FormControlLabel
+                    control={<Checkbox defaultChecked />}
+                    label="FREE delivery"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox defaultChecked />}
+                    label="On sale"
+                  />
+                </FormGroup>
+              </FormControl>
+            </Box>
+
+            <Box mb={2}>
+              <FormControl>
+                <FormLabel
+                  id="demo-radio-buttons-group-label"
+                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
+                >
+                  Shop Location
+                </FormLabel>
+                <RadioGroup
+                  aria-labelledby="demo-radio-buttons-group-label"
+                  defaultValue="Anywhere"
+                  name="radio-buttons-group"
+                  sx={{
+                    ".MuiRadio-root": {
+                      padding: "2px 9px",
+                      background: "none",
+                    },
+                  }}
+                >
+                  <FormControlLabel
+                    value="female"
+                    control={<Radio />}
+                    label="Anywhere"
+                  />
+                  <FormControlLabel
+                    value="male"
+                    control={<Radio />}
+                    label="India"
+                  />
+                  <FormControlLabel
+                    value="male"
+                    control={<Radio />}
+                    label="Custom"
+                  />
+                </RadioGroup>
+              </FormControl>
+            </Box>
+
+            <Box mb={2}>
+              <TextField
+                fullWidth
+                name="Your_ecomm_password"
+                placeholder="Enter location"
+              />
+            </Box>
+            <Box mb={2}>
+              <FormControl>
+                <FormLabel
+                  component="legend"
+                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
+                >
+                  Special offers
+                </FormLabel>
+                <FormGroup
+                  sx={{
+                    ".MuiCheckbox-root": {
+                      padding: "2px 9px",
+                      background: "none",
+                    },
+                  }}
+                >
+                  <FormControlLabel
+                    control={<Checkbox defaultChecked />}
+                    label="FREE delivery"
+                  />
+                  <FormControlLabel
+                    control={<Checkbox defaultChecked />}
+                    label="On sale"
+                  />
+                </FormGroup>
+              </FormControl>
+              <Typography component="div" pt={1}>
+                <Button sx={{ borderRadius: "30px", transition: "all 500ms" }}>
+                  + Show more
+                </Button>
+              </Typography>
+            </Box>
+
+            <Box mb={2}>
+              <FormControl>
+                <FormLabel
+                  id="demo-radio-buttons-group-label"
+                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
+                >
+                  Shop Location
+                </FormLabel>
+                <RadioGroup
+                  aria-labelledby="demo-radio-buttons-group-label"
+                  defaultValue="Anywhere"
+                  name="radio-buttons-group"
+                  sx={{
+                    ".MuiRadio-root": {
+                      padding: "2px 9px",
+                      background: "none",
+                    },
+                  }}
+                >
+                  <FormControlLabel
+                    value="female"
+                    control={<Radio />}
+                    label="Anywhere"
+                  />
+                  <FormControlLabel
+                    value="male"
+                    control={<Radio />}
+                    label="India"
+                  />
+                  <FormControlLabel
+                    value="male"
+                    control={<Radio />}
+                    label="Custom"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <Typography component="div" pt={1}>
+                <Button sx={{ borderRadius: "30px", transition: "all 500ms" }}>
+                  + Show more
+                </Button>
+              </Typography>
+            </Box>
+            <Box mb={2}>
+              <FormControl>
+                <FormLabel
+                  id="demo-radio-buttons-group-label"
+                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
+                >
+                  Price
+                </FormLabel>
+                <RadioGroup
+                  aria-labelledby="demo-radio-buttons-group-label"
+                  defaultValue="Anywhere"
+                  name="radio-buttons-group"
+                  sx={{
+                    ".MuiRadio-root": {
+                      padding: "2px 9px",
+                      background: "none",
+                    },
+                  }}
+                >
+                  <FormControlLabel
+                    value="female"
+                    control={<Radio />}
+                    label="Anywhere"
+                  />
+                  <FormControlLabel
+                    value="male"
+                    control={<Radio />}
+                    label="Any price"
+                  />
+                  <FormControlLabel
+                    value="male"
+                    control={<Radio />}
+                    label="Custom"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <Box mt={1} sx={{ display: "flex", alignItems: "center" }}>
+                <TextField fullWidth placeholder="Low" />
+                <Typography component="span" mx={2}>
+                  to
+                </Typography>
+                <TextField fullWidth placeholder="High" />
+              </Box>
+              <Typography component="div" pt={1}>
+                <Button sx={{ borderRadius: "30px", transition: "all 500ms" }}>
+                  + Show more
+                </Button>
+              </Typography>
+            </Box>
+            <Box>
+              <FormControl sx={{ width: "100%" }}>
+                <Select
+                  sx={{
+                    border: "none",
+                    background: "#fff",
+                    height: "50px",
+                    boxShadow: "0 0 3px #000",
+                    ".MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                  }}
+                >
+                  <MenuItem>Hello</MenuItem>;
+                </Select>
+              </FormControl>
+            </Box>
           </SectionCreator>
         </Box>
       </Drawer>

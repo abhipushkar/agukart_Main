@@ -191,14 +191,14 @@ const ChangeEmail = () => {
   return (
     <>
       <Container py={5}>
-        <Grid container spacing={2}>
+        <Grid container spacing={{xs: 0, sm :2}}>
           <Grid item lg={8} md={7} xs={12}>
             <Box
               sx={{ border: "1px solid #c7c7c7", borderRadius: "6px" }}
-              p={5}
+              p={{xs: 2, sm: 4, md: 5}}
             >
               <Box pb={2}>
-                <H3 mb={3}>Email</H3>
+                {/* <H3 mb={3}>Email</H3> */}
                 <Typography component="div">
                   <H4>Current email</H4>
                   <Typography sx={{ color: "#000", fontSize: "16px" }}>
@@ -259,7 +259,7 @@ const ChangeEmail = () => {
                   <H3 mb={3}>Change your email</H3>
                   <Box>
                     <Grid container spacing={2}>
-                      <Grid item lg={6} md={6} xs={12}>
+                      <Grid item lg={12} md={12} xs={12}>
                         <form onSubmit={formik.handleSubmit}>
                           <FormControl fullWidth sx={{ marginBottom: "15px" }}>
                             <TextField
@@ -301,7 +301,7 @@ const ChangeEmail = () => {
                             <TextField
                               fullWidth
                               name="Your_ecomm_password"
-                              label="Your ecomm password"
+                              label="Your password"
                               type="password"
                               value={formik.values.Your_ecomm_password}
                               onChange={formik.handleChange}

@@ -65,11 +65,12 @@ export default function Footer1() {
               sm: 0,
               md: 4,
             }}>
-            {/* <CustomerCareLinks />*/}
-            <Heading>Get to know us</Heading>
-            <Link href="/about" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >About Agukart</Link>
-            <Link href="/privacy-policy" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Policy</Link>
-            <Link href="/terms-condition" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Terms & Condition</Link>
+              {/* <CustomerCareLinks />*/}
+              <Heading>Get to know us</Heading>
+              <Link href="/about" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >About Agukart</Link>
+              <Link href="/privacy-policy" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Policy</Link>
+              <Link href="/terms-condition" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Terms & Condition</Link>
+              <Link href="/apply" rel="noopener" style={{ display: 'block', color: '#AEB4BE', textDecoration: 'none', padding: '0.3rem 0rem', '&:hover': { color: '#fff', } }} >Become a Creator</Link>
             </Grid>
             {
               /* CUSTOMER CARE LINKS */
@@ -109,28 +110,23 @@ export default function Footer1() {
                 /* SOCIAL LINKS WITH ICON */
               }
               <SocialLinks />
-              <Alert severity="info" color="warning" sx={{ mt: 1,display: {xs: 'none', sm: 'flex'}, px:1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+              <Alert severity="info" color="warning" sx={{ mt: 1, display: { xs: 'none', sm: 'flex' }, px: 1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
                 <strong>Need help?</strong> Contact
                 <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
                 We're here to help you!
               </Alert>
 
-              {/* <Typography component={'div'} display={'flex'} gap={1} pt={1}>
-                <HeadsetMicTwoToneIcon sx={{ fontSize: '38px', color: "#faf1c9" }} />
-                <Typography >
-                <strong>Need help?</strong> Contact
-                <a href="mailto:support@agukart.com" style={{ color: "#1b1c1d", textDecoration: "underline" }}><strong style={{marginLeft: '4px'}}>Agukart Support</strong></a><br />
-                We're here to help you!
-                </Typography>
-              </Typography> */}
             </Grid>
           </Grid>
-          <Alert severity="info" color="warning" sx={{ my: 2, display: {xs: 'flex', sm: 'none'}, px:1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+          <Alert severity="info" color="warning" sx={{ my: 2, display: { xs: 'flex', sm: 'none' }, px: 1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
             <strong>Need help?</strong> Contact
             <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
             We're here to help you!
           </Alert>
         </Box>
+      <Box textAlign={'center'} py={2} borderTop={"1px solid #cccccc38"} sx={{ fontWeight: 500 }} color={'whitesmoke'}>
+        © 2026 Agukart. All Rights Reserved.
+      </Box>
       </Box>
     </>
   )

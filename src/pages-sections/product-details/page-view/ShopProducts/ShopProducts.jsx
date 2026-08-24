@@ -60,7 +60,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
 
   return (
     <SectionCreator title="More Shop Products">
-      <Container sx={{ padding: "30px 16px" }}>
+      <Container sx={{ padding:{xs: 0,sm: "30px 16px" }}}>
         {
           (
             shopProducts?.length > 0 ? (
@@ -108,7 +108,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
 
                       return (
                         <Box key={index} px={2}>
-                          <Grid container spacing={4}>
+                          <Grid container spacing={{xs: 1, sm: 2}}>
                             {row1.map((product) => (
                               <Grid
                                 item
@@ -126,7 +126,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
                               </Grid>
                             ))}
                           </Grid>
-                          <Grid container spacing={4} mt={1}>
+                          <Grid container spacing={{xs: 1, sm: 2}} mt={1}>
                             {row2.map((product) => (
                               <Grid
                                 item
@@ -150,7 +150,7 @@ const ShopProducts = ({ shopProducts, imageBaseUrl, videoBaseUrl }) => {
                   </Slider>
                 </Typography>
               ) : (
-                <Grid container spacing={4}>
+                <Grid container spacing={{xs: 1, sm: 2}}>
                   {shopProducts.map((product) => (
                     <Grid
                       item

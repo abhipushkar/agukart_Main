@@ -10,7 +10,7 @@ export default function BottomActions({
   handleNavigate
 }) {
   return <Box p={2.5}>
-      <Link href="/cart" passHref>
+      {/* <Link href="/cart" passHref>
         <Button
           fullWidth
           color="primary"
@@ -25,7 +25,7 @@ export default function BottomActions({
         >
           View Cart
         </Button>
-      </Link>
+      </Link> */}
       <Link href="/cart" passHref>
         <Button
           fullWidth

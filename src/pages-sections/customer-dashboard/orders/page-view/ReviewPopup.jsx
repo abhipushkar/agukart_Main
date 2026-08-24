@@ -4,6 +4,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useToasts } from "react-toast-notifications";
 import useAuth from "hooks/useAuth";
 import { postAPIAuthFormData, putAPIAuthFormData } from "utils/__api__/ApiServies";
+import { Favorite } from "@mui/icons-material";
 
 const ReviewPopup = ({
     open,
@@ -522,7 +523,7 @@ const ReviewPopup = ({
                             variant="outlined"
                             startIcon={
                                 <span style={{ color: isFollowing ? '#E91E63' : '#999', fontSize: 16 }}>
-                                    ♥
+                                    <Favorite />
                                 </span>
                             }
                             sx={{

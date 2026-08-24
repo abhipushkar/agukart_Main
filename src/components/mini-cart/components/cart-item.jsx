@@ -145,7 +145,7 @@ export default function MiniCartItem({ item, data, handleCartAmountChange }) {
       <Link href={`/product/${item.slug}/${item.product_code}`}>
         <Avatar
           alt={item.product_name}
-          src={item.firstImage}
+          src={item?.editedImage ||item.firstImage}
           sx={{
             mx: 1,
             width: 75,
