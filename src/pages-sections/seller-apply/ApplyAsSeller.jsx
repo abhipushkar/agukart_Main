@@ -60,16 +60,6 @@ const socialOptions = [
   { value: "instagram", label: "Instagram", icon: <InstagramIcon /> },
   { value: "facebook", label: "Facebook", icon: <FacebookIcon /> },
   { value: "pinterest", label: "Pinterest", icon: <PinterestIcon /> },
-  // { value: "twitter", label: "Twitter", icon: <TwitterIcon /> },
-  // { value: "youtube", label: "YouTube", icon: <YouTubeIcon /> },
-  // { value: "linkedin", label: "LinkedIn", icon: <LinkedInIcon /> },
-  // { value: "github", label: "GitHub", icon: <GitHubIcon /> },
-  // { value: "tiktok", label: "TikTok", icon: <PublicIcon /> },
-  // { value: "snapchat", label: "Snapchat", icon: <PublicIcon /> },
-  // { value: "whatsapp", label: "WhatsApp", icon: <PublicIcon /> },
-  // { value: "telegram", label: "Telegram", icon: <PublicIcon /> },
-  // { value: "discord", label: "Discord", icon: <PublicIcon /> },
-  // { value: "reddit", label: "Reddit", icon: <PublicIcon /> },
 ];
 
 // Validation Schema
@@ -98,11 +88,18 @@ const validationSchema = Yup.object({
       Yup.object({
         platform: Yup.string().required("Platform is required"),
         url: Yup.string()
-          .required("URL is required")
-          .url("Please enter a valid URL"),
+          .trim()
+          .url("Please enter a valid URL")
+          .nullable(),
       })
     )
-    .min(1, "At least one social media or website link is required"),
+    .test(
+      "at-least-one-link",
+      "At least one social media or website link is required",
+      (links) => {
+        return links?.some((link) => link?.url?.trim()) ?? false;
+      }
+    ),
   number: Yup.string()
     .required("Phone number is required")
     .min(10, "Please enter a valid phone number"),
@@ -375,6 +372,7 @@ const ApplyAsSeller = () => {
             height: 45,
             bgcolor: "white",
             boxShadow: "none",
+            boxShadow: "2px #00000060"
           }}
         >
           <LockPersonOutlined sx={{ color: "#d1b45b", fontSize: "30px" }} />
@@ -424,6 +422,7 @@ const ApplyAsSeller = () => {
         sx={{
           p: { xs: 2, md: 5 },
           mb: 4,
+          mt: { xs: 0.5, sm: 1, md: 0 },
           color: "#573912",
           borderRadius: 3,
           position: "relative",
@@ -522,9 +521,11 @@ const ApplyAsSeller = () => {
               opacity: 0.9,
               fontSize: {
                 xs: "0.7rem",
+                sm: "0.9rem",
                 md: "1.25rem",
               },
-              px: 2
+              px: 2,
+              textShadow: "1px 2px 4px #fff"
             }}
           >
             Join Agukart, a curated marketplace for unique, handcrafted & timeless
@@ -536,10 +537,15 @@ const ApplyAsSeller = () => {
             size={isMobile ? "small" : "medium"}
             sx={{
               mt: 2,
-              bgcolor: "rgba(255, 255, 255, 0.31)",
+              bgcolor: "rgba(255, 255, 255, 0.4)",
               color: "#573912",
+              backdropFilter: "blur(1px)",
               fontWeight: 600,
-
+              boxShadow: `
+              inset 0 3px 8px rgba(255, 255, 255, 0.2),
+              inset 0 -3px 8px rgba(255, 255, 255, 0.2)
+              `,
+              opacity: 1,
               "&:hover": {
                 bgcolor: "rgba(255, 255, 255, 0.31)",
                 color: "#573912",
@@ -669,6 +675,9 @@ const ApplyAsSeller = () => {
               </Box>
             </Grid>
 
+            <Grid item sm={12} display={{ xs: "none", sm: "block", md: "none" }}>
+              {qualityFirst}
+            </Grid>
 
             {/* Right Column - Form */}
             <Grid item xs={12} md={8}>
@@ -974,7 +983,7 @@ const ApplyAsSeller = () => {
                               ))}
                             </Field>
                           </Grid>
-                          <Grid item xs={12} md={6}>
+                          <Grid item xs={12} sm={6}>
                             <Field
                               as={TextField}
                               fullWidth
@@ -1044,7 +1053,7 @@ const ApplyAsSeller = () => {
                               helperText={touched.addressLine2 && errors.addressLine2}
                             />
                           </Grid>
-                          
+
                         </Grid>
                       </Box>
 
@@ -1053,6 +1062,15 @@ const ApplyAsSeller = () => {
                         <Typography fontWeight={600} sx={{ mb: 1 }}>
                           Add at least one social media or website link *
                         </Typography>
+                        {typeof errors.socialLinks === "string" && touched.socialLinks && (
+                          <Typography
+                            color="error"
+                            variant="caption"
+                            sx={{ display: "block", mb: 1 }}
+                          >
+                            {errors.socialLinks}
+                          </Typography>
+                        )}
                         <FieldArray name="socialLinks">
                           <Grid
                             container
