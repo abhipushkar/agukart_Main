@@ -716,7 +716,7 @@ const ChatList = ({ chatListProp }) => {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 25, 50, 100]}
+          rowsPerPageOptions={[10, 25, 50]}
           sx={{
             borderTop: '1px solid #e8eaed',
             flexShrink: 0,
@@ -729,6 +729,8 @@ const ChatList = ({ chatListProp }) => {
               paddingRight: 0,
             },
           }}
+          labelRowsPerPage={isMobile ? "Rows:" : "Rows per page:"}
+          // labelDisplayedRows={({from, to, page, count})=>`page ${page} of ${Math.ceil(count/rowsPerPage)}`}
         />
       )}
     </Box>
