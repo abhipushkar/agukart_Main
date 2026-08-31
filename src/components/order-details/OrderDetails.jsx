@@ -1438,7 +1438,7 @@ const OrderDetails = () => {
         </Box>
         <Box width={'100%'} mt={2}>
           <Typography variant="h6">Note to Seller</Typography>
-          <TextField id="outlined-multiline" multiline rows={3} variant="outlined" value={orderDetail?.buyer_note || "No buyer notes"} fullWidth InputProps={{ readOnly: true }} />
+          <TextField id="outlined-multiline" multiline placeholder={orderDetail?.buyer_note || "No buyer notes"} rows={3} variant="outlined" value={orderDetail?.buyer_note} fullWidth InputProps={{ readOnly: true }} />
         </Box>
         <Dialog
           open={imageModalOpen}

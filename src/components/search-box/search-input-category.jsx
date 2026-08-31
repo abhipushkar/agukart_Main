@@ -210,10 +210,23 @@ export default function SearchInputWithCategory() {
       return;
     }
 
-    router.push(
-      `/search-product-list?q=${encodeURIComponent(trimmed)}`
-    );
-  }, [searchTerms, productList, closeDropdown, router]);
+    // change this section as only common query should be carried forward
+    if (pathname === "/search-product-list") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("q", trimmed); 
+      router.push(`/search-product-list?${params.toString()}`);
+      return;
+    }
+    router.push( `/search-product-list?q=${encodeURIComponent(trimmed)}` );
+
+  }, [
+    searchTerms,
+    productList,
+    closeDropdown,
+    router,
+    searchParams,
+    pathname,
+  ]);
 
   // ------------------------------------------------------------
   // KEYBOARD HANDLING

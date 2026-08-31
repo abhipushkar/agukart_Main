@@ -1,4 +1,4 @@
-import { Box, Button, Grid, Typography, Rating, Avatar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
+import { Box, Button, Grid, Typography, Rating, Avatar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, useTheme, useMediaQuery } from "@mui/material";
 import { H2, H3, H4, H6 } from "components/Typography";
 import { useCurrency } from "contexts/CurrencyContext";
 import React, { useState, useRef } from "react";
@@ -24,6 +24,9 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
   const transformRef = useRef(null);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const theme = useTheme();
+    const isTablet = useMediaQuery(theme.breakpoints.down(1160));
 
   const handleMessageClickPopup = () => {
     SetMessageOpenPopup(true);
@@ -116,7 +119,6 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
   const variantHasGuide = (v) => product?.productData.product_variants.find(pv => pv.variant_name === v.variantName).guide || null;
   const handleGuideClick = (variant) => {
     const productVariant = product?.productData.product_variants.find(v => v.variant_name === variant.variantName);
-    console.log(productVariant, "pv");
     const guide = productVariant.guide[0];
     setCurrentGuide({
       name: guide.guide_name,
@@ -135,7 +137,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
         spacing={2}
         sx={{ margin: "0", width: "100%", mb: "20px" }}
       >
-        <Grid lg={(review || reviewNote) ? 6 : 9} md={(review || reviewNote) ? 6 : 9} xs={12} sx={{ paddingTop: "0" }}>
+        <Grid lg={(review || reviewNote) ? 6 : 9} md={(review || reviewNote) ? isTablet ? 12 : 6 : 9} xs={12} sx={{ paddingTop: "0" }}>
           <Box sx={{ display: "flex" }}>
             <Box sx={{
               position: "relative",
@@ -158,7 +160,6 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
                   objectFit: "contain",
                   bgcolor: "#fff",
                   width: '100%', height: '100%',
-
                 }}
               />
               {images.length > 1 && (
@@ -391,7 +392,7 @@ const Product = ({ baseUrl, shopBaseUrl, setReviewId, setVendorId, SetOpenPopup,
           </Box>
 
         </Grid>
-        <Grid lg={!product.is_reviewed ? 3 : 6} md={!product.is_reviewed ? 3 : 6} xs={12} sx={{ paddingTop: { xs: 1 } }}>
+        <Grid lg={!product.is_reviewed ? 3 : 6} md={!product.is_reviewed ? 3 : isTablet ? 12 : 6} xs={12} sx={{ paddingTop: { xs: 1 } }}>
           {!product.is_reviewed ? (<Box
             sx={{
               display: "flex",

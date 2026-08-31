@@ -365,8 +365,8 @@ const ChangeEmail = () => {
                           </Box>
                         </form>
                         <Typography>
-                          Your emila address will not change until you Confirm
-                          it via email.
+                          Your email address will not change until you Confirm
+                          it via email verification code.
                         </Typography>
                       </Grid>
                     </Grid>

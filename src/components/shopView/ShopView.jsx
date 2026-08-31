@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-// import Link from "@mui/material/Link";
+
+
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import List from "@mui/material/List";
@@ -37,7 +38,7 @@ import { useToasts } from "react-toast-notifications";
 import UseScrollToHash from "./UseScrollToHash";
 import { Carousel } from "components/carousel";
 
-const ShopView = ({initialVendor, isDisabled, slug}) => {
+const ShopView = ({ initialVendor, isDisabled, slug }) => {
   UseScrollToHash();
   const { addToast } = useToasts();
   const [_value, setValue] = useState("1");
@@ -286,7 +287,7 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
       {loading ? (
         <VendorProfileShimmer />
       ) : Object.values(vendorDetail || {}).length > 0 ? (
-        <Box sx={{ overflow: "visible", "@media (min-width: 900px) and (max-width: 1149px)": { pt: 1.5 }}} pt={{xs: 1, sm: 1.5, md: 0}}>
+        <Box sx={{ overflow: "visible", "@media (min-width: 900px) and (max-width: 1149px)": { pt: 1.5 } }} pt={{ xs: 1, sm: 1.5, md: 0 }}>
           <Box
             sx={{
               position: "relative",
@@ -519,123 +520,6 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                       {vendorDetail?.shop_address}
                     </Typography>
 
-                    {/* Icons row - only mobile */}
-                    {/* Icons + Announcement row - mobile */}
-                    <Box
-                      sx={{
-                        mt: 0,
-                        mb: 0,
-                        display: { xs: "flex", md: "none" },
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 1,
-                        mt: 0.5,
-                        width: "100%",
-                      }}
-                    >
-
-                      {vendorDetail?.shop_announcement?.trim() ? (
-                        <Box
-                          onClick={() => {
-                            if (window.innerWidth < 900) {
-                              setOpenAnnouncementModal(true);
-                            } else {
-                              setAnnouncementShowMore((prev) => !prev);
-                            }
-                          }}
-                          sx={{
-                            background: "#fff",
-                            borderRadius: "12px",
-                            p: 1,
-                            cursor: "pointer",
-                            flexShrink: 0,
-                            border: "1px solid #e0e0e0",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                          }}
-                        >
-                          <Typography fontSize="12px">
-                            Announcement
-                          </Typography>
-                        </Box>
-                      ) : <Box /> }
-
-                      {/* RIGHT SIDE ICONS */}
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        {/* Heart + count */}
-                        <Box
-                          onClick={toggelFollowShopHandler}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.3,
-                            background: followed ? "#fff0f0" : "#fff",
-                            borderRadius: "20px",
-                            p: 1,
-                            cursor: "pointer",
-                            border: followed
-                              ? "1px solid #ffcdd2"
-                              : "1px solid #e0e0e0",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                          }}
-                        >
-                          {followed ? (
-                            <FavoriteIcon
-                              sx={{ fontSize: "16px", color: "red" }}
-                            />
-                          ) : (
-                            <FavoriteBorderIcon sx={{ fontSize: "16px" }} />
-                          )}
-
-                          {/* <Typography fontSize="12px">
-                            {vendorDetail?.followersCount || "0"}
-                          </Typography> */}
-                        </Box>
-
-                        {/* Share */}
-                        <Box
-                          onClick={() => setOpenModal(true)}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "#fff",
-                            borderRadius: "50%",
-                            width: "34px",
-                            height: "34px",
-                            cursor: "pointer",
-                            border: "1px solid #e0e0e0",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                          }}
-                        >
-                          <IosShareIcon sx={{ fontSize: "16px" }} />
-                        </Box>
-
-                        {/* Mail */}
-                        <Box
-                          onClick={handleClickPopup}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "#fff",
-                            borderRadius: "50%",
-                            width: "34px",
-                            height: "34px",
-                            cursor: "pointer",
-                            border: "1px solid #e0e0e0",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                          }}
-                        >
-                          <MailOutlineIcon sx={{ fontSize: "16px" }} />
-                        </Box>
-                      </Box>
-                    </Box>
 
                     {/* Desktop stars + follow button (unchanged) */}
                     <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1, mt: 1 }}>
@@ -671,6 +555,124 @@ const ShopView = ({initialVendor, isDisabled, slug}) => {
                       </Button>
                     </Box>
                   </Typography>
+
+                </Box>
+
+                {/* Icons + Announcement row - mobile only */}
+                <Box
+                  sx={{
+                    display: { xs: "flex", md: "none" },
+                    alignItems: "center",
+                    justifyContent: { xs: "space-between", sm: "end" },
+                    gap: 2,
+                    mt: 1,
+                    width: "100%",
+                    position: { xs: "static", md: "relative" },
+                    top: { xs: 0, sm: -35 }
+                  }}
+                >
+
+                  {vendorDetail?.shop_announcement?.trim() ? (
+                    <Box
+                      onClick={() => {
+                        if (window.innerWidth < 900) {
+                          setOpenAnnouncementModal(true);
+                        } else {
+                          setAnnouncementShowMore((prev) => !prev);
+                        }
+                      }}
+                      sx={{
+                        background: "#fff",
+                        borderRadius: "16px",
+                        p: "8px 10px",
+                        cursor: "pointer",
+                        flexShrink: 0,
+                        border: "1px solid #e0e0e0",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      <Typography fontSize="12px">
+                        Announcement
+                      </Typography>
+                    </Box>
+                  ) : <Box />}
+
+                  {/* RIGHT SIDE ICONS */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    {/* Heart + count */}
+                    <Box
+                      onClick={toggelFollowShopHandler}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.3,
+                        background: followed ? "#fff0f0" : "#fff",
+                        borderRadius: "20px",
+                        p: 1,
+                        cursor: "pointer",
+                        border: followed
+                          ? "1px solid #ffcdd2"
+                          : "1px solid #e0e0e0",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      {followed ? (
+                        <FavoriteIcon
+                          sx={{ fontSize: "16px", color: "red" }}
+                        />
+                      ) : (
+                        <FavoriteBorderIcon sx={{ fontSize: "16px" }} />
+                      )}
+
+                      {/* <Typography fontSize="12px">
+                            {vendorDetail?.followersCount || "0"}
+                          </Typography> */}
+                    </Box>
+
+                    {/* Share */}
+                    <Box
+                      onClick={() => setOpenModal(true)}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#fff",
+                        borderRadius: "50%",
+                        width: "34px",
+                        height: "34px",
+                        cursor: "pointer",
+                        border: "1px solid #e0e0e0",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      <IosShareIcon sx={{ fontSize: "16px" }} />
+                    </Box>
+
+                    {/* Mail */}
+                    <Box
+                      onClick={handleClickPopup}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#fff",
+                        borderRadius: "50%",
+                        width: "34px",
+                        height: "34px",
+                        cursor: "pointer",
+                        border: "1px solid #e0e0e0",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      <MailOutlineIcon sx={{ fontSize: "16px" }} />
+                    </Box>
+                  </Box>
                 </Box>
               </Box>
               {vendorDetail?.shop_announcement && (
