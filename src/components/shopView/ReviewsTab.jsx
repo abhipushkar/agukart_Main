@@ -542,7 +542,7 @@ const ReviewsTab = ({ vendor_id, setSummary }) => {
               sx={{
                 display: "flex",
                 gap: 1,
-                justifyContent: "center",
+                justifyContent: "start",
                 alignItems: "center",
                 px: 2,
                 py: 1.5,

@@ -157,21 +157,6 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       Array.isArray(product?.promotionData) &&
       product?.promotionData.length > 0
     ) {
-      // const promotion = product.promotionData.reduce((best, promotion) => {
-      //   if (!promotion.qty || promotion.qty === null) return best;
-
-      //   if (
-      //     !best ||
-      //     best.qty === null ||
-      //     promotion.qty < best.qty ||
-      //     (promotion.qty === best.qty &&
-      //       promotion.discount_amount > best.discount_amount)
-      //   ) {
-      //     return promotion;
-      //   }
-
-      //   return best;
-      // }, null);
 
       const promotion = product.currentPromotion || {};
 
@@ -299,13 +284,6 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
                   width: "100%",
                   height: "100%",
                   objectFit: "contain",
-                  // transformOrigin: "center center",
-                  // ...(() => {
-                  //   const { x, y, scale } = clampPan(product?.zoom || {});
-                  //   return {
-                  //     transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
-                  //   };
-                  // })(),
                 }}
               />
             </Box>

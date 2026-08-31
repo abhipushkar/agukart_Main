@@ -36,6 +36,7 @@ import { getAPI, postAPIAuth } from "utils/__api__/ApiServies";
 import { useToasts } from "react-toast-notifications";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "contexts/CurrencyContext";
+import DashboardHeader from "pages-sections/customer-dashboard/dashboard-header";
 
 
 const AddGiftCard = () => {
@@ -91,7 +92,7 @@ const AddGiftCard = () => {
             <SectionCreator py={4}>
                 <Grid container spacing={2} justifyContent={"center"}>
                     <Grid item lg={8} md={10} xs={12}>
-                        <Typography variant="h5" fontWeight={600} mb={3}>E-Commerce Gift card</Typography>
+                        <DashboardHeader title={"Gift Card"} Icon={""}/>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', boxShadow: '0 0 3px #a2a2a2', borderRadius: '5px', padding: '15px' }}>
                             <Typography component="div" sx={{ display: "flex", alignItems: 'center' }}>
                                 <Typography component="div" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', border: '1px solid #000', padding: '10px' }}>

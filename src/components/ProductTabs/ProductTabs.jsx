@@ -1076,7 +1076,7 @@ const ProductTabs = ({ product, reviewData, reviewType, setReviewType, page, set
                 {dialogImages.length > 1 && (
                     <DialogActions
                         sx={{
-                            display: "flex", justifyContent: "center"
+                            display: "flex", justifyContent: "start"
                         }}
                     >
 
@@ -1084,9 +1084,9 @@ const ProductTabs = ({ product, reviewData, reviewType, setReviewType, page, set
                             sx={{
                                 display: "flex",
                                 gap: 1.5,
-                                justifyContent: "center",
+                                justifyContent: "start",
                                 alignItems: "center",
-                                px: { xs: 2, sm: 4 },
+                                px: 2,
                                 py: 1,
                                 overflowX: "auto",
                                 overflowY: "hidden",
@@ -1094,7 +1094,7 @@ const ProductTabs = ({ product, reviewData, reviewType, setReviewType, page, set
                                     height: 4,
                                 },
                                 "&::-webkit-scrollbar-thumb": {
-                                    bgcolor: "rgba(255,255,255,0.2)",
+                                    bgcolor: "rgba(40, 39, 39, 0.18)",
                                     borderRadius: 10,
                                 },
                                 "&::-webkit-scrollbar-track": {

@@ -189,7 +189,7 @@ const ShareModal = ({ open, onClose, product, usercredentials }) => {
                             key={platform.name}
                             sx={{
                                 padding: "8px",
-                                width: { xs: "50%", sm: "33.333%" },
+                                width: { xs: "48%", sm: "32%" },
                                 flex: "0 0 auto"
                             }}
                         >

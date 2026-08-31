@@ -24,6 +24,7 @@ import { Span } from "components/Typography";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import { Accordion, AccordionDetails, AccordionSummary, Drawer, IconButton, useTheme, useMediaQuery } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import DashboardHeader from "pages-sections/customer-dashboard/dashboard-header";
 import useMyProvider from "hooks/useMyProvider";
 import parse from 'html-react-parser';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -39,6 +40,8 @@ import {
   doc,
 } from "firebase/firestore";
 import { db, storage } from "../../../src/firebase/Firebase";
+import SideNav from "components/side-nav";
+import { Navigation } from "components/layouts/customer-dashboard";
 
 const nameSelect = [
   { value: "Inbox", label: "Inbox" },
@@ -76,7 +79,7 @@ const SidebarButton = styled(Button)(({ theme, active }) => ({
   },
 }));
 
-const SearchBox = styled(Box)(({ theme }) => ({
+const SearchBox = styled(Box)(({ theme, isMobile }) => ({
   display: "flex",
   alignItems: "center",
   background: "#fff",
@@ -84,7 +87,8 @@ const SearchBox = styled(Box)(({ theme }) => ({
   padding: "4px 4px 4px 16px",
   boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)",
   transition: "all 0.3s cubic-bezier(.25,.8,.25,1)",
-  width: "100%",
+  minWidth: 0,
+  flex: 1,
   maxWidth: "300px",
   "&:hover": {
     boxShadow: "0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)",
@@ -140,7 +144,7 @@ ActionButton.defaultProps = {
 const ChatLayout = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+  const isTablet = useMediaQuery(theme.breakpoints.between(600, 1280));
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
 
@@ -486,45 +490,51 @@ const ChatLayout = ({ children }) => {
     <Box sx={{ bgcolor: "#f8f9fa" }}>
       {/* Header */}
       <Box
-        p={2}
+        p={isMobile ? 1 : 2}
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: isMobile ? "start" : "space-between",
           flexWrap: "wrap",
-          gap: 2,
+          gap: isMobile ? 1 : 2,
           bgcolor: "#fff",
           borderBottom: "1px solid #e8eaed",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: "1.2rem", sm: "1.5rem" } }}>
+          Messages
+        </Typography>
 
-          <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: "1.2rem", sm: "1.5rem" } }}>
-            Messages
-          </Typography>
+        <Box display={"flex"} gap={1} flex={1} justifyContent={"end"}
+        >
+          <SearchBox isMobile={isMobile}>
+            <TextField
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search messages..."
+              size="small"
+              onKeyPress={(e) => e.key === "Enter" && searchHandler()}
+            />
+            <Button
+              disabled={!searchText}
+              onClick={searchHandler}
+              sx={{
+                minWidth: "40px",
+                p: 1,
+                borderRadius: "50%",
+              }}
+            >
+              <SearchIcon />
+            </Button>
+          </SearchBox>
+          <div className="sidenav" style={{ alignContent: "center" }}>
+            <SideNav position="left" handler={close => <IconButton onClick={close} sx={{ px: 0.2 }}>
+              <MenuIcon fontSize="small" />
+            </IconButton>}>
+              <Navigation />
+            </SideNav>
+          </div>
         </Box>
-
-        <SearchBox>
-          <TextField
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Search messages..."
-            size="small"
-            onKeyPress={(e) => e.key === "Enter" && searchHandler()}
-          />
-          <Button
-            disabled={!searchText}
-            onClick={searchHandler}
-            sx={{
-              minWidth: "40px",
-              p: 1,
-              borderRadius: "50%",
-            }}
-          >
-            <SearchIcon />
-          </Button>
-        </SearchBox>
-
       </Box>
 
       {/* Main Content */}
@@ -571,7 +581,7 @@ const ChatLayout = ({ children }) => {
         <Grid
           item
           xs={12}
-          md={slug ? 6 : 9}
+          md={slug ? isTablet ? 9 : 6 : 9}
           lg={slug ? 6.5 : 9.5}
           sx={{
             height: "100%",
@@ -687,7 +697,7 @@ const ChatLayout = ({ children }) => {
                   {/* Mobile More Menu */}
                   <IconButton
                     onClick={handleClick2}
-                    sx={{ display: { xs: pathname === "/messages/etsy" ? "none" : "inline-flex", sm: "none" } }}
+                    sx={{ display: { xs: pathname === "/messages/etsy" ? "none" : "inline-flex", sm: "none" }, px: 0.25 }}
                   >
                     <MoreVertIcon />
                   </IconButton>
@@ -709,12 +719,19 @@ const ChatLayout = ({ children }) => {
 
                 {/* Detail toggle for mobile/tablet */}
                 {slug && (
-                  <IconButton
-                    onClick={toggleDetailDrawer}
-                    sx={{ display: { xs: "inline-flex", lg: "none" } }}
-                  >
-                    <DescriptionIcon />
-                  </IconButton>
+                  isTablet
+                    ? <Button variant="contained"
+                      size="small"
+                      startIcon={<DescriptionIcon />}
+                      onClick={toggleDetailDrawer}>
+                      Chat Details
+                    </Button>
+                    : <IconButton
+                      onClick={toggleDetailDrawer}
+                      sx={{ display: { xs: "inline-flex", lg: "none" }, px: 0.25 }}
+                    >
+                      <DescriptionIcon />
+                    </IconButton>
                 )}
               </Box>
             </Box>
