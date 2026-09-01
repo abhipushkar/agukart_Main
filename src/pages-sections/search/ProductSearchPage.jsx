@@ -8,19 +8,7 @@ import TextField from "@mui/material/TextField";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import Drawer from "@mui/material/Drawer";
-import { SectionCreator } from "components/section-header";
-import Checkbox from "@mui/material/Checkbox";
-import FormControl from "@mui/material/FormControl";
-import FormLabel from "@mui/material/FormLabel";
-import FormGroup from "@mui/material/FormGroup";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import CloseIcon from "@mui/icons-material/Close";
 
-import Divider from "@mui/material/Divider";
-import Slider from "@mui/material/Slider";
 import { H1, Paragraph } from "components/Typography";
 import { FlexBetween, FlexBox } from "components/flex-box";
 import { useRouter } from "next/navigation";
@@ -31,6 +19,7 @@ import { getAPIAuth } from "utils/__api__/ApiServies";
 import { CircularProgress, Pagination } from "@mui/material";
 import Product from "components/product/Product";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
+import ProductFilterDrawer from "components/search/ProductFilterDrawer";
 // TYPE
 
 const SORT_OPTIONS = [
@@ -51,16 +40,11 @@ const SORT_OPTIONS = [
     value: "desc",
   },
 ];
-const initialFilters = {
-  rating: 0,
-  color: [],
-  brand: [],
-  sales: [],
-  price: [0, 300],
-};
+
 export default function ProductSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryString = searchParams.toString();
   const search = searchParams.get("q");
   console.log(searchParams.getAll("q"), search, 'params');
   const [productList, setProductList] = useState([]);
@@ -73,17 +57,22 @@ export default function ProductSearchPage() {
   const [totalPages, setTotalPages] = useState(1);
   const page = Number(searchParams.get("page")) || 1;
 
-  const [filters, setFilters] = useState(initialFilters);
-
-  const [facets, setFacets] = useState({
-    categories: [],
+  const [availableFilters, setAvailableFilters] = useState({
+    price: {},
     brands: [],
-    variants: [],
-    price: {
-      min: 0,
-      max: 10000,
-    },
+    ratings: [],
+    dynamicFields: {},
   });
+
+  const [filterState, setFilterState] = useState({
+    minPrice: "",
+    maxPrice: "",
+    rating: 0,
+    brands: [],
+    badges: [],
+    dynamicFields: {},
+  });
+
 
   const toggleDrawer = (newOpen) => {
     setOpen(newOpen);
@@ -110,10 +99,14 @@ export default function ProductSearchPage() {
         setVideoBaseUrl(res?.data?.video_base_url);
         setProductList(res?.data?.data || []);
         setTotalPages(res?.data?.pagination?.totalPages || 1);
-
-        if (res?.data?.facets) {
-          setFacets(res.data.facets);
-        }
+        setAvailableFilters(
+          res?.data?.filters || {
+            price: {},
+            brands: [],
+            ratings: [],
+            dynamicFields: {},
+          }
+        );
       }
     } catch (error) {
       console.log(error);
@@ -122,120 +115,176 @@ export default function ProductSearchPage() {
     }
   };
 
-  const handleFilterChange = (name, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  const handleFilterChange = (key, value, isArray = false) => {
+    setFilterState((prev) => {
+      if (!isArray) {
+        return {
+          ...prev,
+          [key]: value,
+        };
+      }
 
-  const handleArrayFilterChange = (name, value) => {
-    setFilters((prev) => {
-      const values = prev[name] || [];
+      const currentValues = prev[key] || [];
 
       return {
         ...prev,
-        [name]: values.includes(value)
-          ? values.filter((item) => item !== value)
-          : [...values, value],
+        [key]: currentValues.includes(value)
+          ? currentValues.filter((item) => item !== value)
+          : [...currentValues, value],
       };
     });
   };
 
-  const handleVariantFilterChange = (variantName, value) => {
-    setFilters((prev) => {
-      const currentValues = prev.variants?.[variantName] || [];
+  const handleDynamicFieldChange = (fieldName, value, isRadio = false) => {
+    setFilterState((prev) => {
+      const currentValues =
+        prev.dynamicFields?.[fieldName] || [];
+
+      let updatedValues;
+
+      if (isRadio) {
+        updatedValues =
+          currentValues[0] === value ? [] : [value];
+      } else {
+        updatedValues = currentValues.includes(value)
+          ? currentValues.filter((item) => item !== value)
+          : [...currentValues, value];
+      }
+
+      const updatedDynamicFields = {
+        ...prev.dynamicFields,
+      };
+
+      if (updatedValues.length > 0) {
+        updatedDynamicFields[fieldName] = updatedValues;
+      } else {
+        delete updatedDynamicFields[fieldName];
+      }
 
       return {
         ...prev,
-        variants: {
-          ...prev.variants,
-          [variantName]: currentValues.includes(value)
-            ? currentValues.filter((item) => item !== value)
-            : [...currentValues, value],
-        },
+        dynamicFields: updatedDynamicFields,
       };
+    });
+  };
+
+
+  const handleClearField = (type, fieldName) => {
+    setFilterState((prev) => {
+      if (type === "price") {
+        return {
+          ...prev,
+          minPrice: "",
+          maxPrice: "",
+        };
+      }
+
+      if (type === "brands") {
+        return {
+          ...prev,
+          brands: [],
+        };
+      }
+
+      if (type === "rating") {
+        return {
+          ...prev,
+          rating: 0,
+        };
+      }
+
+      if (type === "badges") {
+        return {
+          ...prev,
+          badges: [],
+        };
+      }
+
+      if (type === "dynamicField") {
+        const updatedDynamicFields = {
+          ...prev.dynamicFields,
+        };
+
+        delete updatedDynamicFields[fieldName];
+
+        return {
+          ...prev,
+          dynamicFields: updatedDynamicFields,
+        };
+      }
+
+      return prev;
     });
   };
 
   const handleClearFilters = () => {
-    setFilters(initialFilters);
+    setFilterState({
+      minPrice: "",
+      maxPrice: "",
+      rating: 0,
+      brands: [],
+      badges: [],
+      dynamicFields: {},
+    });
 
     const params = new URLSearchParams(searchParams.toString());
 
     [
-      "categoryId",
       "minPrice",
       "maxPrice",
       "rating",
-      "brand",
-      "freeDelivery",
-      "onSale",
-      "inStock",
-      "customizable",
-      "shopLocation",
-      "variants",
+      "brands",
+      "badges",
+      "dynamicFields",
     ].forEach((key) => params.delete(key));
 
     params.set("page", "1");
 
     router.push(`/search-product-list?${params.toString()}`);
+
+    toggleDrawer(false);
   };
 
   const handleApplyFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
 
-    const setOrDelete = (key, value) => {
-      if (value === "" || value === null || value === undefined || value === false) {
-        params.delete(key);
-        return;
-      }
-
-      params.set(key, String(value));
-    };
-
-    setOrDelete("categoryId", filters.categoryId);
-    setOrDelete("minPrice", filters.minPrice);
-    setOrDelete("maxPrice", filters.maxPrice);
-    setOrDelete("rating", filters.rating);
-
-    if (filters.brand.length) {
-      params.set("brand", filters.brand.join(","));
+    if (filterState.minPrice !== "") {
+      params.set("minPrice", filterState.minPrice);
     } else {
-      params.delete("brand");
+      params.delete("minPrice");
     }
 
-    setOrDelete("freeDelivery", filters.freeDelivery ? "1" : "");
-    setOrDelete("onSale", filters.onSale ? "1" : "");
-    setOrDelete("inStock", filters.inStock ? "1" : "");
-    setOrDelete("customizable", filters.customizable ? "1" : "");
+    if (filterState.maxPrice !== "") {
+      params.set("maxPrice", filterState.maxPrice);
+    } else {
+      params.delete("maxPrice");
+    }
 
-    if (filters.shopLocation !== "anywhere") {
+    if (filterState.rating > 0) {
+      params.set("rating", String(filterState.rating));
+    } else {
+      params.delete("rating");
+    }
+
+    if (filterState.brands.length > 0) {
+      params.set("brands", filterState.brands.join(","));
+    } else {
+      params.delete("brands");
+    }
+
+    if (filterState.badges.length > 0) {
+      params.set("badges", filterState.badges.join(","));
+    } else {
+      params.delete("badges");
+    }
+
+    if (Object.keys(filterState.dynamicFields).length > 0) {
       params.set(
-        "shopLocation",
-        filters.shopLocation === "custom"
-          ? filters.customLocation
-          : filters.shopLocation
+        "dynamicFields",
+        JSON.stringify(filterState.dynamicFields)
       );
     } else {
-      params.delete("shopLocation");
-    }
-
-    const selectedVariants = Object.entries(filters.variants || {}).reduce(
-      (acc, [variantName, values]) => {
-        if (values?.length) {
-          acc[variantName] = values;
-        }
-
-        return acc;
-      },
-      {}
-    );
-
-    if (Object.keys(selectedVariants).length) {
-      params.set("variants", JSON.stringify(selectedVariants));
-    } else {
-      params.delete("variants");
+      params.delete("dynamicFields");
     }
 
     params.set("page", "1");
@@ -263,7 +312,32 @@ export default function ProductSearchPage() {
     } else {
       setProductList([]);
     }
-  }, [search, sortBy, page]);
+  }, [queryString]);
+
+  useEffect(() => {
+    let dynamicFields = {};
+
+    try {
+      dynamicFields = JSON.parse(
+        searchParams.get("dynamicFields") || "{}"
+      );
+    } catch (error) {
+      dynamicFields = {};
+    }
+
+    setFilterState({
+      minPrice: searchParams.get("minPrice") || "",
+      maxPrice: searchParams.get("maxPrice") || "",
+      rating: Number(searchParams.get("rating")) || 0,
+      brands: searchParams.get("brands")
+        ? searchParams.get("brands").split(",")
+        : [],
+      badges: searchParams.get("badges")
+        ? searchParams.get("badges").split(",")
+        : [],
+      dynamicFields,
+    });
+  }, [queryString]);
 
   const getShopBySearch = async () => {
     try {
@@ -344,6 +418,11 @@ export default function ProductSearchPage() {
                   </Typography>
                 </Typography>
               </Button>
+              {/* {searchParams.size > 2 && (
+                <Button variant="text" onClick={handleClearFilters} sx={{ "&:hover": { bgcolor: "transparent" }, ml: 0.5 }}>
+                  <u>Reset</u>
+                </Button>
+              )} */}
             </Box>
             <Box>
               <FlexBox
@@ -439,623 +518,17 @@ export default function ProductSearchPage() {
           </Box>
         )}
       </Container>
-      <Drawer
-        anchor="left"
+      <ProductFilterDrawer
         open={open}
         onClose={() => toggleDrawer(false)}
-        PaperProps={{
-          sx: {
-            width: {
-              xs: "100%",
-              sm: 420,
-            },
-            maxWidth: "100%",
-          },
-        }}
-      >
-        <Box
-          sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            backgroundColor: "#fff",
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: "1px solid #e5e5e5",
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: 22,
-                fontWeight: 600,
-              }}
-            >
-              All Filters
-            </Typography>
-
-            <CloseIcon
-              onClick={() => toggleDrawer(false)}
-              sx={{
-                cursor: "pointer",
-                fontSize: 26,
-              }}
-            />
-          </Box>
-
-          {/* Scrollable filters */}
-          <Box
-            sx={{
-              flex: 1,
-              overflowY: "auto",
-              px: 3,
-            }}
-          >
-            {/* Categories */}
-            {facets?.categories?.length > 0 && (
-              <>
-                <Box py={3}>
-                  <FormControl fullWidth>
-                    <FormLabel
-                      sx={{
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: "#222",
-                        mb: 1,
-                        "&.Mui-focused": {
-                          color: "#222",
-                        },
-                      }}
-                    >
-                      Category
-                    </FormLabel>
-
-                    <RadioGroup
-                      value={filters.categoryId}
-                      onChange={(e) =>
-                        handleFilterChange("categoryId", e.target.value)
-                      }
-                      sx={{
-                        ".MuiRadio-root": {
-                          py: 0.5,
-                        },
-                      }}
-                    >
-                      <FormControlLabel
-                        value=""
-                        control={<Radio size="small" />}
-                        label="All categories"
-                      />
-
-                      {facets.categories.map((category) => (
-                        <FormControlLabel
-                          key={category._id}
-                          value={category._id}
-                          control={<Radio size="small" />}
-                          label={
-                            <FlexBetween width="100%">
-                              <Typography fontSize={14}>
-                                {category.title}
-                              </Typography>
-
-                              {category.count !== undefined && (
-                                <Typography
-                                  fontSize={12}
-                                  color="grey.600"
-                                  ml={1}
-                                >
-                                  ({category.count})
-                                </Typography>
-                              )}
-                            </FlexBetween>
-                          }
-                          sx={{
-                            width: "100%",
-                            mr: 0,
-                          }}
-                        />
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
-                </Box>
-
-                <Divider />
-              </>
-            )}
-
-            {/* Price */}
-            <Box py={3}>
-              <Typography
-                fontSize={16}
-                fontWeight={600}
-                mb={2}
-              >
-                Price
-              </Typography>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                }}
-              >
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minPrice}
-                  onChange={(e) =>
-                    handleFilterChange("minPrice", e.target.value)
-                  }
-                  InputProps={{
-                    inputProps: {
-                      min: 0,
-                    },
-                  }}
-                />
-
-                <Typography color="grey.600">
-                  to
-                </Typography>
-
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxPrice}
-                  onChange={(e) =>
-                    handleFilterChange("maxPrice", e.target.value)
-                  }
-                  InputProps={{
-                    inputProps: {
-                      min: 0,
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-
-            <Divider />
-
-            {/* Rating */}
-            <Box py={3}>
-              <FormControl>
-                <FormLabel
-                  sx={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: "#222",
-                    mb: 1,
-                    "&.Mui-focused": {
-                      color: "#222",
-                    },
-                  }}
-                >
-                  Customer rating
-                </FormLabel>
-
-                <RadioGroup
-                  value={String(filters.rating)}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "rating",
-                      Number(e.target.value)
-                    )
-                  }
-                  sx={{
-                    ".MuiRadio-root": {
-                      py: 0.5,
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    value="0"
-                    control={<Radio size="small" />}
-                    label="Any rating"
-                  />
-
-                  <FormControlLabel
-                    value="4"
-                    control={<Radio size="small" />}
-                    label="4 stars & up"
-                  />
-
-                  <FormControlLabel
-                    value="3"
-                    control={<Radio size="small" />}
-                    label="3 stars & up"
-                  />
-
-                  <FormControlLabel
-                    value="2"
-                    control={<Radio size="small" />}
-                    label="2 stars & up"
-                  />
-                </RadioGroup>
-              </FormControl>
-            </Box>
-
-            <Divider />
-
-            {/* Special Offers */}
-            <Box py={3}>
-              <FormControl>
-                <FormLabel
-                  sx={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: "#222",
-                    mb: 1,
-                    "&.Mui-focused": {
-                      color: "#222",
-                    },
-                  }}
-                >
-                  Special offers
-                </FormLabel>
-
-                <FormGroup
-                  sx={{
-                    ".MuiCheckbox-root": {
-                      py: 0.5,
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={filters.onSale}
-                        onChange={(e) =>
-                          handleFilterChange(
-                            "onSale",
-                            e.target.checked
-                          )
-                        }
-                      />
-                    }
-                    label="On sale"
-                  />
-
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={filters.freeDelivery}
-                        onChange={(e) =>
-                          handleFilterChange(
-                            "freeDelivery",
-                            e.target.checked
-                          )
-                        }
-                      />
-                    }
-                    label="FREE delivery"
-                  />
-                </FormGroup>
-              </FormControl>
-            </Box>
-
-            <Divider />
-
-            {/* Availability */}
-            <Box py={3}>
-              <FormControl>
-                <FormLabel
-                  sx={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: "#222",
-                    mb: 1,
-                    "&.Mui-focused": {
-                      color: "#222",
-                    },
-                  }}
-                >
-                  Availability
-                </FormLabel>
-
-                <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={filters.inStock}
-                        onChange={(e) =>
-                          handleFilterChange(
-                            "inStock",
-                            e.target.checked
-                          )
-                        }
-                      />
-                    }
-                    label="In stock"
-                  />
-
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={filters.customizable}
-                        onChange={(e) =>
-                          handleFilterChange(
-                            "customizable",
-                            e.target.checked
-                          )
-                        }
-                      />
-                    }
-                    label="Customizable"
-                  />
-                </FormGroup>
-              </FormControl>
-            </Box>
-
-            <Divider />
-
-            {/* Brand */}
-            {facets?.brands?.length > 0 && (
-              <>
-                <Box py={3}>
-                  <FormControl fullWidth>
-                    <FormLabel
-                      sx={{
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: "#222",
-                        mb: 1,
-                        "&.Mui-focused": {
-                          color: "#222",
-                        },
-                      }}
-                    >
-                      Brand
-                    </FormLabel>
-
-                    <FormGroup>
-                      {facets.brands.map((brand) => (
-                        <FormControlLabel
-                          key={brand._id}
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={filters.brand.includes(
-                                brand._id
-                              )}
-                              onChange={() =>
-                                handleArrayFilterChange(
-                                  "brand",
-                                  brand._id
-                                )
-                              }
-                            />
-                          }
-                          label={
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              gap={1}
-                            >
-                              <Typography fontSize={14}>
-                                {brand.title}
-                              </Typography>
-
-                              {brand.count !== undefined && (
-                                <Typography
-                                  fontSize={12}
-                                  color="grey.600"
-                                >
-                                  ({brand.count})
-                                </Typography>
-                              )}
-                            </Box>
-                          }
-                        />
-                      ))}
-                    </FormGroup>
-                  </FormControl>
-                </Box>
-
-                <Divider />
-              </>
-            )}
-
-            {/* Dynamic variants */}
-            {facets?.variants?.map((variant) => (
-              <Box key={variant.name}>
-                <Box py={3}>
-                  <FormControl fullWidth>
-                    <FormLabel
-                      sx={{
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: "#222",
-                        mb: 1,
-                        "&.Mui-focused": {
-                          color: "#222",
-                        },
-                      }}
-                    >
-                      {variant.name}
-                    </FormLabel>
-
-                    <FormGroup>
-                      {variant.values?.map((attribute) => (
-                        <FormControlLabel
-                          key={attribute.value}
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={(
-                                filters.variants?.[
-                                variant.name
-                                ] || []
-                              ).includes(attribute.value)}
-                              onChange={() =>
-                                handleVariantFilterChange(
-                                  variant.name,
-                                  attribute.value
-                                )
-                              }
-                            />
-                          }
-                          label={
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              gap={1}
-                            >
-                              <Typography fontSize={14}>
-                                {attribute.value}
-                              </Typography>
-
-                              {attribute.count !== undefined && (
-                                <Typography
-                                  fontSize={12}
-                                  color="grey.600"
-                                >
-                                  ({attribute.count})
-                                </Typography>
-                              )}
-                            </Box>
-                          }
-                        />
-                      ))}
-                    </FormGroup>
-                  </FormControl>
-                </Box>
-
-                <Divider />
-              </Box>
-            ))}
-
-            {/* Shop Location */}
-            <Box py={3}>
-              <FormControl fullWidth>
-                <FormLabel
-                  sx={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: "#222",
-                    mb: 1,
-                    "&.Mui-focused": {
-                      color: "#222",
-                    },
-                  }}
-                >
-                  Shop location
-                </FormLabel>
-
-                <RadioGroup
-                  value={filters.shopLocation}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "shopLocation",
-                      e.target.value
-                    )
-                  }
-                  sx={{
-                    ".MuiRadio-root": {
-                      py: 0.5,
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    value="anywhere"
-                    control={<Radio size="small" />}
-                    label="Anywhere"
-                  />
-
-                  <FormControlLabel
-                    value="India"
-                    control={<Radio size="small" />}
-                    label="India"
-                  />
-
-                  <FormControlLabel
-                    value="custom"
-                    control={<Radio size="small" />}
-                    label="Custom"
-                  />
-                </RadioGroup>
-
-                {filters.shopLocation === "custom" && (
-                  <TextField
-                    fullWidth
-                    size="small"
-                    sx={{ mt: 1 }}
-                    placeholder="Enter country or location"
-                    value={filters.customLocation}
-                    onChange={(e) =>
-                      handleFilterChange(
-                        "customLocation",
-                        e.target.value
-                      )
-                    }
-                  />
-                )}
-              </FormControl>
-            </Box>
-          </Box>
-
-          {/* Bottom Actions */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderTop: "1px solid #e5e5e5",
-              backgroundColor: "#fff",
-              display: "flex",
-              gap: 1.5,
-            }}
-          >
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={handleClearFilters}
-              sx={{
-                borderRadius: "30px",
-                minHeight: 46,
-                borderColor: "#222",
-                color: "#222",
-                textTransform: "none",
-                fontWeight: 600,
-              }}
-            >
-              Clear all
-            </Button>
-
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleApplyFilters}
-              sx={{
-                borderRadius: "30px",
-                minHeight: 46,
-                backgroundColor: "#222",
-                color: "#fff",
-                textTransform: "none",
-                fontWeight: 600,
-                "&:hover": {
-                  backgroundColor: "#000",
-                },
-              }}
-            >
-              Show results
-            </Button>
-          </Box>
-        </Box>
-      </Drawer>
+        filters={availableFilters}
+        filterState={filterState}
+        onFilterChange={handleFilterChange}
+        onDynamicFieldChange={handleDynamicFieldChange}
+        onClearField={handleClearField}
+        onClearFilters={handleClearFilters}
+        onApplyFilters={handleApplyFilters}
+      />
     </div>
   );
 }

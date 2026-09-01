@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
@@ -487,7 +487,7 @@ const ChatLayout = ({ children }) => {
   );
 
   return (
-    <Box sx={{ bgcolor: "#f8f9fa" }}>
+    <Box sx={{ bgcolor: "#f8f9fa", mt: {xs: 2, sm: 2, md: 0} }}>
       {/* Header */}
       <Box
         p={isMobile ? 1 : 2}
@@ -617,6 +617,7 @@ const ChatLayout = ({ children }) => {
                   </IconButton>
                 )}
                 <Checkbox
+                  title="Select all"
                   checked={
                     slug
                       ? checkMessage.includes(slug)
