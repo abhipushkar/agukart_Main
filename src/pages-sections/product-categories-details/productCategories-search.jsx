@@ -11,26 +11,6 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import Button from "@mui/material/Button";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Typography from "@mui/material/Typography";
-import Drawer from "@mui/material/Drawer";
-import List from "@mui/material/List";
-import Divider from "@mui/material/Divider";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import InboxIcon from "@mui/icons-material/MoveToInbox";
-import MailIcon from "@mui/icons-material/Mail";
-import { SectionCreator } from "components/section-header";
-import Checkbox from "@mui/material/Checkbox";
-import FormControl from "@mui/material/FormControl";
-import FormLabel from "@mui/material/FormLabel";
-import FormGroup from "@mui/material/FormGroup";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import CloseIcon from "@mui/icons-material/Close";
-
-import Select from "@mui/material/Select";
 import { Fragment } from "react";
 import Link from "next/link";
 
@@ -44,6 +24,7 @@ import FilterList from "@mui/icons-material/FilterList";
 import productCategoriesFilterCard from "./productCategories-filter-card";
 // GLOBAL CUSTOM COMPONENTS
 
+import ProductFilterDrawer from "components/search/ProductFilterDrawer";
 import Sidenav from "components/side-nav";
 import { H1, H2, H3, H4, H5, Paragraph } from "components/Typography";
 import { FlexBetween, FlexBox } from "components/flex-box";
@@ -83,13 +64,7 @@ const SORT_OPTIONS = [
     value: "desc",
   },
 ];
-const initialFilters = {
-  rating: 0,
-  color: [],
-  brand: [],
-  sales: [],
-  price: [0, 300],
-};
+
 export default function ProductCategoriesSearchPageView({
   slug,
   initialCategory,
@@ -105,8 +80,19 @@ export default function ProductCategoriesSearchPageView({
   const [productIncreaseValue, SetProductIncreaseValue] = useState(6);
   const [isproductIncreaseValue, SetIsProductIncreaseValue] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    ...initialFilters,
+  const [availableFilters, setAvailableFilters] = useState({
+    price: {},
+    brands: [],
+    ratings: [],
+    dynamicFields: {},
+  });
+
+  const [filterState, setFilterState] = useState({
+    minPrice: "",
+    maxPrice: "",
+    rating: 0,
+    brands: [],
+    dynamicFields: {},
   });
   const isFirstRender = useRef(true);
 
@@ -199,6 +185,166 @@ export default function ProductCategoriesSearchPageView({
 
   const toggleDrawer = (newOpen) => {
     setOpen(newOpen);
+  };
+
+  const handleFilterChange = (key, value, isArray = false) => {
+    setFilterState((prev) => {
+      if (!isArray) {
+        return {
+          ...prev,
+          [key]: value,
+        };
+      }
+
+      const currentValues = prev[key] || [];
+
+      return {
+        ...prev,
+        [key]: currentValues.includes(value)
+          ? currentValues.filter((item) => item !== value)
+          : [...currentValues, value],
+      };
+    });
+  };
+
+  const handleDynamicFieldChange = (fieldName, value) => {
+    setFilterState((prev) => {
+      const currentValues =
+        prev.dynamicFields?.[fieldName] || [];
+
+      const updatedValues = currentValues.includes(value)
+        ? currentValues.filter((item) => item !== value)
+        : [...currentValues, value];
+
+      return {
+        ...prev,
+        dynamicFields: {
+          ...prev.dynamicFields,
+          [fieldName]: updatedValues,
+        },
+      };
+    });
+  };
+
+  const handleClearField = (type, fieldName) => {
+    setFilterState((prev) => {
+      if (type === "price") {
+        return {
+          ...prev,
+          minPrice: "",
+          maxPrice: "",
+        };
+      }
+
+      if (type === "brands") {
+        return {
+          ...prev,
+          brands: [],
+        };
+      }
+
+      if (type === "dynamicField") {
+        const updatedDynamicFields = {
+          ...prev.dynamicFields,
+        };
+
+        delete updatedDynamicFields[fieldName];
+
+        return {
+          ...prev,
+          dynamicFields: updatedDynamicFields,
+        };
+      }
+
+      return prev;
+    });
+  };
+
+  const handleClearFilters = () => {
+    setFilters(initialFilters);
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    [
+      "categoryId",
+      "minPrice",
+      "maxPrice",
+      "rating",
+      "brand",
+      "freeDelivery",
+      "onSale",
+      "inStock",
+      "customizable",
+      "shopLocation",
+      "variants",
+    ].forEach((key) => params.delete(key));
+
+    params.set("page", "1");
+
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleApplyFilters = () => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    const setOrDelete = (key, value) => {
+      if (value === "" || value === null || value === undefined || value === false) {
+        params.delete(key);
+        return;
+      }
+
+      params.set(key, String(value));
+    };
+
+    setOrDelete("categoryId", filters.categoryId);
+    setOrDelete("minPrice", filters.minPrice);
+    setOrDelete("maxPrice", filters.maxPrice);
+    setOrDelete("rating", filters.rating);
+
+    if (filters.brand.length) {
+      params.set("brand", filters.brand.join(","));
+    } else {
+      params.delete("brand");
+    }
+
+    setOrDelete("freeDelivery", filters.freeDelivery ? "1" : "");
+    setOrDelete("onSale", filters.onSale ? "1" : "");
+    setOrDelete("inStock", filters.inStock ? "1" : "");
+    setOrDelete("customizable", filters.customizable ? "1" : "");
+
+    if (filters.shopLocation !== "anywhere") {
+      params.set(
+        "shopLocation",
+        filters.shopLocation === "custom"
+          ? filters.customLocation
+          : filters.shopLocation
+      );
+    } else {
+      params.delete("shopLocation");
+    }
+
+    const selectedVariants = Object.entries(filters.variants || {}).reduce(
+      (acc, [variantName, values]) => {
+        if (values?.length) {
+          acc[variantName] = values;
+        }
+
+        return acc;
+      },
+      {}
+    );
+
+    if (Object.keys(selectedVariants).length) {
+      params.set("variants", JSON.stringify(selectedVariants));
+    } else {
+      params.delete("variants");
+    }
+
+    params.set("page", "1");
+
+    router.push(`/search-product-list?${params.toString()}`);
+
+    toggleDrawer(false);
   };
 
   useEffect(() => {
@@ -453,244 +599,17 @@ export default function ProductCategoriesSearchPageView({
       </Box>
 
       {/* Filter Drawer */}
-      <Drawer open={open} onClose={() => toggleDrawer(false)}>
-        <Box sx={{ width: { xs: '90vw', sm: '500px' }, position: "relative" }} role="presentation">
-          <Typography
-            component="span"
-            sx={{
-              position: "absolute",
-              top: "15px",
-              right: "15px",
-              cursor: "pointer",
-            }}
-          >
-            <CloseIcon onClick={() => toggleDrawer(false)} />
-          </Typography>
-          <SectionCreator p={3}>
-            <H1
-              fontWeight={500}
-              mb={4}
-              sx={{ borderBottom: "1px solid #eaeaea" }}
-            >
-              Filter
-            </H1>
-            <Box mb={2}>
-              <FormControl>
-                <FormLabel
-                  component="legend"
-                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
-                >
-                  Special offers
-                </FormLabel>
-                <FormGroup
-                  sx={{
-                    ".MuiCheckbox-root": {
-                      padding: "2px 9px",
-                      background: "none",
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    control={<Checkbox defaultChecked />}
-                    label="FREE delivery"
-                  />
-                  <FormControlLabel
-                    control={<Checkbox defaultChecked />}
-                    label="On sale"
-                  />
-                </FormGroup>
-              </FormControl>
-            </Box>
-
-            <Box mb={2}>
-              <FormControl>
-                <FormLabel
-                  id="demo-radio-buttons-group-label"
-                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
-                >
-                  Shop Location
-                </FormLabel>
-                <RadioGroup
-                  aria-labelledby="demo-radio-buttons-group-label"
-                  defaultValue="Anywhere"
-                  name="radio-buttons-group"
-                  sx={{
-                    ".MuiRadio-root": {
-                      padding: "2px 9px",
-                      background: "none",
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    value="female"
-                    control={<Radio />}
-                    label="Anywhere"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="India"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="Custom"
-                  />
-                </RadioGroup>
-              </FormControl>
-            </Box>
-
-            <Box mb={2}>
-              <TextField
-                fullWidth
-                name="Your_ecomm_password"
-                placeholder="Enter location"
-              />
-            </Box>
-            <Box mb={2}>
-              <FormControl>
-                <FormLabel
-                  component="legend"
-                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
-                >
-                  Special offers
-                </FormLabel>
-                <FormGroup
-                  sx={{
-                    ".MuiCheckbox-root": {
-                      padding: "2px 9px",
-                      background: "none",
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    control={<Checkbox defaultChecked />}
-                    label="FREE delivery"
-                  />
-                  <FormControlLabel
-                    control={<Checkbox defaultChecked />}
-                    label="On sale"
-                  />
-                </FormGroup>
-              </FormControl>
-              <Typography component="div" pt={1}>
-                <Button sx={{ borderRadius: "30px", transition: "all 500ms" }}>
-                  + Show more
-                </Button>
-              </Typography>
-            </Box>
-
-            <Box mb={2}>
-              <FormControl>
-                <FormLabel
-                  id="demo-radio-buttons-group-label"
-                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
-                >
-                  Shop Location
-                </FormLabel>
-                <RadioGroup
-                  aria-labelledby="demo-radio-buttons-group-label"
-                  defaultValue="Anywhere"
-                  name="radio-buttons-group"
-                  sx={{
-                    ".MuiRadio-root": {
-                      padding: "2px 9px",
-                      background: "none",
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    value="female"
-                    control={<Radio />}
-                    label="Anywhere"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="India"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="Custom"
-                  />
-                </RadioGroup>
-              </FormControl>
-              <Typography component="div" pt={1}>
-                <Button sx={{ borderRadius: "30px", transition: "all 500ms" }}>
-                  + Show more
-                </Button>
-              </Typography>
-            </Box>
-            <Box mb={2}>
-              <FormControl>
-                <FormLabel
-                  id="demo-radio-buttons-group-label"
-                  sx={{ fontSize: "14px", paddingBottom: "5px" }}
-                >
-                  Price
-                </FormLabel>
-                <RadioGroup
-                  aria-labelledby="demo-radio-buttons-group-label"
-                  defaultValue="Anywhere"
-                  name="radio-buttons-group"
-                  sx={{
-                    ".MuiRadio-root": {
-                      padding: "2px 9px",
-                      background: "none",
-                    },
-                  }}
-                >
-                  <FormControlLabel
-                    value="female"
-                    control={<Radio />}
-                    label="Anywhere"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="Any price"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="Custom"
-                  />
-                </RadioGroup>
-              </FormControl>
-              <Box mt={1} sx={{ display: "flex", alignItems: "center" }}>
-                <TextField fullWidth placeholder="Low" />
-                <Typography component="span" mx={2}>
-                  to
-                </Typography>
-                <TextField fullWidth placeholder="High" />
-              </Box>
-              <Typography component="div" pt={1}>
-                <Button sx={{ borderRadius: "30px", transition: "all 500ms" }}>
-                  + Show more
-                </Button>
-              </Typography>
-            </Box>
-            <Box>
-              <FormControl sx={{ width: "100%" }}>
-                <Select
-                  sx={{
-                    border: "none",
-                    background: "#fff",
-                    height: "50px",
-                    boxShadow: "0 0 3px #000",
-                    ".MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-                  }}
-                >
-                  <MenuItem>Hello</MenuItem>;
-                </Select>
-              </FormControl>
-            </Box>
-          </SectionCreator>
-        </Box>
-      </Drawer>
+      <ProductFilterDrawer
+        open={open}
+        onClose={() => toggleDrawer(false)}
+        filters={availableFilters}
+        filterState={filterState}
+        onFilterChange={handleFilterChange}
+        onDynamicFieldChange={handleDynamicFieldChange}
+        onClearField={handleClearField}
+        onClearFilters={handleClearFilters}
+        onApplyFilters={handleApplyFilters}
+      />
     </Container>
   );
 }
