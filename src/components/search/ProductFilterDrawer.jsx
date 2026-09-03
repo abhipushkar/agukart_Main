@@ -39,6 +39,7 @@ const ProductFilterDrawer = ({
         ...remainingFilters
     } = filters;
     const [expandedFields, setExpandedFields] = useState({});
+    const priceError = (filterState.maxPrice && filterState.minPrice) && +filterState.maxPrice < +filterState.minPrice;
 
     return (
         <Drawer
@@ -140,6 +141,9 @@ const ProductFilterDrawer = ({
                                         onChange={(e) =>
                                             onFilterChange("minPrice", e.target.value)
                                         }
+                                        inputProps={{min: price.min}}
+                                        error={priceError}                                        
+                                        helperText={priceError && "Please fix prices to apply filter."}
                                     />
 
                                     <Typography color="grey.600">to</Typography>
@@ -153,6 +157,9 @@ const ProductFilterDrawer = ({
                                         onChange={(e) =>
                                             onFilterChange("maxPrice", e.target.value)
                                         }
+                                        inputProps={{max: price.max}}
+                                        error={priceError}
+                                        helperText={priceError && "max price can't be less than min price."}
                                     />
                                 </Box>
 
@@ -182,9 +189,9 @@ const ProductFilterDrawer = ({
                                     </FormLabel>
 
                                     <RadioGroup
-                                        value={String(filterState.rating || 0)}
+                                        value={String(filterState.ratings || 0)}
                                         onChange={(e) =>
-                                            onFilterChange("rating", Number(e.target.value))
+                                            onFilterChange("ratings", Number(e.target.value))
                                         }
                                     >
                                         <FormControlLabel
@@ -301,6 +308,71 @@ const ProductFilterDrawer = ({
                             <Divider />
                         </>
                     )}
+
+                    {Object.entries(remainingFilters).map(([field, value]) => {
+                        return (
+                            value?.length > 0 && (
+                                <>
+                                    <Box py={3}>
+                                        <FormControl fullWidth sx={{ display: "flex", justifyContent: 'space-between' }}>
+                                            <FlexBetween>
+                                                <FormLabel
+                                                    sx={{
+                                                        fontSize: 17,
+                                                        fontWeight: 600,
+                                                        color: "#222",
+                                                        mb: 1,
+                                                        "&.Mui-focused": {
+                                                            color: "#222",
+                                                        },
+                                                    }}
+                                                >
+                                                    {field}
+                                                </FormLabel>
+                                                {onClearField && (
+                                                    <Button
+                                                        size="small"
+                                                        onClick={() => onClearField(field)}
+                                                        sx={{
+                                                            p: 0,
+                                                            minWidth: "auto",
+                                                            textTransform: "none",
+                                                            fontSize: 13,
+                                                        }}
+                                                    >
+                                                        Clear
+                                                    </Button>
+                                                )}
+                                            </FlexBetween>
+
+
+                                            <RadioGroup
+                                                value={filterState[field] ?? ""}
+                                                onChange={(e) =>
+                                                    onFilterChange(field, e.target.value === 'true' || e.target.value === true )
+                                                }
+                                            >
+                                                <FormControlLabel
+                                                    value={true}
+                                                    control={<Radio size="small" />}
+                                                    label="Yes"
+                                                />
+                                                <FormControlLabel
+                                                    value={false}
+                                                    control={<Radio size="small" />}
+                                                    label="No"
+                                                />
+                                            </RadioGroup>
+                                        </FormControl>
+                                    </Box>
+
+                                    <Divider />
+                                </>
+                            )
+                        )
+                    })
+                    }
+
 
                     {/* BADGES */}
                     {badges?.length > 0 && (
@@ -622,6 +694,7 @@ const ProductFilterDrawer = ({
                                 backgroundColor: "#000",
                             },
                         }}
+                        disabled={priceError}
                     >
                         Show results
                     </Button>
