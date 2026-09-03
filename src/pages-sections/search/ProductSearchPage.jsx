@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import MenuItem from "@mui/material/MenuItem";
@@ -41,79 +41,72 @@ const SORT_OPTIONS = [
   },
 ];
 
-export default function ProductSearchPage() {
+export default function ProductSearchPage({ initialData, initialSearchParams, }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
   const search = searchParams.get("q");
-  console.log(searchParams.getAll("q"), search, 'params');
-  const [productList, setProductList] = useState([]);
-  const [imageBaseUrl, setImageBaseUrl] = useState("");
-  const [videoBaseUrl, setVideoBaseUrl] = useState("");
+  const [productList, setProductList] = useState(initialData?.data || []);
+  const [imageBaseUrl, setImageBaseUrl] = useState(initialData?.base_url || "");
+  const [videoBaseUrl, setVideoBaseUrl] = useState(initialData?.video_base_url || "");
   const [shopDetails, setShopDetails] = useState({});
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const sortBy = searchParams.get("sortBy") || "relevance";
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(
+    initialData?.pagination?.totalPages || 1
+  );
   const page = Number(searchParams.get("page")) || 1;
+  const filterQueryRef = useRef(null);
 
-  const [availableFilters, setAvailableFilters] = useState({
-    price: {},
-    brands: [],
-    ratings: [],
-    dynamicFields: {},
-  });
+  const [availableFilters, setAvailableFilters] = useState(
+    initialData?.filters || {
+      price: {},
+      brands: [],
+      ratings: [],
+      dynamicFields: {},
+    }
+  );
 
   const [filterState, setFilterState] = useState({
     minPrice: "",
     maxPrice: "",
-    rating: 0,
+    ratings: 0,
     brands: [],
     badges: [],
     dynamicFields: {},
   });
+
+  useEffect(() => {
+    setProductList(initialData?.data || []);
+    setImageBaseUrl(initialData?.base_url || "");
+    setVideoBaseUrl(initialData?.video_base_url || "");
+    setTotalPages(initialData?.pagination?.totalPages || 1);
+
+    if (filterQueryRef.current !== search) {
+      setAvailableFilters(
+        initialData?.filters || {
+          price: {},
+          brands: [],
+          badges: [],
+          ratings: [],
+          bestseller: [],
+          featured: [],
+          popularGifts: [],
+          topRated: [],
+          dynamicFields: {},
+        }
+      );
+
+      filterQueryRef.current = search;
+    }
+  }, [initialData, search]);
 
 
   const toggleDrawer = (newOpen) => {
     setOpen(newOpen);
   };
 
-
-  const getProductsBySearch = async () => {
-    try {
-      setLoading(true);
-
-      const params = new URLSearchParams(searchParams.toString());
-
-      params.set("q", search || "");
-      params.set("page", String(page));
-      params.set("limit", "64");
-      params.set("sortBy", sortBy);
-
-      const res = await getAPIAuth(
-        `search-product-list?${params.toString()}`
-      );
-
-      if (res.status === 200) {
-        setImageBaseUrl(res?.data?.base_url);
-        setVideoBaseUrl(res?.data?.video_base_url);
-        setProductList(res?.data?.data || []);
-        setTotalPages(res?.data?.pagination?.totalPages || 1);
-        setAvailableFilters(
-          res?.data?.filters || {
-            price: {},
-            brands: [],
-            ratings: [],
-            dynamicFields: {},
-          }
-        );
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleFilterChange = (key, value, isArray = false) => {
     setFilterState((prev) => {
@@ -186,10 +179,17 @@ export default function ProductSearchPage() {
         };
       }
 
-      if (type === "rating") {
+      if (["featured", "popularGifts", "bestseller", "topRated"].includes(type)) {
+        const updatedFilters = { ...prev };
+        delete updatedFilters[type];
+
+        return updatedFilters;
+      }
+
+      if (type === "ratings") {
         return {
           ...prev,
-          rating: 0,
+          ratings: 0,
         };
       }
 
@@ -221,7 +221,7 @@ export default function ProductSearchPage() {
     setFilterState({
       minPrice: "",
       maxPrice: "",
-      rating: 0,
+      ratings: 0,
       brands: [],
       badges: [],
       dynamicFields: {},
@@ -232,10 +232,14 @@ export default function ProductSearchPage() {
     [
       "minPrice",
       "maxPrice",
-      "rating",
+      "ratings",
       "brands",
       "badges",
       "dynamicFields",
+      "featured",
+      "popularGifts",
+      "bestseller",
+      "topRated"
     ].forEach((key) => params.delete(key));
 
     params.set("page", "1");
@@ -260,10 +264,34 @@ export default function ProductSearchPage() {
       params.delete("maxPrice");
     }
 
-    if (filterState.rating > 0) {
-      params.set("rating", String(filterState.rating));
+    if (filterState.ratings > 0) {
+      params.set("ratings", String(filterState.ratings));
     } else {
-      params.delete("rating");
+      params.delete("ratings");
+    }
+
+    if (filterState.bestseller) {
+      params.set("bestseller", String(filterState.bestseller));
+    } else {
+      params.delete("bestseller");
+    }
+
+    if (filterState.featured) {
+      params.set("featured", String(filterState.featured));
+    } else {
+      params.delete("featured");
+    }
+
+    if (filterState.popularGifts) {
+      params.set("popularGifts", String(filterState.popularGifts));
+    } else {
+      params.delete("popularGifts");
+    }
+
+    if (filterState.topRated) {
+      params.set("topRated", String(filterState.topRated));
+    } else {
+      params.delete("topRated");
     }
 
     if (filterState.brands.length > 0) {
@@ -307,14 +335,6 @@ export default function ProductSearchPage() {
   );
 
   useEffect(() => {
-    if (search) {
-      getProductsBySearch();
-    } else {
-      setProductList([]);
-    }
-  }, [queryString]);
-
-  useEffect(() => {
     let dynamicFields = {};
 
     try {
@@ -328,7 +348,7 @@ export default function ProductSearchPage() {
     setFilterState({
       minPrice: searchParams.get("minPrice") || "",
       maxPrice: searchParams.get("maxPrice") || "",
-      rating: Number(searchParams.get("rating")) || 0,
+      ratings: Number(searchParams.get("ratings")) || 0,
       brands: searchParams.get("brands")
         ? searchParams.get("brands").split(",")
         : [],
@@ -336,6 +356,11 @@ export default function ProductSearchPage() {
         ? searchParams.get("badges").split(",")
         : [],
       dynamicFields,
+
+      ...(searchParams.has("featured") && { featured: searchParams.get("featured") === "true", }),
+      ...(searchParams.has("popularGifts") && { popularGifts: searchParams.get("popularGifts") === "true", }),
+      ...(searchParams.has("bestseller") && { bestseller: searchParams.get("bestseller") === "true", }),
+      ...(searchParams.has("topRated") && { topRated: searchParams.get("topRated") === "true", }),
     });
   }, [queryString]);
 

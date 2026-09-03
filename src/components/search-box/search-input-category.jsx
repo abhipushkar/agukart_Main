@@ -212,12 +212,19 @@ export default function SearchInputWithCategory() {
 
     // change this section as only common query should be carried forward
     if (pathname === "/search-product-list") {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("q", trimmed); 
-      router.push(`/search-product-list?${params.toString()}`);
+      const currentSearch = searchParams.get("q") || "";
+      const currentSort = searchParams.get("sortBy");
+      if (normalizeSearch(currentSearch) !== normalizeSearch(trimmed)) {
+        router.push(
+          `/search-product-list?q=${encodeURIComponent(trimmed)}${currentSort ? ("&sortBy="+currentSort) : ""}`
+        );
+      } else {
+        router.push(`/search-product-list?${searchParams.toString()}`);
+      }
+
       return;
     }
-    router.push( `/search-product-list?q=${encodeURIComponent(trimmed)}` );
+    router.push(`/search-product-list?q=${encodeURIComponent(trimmed)}`);
 
   }, [
     searchTerms,

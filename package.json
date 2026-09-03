@@ -4,7 +4,7 @@
   "homepage": "/adminpanel",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 4000",
+    "dev": "next dev -p 4033",
     "build": "next build",
     "start": "next start",
     "set-root": "bazaar set-root",
