@@ -10,7 +10,7 @@ import { H2, H4, H6 } from "components/Typography";
 import { Paragraph } from "components/Typography";
 import { Heading } from "./styles";
 import Link from "next/link";
-import { Alert } from "@mui/material";
+import { Alert, IconButton } from "@mui/material";
 import HeadsetMicTwoToneIcon from '@mui/icons-material/HeadsetMicTwoTone';
 
 export default function Footer1() {
@@ -27,7 +27,7 @@ export default function Footer1() {
         </Typography>
       </Box>
       <Box component="footer" bgcolor="#2638c0">
-        <Box component={Container} color="white" overflow="hidden" pt={0}>
+        <Box component={Container} color="white" overflow="hidden" pt={0} pb={{ xs: 1, md: 0 }}>
           <Grid container spacing={3}>
             <Grid item lg={3} md={6} sm={6} xs={12}>
               <Box sx={{ padding: '18px', background: '#122868', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column' }}>
@@ -97,36 +97,33 @@ export default function Footer1() {
                 /* CONTACT INFORMATION */
               }
               <Heading>Contact With Us</Heading>
-              {/* <Paragraph py={0.6} color="grey.500">
-                70 Washington Square South, New York, NY 10012, United States
-              </Paragraph>
-              <Paragraph py={0.6} color="grey.500">
-                Email: uilib.help@gmail.com
-              </Paragraph>
-              <Paragraph py={0.6} mb={2} color="grey.500">
-                Phone: +1 1123 456 780
-              </Paragraph> */}
-              {
-                /* SOCIAL LINKS WITH ICON */
-              }
               <SocialLinks />
-              <Alert severity="info" color="warning" sx={{ mt: 1, display: { xs: 'none', sm: 'flex' }, px: 1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
+              <Alert severity="info" color="warning" sx={{ mt: 1, display: { xs: 'none', sm: 'none', md: 'flex' }, px: 0, bgcolor: "transparent", color: '#AEB4BE','& .MuiAlert-message': { py: 0, alignContent: "center" } }} icon={<IconButton sx={{bgcolor: "#202e97",}}><HeadsetMicTwoToneIcon sx={{ fontSize: '38px', color: "#fff" }} /></IconButton>}>
                 <strong>Need help?</strong> Contact
-                <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
+                <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "white", textDecoration: "underline", ml: 0.8, fontWeight: 500, whiteSpace: "nowrap", }}> Agukart Support</Typography><br />
+                We're here to help you!
+              </Alert>
+
+            </Grid>
+            <Grid item sm={6} xs={12} my={{
+              sm: 0,
+              md: 4,
+            }}
+              sx={{ display: { xs: "flex", md: 'none' }, justifyContent: { xs: "center", sm: "start" } }}
+            >
+              <Alert sx={{ display: { xs: 'flex', sm: 'flex', md: 'none' }, px: 0, bgcolor: "transparent", color: '#AEB4BE', '& .MuiAlert-message': { py: 0, fontSize: {xs: 14, sm: 15}, alignContent: "center" } }} icon={<IconButton sx={{bgcolor: "#202e97",}}><HeadsetMicTwoToneIcon sx={{ fontSize: '38px', color: "#fff" }} /></IconButton>}>
+                <strong>Need help?</strong> Contact
+                <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "white", textDecoration: "underline", ml: 0.8, fontWeight: 500, fontSize: 15, whiteSpace: "nowrap", }}> Agukart Support</Typography><br />
                 We're here to help you!
               </Alert>
 
             </Grid>
           </Grid>
-          <Alert severity="info" color="warning" sx={{ my: 2, display: { xs: 'flex', sm: 'none' }, px: 1 }} icon={<HeadsetMicTwoToneIcon sx={{ fontSize: '38px' }} color="secondary" />}>
-            <strong>Need help?</strong> Contact
-            <Typography component="a" href="mailto:support@agukart.com" sx={{ color: "#0755d9", textDecoration: "underline", ml: 0.8, fontWeight: 500 }}> Agukart Support</Typography><br />
-            We're here to help you!
-          </Alert>
+
         </Box>
-      <Box textAlign={'center'} py={2} borderTop={"1px solid #cccccc38"} sx={{ fontWeight: 500 }} color={'whitesmoke'}>
-        © 2026 Agukart. All Rights Reserved.
-      </Box>
+        <Box textAlign={'center'} py={2} borderTop={"1px solid #cccccc38"} sx={{ fontWeight: 500 }} color={'whitesmoke'}>
+          © 2026 Agukart. All Rights Reserved.
+        </Box>
       </Box>
     </>
   )

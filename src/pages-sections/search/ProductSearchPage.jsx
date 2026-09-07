@@ -8,6 +8,9 @@ import TextField from "@mui/material/TextField";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import Chip from "@mui/material/Chip";
+
+import CloseIcon from "@mui/icons-material/Close";
 
 import { H1, Paragraph } from "components/Typography";
 import { FlexBetween, FlexBox } from "components/flex-box";
@@ -16,7 +19,7 @@ import { useSearchParams } from "next/navigation";
 
 import useAuth from "hooks/useAuth";
 import { getAPIAuth } from "utils/__api__/ApiServies";
-import { CircularProgress, Pagination } from "@mui/material";
+import { Card, CircularProgress, Pagination, Paper } from "@mui/material";
 import Product from "components/product/Product";
 import ProductCardShimmer from "components/shimmer/ProductCardShimmer";
 import ProductFilterDrawer from "components/search/ProductFilterDrawer";
@@ -71,7 +74,7 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
   const [filterState, setFilterState] = useState({
     minPrice: "",
     maxPrice: "",
-    ratings: 0,
+    ratings: [],
     brands: [],
     badges: [],
     dynamicFields: {},
@@ -79,6 +82,7 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
 
   useEffect(() => {
     setProductList(initialData?.data || []);
+    console.log(initialData?.data?.slice(0, 3), "products")
     setImageBaseUrl(initialData?.base_url || "");
     setVideoBaseUrl(initialData?.video_base_url || "");
     setTotalPages(initialData?.pagination?.totalPages || 1);
@@ -110,6 +114,14 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
 
   const handleFilterChange = (key, value, isArray = false) => {
     setFilterState((prev) => {
+      if (key === "priceRange") {
+        return {
+          ...prev,
+          minPrice: String(value[0]),
+          maxPrice: String(value[1]),
+        };
+      }
+
       if (!isArray) {
         return {
           ...prev,
@@ -162,66 +174,79 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
   };
 
 
-  const handleClearField = (type, fieldName) => {
-    setFilterState((prev) => {
-      if (type === "price") {
-        return {
-          ...prev,
-          minPrice: "",
-          maxPrice: "",
-        };
-      }
+  const handleClearField = (type, fieldName, value, autoApply = false) => {
+    let updatedState = { ...filterState };
 
-      if (type === "brands") {
-        return {
-          ...prev,
-          brands: [],
-        };
-      }
+    if (type === "price") {
+      updatedState = {
+        ...updatedState,
+        minPrice: "",
+        maxPrice: "",
+      };
+    }
 
-      if (["featured", "popularGifts", "bestseller", "topRated"].includes(type)) {
-        const updatedFilters = { ...prev };
-        delete updatedFilters[type];
+    if (type === "brands") {
+      updatedState = {
+        ...updatedState,
+        brands: [],
+      };
+    }
 
-        return updatedFilters;
-      }
+    if (["featured", "popularGifts", "bestseller", "topRated"].includes(type)) {
+      delete updatedState[type];
+    }
 
-      if (type === "ratings") {
-        return {
-          ...prev,
-          ratings: 0,
-        };
-      }
+    if (type === "ratings") {
+      updatedState = {
+        ...updatedState,
+        ratings: 0,
+      };
+    }
 
-      if (type === "badges") {
-        return {
-          ...prev,
-          badges: [],
-        };
-      }
+    if (type === "badges") {
+      updatedState = {
+        ...updatedState,
+        badges: [],
+      };
+    }
 
-      if (type === "dynamicField") {
-        const updatedDynamicFields = {
-          ...prev.dynamicFields,
-        };
+    if (type === "dynamicField") {
+      const updatedDynamicFields = {
+        ...updatedState.dynamicFields,
+      };
 
+      if (value !== undefined) {
+        const updatedValues = (
+          updatedDynamicFields[fieldName] || []
+        ).filter((item) => item !== value);
+
+        if (updatedValues.length > 0) {
+          updatedDynamicFields[fieldName] = updatedValues;
+        } else {
+          delete updatedDynamicFields[fieldName];
+        }
+      } else {
         delete updatedDynamicFields[fieldName];
-
-        return {
-          ...prev,
-          dynamicFields: updatedDynamicFields,
-        };
       }
 
-      return prev;
-    });
+      updatedState = {
+        ...updatedState,
+        dynamicFields: updatedDynamicFields,
+      };
+    }
+
+    setFilterState(updatedState);
+
+    if (autoApply) {
+      handleApplyFilters(updatedState, false);
+    }
   };
 
   const handleClearFilters = () => {
     setFilterState({
       minPrice: "",
       maxPrice: "",
-      ratings: 0,
+      ratings: [],
       brands: [],
       badges: [],
       dynamicFields: {},
@@ -249,67 +274,67 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
     toggleDrawer(false);
   };
 
-  const handleApplyFilters = () => {
+  const handleApplyFilters = (state = filterState, closeDrawer = true) => {
     const params = new URLSearchParams(searchParams.toString());
 
-    if (filterState.minPrice !== "") {
-      params.set("minPrice", filterState.minPrice);
+    if (state.minPrice) {
+      params.set("minPrice", state.minPrice);
     } else {
       params.delete("minPrice");
     }
 
-    if (filterState.maxPrice !== "") {
-      params.set("maxPrice", filterState.maxPrice);
+    if (state.maxPrice) {
+      params.set("maxPrice", state.maxPrice);
     } else {
       params.delete("maxPrice");
     }
 
-    if (filterState.ratings > 0) {
-      params.set("ratings", String(filterState.ratings));
+    if (state.ratings?.length > 0) {
+      params.set("ratings", state.ratings.join(","));
     } else {
       params.delete("ratings");
     }
 
-    if (filterState.bestseller) {
-      params.set("bestseller", String(filterState.bestseller));
+    if (state.bestseller) {
+      params.set("bestseller", String(state.bestseller));
     } else {
       params.delete("bestseller");
     }
 
-    if (filterState.featured) {
-      params.set("featured", String(filterState.featured));
+    if (state.featured) {
+      params.set("featured", String(state.featured));
     } else {
       params.delete("featured");
     }
 
-    if (filterState.popularGifts) {
-      params.set("popularGifts", String(filterState.popularGifts));
+    if (state.popularGifts) {
+      params.set("popularGifts", String(state.popularGifts));
     } else {
       params.delete("popularGifts");
     }
 
-    if (filterState.topRated) {
-      params.set("topRated", String(filterState.topRated));
+    if (state.topRated) {
+      params.set("topRated", String(state.topRated));
     } else {
       params.delete("topRated");
     }
 
-    if (filterState.brands.length > 0) {
-      params.set("brands", filterState.brands.join(","));
+    if (state.brands?.length > 0) {
+      params.set("brands", state.brands.join(","));
     } else {
       params.delete("brands");
     }
 
-    if (filterState.badges.length > 0) {
-      params.set("badges", filterState.badges.join(","));
+    if (state.badges?.length > 0) {
+      params.set("badges", state.badges.join(","));
     } else {
       params.delete("badges");
     }
 
-    if (Object.keys(filterState.dynamicFields).length > 0) {
+    if (Object.keys(state.dynamicFields || {}).length > 0) {
       params.set(
         "dynamicFields",
-        JSON.stringify(filterState.dynamicFields)
+        JSON.stringify(state.dynamicFields)
       );
     } else {
       params.delete("dynamicFields");
@@ -319,7 +344,9 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
 
     router.push(`/search-product-list?${params.toString()}`);
 
-    toggleDrawer(false);
+    if (closeDrawer) {
+      toggleDrawer(false);
+    }
   };
 
   const handleChangeSortBy = useCallback(
@@ -348,7 +375,9 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
     setFilterState({
       minPrice: searchParams.get("minPrice") || "",
       maxPrice: searchParams.get("maxPrice") || "",
-      ratings: Number(searchParams.get("ratings")) || 0,
+      ratings: searchParams.get("ratings")
+        ? searchParams.get("ratings").split(",").map(Number)
+        : [],
       brands: searchParams.get("brands")
         ? searchParams.get("brands").split(",")
         : [],
@@ -387,8 +416,94 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
     router.push(`/search-product-list?${params.toString()}`);
   };
 
+  const selectedFilterChips = (() => {
+    const chips = [];
+
+    const brands = searchParams.get("brands")
+      ? searchParams.get("brands").split(",")
+      : [];
+
+    const badges = searchParams.get("badges")
+      ? searchParams.get("badges").split(",")
+      : [];
+
+    const featured = searchParams.get("featured") === "true";
+
+    let dynamicFields = {};
+
+    try {
+      dynamicFields = JSON.parse(
+        searchParams.get("dynamicFields") || "{}"
+      );
+    } catch {
+      dynamicFields = {};
+    }
+
+    // brands.forEach((value) => {
+    //   chips.push({
+    //     type: "brands",
+    //     value,
+    //     label: value,
+    //   });
+    // });
+
+    badges.forEach((value) => {
+      chips.push({
+        type: "badges",
+        value,
+        label: value,
+      });
+    });
+
+    if (featured) {
+      chips.push({
+        type: "featured",
+        value: "true",
+        label: "Featured",
+      });
+    }
+
+    Object.entries(dynamicFields).forEach(
+      ([fieldName, values]) => {
+        values.forEach((value) => {
+          chips.push({
+            type: "dynamicField",
+            fieldName,
+            value,
+            label: value === "Yes" || value === "No" ? `${fieldName} : ${value}` : value,
+          });
+        });
+      }
+    );
+
+    return (
+      chips.map((chip) => (
+        <Chip
+          key={`${chip.type}-${chip.fieldName || ""}-${chip.value}`}
+          label={chip.label}
+          onDelete={() => handleClearField(chip.type, chip.fieldName, chip.value, true)}
+          sx={{
+            fontSize: {xs: 12, sm: 14},
+            p: {xs: 0, sm: "auto"},
+            color: "whitesmoke",
+            bgcolor: "#2b3445",
+            height: {xs: 28, sm: 32},
+            "&:hover": { bgcolor: "#2b3445f5", color: "white" },
+            "& .MuiChip-deleteIcon": {
+              fontSize: {xs: 15, sm: 18},
+              color: "white",
+              borderRadius: 4,
+              "&:hover": { bgcolor: "#4a608a", },
+              transition: "all 200ms"
+            },
+          }}
+          deleteIcon={<CloseIcon />}
+        />
+      )))
+  })();
+
   return (
-    <div className="bg-white pt-2 pb-4">
+    <div className="bg-white pt-1 pb-4">
       <Container sx={{ padding: { xs: "12px", sm: "30px 16px" } }}>
         <Box px={{ xs: 0, sm: 3, md: 4 }}>
 
@@ -449,6 +564,23 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
                 </Button>
               )} */}
             </Box>
+            <Box
+              display={{ xs: "none", sm: "flex" }}
+              gap={1}
+              flex={1}
+              minWidth={0}
+              alignItems={"center"}
+              overflow={"auto"}
+              sx={{
+                scrollbarWidth: "none",
+                "&::-webkit-scrollbar": {
+                  display: "none",
+                },
+              }}
+              borderRadius={16}
+            >
+              {selectedFilterChips}
+            </Box>
             <Box>
               <FlexBox
                 alignItems="center"
@@ -488,6 +620,24 @@ export default function ProductSearchPage({ initialData, initialSearchParams, })
               </FlexBox>
             </Box>
           </FlexBetween>
+        </Box>
+        <Box
+          display={{ xs: "flex", sm: "none" }}
+          gap={1}
+          flex={1}
+          minWidth={0}
+          alignItems={"center"}
+          overflow={"auto"}
+          sx={{
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": {
+              display: "none",
+            },
+          }}
+          borderRadius={4}
+          mb={2}
+        >
+          {selectedFilterChips}
         </Box>
         {loading ? (
           <Container sx={{ padding: "30px 16px" }}>

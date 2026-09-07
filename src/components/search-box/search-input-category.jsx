@@ -168,7 +168,7 @@ export default function SearchInputWithCategory() {
   // CLOSE DROPDOWN
   // ------------------------------------------------------------
 
-  const closeDropdown = useCallback(() => {
+  const closeDropdown = useCallback((outsideClick = false) => {
     // Cancel debounce
     debouncedSearch.cancel();
 
@@ -176,7 +176,9 @@ export default function SearchInputWithCategory() {
     searchRequestId.current++;
 
     setIsFocused(false);
-    setProductList([]);
+    if (!outsideClick) {
+      setProductList([]);
+    }
     setIsSearching(false);
   }, [debouncedSearch]);
 
@@ -216,7 +218,7 @@ export default function SearchInputWithCategory() {
       const currentSort = searchParams.get("sortBy");
       if (normalizeSearch(currentSearch) !== normalizeSearch(trimmed)) {
         router.push(
-          `/search-product-list?q=${encodeURIComponent(trimmed)}${currentSort ? ("&sortBy="+currentSort) : ""}`
+          `/search-product-list?q=${encodeURIComponent(trimmed)}${currentSort ? ("&sortBy=" + currentSort) : ""}`
         );
       } else {
         router.push(`/search-product-list?${searchParams.toString()}`);
@@ -381,6 +383,7 @@ export default function SearchInputWithCategory() {
       ref={parentRef}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      zIndex={shouldShowDropdown ? 1200 : "auto"}
     >
       <TextField
         fullWidth
@@ -410,11 +413,23 @@ export default function SearchInputWithCategory() {
       -------------------------------------------------------- */}
 
       {shouldShowDropdown && (
-        <SearchResult
-          productList={productList}
-          isSearching={isSearching}
-          searchTerm={trimmedSearch}
-        />
+        <>
+          <Box
+            onMouseDown={() => closeDropdown(true)}
+            sx={{
+              position: "fixed",
+              inset: 0,
+              zIndex: -1,
+              backgroundColor: productList.length > 0 ? "rgba(0, 0, 0, 0.15)" : "transparent",
+            }}
+          />
+
+          <SearchResult
+            productList={productList}
+            isSearching={isSearching}
+            searchTerm={trimmedSearch}
+          />
+        </>
       )}
     </Box>
   );
