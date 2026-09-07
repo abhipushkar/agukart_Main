@@ -14,6 +14,7 @@ import {
     RadioGroup,
     TextField,
     Typography,
+    Slider
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useState } from "react";
@@ -40,7 +41,8 @@ const ProductFilterDrawer = ({
     } = filters;
     const [expandedFields, setExpandedFields] = useState({});
     const priceError = (filterState.maxPrice && filterState.minPrice) && +filterState.maxPrice < +filterState.minPrice;
-
+    delete remainingFilters.bestseller
+    delete remainingFilters.popularGifts
     return (
         <Drawer
             anchor="left"
@@ -49,8 +51,8 @@ const ProductFilterDrawer = ({
             PaperProps={{
                 sx: {
                     width: {
-                        xs: "100%",
-                        sm: 420,
+                        xs: "90%",
+                        sm: 320,
                     },
                     maxWidth: "100%",
                 },
@@ -67,8 +69,8 @@ const ProductFilterDrawer = ({
                 {/* Header */}
                 <Box
                     sx={{
-                        px: 3,
-                        py: 2.5,
+                        px: 2.5,
+                        py: 2,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -77,7 +79,7 @@ const ProductFilterDrawer = ({
                 >
                     <Typography
                         sx={{
-                            fontSize: 22,
+                            fontSize: 19,
                             fontWeight: 600,
                         }}
                     >
@@ -88,7 +90,7 @@ const ProductFilterDrawer = ({
                         onClick={onClose}
                         sx={{
                             cursor: "pointer",
-                            fontSize: 26,
+                            fontSize: 24,
                         }}
                     />
                 </Box>
@@ -98,15 +100,29 @@ const ProductFilterDrawer = ({
                     sx={{
                         flex: 1,
                         overflowY: "auto",
-                        px: 3,
+                        pl: 2.5, pr: 2,
+                        "&::-webkit-scrollbar": {
+                            width: "6px",
+                        },
+                        "&::-webkit-scrollbar-track": {
+                            background: "#f1f1f1",
+                            borderRadius: "10px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                            background: "#c1c1c1",
+                            borderRadius: "10px",
+                            "&:hover": {
+                                background: "#a8a8a8",
+                            },
+                        },
                     }}
                 >
                     {/* PRICE */}
                     {price && (price.min !== undefined || price.max !== undefined) && (
                         <>
-                            <Box py={3}>
+                            <Box py={2}>
                                 <FlexBetween>
-                                    <Typography fontSize={17} fontWeight={600} mb={2}>
+                                    <Typography fontSize={16} fontWeight={600} mb={2}>
                                         Price
                                     </Typography>
                                     {onClearField && (
@@ -117,13 +133,13 @@ const ProductFilterDrawer = ({
                                                 mb: 2, p: 0,
                                                 minWidth: "auto",
                                                 textTransform: "none",
+                                                fontSize: 12, color: "grey.700"
                                             }}
                                         >
                                             Clear
                                         </Button>
                                     )}
                                 </FlexBetween>
-
 
                                 <Box
                                     sx={{
@@ -141,8 +157,8 @@ const ProductFilterDrawer = ({
                                         onChange={(e) =>
                                             onFilterChange("minPrice", e.target.value)
                                         }
-                                        inputProps={{min: price.min}}
-                                        error={priceError}                                        
+                                        inputProps={{ min: price.min }}
+                                        error={priceError}
                                         helperText={priceError && "Please fix prices to apply filter."}
                                     />
 
@@ -157,12 +173,71 @@ const ProductFilterDrawer = ({
                                         onChange={(e) =>
                                             onFilterChange("maxPrice", e.target.value)
                                         }
-                                        inputProps={{max: price.max}}
+                                        inputProps={{ max: price.max }}
                                         error={priceError}
                                         helperText={priceError && "max price can't be less than min price."}
                                     />
                                 </Box>
 
+                                <Box px={1}>
+                                    <Slider
+                                        value={[
+                                            Number(filterState.minPrice || price.min || 0),
+                                            Number(filterState.maxPrice || price.max || 0),
+                                        ]}
+                                        onChange={(_, newValue) => {
+                                            onFilterChange("priceRange", newValue);
+                                        }}
+                                        min={Number(price.min || 0)}
+                                        max={Number(price.max || 0)}
+                                        valueLabelDisplay="off"
+                                        disableSwap
+                                        sx={{
+                                            mt: 1,
+                                            "& .MuiSlider-thumb": {
+                                                width: 18,
+                                                height: 18,
+                                                backgroundColor: "#fff",
+                                                border: "2px solid #f0f0f0",
+                                                boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                                                transition: "box-shadow 200ms ease, transform 150ms ease",
+                                                "&::after": {
+                                                    content: '""',
+                                                    position: "absolute",
+                                                    width: 28,
+                                                    height: 28,
+                                                    borderRadius: "50%",
+                                                    opacity: 0,
+                                                    transition: "opacity 200ms ease, transform 200ms ease",
+                                                },
+                                                "&:hover": {
+                                                    boxShadow: "0 2px 8px rgba(43,52,69,0.45)",
+                                                    "&::after": {
+                                                        opacity: 1,
+                                                    },
+                                                },
+                                                "&.Mui-focusVisible": {
+                                                    boxShadow: "0 0 0 6px rgba(74,89,117,0.22)",
+
+                                                    "&::after": {
+                                                        opacity: 1,
+                                                        transform: "scale(1)",
+                                                    },
+                                                },
+                                            },
+                                            "& .MuiSlider-track": {
+                                                height: 5,
+                                                backgroundColor: "#4a5975ee",
+                                                border: "none",
+                                            },
+                                            "& .MuiSlider-rail": {
+                                                height: 5,
+                                                backgroundColor: "#4e5f7db5",
+                                                opacity: 1,
+                                            },
+                                        }}
+                                    />
+                                </Box>
                             </Box>
 
                             <Divider />
@@ -170,13 +245,13 @@ const ProductFilterDrawer = ({
                     )}
 
                     {/* RATING */}
-                    {ratings?.length > 0 && (
+                    {/* {ratings?.length > 0 && (
                         <>
-                            <Box py={3}>
+                            <Box py={2}>
                                 <FormControl fullWidth>
                                     <FormLabel
                                         sx={{
-                                            fontSize: 17,
+                                            fontSize: 15,
                                             fontWeight: 600,
                                             color: "#222",
                                             mb: 1,
@@ -210,7 +285,7 @@ const ProductFilterDrawer = ({
                                                     control={<Radio size="small" />}
                                                     label={
                                                         <Box display="flex" gap={0.5}>
-                                                            <Typography fontSize={14}>
+                                                            <Typography fontSize={13}>
                                                                 {item.rating} stars
                                                             </Typography>
 
@@ -230,17 +305,17 @@ const ProductFilterDrawer = ({
 
                             <Divider />
                         </>
-                    )}
+                    )} */}
 
                     {/* BRANDS */}
                     {brands?.length > 0 && (
                         <>
-                            <Box py={3}>
+                            <Box py={2}>
                                 <FormControl fullWidth>
                                     <FlexBetween>
                                         <FormLabel
                                             sx={{
-                                                fontSize: 17,
+                                                fontSize: 15,
                                                 fontWeight: 600,
                                                 color: "#222",
                                                 mb: 1,
@@ -261,6 +336,7 @@ const ProductFilterDrawer = ({
                                                     p: 0,
                                                     minWidth: "auto",
                                                     textTransform: "none",
+                                                    fontSize: 12, color: "grey.700"
                                                 }}
                                             >
                                                 Clear
@@ -286,7 +362,7 @@ const ProductFilterDrawer = ({
                                                 }
                                                 label={
                                                     <Box display="flex" gap={1}>
-                                                        <Typography fontSize={14}>
+                                                        <Typography fontSize={13}>
                                                             {brand.title}
                                                         </Typography>
 
@@ -313,12 +389,12 @@ const ProductFilterDrawer = ({
                         return (
                             value?.length > 0 && (
                                 <>
-                                    <Box py={3}>
+                                    <Box py={2}>
                                         <FormControl fullWidth sx={{ display: "flex", justifyContent: 'space-between' }}>
                                             <FlexBetween>
                                                 <FormLabel
                                                     sx={{
-                                                        fontSize: 17,
+                                                        fontSize: 15,
                                                         fontWeight: 600,
                                                         color: "#222",
                                                         mb: 1,
@@ -337,7 +413,7 @@ const ProductFilterDrawer = ({
                                                             p: 0,
                                                             minWidth: "auto",
                                                             textTransform: "none",
-                                                            fontSize: 13,
+                                                            fontSize: 12, color: "grey.700"
                                                         }}
                                                     >
                                                         Clear
@@ -349,7 +425,7 @@ const ProductFilterDrawer = ({
                                             <RadioGroup
                                                 value={filterState[field] ?? ""}
                                                 onChange={(e) =>
-                                                    onFilterChange(field, e.target.value === 'true' || e.target.value === true )
+                                                    onFilterChange(field, e.target.value === 'true' || e.target.value === true)
                                                 }
                                             >
                                                 <FormControlLabel
@@ -377,7 +453,7 @@ const ProductFilterDrawer = ({
                     {/* BADGES */}
                     {badges?.length > 0 && (
                         <>
-                            <Box py={3}>
+                            <Box py={2}>
                                 <FormControl fullWidth>
                                     <Box
                                         display="flex"
@@ -387,7 +463,7 @@ const ProductFilterDrawer = ({
                                     >
                                         <FormLabel
                                             sx={{
-                                                fontSize: 16,
+                                                fontSize: 15,
                                                 fontWeight: 600,
                                                 color: "#222",
                                                 m: 0,
@@ -407,7 +483,7 @@ const ProductFilterDrawer = ({
                                                     p: 0,
                                                     minWidth: "auto",
                                                     textTransform: "none",
-                                                    fontSize: 13,
+                                                    fontSize: 12, color: "grey.700"
                                                 }}
                                             >
                                                 Clear
@@ -442,7 +518,7 @@ const ProductFilterDrawer = ({
                                                         alignItems="center"
                                                         gap={1}
                                                     >
-                                                        <Typography fontSize={14}>
+                                                        <Typography fontSize={13}>
                                                             {badge.value}
                                                         </Typography>
 
@@ -487,7 +563,7 @@ const ProductFilterDrawer = ({
 
                             return (
                                 <Box key={fieldName}>
-                                    <Box py={3}>
+                                    <Box py={2}>
                                         <FormControl fullWidth>
                                             <Box
                                                 display="flex"
@@ -497,7 +573,7 @@ const ProductFilterDrawer = ({
                                             >
                                                 <FormLabel
                                                     sx={{
-                                                        fontSize: 17,
+                                                        fontSize: 15,
                                                         fontWeight: 600,
                                                         color: "#222",
                                                         m: 0,
@@ -519,7 +595,7 @@ const ProductFilterDrawer = ({
                                                             p: 0,
                                                             minWidth: "auto",
                                                             textTransform: "none",
-                                                            fontSize: 13,
+                                                            fontSize: 12, color: "grey.700"
                                                         }}
                                                     >
                                                         Clear
@@ -552,7 +628,7 @@ const ProductFilterDrawer = ({
                                                                         alignItems="center"
                                                                         gap={1}
                                                                     >
-                                                                        <Typography fontSize={14}>
+                                                                        <Typography fontSize={13}>
                                                                             {value}
                                                                         </Typography>
 
@@ -598,7 +674,7 @@ const ProductFilterDrawer = ({
                                                                         alignItems="center"
                                                                         gap={1}
                                                                     >
-                                                                        <Typography fontSize={14}>
+                                                                        <Typography fontSize={13}>
                                                                             {value}
                                                                         </Typography>
 
@@ -624,13 +700,13 @@ const ProductFilterDrawer = ({
                                                 <Button
                                                     size="small"
                                                     sx={{
-                                                        mt: 1,
+                                                        mt: 0.5, ml: 1.5,
                                                         p: 0,
                                                         minWidth: "auto",
                                                         width: "fit-content",
                                                         textTransform: "none",
-                                                        fontSize: 13,
-                                                        fontWeight: 600,
+                                                        fontSize: 12,
+                                                        fontWeight: 500,
                                                     }}
                                                     onClick={() =>
                                                         setExpandedFields((prev) => ({
@@ -669,7 +745,7 @@ const ProductFilterDrawer = ({
                         onClick={onClearFilters}
                         sx={{
                             borderRadius: "30px",
-                            minHeight: 46,
+                            minHeight: 40,
                             borderColor: "#222",
                             color: "#222",
                             textTransform: "none",
@@ -682,16 +758,16 @@ const ProductFilterDrawer = ({
                     <Button
                         fullWidth
                         variant="contained"
-                        onClick={onApplyFilters}
+                        onClick={() => onApplyFilters(filterState)}
                         sx={{
                             borderRadius: "30px",
-                            minHeight: 46,
-                            backgroundColor: "#222",
+                            minHeight: 40,
+                            backgroundColor: "#2b3445",
                             color: "#fff",
                             textTransform: "none",
                             fontWeight: 600,
                             "&:hover": {
-                                backgroundColor: "#000",
+                                backgroundColor: "#222",
                             },
                         }}
                         disabled={priceError}

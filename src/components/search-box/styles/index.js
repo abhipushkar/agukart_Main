@@ -10,13 +10,28 @@ export const SearchOutlinedIcon = styled(SearchOutlined)(({
 }));
 export const SearchResultCard = styled(Card)({
   zIndex: 99,
+  marginTop: 4,
   top: "100%",
   width: "100%",
   position: "absolute",
   paddingTop: "0.5rem",
   paddingBottom: "0.5rem",
-  maxHeight: "200px",
-  overflowY: 'auto'
+  // maxHeight: "200px",
+  // overflowY: 'auto',
+  "&::-webkit-scrollbar": {
+    width: "6px",
+  },
+  "&::-webkit-scrollbar-track": {
+    background: "#f1f1f1",
+    borderRadius: "10px",
+  },
+  "&::-webkit-scrollbar-thumb": {
+    background: "#c1c1c1",
+    borderRadius: "10px",
+    "&:hover": {
+      background: "#a8a8a8",
+    },
+  },
 });
 export const DropDownHandler = styled(Box)(({
   theme
