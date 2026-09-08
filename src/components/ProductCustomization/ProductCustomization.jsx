@@ -583,6 +583,14 @@ const DropdownCustomization = ({
   };
 
   const handleOptionHover = (option) => {
+    // Skip hover if menu is closed or closing
+    if (!anchorEl) {
+      setHoveredOption(null);
+      if (onOptionHoverOut) {
+        onOptionHoverOut();
+      }
+    }
+
     setHoveredOption(option);
     if (onOptionHover && option.main_images.filter(Boolean).length > 0) {
       onOptionHover(option);

@@ -6,6 +6,7 @@ export const useProductCustomization = (product) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [customizeDropdownPrice, setCustomizeDropdownPrice] = useState(0);
   const [customizeTextPrice, setCustomizeTextPrice] = useState(0);
+  const [hoveredCustomizationImage, setHoveredCustomizationImage] = useState(null);
   const [isExpanded, setIsExpanded] = useState(
     product?.customizationData?.isExpanded === "true" ||
     product?.customizationData?.isExpanded === true ||
@@ -33,6 +34,7 @@ export const useProductCustomization = (product) => {
       };
     });
     setValidationErrors((prv) => ({ ...prv, [label]: "" }));
+    setHoveredCustomizationImage(null);
   };
 
   const handleTextChange = (label, price, min, max, value) => {
@@ -136,6 +138,8 @@ export const useProductCustomization = (product) => {
     validationErrors,
     customizeDropdownPrice,
     customizeTextPrice,
+    hoveredCustomizationImage, 
+    setHoveredCustomizationImage,
     handleDropdownChange,
     handleTextChange,
     validateCustomization,

@@ -65,8 +65,7 @@ const MyproductDetails = ({ res }) => {
   const [plusToggle, setPlusToggle] = useState(false);
   const [openPopup, setOpenPopup] = useState(false);
   const [openModal, setOpenModal] = useState(false);
-  const [hoveredCustomizationImage, setHoveredCustomizationImage] =
-    useState(null);
+
   const pathname = useParams();
   console.log(pathname, "path")
   const [reviewData, setReviewData] = useState({});
@@ -99,6 +98,8 @@ const MyproductDetails = ({ res }) => {
     validationErrors,
     customizeDropdownPrice,
     customizeTextPrice,
+    hoveredCustomizationImage, 
+    setHoveredCustomizationImage,
     handleDropdownChange,
     handleTextChange,
     validateCustomization,
@@ -109,7 +110,7 @@ const MyproductDetails = ({ res }) => {
   const viewProduct = async () => {
     try {
       const id = pathname.productId || myproduct?._id;
-      if(!id) return;
+      if (!id) return;
       const res = await postAPIAuth("user/add-viewed-products", {
         product_id: id || res.data._id,
       });
@@ -609,6 +610,28 @@ const MyproductDetails = ({ res }) => {
     const urlParams = new URLSearchParams(searchParams.toString());
     const variantAttrIds = urlParams.getAll("var");
 
+    const customizationValues = urlParams.getAll("custom");
+
+    customizationValues.forEach((customValue) => {
+      const separatorIndex = customValue.indexOf(":");
+
+      if (separatorIndex === -1) return;
+      const label = customValue.slice(0, separatorIndex);
+      const optionName = customValue.slice(separatorIndex + 1);
+
+      const customization = myproduct?.customizationData?.customizations?.find(
+        (item) => item.label === label
+      );
+
+      const option = customization?.optionList?.find(
+        (item) => item.optionName === optionName
+      );
+
+      if (customization && option) {
+        handleDropdownChange(customization.label, option);
+      }
+    });
+
     console.log("[URL Init] variantAttrIds from URL:", variantAttrIds);
 
     // Mark as initialized to allow URL sync effect to run
@@ -676,10 +699,12 @@ const MyproductDetails = ({ res }) => {
       ([variantIdentifier, attrId]) =>
         !!attrId && getVariantTypeByIdentifier(variantIdentifier) === "internal"
     );
+    const hasCustomizationSelection =
+      Object.keys(selectedDropdowns || {}).length > 0;
 
     // Important: when only parent variants are selected, do not touch URL query.
     // This keeps default parent navigation behavior (slug/product_code route change).
-    if (hasParentSelection && !hasInternalSelection) {
+    if (hasParentSelection && !hasInternalSelection && !hasCustomizationSelection) {
       console.log(
         "[URL Sync] Skipping sync for parent-only selection to preserve navigation"
       );
@@ -690,6 +715,9 @@ const MyproductDetails = ({ res }) => {
 
     // Remove all existing variant params
     newParams.delete("var");
+
+    // Remove all existing customization params
+    newParams.delete("custom");
 
     // Add current variant selections
     if (selectedVariants && Object.keys(selectedVariants).length > 0) {
@@ -706,6 +734,22 @@ const MyproductDetails = ({ res }) => {
       });
     }
 
+    // Add current customization selections
+    Object.entries(selectedDropdowns || {}).forEach(([label, selection]) => {
+      if (!selection?.value) return;
+
+      const customization = myproduct?.customizationData?.customizations?.find(
+        (item) => item.label === label
+      );
+
+      if (!customization) return;
+
+      newParams.append(
+        "custom",
+        `${encodeURIComponent(customization.label)}:${encodeURIComponent(selection.value)}`
+      );
+    });
+
     const queryString = newParams.toString();
     const newUrl = queryString
       ? `${window.location.pathname}?${queryString}`
@@ -714,7 +758,7 @@ const MyproductDetails = ({ res }) => {
     console.log("[URL Sync] Updating URL to:", newUrl);
     // Update URL without page reload
     window.history.replaceState({ path: newUrl }, "", newUrl);
-  }, [selectedVariants, myproduct, searchParams, getVariantTypeByIdentifier]);
+  }, [selectedVariants, selectedDropdowns, myproduct, searchParams, getVariantTypeByIdentifier]);
 
 
   //effect to fetch review data 
