@@ -568,7 +568,7 @@ const ProductImageGallery = ({
                                 <Box
                                     sx={{
                                         position: 'absolute',
-                                        top: '8px',
+                                        top: '30px',
                                         left: '8px',
                                         background: 'rgba(210, 63, 87, 0.9)',
                                         color: 'white',
@@ -829,8 +829,8 @@ const ProductBadge = ({ badge }) => (
         sx={{
             zIndex: "9",
             position: "absolute",
-            top: "12px",
-            left: "12px",
+            top: "0px",
+            left: "10px",
             background:
                 badge === "Popular Now"
                     ? "#fed9c9"
@@ -839,7 +839,7 @@ const ProductBadge = ({ badge }) => (
                         : "#c1f1c1",
             boxShadow: "0 0 3px #696969",
             borderRadius: "30px",
-            padding: "5px 10px",
+            padding: "4px 8px",
             color: "#000",
             textDecoration: "underline dashed",
             display: "flex",

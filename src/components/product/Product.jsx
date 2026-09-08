@@ -80,7 +80,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
       const basePrice = Number(product?.original_price || product?.originalPrice || product?.sale_price || 0);
 
       setOriginalPrice(basePrice);
-      
+
       if (product?.finalPrice) {
         setPrice(product?.finalPrice)
       } else if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
@@ -222,10 +222,43 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
 
   const imageAlt = product?.altText?.[0] || product?.product_title.replace(/<\/?[^>]+(>|$)/g, "").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 8).join(" ") || "Product Image";
 
+  const getProductUrl = () => {
+    const attribute = product?.matchedVariant?.attribute || "";
+    const customLabel = product?.matchedCustomization?.label || "";
+    const customOption = product?.matchedCustomization?.optionName || "";
+
+    const params = new URLSearchParams();
+
+    if (attribute) {
+      const attribute_id =
+        product?.variant_attribute_id?.find(
+          (attr) =>
+            attr.attribute_value.toLowerCase().trim() ===
+            attribute.toLowerCase().trim()
+        )?._id || attribute.trim().replace(/\s+/g, "+");
+
+      if (attribute_id) {
+        params.append("var", attribute_id);
+      }
+    }
+
+    if (customLabel && customOption) {
+      params.append(
+        "custom",
+        `${customLabel}:${customOption}`
+      );
+    }
+
+    const queryString = params.toString();
+
+    return queryString
+      ? `/product/${product.slug}/${product.product_code}?${queryString}`
+      : `/product/${product.slug}/${product.product_code}`;
+  };
 
   return (
     <Link
-      href={`/product/${product.slug}/${product.product_code}`}
+      href={getProductUrl()}
       prefetch={false}
       style={{ textDecoration: "none", color: "inherit" }}
     >

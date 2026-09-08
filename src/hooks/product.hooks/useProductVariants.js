@@ -789,7 +789,7 @@ export const useProductVariants = (product) => {
                     variantName,
                     attributeId,
                     attributeValue: selectedAttribute.attribute,
-                    imageUrl: img,
+                    imageUrl: imgIndex === 0 && selectedAttribute.edit_main_image ? selectedAttribute.edit_main_image : img,
                     type: "variant",
                     variantType: variantName, // e.g., "Gemstones", "Metal Type"
                     isVariantImage: true,
