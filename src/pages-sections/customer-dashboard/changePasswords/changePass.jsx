@@ -22,6 +22,9 @@ import { postAPIAuth } from "utils/__api__/ApiServies";
 import { useToasts } from "react-toast-notifications";
 import { CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
+import DashboardHeader from "../dashboard-header";
+import PasswordIcon from '@mui/icons-material/Password';
+
 const ChangePasswords = () => {
 
   const { visiblePassword, togglePasswordVisible } = usePasswordVisible();
@@ -114,9 +117,9 @@ const ChangePasswords = () => {
     });
   return (
     <Fragment>
-      <H3 mb={3} textAlign="center">
-        Change Your Password
-      </H3>
+      <Box py={3}>
+      <DashboardHeader title={"Change Your Password"} Icon={PasswordIcon}/>
+      </Box>
 
       {/* FORM AREA */}
       <Box

@@ -103,11 +103,7 @@ const AddGiftCard = () => {
                                     <Typography sx={{ color: '#000', fontSize: '14px' }}>Available balance: <Typography component="span" color={"green"}>{currency?.symbol}{(usercredentials?.wallet_balance*currency?.rate).toFixed(2)}</Typography></Typography>
                                 </Typography>
                             </Typography>
-                            <Typography component="div">
-                                <Button>
-                                    <AccountBalanceWalletIcon />
-                                </Button>
-                            </Typography>
+                            <AccountBalanceWalletIcon />
                         </Box>
                         <Box mt={2} sx={{ background: '#fff', boxShadow: '0 0 3px #a2a2a2', borderRadius: '5px', padding: '15px' }}>
                             <Typography variant="h6" pb={1}>Add gift card to balance</Typography>
@@ -126,10 +122,16 @@ const AddGiftCard = () => {
                                     }
                                 }}
                             />
-                            <Typography sx={{ color: 'gray', fontSize: '12px' }}>e.g. 8U95-Y3E8CQ-39MPQ</Typography>
+                            <Typography sx={{ color: 'gray', fontSize: '12px' }}>e.g. 8U95-Y3E8CQ-XXXXX</Typography>
                             <Typography mt={2} component="div" sx={{ width: { lg: '40%', md: '50%', xs: '100%' } }}>
-                                <Button endIcon={loading ? <CircularProgress size={15} /> : ""}
-                                    disabled={loading ? true : false} sx={{ width: '100%', background: '#ffd852', borderRadius: '30px', fontSize: '18px', fontWeight: '600', padding: '9px 18px', whiteSpace: 'nowrap', '&:hover': { background: '#dab534' } }} onClick={handleAddGiftCard}>Add gift card to balance</Button>
+                                <Button 
+                                    endIcon={loading ? <CircularProgress size={15} /> : ""}
+                                    disabled={loading ? true : false} 
+                                    sx={{ width: '100%', background: '#ffd852', borderRadius: '30px', fontSize: '18px', fontWeight: '600', padding: '9px 18px', whiteSpace: 'nowrap', '&:hover': { background: '#dab534' } }} 
+                                    onClick={handleAddGiftCard}
+                                >
+                                    Continue
+                                </Button>
                             </Typography>
                             <Typography mt={2} sx={{ display: 'flex', alignItems: 'center' }}><ErrorIcon sx={{ marginRight: '5px' }} /> For optimal utilisation, balance expiring the earliest will be redeemed first.</Typography>
                             <Typography mt={2}><Link href="#" sx={{ color: '#008296', textDecoration: 'none', fontWeight: '600' }}>Need more Help?</Link></Typography>

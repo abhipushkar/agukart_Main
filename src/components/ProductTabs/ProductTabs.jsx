@@ -423,7 +423,7 @@ const PhotosFromReviews = ({ allPhotos, openImageDialog }) => {
                 >
                     {allPhotos?.map((photo, i) => (
                         <Box
-                            key={photo._id}
+                            key={i}
                             component="img"
                             src={"https://api.agukart.com/uploads/ratings/" + photo.image}
                             alt=""
