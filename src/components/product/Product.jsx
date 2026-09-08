@@ -77,11 +77,13 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
 
     // ✅ CASE 1: NOT PRICE CONTROLLED → SIMPLE FLOW
     if (!isPriceControlled) {
-      const basePrice = Number(product?.sale_price || 0);
+      const basePrice = Number(product?.original_price || product?.originalPrice || product?.sale_price || 0);
 
       setOriginalPrice(basePrice);
-
-      if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
+      
+      if (product?.finalPrice) {
+        setPrice(product?.finalPrice)
+      } else if (promotion && Object.keys(promotion).length > 0 && promotion.qty <= 1) {
         setPrice(
           calculatePriceAfterDiscount(
             promotion?.offer_type,
@@ -160,7 +162,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
 
       const promotion = product.currentPromotion || {};
 
-      const nextPromotion = product.promotionData.reduce((next, promotion) => {
+      const nextPromotion = product?.nextPromotion || product.promotionData.reduce((next, promotion) => {
         if (
           promotion.qty !== null &&
           promotion.qty !== undefined &&
@@ -178,7 +180,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
         return next;
       }, null);
       setPromotion(promotion);
-      setNextPromotion(product?.nextPromotion || nextPromotion || {});
+      setNextPromotion(nextPromotion || {});
     }
   }, [product]);
 
@@ -198,7 +200,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
   const handleShopNameClick = (e) => {
     e.stopPropagation(); // Prevent product navigation when clicking shop name
     e.preventDefault(); // Prevent Link navigation
-    const baseUrl = `/store/${product?.shop_slug || product?.shop_name?.toLowerCase() || product?.vendorDetails?.shop_name}`;
+    const baseUrl = `/store/${product?.shop_slug || product?.vendorDetails?.slug || product?.vendorDetails?.shop_name}`;
     window.open(baseUrl, "_blank");
   };
 
@@ -565,7 +567,7 @@ const Product = ({ product, imageBaseUrl, videoBaseUrl }) => {
           )}
 
           {/* Shop Name (with custom handler) */}
-          {(product?.vendorDetails?.shop_name || product?.shop_name) && (
+          {(product?.vendorDetails?.slug || product?.shop_name) && (
             <Typography
               onClick={handleShopNameClick}
               sx={{

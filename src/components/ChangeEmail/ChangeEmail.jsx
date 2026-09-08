@@ -29,6 +29,9 @@ import * as Yup from "yup";
 import { token } from "stylis";
 import useAuth from "hooks/useAuth";
 import { useToasts } from "react-toast-notifications";
+import DashboardHeader from "pages-sections/customer-dashboard/dashboard-header";
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
+
 const validationSchema = Yup.object({
   New_email: Yup.string()
     .email("Enter a valid email")
@@ -190,7 +193,8 @@ const ChangeEmail = () => {
   }, []);
   return (
     <>
-      <Container py={5}>
+      <Container sx={{mt: 3}}>
+        <DashboardHeader title={"Change your Email"} Icon={AlternateEmailIcon}/>
         <Grid container spacing={{xs: 0, sm :2}}>
           <Grid item lg={8} md={7} xs={12}>
             <Box
@@ -256,7 +260,7 @@ const ChangeEmail = () => {
               {emailInfo?.status === "Confirmed" && <Divider />}
               {emailInfo?.status === "Confirmed" && (
                 <Box pt={2}>
-                  <H3 mb={3}>Change your email</H3>
+                  <H3 mb={3}>New email address</H3>
                   <Box>
                     <Grid container spacing={2}>
                       <Grid item lg={12} md={12} xs={12}>
