@@ -382,7 +382,7 @@ export default function ProductCategoriesSearchPageView({
   };
 
   return (
-    <Container sx={{ bgcolor: "background.paper", pb: 4, px: { xs: 1.5, sm: 2, md: 3 } }}>
+    <Container sx={{ bgcolor: "background.paper", pb: 4, px: { xs: 1.5, sm: 2, md: 5 } }}>
       {/* Main Content */}
       <Box sx={{ pb: 4 }}>
         {/* Products Categories Page */}
@@ -443,12 +443,7 @@ export default function ProductCategoriesSearchPageView({
           }
         </Box>
         {/* Sort + Filter Row */}
-        <Box sx={{
-          mb: 3,
-          px: { xs: 2, sm: 0 },
-
-          mx: "auto"
-        }}>
+        <Box sx={{ mb: 3 }}>
           <FlexBetween
             flexWrap="wrap"
             alignItems="center"

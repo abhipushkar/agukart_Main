@@ -62,11 +62,12 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, 
 
         // Rebuild media array
         const productMedia = [];
+        console.log(newProduct , "pppp")
         if (newProduct.image && Array.isArray(newProduct.image)) {
             newProduct.image.forEach((img) => {
                 const imageUrl = newProduct.image_url
                     ? `${newProduct.image_url}${img}`
-                    : `/uploads/product/${img}`;
+                    : `https://api.agukart.com/uploads/product/${img}`;
                 productMedia.push({ type: "image", url: imageUrl });
             });
         }
@@ -74,7 +75,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, 
             newProduct.videos.forEach((video) => {
                 const videoUrl = newProduct.video_url
                     ? `${newProduct.video_url}${video}`
-                    : `/uploads/product/${video}`;
+                    : `https://api.agukart.com/uploads/video/${video}`;
                 productMedia.push({ type: "video", url: videoUrl });
             });
         }
@@ -105,7 +106,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, 
                     product.image.forEach((img) => {
                         const imageUrl = product.image_url
                             ? `${product.image_url}${img}`
-                            : `/uploads/product/${img}`;
+                            : `https://api.agukart.com/uploads/product/${img}`;
                         productMedia.push({ type: "image", url: imageUrl });
                     });
                 }
@@ -113,7 +114,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, 
                     product.videos.forEach((video) => {
                         const videoUrl = product.video_url
                             ? `${product.video_url}${video}`
-                            : `/uploads/product/${video}`;
+                            : `https://api.agukart.com/uploads/video/${video}`;
                         productMedia.push({ type: "video", url: videoUrl });
                     });
                 }
@@ -162,7 +163,7 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, 
                 }}
             >
                 <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#fff" }}>
-                    <Box sx={{ px: 2, flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                    <Box sx={{ p: 0, flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                         {loading ? (
                             <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
                                 <CircularProgress />
@@ -761,7 +762,7 @@ const CartEditContent = ({
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-            <Box sx={{ flexShrink: 0 }}>
+            <Box sx={{ flexShrink: 0, p: 1 }}>
                 <DrawerImageGallery
                     media={combinedMedia}
                     selectedImage={selectedImage}
@@ -769,7 +770,7 @@ const CartEditContent = ({
                     hoveredImage={hoveredImage}
                 />
             </Box>
-            <Box sx={{ flex: 1, overflowY: "auto", px: 1, minHeight: 0 }}>
+            <Box sx={{ flex: 1, overflowY: "auto", p: "0 4px 0 10px", minHeight: 0 }}>
                 <Typography sx={{ fontWeight: 600, fontSize: "16px", mb: 1 }}>
                     {product.product_title.replace(/<[^>]*>/g, "")}
                 </Typography>

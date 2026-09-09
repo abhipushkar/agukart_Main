@@ -3,11 +3,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { Box, Card, IconButton, MobileStepper, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { normalize } from "path";
+
 
 const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage }) => {
   const [activeStep, setActiveStep] = useState(selectedImage || 0);
   const touchStartX = useRef(0);
+  const thumbnailRefs = useRef([]);
 
   // Sync external selectedImage prop without causing loops
   useEffect(() => {
@@ -16,14 +17,26 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
     }
   }, [selectedImage, activeStep]);
 
+  useEffect(() => {
+    const activeThumbnail = thumbnailRefs.current[activeStep];
+
+    if (activeThumbnail) {
+      activeThumbnail.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [activeStep]);
+
   const handleNext = () => {
-    const newStep = Math.min(activeStep + 1, media.length - 1);
+    const newStep = activeStep === (media.length - 1) ? 0 : (activeStep + 1)
     setActiveStep(newStep);
     if (onImageSelect) onImageSelect(newStep);
   };
 
   const handleBack = () => {
-    const newStep = Math.max(activeStep - 1, 0);
+    const newStep = activeStep === 0 ? (media.length - 1) : (activeStep - 1)
     setActiveStep(newStep);
     if (onImageSelect) onImageSelect(newStep);
   };
@@ -32,11 +45,6 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
     setActiveStep(index);
     if (onImageSelect) onImageSelect(index);
   };
-
-  const normalizeImageUrl = (url) => {
-    if (!url) return "";
-    return url.startsWith("https://api.agukart.com") ? url : "https://api.agukart.com" + url;
-  }
 
   // Hovered image takes precedence over selected image
   const displayImageUrl = hoveredImage?.url || media[activeStep]?.url;
@@ -88,15 +96,26 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
         }}
       >
         {displayImageUrl && (
-          <img
-            src={normalizeImageUrl(displayImageUrl)}
-            alt={displayImageUrl.slice(0, 10)}
-            style={{
-              maxWidth: "100%",
-              maxHeight: 280,
-              objectFit: "contain",
-            }}
-          />
+          displayImageUrl.endsWith(".mp4")
+            ? <video
+              src={displayImageUrl}
+              autoPlay loop muted playsInline
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                cursor: 'pointer',
+              }}
+            />
+            : <img
+              src={displayImageUrl}
+              alt={displayImageUrl}
+              style={{
+                maxWidth: "100%",
+                maxHeight: 280,
+                objectFit: "contain",
+              }}
+            />
         )}
       </Box>
 
@@ -119,11 +138,12 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
               backgroundColor: '#eb7589',
             },
           }}
+          in
           nextButton={
             <IconButton
               size="small"
               onClick={handleNext}
-              disabled={activeStep === media.length - 1}
+            // disabled={activeStep === media.length - 1}
             >
               <ChevronRightIcon />
             </IconButton>
@@ -132,7 +152,7 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
             <IconButton
               size="small"
               onClick={handleBack}
-              disabled={activeStep === 0}
+            // disabled={activeStep === 0}
             >
               <ChevronLeftIcon />
             </IconButton>
@@ -146,7 +166,7 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           sx={{
             display: "flex",
             gap: 1,
-            my: 1,
+            mb: 1,
             overflowX: "auto",
             pb: 1,
             scrollbarWidth: "thin", // For Firefox
@@ -175,6 +195,9 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           {media.map((item, idx) => (
             <Box
               key={idx}
+              ref={(el) => {
+                thumbnailRefs.current[idx] = el;
+              }}
               onClick={() => handleThumbnailClick(idx)}
               sx={{
                 width: 50,
@@ -187,11 +210,20 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
                 "&:hover": { borderColor: "#ed5f77" },
               }}
             >
-              <img
-                src={normalizeImageUrl(item.url)}
-                alt={item.url.slice(0, 10)}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+              {item.type === "image"
+                ? <img
+                  src={item.url}
+                  alt={item.url}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                : <video
+                  src={item.url}
+                  loop
+                  muted
+                  playsInline
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              }
             </Box>
           ))}
         </Box>
