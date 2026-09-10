@@ -171,7 +171,7 @@ const ProductSlug = ({
 
         {/* 🔥 CHILD CATEGORIES (SSR ONLY) */}
         {children.length > 0 && page === 1 && (
-          <Box sx={{ mb: 4, px: { xs: 0, sm: 2, md: 8, lg: 8 }, pr: {xs: 1.5, sm: 0}}}>
+          <Box sx={{ mb: 4, px: { xs: 0, sm: 2, md: 8, lg: 8 }, pr: {xs: 1.5, sm: 2}}}>
             <Grid
               container
               spacing={2}

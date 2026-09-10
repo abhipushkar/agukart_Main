@@ -1,5 +1,5 @@
 import Box from "@mui/material/Box";
-import { Typography, Button, Avatar } from '@mui/material';
+import { Typography, Button, Avatar, Grid } from '@mui/material';
 import { H4 } from "components/Typography";
 import Link from "next/link";
 import NextLink from "next/link";
@@ -294,9 +294,9 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
     return (
         <>
             <Box borderBottom={"1px solid #0e0e0e2e"} pb={2} pt={1} mb={2}>
-                <Box sx={{ display: { lg: "flex", md: "flex", sx: "block" } }}>
+                <Box sx={{ display: "flex", flexDirection: {xs: "column", sm: "row"}, gap: 2 }}>
                     {/* Left column – product image and badge */}
-                    <Typography component="div" sx={{ flex: "1", position: "relative" }}>
+                    <Typography component="div" sx={{ flex: "1", position: "relative", display: {xs: "flex", sm: "block"}, justifyContent: "space-between" }}>
                         <Avatar alt="image" src={product?.editedImage || product?.firstImage} sx={{ width: 150, height: 150, borderRadius: 2 }} variant="square" />
                         {product?.product_bedge && (
                             <Box sx={{
@@ -308,14 +308,17 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                 {product?.product_bedge}
                             </Box>
                         )}
+                        {(product?.cartAddedUserCount || product?.viewCount) && (
+                            <H4 color={"#d23f57"} fontSize={16} sx={{ textTransform: "capitalize", display: {xs: "block", sm: "none"} }}>
+                                {product?.cartAddedUserCount > 0 && `In ${product?.cartAddedUserCount} carts`} {product?.viewCount > 0 && `${product?.cartAddedUserCount > 0 && "with"} ${product?.viewCount} views`}
+                            </H4>
+                        )}
                     </Typography>
 
-                    {/* Middle column – product details, variants, quantity */}
-                    <Typography component="div" sx={{ paddingLeft: { lg: "18px", md: "18px", xs: "0" }, flex: { lg: "3", md: "3" } }}>
-                        <Box sx={{ display: { lg: "flex", md: "flex", xs: "block" } }}>
-                            <Typography component="div" sx={{ flexGrow: "1", maxWidth: { lg: "58.3333%", md: "58.3333%", xs: "100%" } }}>
+                    <Grid container spacing={1}>
+                        <Grid item xs={12} sm={8}>
                                 {(product?.cartAddedUserCount || product?.viewCount) && (
-                                    <H4 color={"#d23f57"} fontSize={16} sx={{ textTransform: "capitalize" }}>
+                                    <H4 color={"#d23f57"} fontSize={16} sx={{ textTransform: "capitalize", display: {xs: "none", sm: "block"} }}>
                                         {product?.cartAddedUserCount > 0 && `In ${product?.cartAddedUserCount} carts`} {product?.viewCount > 0 && `${product?.cartAddedUserCount > 0 && "with"} ${product?.viewCount} views`}
                                     </H4>
                                 )}
@@ -394,23 +397,12 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         </Typography>
                                     )}
                                 </Typography>
-                                {showButtons && (
-                                    <Typography component="div" mt={2} display={"flex"} gap={1}>
-                                        <Button variant="contained" onClick={() => setEditDrawerOpen(true)} sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: "pointer" }}>Edit</Button>
-                                        <Button onClick={saveForLaterHandler} variant="contained" sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: isVariantSelectionIncomplete ? "not-allowed" : "pointer", opacity: isVariantSelectionIncomplete ? 0.5 : 1 }} disabled={isVariantSelectionIncomplete}>Save for later</Button>
-                                        <Button variant="contained" onClick={removeItemHandler} sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px" }}>Remove</Button>
-                                    </Typography>
-                                )}
-                            </Typography>
+                        </Grid>
 
-                            {/* Right column – price and promotions */}
-                            <Typography component="div" sx={{
-                                flexGrow: "1", maxWidth: { lg: "41.6667%", md: "41.6667%", xs: "100%" },
-                                paddingLeft: { lg: "18px", md: "18px", xs: "0" }
-                            }}>
-                                <Typography component="div" display={"flex"}>
+                        <Grid item xs={12} sm={4}>
+                            <Typography component="div" display={"flex"}>
                                     <Typography component="div" flexGrow={1} flexBasis={"100%"} maxWidth={"100%"} textAlign={"right"}
-                                        sx={{ flexDirection: "column", display: "flex", alignItems: { xs: "start", md: "end" }, justifyContent: { xs: "flex-start", md: "flex-end" } }}>
+                                        sx={{ flexDirection: "column", display: "flex", alignItems: { xs: "start", sm: "end" }, justifyContent: { xs: "flex-start", sm: "flex-end" } }}>
 
                                         {product?.appliedPromotion && (
                                             <Box sx={{
@@ -432,13 +424,13 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         )}
 
                                         {/* Current Price - Discounted */}
-                                        <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
+                                        <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { sm: "end", xs: "start" } }}>
                                             {currency?.symbol}{(displayPrice * Number(displayQuantity || 0) * currency?.rate).toFixed(2)}
                                         </Typography>
 
                                         {/* Original Price with Strikethrough */}
                                         {Number(effectiveOriginalPrice) > Number(displayPrice) && (
-                                            <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { lg: "end", md: "end", xs: "start" } }}>
+                                            <Typography fontSize={19} fontWeight={600} textAlign={"right"} sx={{ display: "flex", alignItems: "center", justifyContent: { sm: "end", xs: "start" } }}>
                                                 <Small pl={1} sx={{ fontSize: "18px", fontWeight: "600", color: "gray" }} component="del">
                                                     {currency?.symbol}{(effectiveOriginalPrice * currency.rate * Number(displayQuantity || 0)).toFixed(2)}
                                                 </Small>
@@ -459,9 +451,16 @@ const Product = ({ cart, product, wallet, defaultAddress, voucherDetails, showBu
                                         )}
                                     </Typography>
                                 </Typography>
-                            </Typography>
-                        </Box>
-                    </Typography>
+                        </Grid>
+                      
+                        {showButtons && (
+                            <Grid item xs={12} display={"flex"} gap={1}>
+                                <Button variant="contained" onClick={() => setEditDrawerOpen(true)} sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: "pointer" }}>Edit</Button>
+                                <Button onClick={saveForLaterHandler} variant="contained" sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px", cursor: isVariantSelectionIncomplete ? "not-allowed" : "pointer", opacity: isVariantSelectionIncomplete ? 0.5 : 1 }} disabled={isVariantSelectionIncomplete}>Save for later</Button>
+                                <Button variant="contained" onClick={removeItemHandler} sx={{ background: "transparent", fontSize: "14px", boxShadow: "none", borderRadius: "25px" }}>Remove</Button>
+                            </Grid>
+                        )}
+                    </Grid>
                 </Box>
             </Box>
             <CartEditDrawer open={editDrawerOpen} onClose={() => setEditDrawerOpen(false)} cartProduct={product} wallet={wallet} address={defaultAddress} voucher={voucherDetails} addParentCart={addParentCart} />

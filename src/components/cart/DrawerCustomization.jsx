@@ -1,5 +1,5 @@
 // components/Cart/DrawerCustomization.jsx
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -34,6 +34,7 @@ const DrawerCustomization = ({
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
   const [viewAllOptions, setViewAllOptions] = useState([]);
   const [viewAllLabel, setViewAllLabel] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const customizations = customizationData?.customizations || [];
   const visibleCustomizations = useMemo(() => {
@@ -46,7 +47,7 @@ const DrawerCustomization = ({
       if (onOptionHover && mainImages?.length) {
         onOptionHover({
           type: "hover-preview",
-          url: mainImages[0],
+          main_images: mainImages.filter(Boolean),
           source: "customization",
           optionName: option.optionName,
         });
@@ -91,7 +92,7 @@ const DrawerCustomization = ({
 
   return (
     <Box sx={{ mb: 2 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "14px", mb: 1 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "18px", mb: 1 }}>
         Customizations
       </Typography>
 
@@ -140,6 +141,8 @@ const DrawerCustomization = ({
                 <Select
                   value={selectedValue?.value || ""}
                   onChange={(e) => handleDropdownLocal(custom.label, e.target.value, options)}
+                  onOpen={(e) => setAnchorEl(e.currentTarget)}
+                  onClose={() => setAnchorEl(null)}
                   displayEmpty
                   renderValue={(selected) => {
                     const option = options.find((opt) => opt.optionName === selected);
@@ -157,9 +160,18 @@ const DrawerCustomization = ({
                     );
                   }}
                   MenuProps={{
+                    anchorOrigin: {
+                      vertical: "bottom",
+                      horizontal: "left",
+                    },
+                    transformOrigin: {
+                      vertical: "top",
+                      horizontal: "right",
+                    },
                     PaperProps: {
                       sx: {
                         maxHeight: 300,
+                        ml: -2, // move slightly further left
                       },
                     },
                   }}
@@ -175,7 +187,7 @@ const DrawerCustomization = ({
                       <MenuItem
                         key={option.optionName}
                         value={option.optionName}
-                        onMouseEnter={() => handleOptionHover(option, option.main_images)}
+                        onMouseEnter={() => anchorEl && handleOptionHover(option, option.main_images)}
                         onMouseLeave={handleOptionHoverOut}
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >

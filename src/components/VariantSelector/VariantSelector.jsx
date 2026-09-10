@@ -15,17 +15,11 @@ import {
   DialogActions,
   Menu,
 } from "@mui/material";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import CloseIcon from "@mui/icons-material/Close";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import parse from "html-react-parser";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
-import {
-  TransformWrapper,
-  TransformComponent,
-} from "react-zoom-pan-pinch";
+import GuideModal from "components/guide/GuideModal";
 
 // Debounce utility
 const debounce = (func, wait) => {
@@ -631,175 +625,6 @@ const VariantSelector = ({
     setGuideOpen(true);
   };
 
-  const transformRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [scale, setScale] = useState(1);
-
-  const renderGuideModal = () => (
-    <Dialog
-      open={guideOpen}
-      onClose={() => setGuideOpen(false)}
-      maxWidth="md"
-      fullWidth
-      sx={{
-        "& .MuiDialog-paper": {
-          maxWidth: "90vw",
-          maxHeight: "95vh",
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          m: 0,
-          py: 1,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="h6" component="div">
-          {currentGuide?.name || `${variant.name} Guide`}
-        </Typography>
-        <IconButton
-          aria-label="close"
-          onClick={() => setGuideOpen(false)}
-          sx={{
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 0, overflow: "visible" }}>
-        {currentGuide?.description && (
-          <Box sx={{ p: 3, pb: 0 }}>
-            <Typography variant="body1" component="div">
-              {parse(currentGuide.description)}
-            </Typography>
-          </Box>
-        )}
-
-        {currentGuide?.file && currentGuide?.type === "image" && (
-          <Box
-            sx={{
-              width: "100%",
-              height: "85vh",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
-          >
-            <TransformWrapper
-              ref={transformRef}
-              initialScale={1}
-              minScale={1}
-              maxScale={5}
-              wheel={{ step: 0.2 }}
-              doubleClick={{ disabled: false }}
-              pinch={{ step: 10 }}
-              onPanningStart={() => setIsDragging(true)}
-              onPanningStop={() => setIsDragging(false)}
-              onZoomStop={(ref) => setScale(ref.state.scale)}
-            >
-              <TransformComponent
-                wrapperStyle={{
-                  display: "inline-block",
-                  width: "85vw",
-                  height: "fit-content",
-                  cursor: isDragging ? "grabbing" : "grab",
-                }}
-                contentStyle={{
-                  display: "inline-block",
-                }}
-              >
-                <img
-                  src={currentGuide.file}
-                  alt="guide"
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "85vh",
-                    objectFit: "contain",
-                    display: "block",
-                  }}
-                />
-              </TransformComponent>
-            </TransformWrapper>
-          </Box>
-        )}
-
-        {currentGuide?.file && currentGuide?.type === "video" && (
-          <Box sx={{ textAlign: "center", mb: 2 }}>
-            <video
-              controls
-              style={{
-                maxWidth: "100%",
-                maxHeight: "60vh",
-                borderRadius: "8px",
-              }}
-            >
-              <source src={currentGuide.file} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </Box>
-        )}
-
-        {currentGuide?.file && currentGuide?.type === "document" && (
-          <Box sx={{ textAlign: "center", mb: 2 }}>
-            <Button
-              variant="contained"
-              href={currentGuide.file}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ mt: 2 }}
-            >
-              View Guide
-            </Button>
-          </Box>
-        )}
-
-        {!currentGuide?.file && !currentGuide?.description && (
-          <Typography color="textSecondary" sx={{ textAlign: "center", py: 4 }}>
-            No guide content available
-          </Typography>
-        )}
-      </DialogContent>
-
-      {currentGuide?.file && currentGuide?.type === "image" && (
-        <DialogActions sx={{ p: 2 }}>
-          <Box sx={{ display: "flex", gap: 1 }}>
-
-            <Button
-              onClick={() => transformRef.current?.zoomIn()}
-              variant="outlined"
-              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
-            >
-              Zoom +
-            </Button>
-
-            <Button
-              onClick={() => transformRef.current?.zoomOut()}
-              variant="outlined"
-              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
-            >
-              Zoom -
-            </Button>
-
-            <Button
-              onClick={() => transformRef.current?.resetTransform()}
-              variant="outlined"
-              sx={{ color: "GrayText", borderColor: "#d1d1d1" }}
-            >
-              Reset
-            </Button>
-
-          </Box>
-        </DialogActions>
-      )}
-    </Dialog>
-  );
-
 
   const renderParentVariantGrid = () => {
     const anyHaveThumbnails = variant.attributes.some(
@@ -1086,8 +911,6 @@ const VariantSelector = ({
             {error}
           </Typography>
         )}
-
-        {renderGuideModal()}
       </Box>
     );
   };
@@ -1311,8 +1134,6 @@ const VariantSelector = ({
           </Typography>
         )}
 
-        {renderGuideModal()}
-
         {/* View All Dialog - separate from Menu */}
         <Dialog
           open={isViewAllOpen}
@@ -1389,11 +1210,20 @@ const VariantSelector = ({
     );
   };
 
-  if (variant.type === "parent") {
-    return renderParentVariantGrid();
-  } else {
-    return renderInternalVariantDropdown();
-  }
+  return (
+    <>
+      {variant.type === "parent"
+        ? renderParentVariantGrid()
+        : renderInternalVariantDropdown()
+      }
+      <GuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        guide={currentGuide}
+        fallbackTitle={`${variant.name} Guide`}
+      />
+    </>
+  )
 };
 
 const VariantButton = ({
