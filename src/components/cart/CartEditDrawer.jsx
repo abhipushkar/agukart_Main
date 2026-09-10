@@ -62,7 +62,6 @@ const CartEditDrawer = ({ open, onClose, cartProduct, wallet, address, voucher, 
 
         // Rebuild media array
         const productMedia = [];
-        console.log(newProduct , "pppp")
         if (newProduct.image && Array.isArray(newProduct.image)) {
             newProduct.image.forEach((img) => {
                 const imageUrl = newProduct.image_url
@@ -403,10 +402,12 @@ const CartEditContent = ({
 
     const combinedMedia = useMemo(() => {
         const variantImgs = selectedVariantImages.map(img => ({ type: "variant", url: img.imageUrl }));
+        const customImgs = Object.values(selectedDropdowns)
+            .flatMap(option => option.main_images.filter(Boolean).map((url) => ({ url, type: "image", })));
         const productImgs = media.filter(m => m.type === "image");
         const videos = media.filter(m => m.type === "video");
-        return [...variantImgs, ...productImgs, ...videos];
-    }, [selectedVariantImages, media]);
+        return [...variantImgs, ...customImgs, ...productImgs, ...videos];
+    }, [selectedVariantImages, selectedDropdowns, media]);
 
     // Reset prefill flag when drawer opens with new product/cartItem
     useEffect(() => {
@@ -770,7 +771,22 @@ const CartEditContent = ({
                     hoveredImage={hoveredImage}
                 />
             </Box>
-            <Box sx={{ flex: 1, overflowY: "auto", p: "0 4px 0 10px", minHeight: 0 }}>
+            <Box sx={theme => ({
+                flex: 1, overflowY: "auto", p: "0 4px 0 10px", minHeight: 0,
+                "&::-webkit-scrollbar": {
+                    width: 6, 
+                },
+                "&::-webkit-scrollbar-track": {
+                    backgroundColor: "transparent",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: theme.palette.grey[400],
+                    borderRadius: 3,
+                },
+                "&:hover::-webkit-scrollbar-thumb": {
+                    backgroundColor: theme.palette.grey[400],
+                }
+            })}>
                 <Typography sx={{ fontWeight: 600, fontSize: "16px", mb: 1 }}>
                     {product.product_title.replace(/<[^>]*>/g, "")}
                 </Typography>

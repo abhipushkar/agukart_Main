@@ -48,8 +48,7 @@ const AdminChildCat = ({ cat }) => {
         </Box>
       </Link>
 
-      <FlexBetween justifyContent="center" alignItems="flex-end">
-        <Link href={url}>
+      <FlexBetween justifyContent="center" alignItems="flex-end" component="a" href={url}>
           <H6
             fontWeight={700}
             mb={1}
@@ -68,7 +67,6 @@ const AdminChildCat = ({ cat }) => {
           >
             {title}
           </H6>
-        </Link>
       </FlexBetween>
     </Box>
   );

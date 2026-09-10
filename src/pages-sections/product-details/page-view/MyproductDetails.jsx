@@ -33,7 +33,7 @@ import ShareModal from "./ShareModal";
 import ReportItem from "./ReportItem";
 
 // Services
-import { getAPI, getAPIAuth, postAPIAuth } from "utils/__api__/ApiServies";
+import { getAPI, getAPIAuth, postAPI, postAPIAuth } from "utils/__api__/ApiServies";
 import { calculatePriceAfterDiscount } from "utils/calculatePriceAfterDiscount";
 import useMyProvider from "hooks/useMyProvider";
 import ProductRating from "components/ProductRating/ProductRating";
@@ -98,7 +98,7 @@ const MyproductDetails = ({ res }) => {
     validationErrors,
     customizeDropdownPrice,
     customizeTextPrice,
-    hoveredCustomizationImage, 
+    hoveredCustomizationImage,
     setHoveredCustomizationImage,
     handleDropdownChange,
     handleTextChange,
@@ -107,6 +107,20 @@ const MyproductDetails = ({ res }) => {
     isExpanded,
     setIsExpanded
   } = useProductCustomization(myproduct);
+
+  const handleVisitCount = async () => {
+    try {
+      const res = await postAPI("increase-vist-count", {
+        product_id: myproduct?._id || res.data._id,
+      });
+      if (res.status === 200) {
+        console.log(res.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   const viewProduct = async () => {
     try {
       const id = pathname.productId || myproduct?._id;
@@ -560,6 +574,12 @@ const MyproductDetails = ({ res }) => {
     // Reset URL initialization flag when product ID changes
     urlInitializedRef.current = false;
   }, [pathname.productId, pathname.product_code]);
+
+
+  useEffect(() => {
+    if (!myproduct) return;
+    handleVisitCount();
+  }, [myproduct])
 
   useEffect(() => {
     if (!token || !myproduct) return;

@@ -128,14 +128,14 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
           activeStep={activeStep}
           sx={{
             bgcolor: "transparent",
-            p: 1,
+            p: 0.5,
             '& .MuiMobileStepper-dot': {
-              backgroundColor: '#ccc',
+              backgroundColor: '#e1e1e1ce',
               width: 8,
               height: 8,
             },
             '& .MuiMobileStepper-dotActive': {
-              backgroundColor: '#eb7589',
+              backgroundColor: '#c9576aa2',
             },
           }}
           in
@@ -163,34 +163,27 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
       {/* Thumbnail strip for quick navigation */}
       {media.length > 1 && (
         <Box
-          sx={{
+          sx={(theme) => ({
             display: "flex",
             gap: 1,
-            mb: 1,
+            pb: "6px",
             overflowX: "auto",
-            pb: 1,
-            scrollbarWidth: "thin", // For Firefox
+            overflowY: "hidden",
             "&::-webkit-scrollbar": {
-              height: 4,
-              backgroundColor: "transparent",
+              height: 6,
             },
             "&::-webkit-scrollbar-track": {
               backgroundColor: "transparent",
-              marginTop: "2px",
-              marginBottom: "2px",
             },
             "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "#eeeeee",
-              borderRadius: 2,
-            },
-            "&:hover::-webkit-scrollbar": {
-              height: 6,
-              backgroundColor: "#e7e7e7",
+              backgroundColor: theme.palette.grey[400],
+              borderRadius: 3,
+              cursor: "pointer"
             },
             "&:hover::-webkit-scrollbar-thumb": {
-              backgroundColor: "#e3e3e39c",
-            },
-          }}
+              backgroundColor: theme.palette.grey[400],
+            }
+          })}
         >
           {media.map((item, idx) => (
             <Box
@@ -203,27 +196,40 @@ const DrawerImageGallery = ({ media, selectedImage, onImageSelect, hoveredImage 
                 width: 50,
                 height: 50,
                 flexShrink: 0,
+                mt: 0.5,
+                boxShadow: activeStep === idx ? "0px 1px 6px #5d80bbb5" : "none",
+                transform: activeStep === idx ? "scale(1.05)" : "none",
                 border: activeStep === idx ? "2px solid #c9576aa2" : "1px solid #e0e0e0",
                 borderRadius: 1,
                 overflow: "hidden",
                 cursor: "pointer",
-                "&:hover": { borderColor: "#ed5f77" },
+                "&:hover": { boxShadow: "0px 1px 6px #4e5f7db5", },
+                transition: "box-shadow 200ms ease, transform 200ms ease",
               }}
             >
-              {item.type === "image"
-                ? <img
-                  src={item.url}
-                  alt={item.url}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                : <video
+              {item.type === "video" || item.url.endsWith(".mp4") ? (
+                <video
                   src={item.url}
                   loop
                   muted
                   playsInline
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
                 />
-              }
+              ) : (
+                <img
+                  src={item.url}
+                  alt={item.url}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              )}
             </Box>
           ))}
         </Box>
